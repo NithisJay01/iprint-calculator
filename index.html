@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Iprint Cost Calculator</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;width:100%;min-height:100%;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;background:#f5f5f5;color:#17181a;-webkit-text-size-adjust:100%}
+body{padding-bottom:30px}
+.app{width:100%;max-width:760px;margin:0 auto;padding:14px}
+h1{font-size:22px;line-height:1.2;margin:4px 0 18px}
+.field{margin-bottom:16px}
+label{display:block;font-size:14px;font-weight:700;margin-bottom:7px}
+input,select,button{font:inherit}
+input,select{display:block;-webkit-appearance:none;appearance:none;width:100%;height:50px;border:1px solid #ddd;border-radius:11px;background:#fff;padding:0 13px;font-size:17px;color:#17181a}
+button{display:block;width:100%;min-height:48px;border-radius:11px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.size{display:grid;grid-template-columns:minmax(0,1fr) 24px minmax(0,1fr);gap:7px;align-items:center}
+.x{text-align:center;color:#777}
+.hint{font-size:11px;line-height:1.45;color:#777;margin-top:6px}
+
+.paper-list{display:none}
+#sheet{display:block;width:100%;height:52px;min-height:52px;border:1px solid #cfd3d8;border-radius:11px;background:#fff;color:#17181a;padding:0 12px;font-size:17px}
+#sheet{
+ -webkit-appearance:none;appearance:none;
+ background:#fff;
+ background-image:linear-gradient(45deg,transparent 50%,#666 50%),linear-gradient(135deg,#666 50%,transparent 50%);
+ background-position:calc(100% - 19px) 21px,calc(100% - 13px) 21px;
+ background-size:6px 6px,6px 6px;background-repeat:no-repeat;padding-right:38px
+}
+#sheet option{font-size:16px}
+.paper-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+#addPreset{border:1px dashed #b8bcc2;background:#fff;font-weight:700}
+#deletePreset{border:1px solid #ddd;background:#fff;color:#9b1c1c;font-weight:700}
+
+#iprint-preview{margin-top:18px;padding:13px;border:1px solid #e1e3e6;border-radius:14px;background:#f7f7f8}
+.preview-title{font-size:13px;font-weight:700;line-height:1.35;margin-bottom:4px}
+.preview-sub{font-size:11px;color:#73777e;margin-bottom:12px}
+.preview-scroll{width:100%;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch}
+.sheet-preview{position:relative;margin:0 auto;background:#fff;border:1.5px solid #9da3aa;overflow:hidden;display:flex;flex-wrap:wrap;align-content:flex-start;flex:none}
+.piece{background:#e8eaed;border:1px solid #8d949c;display:flex;align-items:center;justify-content:center;color:#656b72;font-size:9px;line-height:1;overflow:hidden}
+.preview-note{font-size:11px;color:#73777e;line-height:1.4;margin-top:7px}
+
+.result{margin-top:18px;padding:18px 15px;border-radius:15px;background:#fff;border:1px solid #e1e1e1}
+.label{font-size:13px;color:#73777e}
+.big{font-size:36px;font-weight:850;line-height:1.1;margin-top:4px}
+.sub{font-size:13px;color:#73777e;margin-top:7px}
+.cost{margin-top:18px;padding-top:17px;border-top:1px solid #e7e7e7}
+.total{font-size:28px;font-weight:850;margin-top:4px;overflow-wrap:anywhere}
+
+.modal-backdrop{display:none;position:fixed;z-index:9999;top:0;right:0;bottom:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.52);padding:12px;overflow-y:auto}
+.modal-backdrop.open{display:block}
+.modal-card{width:100%;max-width:430px;margin:4vh auto 30px;background:#fff;border-radius:16px;padding:18px;box-shadow:0 10px 40px rgba(0,0,0,.2)}
+.modal-title{font-size:18px;margin:0 0 16px}
+.modal-buttons{display:flex;gap:8px;margin-top:16px}
+.modal-buttons button{flex:1}
+#cancelPreset{border:1px solid #ddd;background:#fff;font-weight:700}
+#savePreset{border:0;background:#17181a;color:#fff;font-weight:700}
+#error{color:#b42318;font-size:12px;margin-top:8px}
+@media(max-width:380px){.app{padding:12px}h1{font-size:20px}.big{font-size:32px}input,select{font-size:16px}}
+</style>
+</head>
+<body>
+<main class="app">
+<h1>Iprint Cost Calculator</h1>
+
+<div class="field">
+<label>ไซส์ / พื้นที่ใช้งาน</label>
+<select id="sheet" onchange="Iprint.selectPaper(this.value)" aria-label="เลือกขนาดกระดาษ">
+<option value="sticker13x19">13 × 19" • สติกเกอร์ (33.02 × 48.26 cm)</option>
+<option value="paper13x19">13 × 19" • กระดาษ (33.02 × 48.26 cm)</option>
+<option value="papera3">A3 • กระดาษ (29.7 × 42 cm)</option>
+</select>
+<div class="paper-actions">
+<button type="button" id="addPreset" onclick="Iprint.openPreset()">＋ เพิ่มขนาดกระดาษ</button>
+<button type="button" id="deletePreset" onclick="Iprint.deletePaper()">ลบกระดาษ</button>
+</div>
+<div class="hint">สติกเกอร์ 13×19 ใช้พื้นที่ 30×40 cm • กระดาษทั่วไปเว้นขอบ 1.5 cm ทุกด้าน • ขนาดที่เพิ่มเองลบได้</div>
+</div>
+
+<div class="field">
+<label>ระบุขนาด (cm)</label>
+<div class="size">
+<input id="w" type="number" min="0.1" step="0.1" value="10" placeholder="กว้าง">
+<div class="x">×</div>
+<input id="h" type="number" min="0.1" step="0.1" value="15" placeholder="สูง">
+</div>
+<div class="hint">Bleed 3 mm/ด้าน • ระบบเลือกช่องไฟ 2–10 mm อัตโนมัติ</div>
+</div>
+
+<div class="field">
+<label>ระบุจำนวน (ดวง)</label>
+<input id="qty" type="number" min="1" step="1" value="500">
+</div>
+
+<div id="iprint-preview">
+<div class="preview-title">Preview พื้นที่กระดาษคำนวนตามพื้นที่จริงแต่Layout ดูคร่าวๆเท่านั้นไม่ใช่การจัดวางงานจริง</div>
+<div class="preview-sub" id="previewInfo">—</div>
+<div class="preview-scroll"><div class="sheet-preview" id="sheetPreview"></div></div>
+<div class="preview-note">แสดงพื้นที่ใช้งาน + การวางชิ้นงานตาม Bleed 3 mm และช่องไฟที่ระบบเลือก</div>
+</div>
+
+<div class="result">
+<div class="label">ใช้จำนวน</div>
+<div class="big"><span id="sheets">—</span> แผ่น</div>
+<div class="sub"><span id="yield">—</span> ดวง/แผ่น • ช่องไฟ <span id="gap">—</span> mm</div>
+
+<div class="cost">
+<div class="label">ต้นทุนต่อแผ่น (บาท)</div>
+<input id="cost" type="number" min="0" step="0.01" value="25" style="margin-top:7px">
+
+<div class="label" style="margin-top:16px">กำไรที่ต้องการ (%)</div>
+<input id="profitPercent" type="number" min="0" step="1" value="30" style="margin-top:7px">
+
+<div class="label" style="margin-top:16px">ต้นทุนทั้งหมด</div>
+<div class="total"><span id="total">—</span> บาท</div>
+<div class="label" style="margin-top:16px">กำไร</div>
+<div class="total"><span id="profit">—</span> บาท</div>
+<div class="label" style="margin-top:16px">ราคาขาย</div>
+<div class="total"><span id="sale">—</span> บาท</div>
+</div>
+</div>
+</main>
+
+<div id="presetModal" class="modal-backdrop" aria-hidden="true" onclick="if(event.target===this)Iprint.closePreset()">
+<div class="modal-card" role="dialog" aria-modal="true">
+<h2 class="modal-title">เพิ่มขนาดกระดาษ</h2>
+<label for="pName">ชื่อ</label>
+<input id="pName" type="text" placeholder="เช่น SRA3">
+
+<label style="margin-top:14px" for="pW">ขนาดแผ่น (cm)</label>
+<div class="size">
+<input id="pW" type="number" min="0.1" step="0.1" placeholder="กว้าง">
+<div class="x">×</div>
+<input id="pH" type="number" min="0.1" step="0.1" placeholder="สูง">
+</div>
+
+<label style="margin-top:14px" for="pMode">พื้นที่ใช้งาน</label>
+<select id="pMode">
+<option value="margin">เว้นขอบ 1.5 cm ทุกด้าน</option>
+<option value="full">ใช้เต็มแผ่น</option>
+<option value="custom">กำหนดพื้นที่เอง</option>
+</select>
+
+<div id="customArea" style="display:none;margin-top:10px">
+<div class="size">
+<input id="pUW" type="number" min="0.1" step="0.1" placeholder="พื้นที่กว้าง">
+<div class="x">×</div>
+<input id="pUH" type="number" min="0.1" step="0.1" placeholder="พื้นที่สูง">
+</div>
+</div>
+
+<div id="presetError"></div>
+<div class="modal-buttons">
+<button type="button" id="cancelPreset" onclick="Iprint.closePreset()">ยกเลิก</button>
+<button type="button" id="savePreset" onclick="Iprint.savePreset()">เพิ่ม</button>
+</div>
+</div>
+</div>
+
+<script>
+(function(){
+"use strict";
+var presets={
+ sticker13x19:{name:'13 × 19" • สติกเกอร์',fullW:33.02,fullH:48.26,usableW:30,usableH:40},
+ paper13x19:{name:'13 × 19" • กระดาษ',fullW:33.02,fullH:48.26,usableW:30.02,usableH:45.26},
+ papera3:{name:'A3 • กระดาษ',fullW:29.7,fullH:42,usableW:26.7,usableH:39}
+};
+var KEY="iprint_mobile_v7", selectedSheet="sticker13x19";
+function $(id){return document.getElementById(id)}
+function loadState(){
+ try{
+  var s=JSON.parse(localStorage.getItem(KEY)||"{}");
+  if(s.customPresets)Object.assign(presets,s.customPresets);
+  if(s.values){
+   ["w","h","qty","cost","profitPercent"].forEach(function(id){
+    if(s.values[id]!==undefined)$(id).value=s.values[id];
+   });
+  }
+  if(s.selectedSheet&&presets[s.selectedSheet])selectedSheet=s.selectedSheet;
+ }catch(e){}
+}
+function saveState(){
+ try{
+  var custom={};
+  Object.keys(presets).forEach(function(id){if(id.indexOf("custom_")===0)custom[id]=presets[id]});
+  localStorage.setItem(KEY,JSON.stringify({customPresets:custom,selectedSheet:selectedSheet,
+   values:{w:$("w").value,h:$("h").value,qty:$("qty").value,cost:$("cost").value,profitPercent:$("profitPercent").value}}));
+ }catch(e){}
+}
+function renderSelect(){
+ var sel=$("sheet"),wanted=selectedSheet;
+ sel.innerHTML="";
+ Object.keys(presets).forEach(function(id){
+  var p=presets[id],o=document.createElement("option");
+  o.value=id;o.textContent=p.name+" ("+p.fullW+" × "+p.fullH+" cm)";sel.appendChild(o);
+ });
+ if(!presets[wanted])wanted=Object.keys(presets)[0];
+ selectedSheet=wanted;sel.value=wanted;
+}
+function selectPaper(id){if(presets[id]){selectedSheet=id;$("sheet").value=id;saveState();calculate()}}
+function openPreset(){$("presetError").textContent="";$("presetModal").style.display="block";document.body.style.overflow="hidden"}
+function closePreset(){$("presetModal").style.display="none";document.body.style.overflow=""}
+function deletePaper(){
+ if(selectedSheet.indexOf("custom_")!==0){alert("ขนาดมาตรฐานลบไม่ได้");return}
+ if(!confirm('ต้องการลบ "'+presets[selectedSheet].name+'" ใช่หรือไม่?'))return;
+ delete presets[selectedSheet];selectedSheet=Object.keys(presets)[0];renderSelect();saveState();calculate();
+}
+function savePreset(){
+ var name=$("pName").value.trim(),fw=parseFloat($("pW").value),fh=parseFloat($("pH").value),mode=$("pMode").value,uw,uh;
+ if(!name||!(fw>0)||!(fh>0)){$("presetError").textContent="กรุณากรอกชื่อและขนาดแผ่น";return}
+ if(mode==="full"){uw=fw;uh=fh}else if(mode==="margin"){uw=fw-3;uh=fh-3}else{
+  uw=parseFloat($("pUW").value);uh=parseFloat($("pUH").value);
+  if(!(uw>0&&uh>0&&uw<=fw&&uh<=fh)){$("presetError").textContent="พื้นที่ใช้งานไม่ถูกต้อง";return}
+ }
+ if(uw<=0||uh<=0){$("presetError").textContent="ขนาดแผ่นเล็กเกินไปสำหรับขอบ 1.5 cm";return}
+ var id="custom_"+Date.now();
+ presets[id]={name:name,fullW:fw,fullH:fh,usableW:uw,usableH:uh};selectedSheet=id;
+ renderSelect();saveState();closePreset();calculate();
+}
+function resetOutput(){
+ ["sheets","yield","gap","total","profit","sale"].forEach(function(id){$(id).textContent="—"});
+ $("sheetPreview").innerHTML="";$("previewInfo").textContent="—";
+}
+function findBest(p,W,H){
+ var uw=p.usableW*10,uh=p.usableH*10,best=null;
+ for(var gap=2;gap<=10;gap++){
+  [false,true].forEach(function(rot){
+   var pw=(rot?H:W)*10+6,ph=(rot?W:H)*10+6;
+   var nx=Math.floor((uw+gap)/(pw+gap)),ny=Math.floor((uh+gap)/(ph+gap)),n=nx*ny;
+   if(n>0&&(!best||n>best.yield||(n===best.yield&&gap>best.gap)))
+    best={yield:n,gap:gap,rotate:rot,pieceW:pw,pieceH:ph,nx:nx,ny:ny};
+  });
+ }
+ return best;
+}
+function drawPreview(p,b){
+ var preview=$("sheetPreview");preview.innerHTML="";
+ var fw=p.fullW*10,fh=p.fullH*10,uw=p.usableW*10,uh=p.usableH*10;
+ var viewport=(document.documentElement&&document.documentElement.clientWidth)||window.innerWidth||320;
+ var scale=Math.min(1,Math.max(220,Math.min(330,viewport-58))/fw);
+ preview.style.width=Math.round(fw*scale)+"px";preview.style.height=Math.round(fh*scale)+"px";
+ preview.style.padding="0";preview.style.position="relative";preview.style.display="block";
+ var box=document.createElement("div");
+ box.style.position="absolute";
+ box.style.left=Math.round((fw-uw)/2*scale)+"px";
+ box.style.top=Math.round((fh-uh)/2*scale)+"px";
+ box.style.width=Math.round(uw*scale)+"px";box.style.height=Math.round(uh*scale)+"px";
+ box.style.border="1px dashed #aeb4bb";box.style.overflow="hidden";box.style.background="#fff";
+ box.style.display="grid";
+ box.style.gridTemplateColumns="repeat("+b.nx+","+Math.round(b.pieceW*scale)+"px)";
+ box.style.gridAutoRows=Math.round(b.pieceH*scale)+"px";
+ box.style.columnGap=Math.round(b.gap*scale)+"px";box.style.rowGap=Math.round(b.gap*scale)+"px";
+ box.style.alignContent="start";
+ preview.appendChild(box);
+ for(var i=0;i<b.yield;i++){
+  var piece=document.createElement("div");piece.className="piece";
+  piece.style.width=Math.round(b.pieceW*scale)+"px";piece.style.height=Math.round(b.pieceH*scale)+"px";
+  piece.textContent=i+1;box.appendChild(piece);
+ }
+ $("previewInfo").textContent="กระดาษ "+p.fullW.toFixed(2)+" × "+p.fullH.toFixed(2)+" cm • พื้นที่ใช้งาน "+p.usableW.toFixed(2)+" × "+p.usableH.toFixed(2)+" cm • "+b.yield+" ดวง/แผ่น • ช่องไฟ "+b.gap+" mm • "+(b.rotate?"หมุน 90°":"แนวปกติ");
+}
+function calculate(){
+ var p=presets[selectedSheet];if(!p){resetOutput();return}
+ var W=parseFloat($("w").value),H=parseFloat($("h").value),Q=parseInt($("qty").value,10),C=parseFloat($("cost").value),P=parseFloat($("profitPercent").value);
+ if(!(W>0&&H>0&&Q>0&&C>=0&&P>=0)){resetOutput();return}
+ var b=findBest(p,W,H);
+ if(!b){
+  $("sheets").textContent="0";$("yield").textContent="ขนาดใหญ่เกินไป";$("gap").textContent="—";
+  ["total","profit","sale"].forEach(function(id){$(id).textContent="—"});
+  $("sheetPreview").innerHTML="";$("previewInfo").textContent="ชิ้นงานใหญ่เกินพื้นที่ใช้งาน";return;
+ }
+ var count=Math.ceil(Q/b.yield),tc=count*C,pa=tc*P/100;
+ $("sheets").textContent=count.toLocaleString("th-TH");$("yield").textContent=b.yield.toLocaleString("th-TH");$("gap").textContent=b.gap;
+ $("total").textContent=tc.toLocaleString("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2});
+ $("profit").textContent=pa.toLocaleString("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2});
+ $("sale").textContent=(tc+pa).toLocaleString("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2});
+ drawPreview(p,b);
+}
+window.Iprint={selectPaper:selectPaper,openPreset:openPreset,closePreset:closePreset,deletePaper:deletePaper,savePreset:savePreset};
+$("pMode").addEventListener("change",function(){$("customArea").style.display=this.value==="custom"?"block":"none"});
+["w","h","qty","cost","profitPercent"].forEach(function(id){
+ $(id).addEventListener("input",function(){saveState();calculate()});
+ $(id).addEventListener("change",function(){saveState();calculate()});
+});
+loadState();renderSelect();calculate();window.addEventListener("resize",function(){setTimeout(calculate,50)});
+window.addEventListener("orientationchange",function(){setTimeout(calculate,100)});
+})();
+</script>
+</body>
+</html>
