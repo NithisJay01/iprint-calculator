@@ -75,8 +75,7 @@ button{display:block;width:100%;min-height:48px;border-radius:11px;cursor:pointe
 <button type="button" id="addPreset" onclick="Iprint.openPreset()">＋ เพิ่มขนาดกระดาษ</button>
 <button type="button" id="deletePreset" onclick="Iprint.deletePaper()">ลบกระดาษ</button>
 </div>
-<div class="hint">สติกเกอร์ 13×19 ใช้พื้นที่ 30×40 cm • กระดาษทั่วไปเว้นขอบ 1.5 cm ทุกด้าน • ขนาดที่เพิ่มเองลบได้</div>
-<div class="hint" id="syncStatus">Preset ในเครื่อง • กำลังเชื่อมต่อ Notion…</div>
+<div class="hint">สติกเกอร์ 13×19 ใช้พื้นที่ 30×40 cm • กระดาษทั่วไปเว้นขอบ 1.5 cm ทุกด้าน • ขนาดที่เพิ่มเองลบได้</div><div class="hint" id="syncStatus">Preset ในเครื่อง • กำลังเริ่มต้นระบบ…</div>
 </div>
 
 <div class="field">
@@ -159,27 +158,28 @@ button{display:block;width:100%;min-height:48px;border-radius:11px;cursor:pointe
 </div>
 </div>
 
-<script>
-(function(){
+<script>(function(){
 "use strict";
-var presets={
-  sticker13x19:{name:'13 × 19" • สติกเกอร์',fullW:33.02,fullH:48.26,usableW:30,usableH:40},
-  paper13x19:{name:'13 × 19" • กระดาษ',fullW:33.02,fullH:48.26,usableW:30.02,usableH:45.26},
-  full13x19_3mm:{name:'เต็มแผ่นเหลือแค่ เว้นขอบ 3mm',fullW:33.02,fullH:48.26,usableW:32.42,usableH:47.66}
-};
+
 var API_URL="https://iprint-preset-api.iprint-garphic1.workers.dev/presets";
-var KEY="iprint_mobile_v8", LEGACY_KEY="iprint_mobile_v7", selectedSheet="sticker13x19";
+var KEY="iprint_mobile_v9";
+var selectedSheet="sticker13x19";
+
+var presets={
+ sticker13x19:{name:'13 × 19" • สติกเกอร์',fullW:33.02,fullH:48.26,usableW:30,usableH:40,type:'เต็มพื้นที่'},
+ paper13x19:{name:'13 × 19" • กระดาษ',fullW:33.02,fullH:48.26,usableW:30.02,usableH:45.26,type:'กระดาษ'},
+ full13x19_3mm:{name:'เต็มแผ่นเหลือแค่ เว้นขอบ 3mm',fullW:33.02,fullH:48.26,usableW:32.42,usableH:47.66,type:'กระดาษ'}
+};
 
 function $(id){return document.getElementById(id)}
 
 function loadState(){
  try{
-  var raw=localStorage.getItem(KEY)||localStorage.getItem(LEGACY_KEY)||"{}";
-  var s=JSON.parse(raw);
+  var s=JSON.parse(localStorage.getItem(KEY)||"{}");
   if(s.customPresets)Object.assign(presets,s.customPresets);
   if(s.values){
    ["w","h","qty","cost","profitPercent"].forEach(function(id){
-    if(s.values[id]!==undefined)$(id).value=s.values[id];
+    if(s.values[id]!==undefined && $(id))$(id).value=s.values[id];
    });
   }
   if(s.selectedSheet&&presets[s.selectedSheet])selectedSheet=s.selectedSheet;
@@ -195,13 +195,21 @@ function saveState(){
   localStorage.setItem(KEY,JSON.stringify({
    customPresets:custom,
    selectedSheet:selectedSheet,
-   values:{w:$("w").value,h:$("h").value,qty:$("qty").value,cost:$("cost").value,profitPercent:$("profitPercent").value}
+   values:{
+    w:$("w")?$("w").value:"",
+    h:$("h")?$("h").value:"",
+    qty:$("qty")?$ ("qty").value:"",
+    cost:$("cost")?$("cost").value:"",
+    profitPercent:$("profitPercent")?$("profitPercent").value:""
+   }
   }));
  }catch(e){}
 }
 
 function renderSelect(){
- var sel=$("sheet"),wanted=selectedSheet;
+ var sel=$("sheet");
+ if(!sel)return;
+ var wanted=selectedSheet;
  sel.innerHTML="";
  Object.keys(presets).forEach(function(id){
   var p=presets[id],o=document.createElement("option");
@@ -215,135 +223,311 @@ function renderSelect(){
 }
 
 function selectPaper(id){
- if(presets[id]){
-  selectedSheet=id;
-  $("sheet").value=id;
-  saveState();
-  calculate();
+ if(!presets[id])return;
+ selectedSheet=id;
+ var sel=$("sheet");if(sel)sel.value=id;
+ saveState();
+ calculate();
+}
+
+function openPreset(){
+ var modal=$("presetModal");
+ if(!modal)return;
+ $("presetError").textContent="";
+ modal.style.display="block";
+ modal.setAttribute("aria-hidden","false");
+ document.body.style.overflow="hidden";
+ var first=$("pName");
+ if(first)setTimeout(function(){first.focus()},30);
+}
+
+function closePreset(){
+ var modal=$("presetModal");
+ if(modal){
+  modal.style.display="none";
+  modal.setAttribute("aria-hidden","true");
+ }
+ document.body.style.overflow="";
+}
+
+function deletePaper(){
+ if(selectedSheet.indexOf("custom_")!==0){
+  alert("Preset มาตรฐานจากระบบกลางลบจากหน้านี้ไม่ได้");
+  return;
+ }
+ var p=presets[selectedSheet];
+ if(!p)return;
+ if(!confirm('ต้องการลบ "'+p.name+'" ใช่หรือไม่?'))return;
+ delete presets[selectedSheet];
+ selectedSheet=Object.keys(presets)[0];
+ renderSelect();
+ saveState();
+ calculate();
+}
+
+function savePreset(){
+ var name=$("pName").value.trim();
+ var fw=parseFloat($("pW").value);
+ var fh=parseFloat($("pH").value);
+ var mode=$("pMode").value;
+ var uw,uh;
+
+ if(!name||!(fw>0)||!(fh>0)){
+  $("presetError").textContent="กรุณากรอกชื่อและขนาดแผ่น";
+  return;
+ }
+
+ if(mode==="full"){
+  uw=fw;uh=fh;
+ }else if(mode==="margin"){
+  // 1.5 cm on every side = subtract 3 cm total.
+  uw=fw-3;uh=fh-3;
+ }else{
+  uw=parseFloat($("pUW").value);
+  uh=parseFloat($("pUH").value);
+  if(!(uw>0&&uh>0&&uw<=fw&&uh<=fh)){
+   $("presetError").textContent="พื้นที่ใช้งานไม่ถูกต้อง";
+   return;
+  }
+ }
+
+ if(uw<=0||uh<=0){
+  $("presetError").textContent="ขนาดแผ่นเล็กเกินไปสำหรับขอบ 1.5 cm";
+  return;
+ }
+
+ var id="custom_"+Date.now();
+ presets[id]={name:name,fullW:fw,fullH:fh,usableW:uw,usableH:uh,type:"กำหนดเอง"};
+ selectedSheet=id;
+ renderSelect();
+ saveState();
+ closePreset();
+ calculate();
+}
+
+function resetOutput(){
+ ["sheets","yield","gap","total","profit","sale"].forEach(function(id){
+  var el=$(id);if(el)el.textContent="—";
+ });
+ var preview=$("sheetPreview");if(preview)preview.innerHTML="";
+ var info=$("previewInfo");if(info)info.textContent="—";
+}
+
+function findBest(p,W,H){
+ var uw=p.usableW*10,uh=p.usableH*10,best=null;
+ for(var gap=2;gap<=10;gap++){
+  [false,true].forEach(function(rot){
+   var pw=(rot?H:W)*10+6;
+   var ph=(rot?W:H)*10+6;
+   var nx=Math.floor((uw+gap)/(pw+gap));
+   var ny=Math.floor((uh+gap)/(ph+gap));
+   var n=nx*ny;
+   if(n>0&&(!best||n>best.yield||(n===best.yield&&gap>best.gap))){
+    best={yield:n,gap:gap,rotate:rot,pieceW:pw,pieceH:ph,nx:nx,ny:ny};
+   }
+  });
+ }
+ return best;
+}
+
+function drawPreview(p,b){
+ var preview=$("sheetPreview");
+ if(!preview)return;
+ preview.innerHTML="";
+
+ var fw=p.fullW*10,fh=p.fullH*10,uw=p.usableW*10,uh=p.usableH*10;
+ var viewport=(document.documentElement&&document.documentElement.clientWidth)||window.innerWidth||320;
+ var maxWidth=Math.max(220,Math.min(330,viewport-58));
+ var scale=Math.min(1,maxWidth/fw);
+
+ preview.style.width=Math.round(fw*scale)+"px";
+ preview.style.height=Math.round(fh*scale)+"px";
+ preview.style.padding="0";
+ preview.style.position="relative";
+ preview.style.display="block";
+ preview.style.boxSizing="border-box";
+
+ var box=document.createElement("div");
+ box.style.position="absolute";
+ box.style.left=Math.round((fw-uw)/2*scale)+"px";
+ box.style.top=Math.round((fh-uh)/2*scale)+"px";
+ box.style.width=Math.round(uw*scale)+"px";
+ box.style.height=Math.round(uh*scale)+"px";
+ box.style.border="1px dashed #aeb4bb";
+ box.style.overflow="hidden";
+ box.style.background="#fff";
+ box.style.display="grid";
+ box.style.gridTemplateColumns="repeat("+b.nx+","+Math.max(1,Math.round(b.pieceW*scale))+"px)";
+ box.style.gridAutoRows=Math.max(1,Math.round(b.pieceH*scale))+"px";
+ box.style.columnGap=Math.round(b.gap*scale)+"px";
+ box.style.rowGap=Math.round(b.gap*scale)+"px";
+ box.style.alignContent="start";
+
+ preview.appendChild(box);
+
+ for(var i=0;i<b.yield;i++){
+  var piece=document.createElement("div");
+  piece.className="piece";
+  piece.style.width=Math.max(1,Math.round(b.pieceW*scale))+"px";
+  piece.style.height=Math.max(1,Math.round(b.pieceH*scale))+"px";
+  piece.textContent=i+1;
+  box.appendChild(piece);
+ }
+
+ var info=$("previewInfo");
+ if(info){
+  info.textContent="กระดาษ "+p.fullW.toFixed(2)+" × "+p.fullH.toFixed(2)+" cm • พื้นที่ใช้งาน "+p.usableW.toFixed(2)+" × "+p.usableH.toFixed(2)+" cm • "+b.yield+" ดวง/แผ่น • ช่องไฟ "+b.gap+" mm • "+(b.rotate?"หมุน 90°":"แนวปกติ");
  }
 }
 
-async function loadRemotePresets(){
+function calculate(){
  try{
-  var r=await fetch(API_URL,{method:"GET",cache:"no-store"});
-  if(!r.ok)throw new Error("HTTP "+r.status);
-  var data=await r.json();
-  if(!data||!Array.isArray(data.presets))throw new Error("Invalid data");
+  var p=presets[selectedSheet];
+  if(!p){resetOutput();return}
+
+  var W=parseFloat($("w").value);
+  var H=parseFloat($("h").value);
+  var Q=parseInt($("qty").value,10);
+  var C=parseFloat($("cost").value);
+  var P=parseFloat($("profitPercent").value);
+
+  if(!(W>0&&H>0&&Q>0&&C>=0&&P>=0)){
+   resetOutput();
+   return;
+  }
+
+  var b=findBest(p,W,H);
+  if(!b){
+   $("sheets").textContent="0";
+   $("yield").textContent="ขนาดใหญ่เกินไป";
+   $("gap").textContent="—";
+   ["total","profit","sale"].forEach(function(id){$(id).textContent="—"});
+   $("sheetPreview").innerHTML="";
+   $("previewInfo").textContent="ชิ้นงานใหญ่เกินพื้นที่ใช้งาน";
+   return;
+  }
+
+  var count=Math.ceil(Q/b.yield);
+  var tc=count*C;
+  var pa=tc*P/100;
+
+  $("sheets").textContent=count.toLocaleString("th-TH");
+  $("yield").textContent=b.yield.toLocaleString("th-TH");
+  $("gap").textContent=b.gap;
+  $("total").textContent=tc.toLocaleString("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2});
+  $("profit").textContent=pa.toLocaleString("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2});
+  $("sale").textContent=(tc+pa).toLocaleString("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2});
+
+  drawPreview(p,b);
+ }catch(e){
+  console.error("Iprint calculate error:",e);
+ }
+}
+
+async function syncNotion(){
+ try{
+  var response=await fetch(API_URL,{method:"GET",cache:"no-store"});
+  if(!response.ok)throw new Error("HTTP "+response.status);
+  var data=await response.json();
+  if(!data||!Array.isArray(data.presets))throw new Error("Invalid API response");
 
   data.presets.forEach(function(p){
    if(!p||!p.name||!(p.fullW>0)||!(p.fullH>0)||!(p.usableW>0)||!(p.usableH>0))return;
-   var id=Object.keys(presets).find(function(k){return presets[k].name===p.name});
-   if(!id)id="notion_"+String(p.id||Date.now()).replace(/[^a-zA-Z0-9_-]/g,"");
+
+   var existingId=Object.keys(presets).find(function(id){
+    return presets[id].name===p.name;
+   });
+
+   var id=existingId||("notion_"+String(p.id||Date.now()).replace(/[^a-zA-Z0-9_-]/g,""));
    presets[id]={
-    name:p.name,fullW:Number(p.fullW),fullH:Number(p.fullH),
-    usableW:Number(p.usableW),usableH:Number(p.usableH),type:p.type||""
+    name:String(p.name),
+    fullW:Number(p.fullW),
+    fullH:Number(p.fullH),
+    usableW:Number(p.usableW),
+    usableH:Number(p.usableH),
+    type:p.type||""
    };
   });
 
   renderSelect();
   calculate();
-  return true;
+
+  var status=$("syncStatus");
+  if(status)status.textContent="Preset จาก Notion • ซิงค์แล้ว";
  }catch(e){
+  // Never block the calculator if Notion is unavailable.
   renderSelect();
   calculate();
-  return false;
+  var status2=$("syncStatus");
+  if(status2)status2.textContent="Preset ในเครื่อง • ใช้งานแบบสำรอง";
  }
 }
-function openPreset(){$("presetError").textContent="";$("presetModal").style.display="block";document.body.style.overflow="hidden"}
-function closePreset(){$("presetModal").style.display="none";document.body.style.overflow=""}
-function deletePaper(){
- if(selectedSheet.indexOf("custom_")!==0){
-  alert("Preset มาตรฐานจาก Notion/ระบบกลางลบจากหน้านี้ไม่ได้");
-  return;
- }
- if(!confirm('ต้องการลบ "'+presets[selectedSheet].name+'" ใช่หรือไม่?'))return;
- delete presets[selectedSheet];
- selectedSheet=Object.keys(presets)[0];
- renderSelect();saveState();calculate();
+
+function bind(){
+ loadState();
+ renderSelect();
+
+ var sheet=$("sheet");
+ if(sheet)sheet.addEventListener("change",function(){
+  selectPaper(this.value);
+ });
+
+ var mode=$("pMode");
+ if(mode)mode.addEventListener("change",function(){
+  var area=$("customArea");
+  if(area)area.style.display=this.value==="custom"?"block":"none";
+ });
+
+ ["w","h","qty","cost","profitPercent"].forEach(function(id){
+  var el=$(id);
+  if(el){
+   el.addEventListener("input",function(){saveState();calculate()});
+   el.addEventListener("change",function(){saveState();calculate()});
+  }
+ });
+
+ // Existing buttons use inline handlers; these listeners are an extra safety net.
+ var add=$("addPreset");
+ if(add)add.addEventListener("click",function(e){e.preventDefault();openPreset()});
+
+ var del=$("deletePreset");
+ if(del)del.addEventListener("click",function(e){e.preventDefault();deletePaper()});
+
+ var save=$("savePreset");
+ if(save)save.addEventListener("click",function(e){e.preventDefault();savePreset()});
+
+ var cancel=$("cancelPreset");
+ if(cancel)cancel.addEventListener("click",function(e){e.preventDefault();closePreset()});
+
+ var modal=$("presetModal");
+ if(modal)modal.addEventListener("click",function(e){
+  if(e.target===modal)closePreset();
+ });
+
+ calculate();
+
+ window.addEventListener("resize",function(){setTimeout(calculate,50)});
+ window.addEventListener("orientationchange",function(){setTimeout(calculate,100)});
+
+ // Sync after the calculator is already functional.
+ setTimeout(syncNotion,0);
 }
-function savePreset(){
- var name=$("pName").value.trim(),fw=parseFloat($("pW").value),fh=parseFloat($("pH").value),mode=$("pMode").value,uw,uh;
- if(!name||!(fw>0)||!(fh>0)){$("presetError").textContent="กรุณากรอกชื่อและขนาดแผ่น";return}
- if(mode==="full"){uw=fw;uh=fh}else if(mode==="margin"){uw=fw-3;uh=fh-3}else{
-  uw=parseFloat($("pUW").value);uh=parseFloat($("pUH").value);
-  if(!(uw>0&&uh>0&&uw<=fw&&uh<=fh)){$("presetError").textContent="พื้นที่ใช้งานไม่ถูกต้อง";return}
- }
- if(uw<=0||uh<=0){$("presetError").textContent="ขนาดแผ่นเล็กเกินไปสำหรับขอบ 1.5 cm";return}
- var id="custom_"+Date.now();
- presets[id]={name:name,fullW:fw,fullH:fh,usableW:uw,usableH:uh};selectedSheet=id;
- renderSelect();saveState();closePreset();calculate();
+
+window.Iprint={
+ selectPaper:selectPaper,
+ openPreset:openPreset,
+ closePreset:closePreset,
+ deletePaper:deletePaper,
+ savePreset:savePreset,
+ calculate:calculate
+};
+
+if(document.readyState==="loading"){
+ document.addEventListener("DOMContentLoaded",bind);
+}else{
+ bind();
 }
-function resetOutput(){
- ["sheets","yield","gap","total","profit","sale"].forEach(function(id){$(id).textContent="—"});
- $("sheetPreview").innerHTML="";$("previewInfo").textContent="—";
-}
-function findBest(p,W,H){
- var uw=p.usableW*10,uh=p.usableH*10,best=null;
- for(var gap=2;gap<=10;gap++){
-  [false,true].forEach(function(rot){
-   var pw=(rot?H:W)*10+6,ph=(rot?W:H)*10+6;
-   var nx=Math.floor((uw+gap)/(pw+gap)),ny=Math.floor((uh+gap)/(ph+gap)),n=nx*ny;
-   if(n>0&&(!best||n>best.yield||(n===best.yield&&gap>best.gap)))
-    best={yield:n,gap:gap,rotate:rot,pieceW:pw,pieceH:ph,nx:nx,ny:ny};
-  });
- }
- return best;
-}
-function drawPreview(p,b){
- var preview=$("sheetPreview");preview.innerHTML="";
- var fw=p.fullW*10,fh=p.fullH*10,uw=p.usableW*10,uh=p.usableH*10;
- var viewport=(document.documentElement&&document.documentElement.clientWidth)||window.innerWidth||320;
- var scale=Math.min(1,Math.max(220,Math.min(330,viewport-58))/fw);
- preview.style.width=Math.round(fw*scale)+"px";preview.style.height=Math.round(fh*scale)+"px";
- preview.style.padding="0";preview.style.position="relative";preview.style.display="block";
- var box=document.createElement("div");
- box.style.position="absolute";
- box.style.left=Math.round((fw-uw)/2*scale)+"px";
- box.style.top=Math.round((fh-uh)/2*scale)+"px";
- box.style.width=Math.round(uw*scale)+"px";box.style.height=Math.round(uh*scale)+"px";
- box.style.border="1px dashed #aeb4bb";box.style.overflow="hidden";box.style.background="#fff";
- box.style.display="grid";
- box.style.gridTemplateColumns="repeat("+b.nx+","+Math.round(b.pieceW*scale)+"px)";
- box.style.gridAutoRows=Math.round(b.pieceH*scale)+"px";
- box.style.columnGap=Math.round(b.gap*scale)+"px";box.style.rowGap=Math.round(b.gap*scale)+"px";
- box.style.alignContent="start";
- preview.appendChild(box);
- for(var i=0;i<b.yield;i++){
-  var piece=document.createElement("div");piece.className="piece";
-  piece.style.width=Math.round(b.pieceW*scale)+"px";piece.style.height=Math.round(b.pieceH*scale)+"px";
-  piece.textContent=i+1;box.appendChild(piece);
- }
- $("previewInfo").textContent="กระดาษ "+p.fullW.toFixed(2)+" × "+p.fullH.toFixed(2)+" cm • พื้นที่ใช้งาน "+p.usableW.toFixed(2)+" × "+p.usableH.toFixed(2)+" cm • "+b.yield+" ดวง/แผ่น • ช่องไฟ "+b.gap+" mm • "+(b.rotate?"หมุน 90°":"แนวปกติ");
-}
-function calculate(){
- var p=presets[selectedSheet];if(!p){resetOutput();return}
- var W=parseFloat($("w").value),H=parseFloat($("h").value),Q=parseInt($("qty").value,10),C=parseFloat($("cost").value),P=parseFloat($("profitPercent").value);
- if(!(W>0&&H>0&&Q>0&&C>=0&&P>=0)){resetOutput();return}
- var b=findBest(p,W,H);
- if(!b){
-  $("sheets").textContent="0";$("yield").textContent="ขนาดใหญ่เกินไป";$("gap").textContent="—";
-  ["total","profit","sale"].forEach(function(id){$(id).textContent="—"});
-  $("sheetPreview").innerHTML="";$("previewInfo").textContent="ชิ้นงานใหญ่เกินพื้นที่ใช้งาน";return;
- }
- var count=Math.ceil(Q/b.yield),tc=count*C,pa=tc*P/100;
- $("sheets").textContent=count.toLocaleString("th-TH");$("yield").textContent=b.yield.toLocaleString("th-TH");$("gap").textContent=b.gap;
- $("total").textContent=tc.toLocaleString("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2});
- $("profit").textContent=pa.toLocaleString("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2});
- $("sale").textContent=(tc+pa).toLocaleString("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2});
- drawPreview(p,b);
-}
-window.Iprint={selectPaper:selectPaper,openPreset:openPreset,closePreset:closePreset,deletePaper:deletePaper,savePreset:savePreset};
-$("pMode").addEventListener("change",function(){$("customArea").style.display=this.value==="custom"?"block":"none"});
-["w","h","qty","cost","profitPercent"].forEach(function(id){
- $(id).addEventListener("input",function(){saveState();calculate()});
- $(id).addEventListener("change",function(){saveState();calculate()});
-});
-loadState();renderSelect();calculate();
-loadRemotePresets().then(function(ok){
- $("syncStatus").textContent=ok?"Preset จาก Notion • ซิงค์แล้ว":"Preset ในเครื่อง • ใช้งานแบบสำรอง";
-});
-window.addEventListener("resize",function(){setTimeout(calculate,50)});
-window.addEventListener("orientationchange",function(){setTimeout(calculate,100)});
+
 })();
 </script>
 </body>
