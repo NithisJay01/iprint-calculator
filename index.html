@@ -72,8 +72,8 @@ button{display:block;width:100%;min-height:48px;border-radius:11px;cursor:pointe
 
 </select>
 <div class="paper-actions">
-<button type="button" id="addPreset" onclick="Iprint.openPreset()">＋ เพิ่มขนาดกระดาษ</button>
-<button type="button" id="deletePreset" onclick="Iprint.deletePaper()">ลบกระดาษ</button>
+<button type="button" id="addPreset" onclick="Iprint.openPreset();return false;">＋ เพิ่มขนาดกระดาษ</button>
+<button type="button" id="deletePreset">ลบกระดาษ</button>
 </div>
 <div class="hint">สติกเกอร์ 13×19 ใช้พื้นที่ 30×40 cm • กระดาษทั่วไปเว้นขอบ 1.5 cm ทุกด้าน • ขนาดที่เพิ่มเองลบได้</div><div class="hint" id="syncStatus">Preset ในเครื่อง • กำลังเริ่มต้นระบบ…</div>
 </div>
@@ -122,7 +122,7 @@ button{display:block;width:100%;min-height:48px;border-radius:11px;cursor:pointe
 </div>
 </main>
 
-<div id="presetModal" class="modal-backdrop" aria-hidden="true" onclick="if(event.target===this)Iprint.closePreset()">
+<div id="presetModal" class="modal-backdrop" aria-hidden="true">
 <div class="modal-card" role="dialog" aria-modal="true">
 <h2 class="modal-title">เพิ่มขนาดกระดาษ</h2>
 <label for="pName">ชื่อ</label>
@@ -152,8 +152,8 @@ button{display:block;width:100%;min-height:48px;border-radius:11px;cursor:pointe
 
 <div id="presetError"></div>
 <div class="modal-buttons">
-<button type="button" id="cancelPreset" onclick="Iprint.closePreset()">ยกเลิก</button>
-<button type="button" id="savePreset" onclick="Iprint.savePreset()">เพิ่ม</button>
+<button type="button" id="cancelPreset">ยกเลิก</button>
+<button type="button" id="savePreset">เพิ่ม</button>
 </div>
 </div>
 </div>
@@ -165,44 +165,21 @@ var API_URL="https://iprint-preset-api.iprint-garphic1.workers.dev/presets";
 var KEY="iprint_mobile_v9";
 var selectedSheet="sticker13x19";
 
-var presets={
- sticker13x19:{name:'13 × 19" • สติกเกอร์',fullW:33.02,fullH:48.26,usableW:30,usableH:40,type:'เต็มพื้นที่'},
- paper13x19:{name:'13 × 19" • กระดาษ',fullW:33.02,fullH:48.26,usableW:30.02,usableH:45.26,type:'กระดาษ'},
- full13x19_3mm:{name:'เต็มแผ่นเหลือแค่ เว้นขอบ 3mm',fullW:33.02,fullH:48.26,usableW:32.42,usableH:47.66,type:'กระดาษ'}
-};
+var presets={};
 
 function $(id){return document.getElementById(id)}
 
 function loadState(){
  try{
   var s=JSON.parse(localStorage.getItem(KEY)||"{}");
-  if(s.customPresets)Object.assign(presets,s.customPresets);
-  if(s.values){
-   ["w","h","qty","cost","profitPercent"].forEach(function(id){
-    if(s.values[id]!==undefined && $(id))$(id).value=s.values[id];
-   });
-  }
-  if(s.selectedSheet&&presets[s.selectedSheet])selectedSheet=s.selectedSheet;
+  // Only remember the last selected database preset; never store preset definitions.
+  if(s.selectedSheet)selectedSheet=s.selectedSheet;
  }catch(e){}
 }
 
 function saveState(){
  try{
-  var custom={};
-  Object.keys(presets).forEach(function(id){
-   if(id.indexOf("custom_")===0)custom[id]=presets[id];
-  });
-  localStorage.setItem(KEY,JSON.stringify({
-   customPresets:custom,
-   selectedSheet:selectedSheet,
-   values:{
-    w:$("w")?$("w").value:"",
-    h:$("h")?$("h").value:"",
-    qty:$("qty")?$ ("qty").value:"",
-    cost:$("cost")?$("cost").value:"",
-    profitPercent:$("profitPercent")?$("profitPercent").value:""
-   }
-  }));
+  localStorage.setItem(KEY,JSON.stringify({selectedSheet:selectedSheet}));
  }catch(e){}
 }
 
@@ -211,13 +188,27 @@ function renderSelect(){
  if(!sel)return;
  var wanted=selectedSheet;
  sel.innerHTML="";
- Object.keys(presets).forEach(function(id){
+
+ var ids=Object.keys(presets);
+ if(!ids.length){
+  var empty=document.createElement("option");
+  empty.value="";
+  empty.textContent="กำลังโหลด Preset จาก Notion…";
+  empty.disabled=true;
+  empty.selected=true;
+  sel.appendChild(empty);
+  selectedSheet="";
+  return;
+ }
+
+ ids.forEach(function(id){
   var p=presets[id],o=document.createElement("option");
   o.value=id;
   o.textContent=p.name+" ("+p.fullW+" × "+p.fullH+" cm)";
   sel.appendChild(o);
  });
- if(!presets[wanted])wanted=Object.keys(presets)[0];
+
+ if(!presets[wanted])wanted=ids[0];
  selectedSheet=wanted;
  sel.value=wanted;
 }
@@ -232,13 +223,14 @@ function selectPaper(id){
 
 function openPreset(){
  var modal=$("presetModal");
- if(!modal)return;
- $("presetError").textContent="";
+ if(!modal){ alert("ไม่พบหน้าต่างเพิ่มขนาดกระดาษ"); return false; }
+ var err=$("presetError"); if(err)err.textContent="";
+ modal.hidden=false;
  modal.style.display="block";
  modal.setAttribute("aria-hidden","false");
  document.body.style.overflow="hidden";
- var first=$("pName");
- if(first)setTimeout(function(){first.focus()},30);
+ var first=$("pName"); if(first)setTimeout(function(){first.focus();},50);
+ return false;
 }
 
 function closePreset(){
@@ -251,58 +243,7 @@ function closePreset(){
 }
 
 function deletePaper(){
- if(selectedSheet.indexOf("custom_")!==0){
-  alert("Preset มาตรฐานจากระบบกลางลบจากหน้านี้ไม่ได้");
-  return;
- }
- var p=presets[selectedSheet];
- if(!p)return;
- if(!confirm('ต้องการลบ "'+p.name+'" ใช่หรือไม่?'))return;
- delete presets[selectedSheet];
- selectedSheet=Object.keys(presets)[0];
- renderSelect();
- saveState();
- calculate();
-}
-
-function savePreset(){
- var name=$("pName").value.trim();
- var fw=parseFloat($("pW").value);
- var fh=parseFloat($("pH").value);
- var mode=$("pMode").value;
- var uw,uh;
-
- if(!name||!(fw>0)||!(fh>0)){
-  $("presetError").textContent="กรุณากรอกชื่อและขนาดแผ่น";
-  return;
- }
-
- if(mode==="full"){
-  uw=fw;uh=fh;
- }else if(mode==="margin"){
-  // 1.5 cm on every side = subtract 3 cm total.
-  uw=fw-3;uh=fh-3;
- }else{
-  uw=parseFloat($("pUW").value);
-  uh=parseFloat($("pUH").value);
-  if(!(uw>0&&uh>0&&uw<=fw&&uh<=fh)){
-   $("presetError").textContent="พื้นที่ใช้งานไม่ถูกต้อง";
-   return;
-  }
- }
-
- if(uw<=0||uh<=0){
-  $("presetError").textContent="ขนาดแผ่นเล็กเกินไปสำหรับขอบ 1.5 cm";
-  return;
- }
-
- var id="custom_"+Date.now();
- presets[id]={name:name,fullW:fw,fullH:fh,usableW:uw,usableH:uh,type:"กำหนดเอง"};
- selectedSheet=id;
- renderSelect();
- saveState();
- closePreset();
- calculate();
+ alert("Preset ถูกควบคุมโดย Notion Database\n\nให้ลบหรือปิด Active จาก Notion แล้วรีเฟรช Calculator");
 }
 
 function resetOutput(){
@@ -431,15 +372,14 @@ async function syncNotion(){
   var data=await response.json();
   if(!data||!Array.isArray(data.presets))throw new Error("Invalid API response");
 
+  // Database is the ONLY source of preset definitions.
+  var next={};
   data.presets.forEach(function(p){
-   if(!p||!p.name||!(p.fullW>0)||!(p.fullH>0)||!(p.usableW>0)||!(p.usableH>0))return;
+   if(!p || p.active===false || p.active==="false" || p.active===0) return;
+   if(!p.name || !(p.fullW>0) || !(p.fullH>0) || !(p.usableW>0) || !(p.usableH>0)) return;
 
-   var existingId=Object.keys(presets).find(function(id){
-    return presets[id].name===p.name;
-   });
-
-   var id=existingId||("notion_"+String(p.id||Date.now()).replace(/[^a-zA-Z0-9_-]/g,""));
-   presets[id]={
+   var id=String(p.id || ("notion_"+Date.now()+"_"+Math.random().toString(36).slice(2)));
+   next[id]={
     name:String(p.name),
     fullW:Number(p.fullW),
     fullH:Number(p.fullH),
@@ -449,23 +389,65 @@ async function syncNotion(){
    };
   });
 
+  presets=next;
+
+  if(!Object.keys(presets).length){
+   selectedSheet="";
+  }else if(!presets[selectedSheet]){
+   selectedSheet=Object.keys(presets)[0];
+  }
+
   renderSelect();
   calculate();
 
   var status=$("syncStatus");
-  if(status)status.textContent="Preset จาก Notion • ซิงค์แล้ว";
+  if(status)status.textContent=Object.keys(presets).length
+    ? "Preset จาก Notion • "+Object.keys(presets).length+" รายการ"
+    : "Notion ไม่มี Preset ที่ Active อยู่";
  }catch(e){
-  // Never block the calculator if Notion is unavailable.
+  // Do NOT fall back to embedded presets: there are none.
+  presets={};
+  selectedSheet="";
   renderSelect();
   calculate();
+
   var status2=$("syncStatus");
-  if(status2)status2.textContent="Preset ในเครื่อง • ใช้งานแบบสำรอง";
+  if(status2)status2.textContent="เชื่อมต่อ Notion ไม่สำเร็จ • ไม่มี Preset";
  }
 }
 
 function bind(){
  loadState();
+ presets={};
  renderSelect();
+
+ document.addEventListener("click",function(e){
+  var t=e.target;
+  if(!t || !t.closest)return;
+
+  var add=t.closest("#addPreset");
+  if(add){ e.preventDefault(); e.stopPropagation(); openPreset(); return; }
+
+  var del=t.closest("#deletePreset");
+  if(del){ e.preventDefault(); e.stopPropagation(); deletePaper(); return; }
+
+  var save=t.closest("#savePreset");
+  if(save){ e.preventDefault(); e.stopPropagation(); savePreset(); return; }
+
+  var cancel=t.closest("#cancelPreset");
+  if(cancel){ e.preventDefault(); e.stopPropagation(); closePreset(); return; }
+
+  var modal=t.closest("#presetModal");
+  if(modal && t===modal){ closePreset(); return; }
+});
+
+ var addTouch=$("addPreset");
+ if(addTouch){
+  addTouch.addEventListener("touchend",function(e){
+   e.preventDefault();
+   openPreset();
+  },{passive:false});
+ }
 
  var sheet=$("sheet");
  if(sheet)sheet.addEventListener("change",function(){
