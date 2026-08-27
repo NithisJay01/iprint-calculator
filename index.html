@@ -600,7 +600,7 @@ function renderMaterials(){
     var slider=document.createElement("span");slider.className="service-slider";label.appendChild(input);label.appendChild(slider);
     var txt=document.createElement("div"),name=document.createElement("div"),meta=document.createElement("div");
     name.className="service-name";name.textContent=m.name;
-    meta.className="service-meta";meta.textContent=(m.category||"บริการ")+(m.material?" • "+m.material:"");
+    meta.className="service-meta";meta.textContent=(m.category||"วัสดุ")+(m.material?" • "+m.material:"");
     txt.appendChild(name);txt.appendChild(meta);left.appendChild(label);left.appendChild(txt);
     var price=document.createElement("div");
     price.className="service-price";
