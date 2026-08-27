@@ -69,7 +69,7 @@ button{display:block;width:100%;min-height:48px;border-radius:11px;cursor:pointe
 <select id="sheet" onchange="Iprint.selectPaper(this.value)" aria-label="เลือกขนาดกระดาษ">
 <option value="sticker13x19">13 × 19" • สติกเกอร์ (33.02 × 48.26 cm)</option>
 <option value="paper13x19">13 × 19" • กระดาษ (33.02 × 48.26 cm)</option>
-<option value="papera3">A3 • กระดาษ (29.7 × 42 cm)</option>
+
 </select>
 <div class="paper-actions">
 <button type="button" id="addPreset" onclick="Iprint.openPreset()">＋ เพิ่มขนาดกระดาษ</button>
@@ -247,6 +247,7 @@ async function loadRemotePresets(){
   renderSelect();
   calculate();
   return false;
+ }
 }
 function openPreset(){$("presetError").textContent="";$("presetModal").style.display="block";document.body.style.overflow="hidden"}
 function closePreset(){$("presetModal").style.display="none";document.body.style.overflow=""}
