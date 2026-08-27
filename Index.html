@@ -151,7 +151,7 @@ button{display:block;width:100%;min-height:48px;border-radius:11px;cursor:pointe
 <div id="presetError"></div>
 <div class="modal-buttons">
 <button type="button" id="cancelPreset" onclick="Iprint.closePreset()">ยกเลิก</button>
-<button type="button" id="savePreset" onclick="Iprint.savePreset()">เพิ่ม</button>
+<button type="button" id="savePreset" onclick="return Iprint.savePreset()">เพิ่ม</button>
 </div>
 </div>
 </div>
@@ -281,7 +281,7 @@ function closePreset(){
   document.body.style.overflow="";
 }
 
-async function savePreset(){
+async function submitPresetToNotion(){
   var name=$("pName").value.trim();
   var fw=parseFloat($("pW").value);
   var fh=parseFloat($("pH").value);
@@ -331,6 +331,7 @@ async function savePreset(){
     }
     closePreset();
     await syncNotion();
+    return false;
   }catch(e){
     $("presetError").textContent="เพิ่ม Preset ไม่สำเร็จ กรุณาตรวจ Cloudflare Worker";
     console.error(e);
@@ -373,7 +374,7 @@ function bindPresetEvents(){
   if(del)del.addEventListener("click",function(e){e.preventDefault();deletePaper()});
 
   var save=$("savePreset");
-  if(save)save.addEventListener("click",function(e){e.preventDefault();savePreset()});
+  if(save)save.addEventListener("click",function(e){e.preventDefault();window.Iprint.savePreset()});
 
   var cancel=$("cancelPreset");
   if(cancel)cancel.addEventListener("click",function(e){e.preventDefault();closePreset()});
@@ -594,7 +595,7 @@ window.Iprint={
  openPreset:openPreset,
  closePreset:closePreset,
  deletePaper:deletePaper,
- savePreset:savePreset,
+ savePreset:submitPresetToNotion,
  calculate:calculate
 };
 
