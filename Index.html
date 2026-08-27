@@ -571,7 +571,7 @@ function bind(){
  if(del)del.addEventListener("click",function(e){e.preventDefault();deletePaper()});
 
  var save=$("savePreset");
- if(save)save.addEventListener("click",function(e){e.preventDefault();savePreset()});
+ if(save)save.addEventListener("click",function(e){e.preventDefault();window.Iprint.savePreset();});
 
  var cancel=$("cancelPreset");
  if(cancel)cancel.addEventListener("click",function(e){e.preventDefault();closePreset()});
