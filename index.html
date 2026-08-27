@@ -37,9 +37,12 @@ button:disabled{opacity:.55;cursor:default}
 #iprint-preview{margin-top:18px;padding:13px;border:1px solid #e1e3e6;border-radius:14px;background:#f7f7f8}
 .preview-title{font-size:13px;font-weight:700;line-height:1.35;margin-bottom:4px}
 .preview-sub{font-size:11px;color:#73777e;margin-bottom:12px}
-.preview-scroll{width:100%;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch}
-.sheet-preview{position:relative;margin:0 auto;background:#fff;border:1.5px solid #9da3aa;overflow:hidden;display:flex;flex-wrap:wrap;align-content:flex-start;flex:none}
-.piece{background:#e8eaed;border:1px solid #8d949c;display:flex;align-items:center;justify-content:center;color:#656b72;font-size:9px;line-height:1;overflow:hidden}
+.preview-scroll{width:100%;overflow:auto;-webkit-overflow-scrolling:touch;padding:2px 0 4px}
+.sheet-preview{position:relative;margin:0 auto;background:#fff;border:1.5px solid #9da3aa;overflow:hidden;display:block;flex:none}
+.preview-usable{position:absolute;border:1px dashed #aeb4bb;background:#fff;overflow:hidden}
+.preview-grid{position:absolute;left:0;top:0;display:grid;align-content:start}
+.piece[data-rotate="true"]{font-weight:600}
+.piece{background:#e8eaed;border:1px solid #8d949c;display:flex;align-items:center;justify-content:center;color:#656b72;font-size:9px;line-height:1;overflow:hidden;min-width:0;min-height:0}
 .preview-note{font-size:11px;color:#73777e;line-height:1.4;margin-top:7px}
 
 .result{margin-top:18px;padding:18px 15px;border-radius:15px;background:#fff;border:1px solid #e1e1e1}
@@ -97,7 +100,7 @@ button:disabled{opacity:.55;cursor:default}
 <div class="preview-title">Preview พื้นที่กระดาษคำนวนตามพื้นที่จริงแต่Layout ดูคร่าวๆเท่านั้นไม่ใช่การจัดวางงานจริง</div>
 <div class="preview-sub" id="previewInfo">—</div>
 <div class="preview-scroll"><div class="sheet-preview" id="sheetPreview"></div></div>
-<div class="preview-note">แสดงพื้นที่ใช้งาน + การวางชิ้นงานตาม Bleed 3 mm และช่องไฟที่ระบบเลือก</div>
+<div class="preview-note">แสดงพื้นที่ใช้งาน + การวางชิ้นงานตาม Bleed 3 mm โดยชิ้นงานชิดกันไม่มีช่องไฟ</div>
 </div>
 
 <div class="result">
@@ -380,70 +383,171 @@ function resetOutput(){
 }
 
 function findBest(p,W,H){
- var uw=p.usableW*10,uh=p.usableH*10,best=null;
- for(var gap=2;gap<=10;gap++){
+  var uw=p.usableW*10;
+  var uh=p.usableH*10;
+  var best=null;
+
+  // Montax-style calculation:
+  // - Position size = actual layout size (W x H)
+  // - Gap between positions = 0 mm
+  // - Bleed is NOT added to the position pitch
+  //   because bleed belongs inside/around the artwork position.
+  var gap=0;
+
+  // IMPORTANT: Bleed 3 mm/ด้าน is visual/production bleed only.
+  // It must not reduce the number of 40x40 mm positions.
   [false,true].forEach(function(rot){
-   var pw=(rot?H:W)*10+6;
-   var ph=(rot?W:H)*10+6;
-   var nx=Math.floor((uw+gap)/(pw+gap));
-   var ny=Math.floor((uh+gap)/(ph+gap));
-   var n=nx*ny;
-   if(n>0&&(!best||n>best.yield||(n===best.yield&&gap>best.gap))){
-    best={yield:n,gap:gap,rotate:rot,pieceW:pw,pieceH:ph,nx:nx,ny:ny};
-   }
+
+    var pw=(rot?H:W)*10;
+    var ph=(rot?W:H)*10;
+
+    var nx=Math.floor((uw+gap)/(pw+gap));
+    var ny=Math.floor((uh+gap)/(ph+gap));
+    var n=nx*ny;
+
+    if(n>0 && (!best || n>best.yield)){
+      best={
+        yield:n,
+        gap:0,
+        rotate:rot,
+        pieceW:pw,
+        pieceH:ph,
+        nx:nx,
+        ny:ny
+      };
+    }
   });
- }
- return best;
+
+  return best;
 }
 
 function drawPreview(p,b){
- var preview=$("sheetPreview");
- if(!preview)return;
- preview.innerHTML="";
+  var preview=$("sheetPreview");
+  if(!preview)return;
 
- var fw=p.fullW*10,fh=p.fullH*10,uw=p.usableW*10,uh=p.usableH*10;
- var viewport=(document.documentElement&&document.documentElement.clientWidth)||window.innerWidth||320;
- var maxWidth=Math.max(220,Math.min(330,viewport-58));
- var scale=Math.min(1,maxWidth/fw);
+  preview.innerHTML="";
 
- preview.style.width=Math.round(fw*scale)+"px";
- preview.style.height=Math.round(fh*scale)+"px";
- preview.style.padding="0";
- preview.style.position="relative";
- preview.style.display="block";
- preview.style.boxSizing="border-box";
+  // ทุกค่าของ Calculator เป็น mm
+  var fw=p.fullW*10;
+  var fh=p.fullH*10;
+  var uw=p.usableW*10;
+  var uh=p.usableH*10;
 
- var box=document.createElement("div");
- box.style.position="absolute";
- box.style.left=Math.round((fw-uw)/2*scale)+"px";
- box.style.top=Math.round((fh-uh)/2*scale)+"px";
- box.style.width=Math.round(uw*scale)+"px";
- box.style.height=Math.round(uh*scale)+"px";
- box.style.border="1px dashed #aeb4bb";
- box.style.overflow="hidden";
- box.style.background="#fff";
- box.style.display="grid";
- box.style.gridTemplateColumns="repeat("+b.nx+","+Math.max(1,Math.round(b.pieceW*scale))+"px)";
- box.style.gridAutoRows=Math.max(1,Math.round(b.pieceH*scale))+"px";
- box.style.columnGap=Math.round(b.gap*scale)+"px";
- box.style.rowGap=Math.round(b.gap*scale)+"px";
- box.style.alignContent="start";
+  var scroll=preview.parentElement;
+  var available=(scroll && scroll.clientWidth)||320;
 
- preview.appendChild(box);
+  // Scale เฉพาะการแสดงผล ไม่เปลี่ยน geometry จริง
+  var maxWidth=Math.max(220,Math.min(520,available-4));
+  var scale=Math.min(1,maxWidth/fw);
 
- for(var i=0;i<b.yield;i++){
-  var piece=document.createElement("div");
-  piece.className="piece";
-  piece.style.width=Math.max(1,Math.round(b.pieceW*scale))+"px";
-  piece.style.height=Math.max(1,Math.round(b.pieceH*scale))+"px";
-  piece.textContent=i+1;
-  box.appendChild(piece);
- }
+  var previewW=Math.max(1,Math.round(fw*scale));
+  var previewH=Math.max(1,Math.round(fh*scale));
 
- var info=$("previewInfo");
- if(info){
-  info.textContent="กระดาษ "+p.fullW.toFixed(2)+" × "+p.fullH.toFixed(2)+" cm • พื้นที่ใช้งาน "+p.usableW.toFixed(2)+" × "+p.usableH.toFixed(2)+" cm • "+b.yield+" ดวง/แผ่น • ช่องไฟ "+b.gap+" mm • "+(b.rotate?"หมุน 90°":"แนวปกติ");
- }
+  preview.style.width=previewW+"px";
+  preview.style.height=previewH+"px";
+  preview.style.padding="0";
+  preview.style.position="relative";
+  preview.style.display="block";
+  preview.style.boxSizing="border-box";
+
+  // พื้นที่ใช้งานจริง อยู่ตรงกลางกระดาษ
+  var usableLeft=((fw-uw)/2)*scale;
+  var usableTop=((fh-uh)/2)*scale;
+  var usableWpx=uw*scale;
+  var usableHpx=uh*scale;
+
+  var usable=document.createElement("div");
+  usable.className="preview-usable";
+  usable.style.position="absolute";
+  usable.style.left=Math.round(usableLeft)+"px";
+  usable.style.top=Math.round(usableTop)+"px";
+  usable.style.width=Math.max(1,Math.round(usableWpx))+"px";
+  usable.style.height=Math.max(1,Math.round(usableHpx))+"px";
+  usable.style.boxSizing="border-box";
+  usable.style.overflow="hidden";
+  preview.appendChild(usable);
+
+  // =====================================================
+  // สำคัญ:
+  // b.pieceW / b.pieceH มาจาก findBest() แล้ว
+  // และจะสลับ W/H เมื่อ rotate=true
+  //
+  // ห้ามใช้ W/H จาก input ตรง ๆ ใน Preview เพราะจะทำให้
+  // Layout ที่หมุน 90° กลับมาเป็นแนวเดิม
+  // =====================================================
+
+  var pieceW=b.pieceW;
+  var pieceH=b.pieceH;
+  var gap=0;
+
+  var pieceWpx=Math.max(1,pieceW*scale);
+  var pieceHpx=Math.max(1,pieceH*scale);
+  var gapPx=Math.max(0,gap*scale);
+
+  // ขนาด Layout ที่คำนวณจริง
+  var layoutW=b.nx*pieceW + Math.max(0,b.nx-1)*gap;
+  var layoutH=b.ny*pieceH + Math.max(0,b.ny-1)*gap;
+
+  var layoutWpx=layoutW*scale;
+  var layoutHpx=layoutH*scale;
+
+  // จัด Layout ให้อยู่กลางพื้นที่ใช้งาน
+  // ถ้าเกินพื้นที่ ให้เริ่มจาก 0 เพื่อไม่ให้ถูกตัด
+  var startX=Math.max(0,(uw-layoutW)/2)*scale;
+  var startY=Math.max(0,(uh-layoutH)/2)*scale;
+
+  var layout=document.createElement("div");
+  layout.style.position="absolute";
+  layout.style.left=Math.round(startX)+"px";
+  layout.style.top=Math.round(startY)+"px";
+  layout.style.width=Math.max(1,Math.round(layoutWpx))+"px";
+  layout.style.height=Math.max(1,Math.round(layoutHpx))+"px";
+  layout.style.pointerEvents="none";
+  usable.appendChild(layout);
+
+  // วางแต่ละชิ้นด้วยตำแหน่งจริง
+  // ไม่ใช้ CSS Grid เพื่อป้องกัน browser เปลี่ยน geometry เอง
+  for(var i=0;i<b.yield;i++){
+
+    var col=i%b.nx;
+    var row=Math.floor(i/b.nx);
+
+    var piece=document.createElement("div");
+    piece.className="piece";
+
+    piece.style.position="absolute";
+    piece.style.left=Math.round(col*(pieceW+gap)*scale)+"px";
+    piece.style.top=Math.round(row*(pieceH+gap)*scale)+"px";
+    piece.style.width=Math.max(1,Math.round(pieceWpx))+"px";
+    piece.style.height=Math.max(1,Math.round(pieceHpx))+"px";
+    piece.style.boxSizing="border-box";
+    piece.style.margin="0";
+
+    piece.textContent=i+1;
+
+    if(b.rotate){
+      piece.setAttribute("data-rotate","true");
+      piece.title="งานหมุน 90°";
+    }
+
+    layout.appendChild(piece);
+  }
+
+  var info=$("previewInfo");
+
+  if(info){
+
+    var orientation=b.rotate
+      ? "หมุนงาน 90°"
+      : "แนวปกติ";
+
+    info.textContent=
+      "กระดาษ "+p.fullW.toFixed(2)+" × "+p.fullH.toFixed(2)+
+      " cm • พื้นที่ใช้งาน "+p.usableW.toFixed(2)+" × "+p.usableH.toFixed(2)+
+      " cm • "+b.yield+" ดวง/แผ่น • ช่องไฟ "+b.gap+
+      " mm • "+orientation+
+      " • Layout "+b.nx+" × "+b.ny;
+  }
 }
 
 function calculate(){
