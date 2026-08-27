@@ -70,10 +70,10 @@ button{display:block;width:100%;min-height:48px;border-radius:11px;cursor:pointe
 
 </select>
 <div class="paper-actions">
-<button type="button" id="addPreset" onclick="Iprint.openPreset()">＋ เพิ่มขนาดกระดาษ</button>
-<button type="button" id="deletePreset" onclick="Iprint.deletePaper()">ลบกระดาษ</button>
+<button type="button" id="addPreset" onclick="return Iprint.openPreset()">＋ เพิ่มขนาดกระดาษ</button>
+<button type="button" id="deletePreset" onclick="return Iprint.deletePaper()">ลบกระดาษ</button>
 </div>
-<div class="hint">สติกเกอร์ 13×19 ใช้พื้นที่ 30×40 cm • กระดาษทั่วไปเว้นขอบ 1.5 cm ทุกด้าน • ขนาดที่เพิ่มเองลบได้</div><div class="hint" id="syncStatus">Preset ในเครื่อง • กำลังเริ่มต้นระบบ…</div>
+<div class="hint">Preset ทั้งหมดควบคุมโดย Notion Database • เพิ่ม/ลบจาก Calculator จะอัปเดต Notion</div><div class="hint" id="syncStatus">Preset ในเครื่อง • กำลังเริ่มต้นระบบ…</div>
 </div>
 
 <div class="field">
@@ -150,7 +150,7 @@ button{display:block;width:100%;min-height:48px;border-radius:11px;cursor:pointe
 
 <div id="presetError"></div>
 <div class="modal-buttons">
-<button type="button" id="cancelPreset" onclick="Iprint.closePreset()">ยกเลิก</button>
+<button type="button" id="cancelPreset" onclick="return Iprint.closePreset()">ยกเลิก</button>
 <button type="button" id="savePreset" onclick="return Iprint.savePreset()">เพิ่ม</button>
 </div>
 </div>
@@ -160,33 +160,34 @@ button{display:block;width:100%;min-height:48px;border-radius:11px;cursor:pointe
 "use strict";
 
 var API_URL="https://iprint-preset-api.iprint-garphic1.workers.dev/presets";
-var KEY="iprint_mobile_v10";
+var STORAGE_KEY="iprint_ui_v11";
+var presets={};
 var selectedSheet="";
 
-function $(id){return document.getElementById(id)}
+function $(id){return document.getElementById(id);}
 
-function loadState(){
+function loadUIState(){
   try{
-    var s=JSON.parse(localStorage.getItem(KEY)||"{}");
-    if(s.selectedSheet)selectedSheet=s.selectedSheet;
+    var s=JSON.parse(localStorage.getItem(STORAGE_KEY)||"{}");
+    if(s.selectedSheet) selectedSheet=s.selectedSheet;
     if(s.values){
       ["w","h","qty","cost","profitPercent"].forEach(function(id){
-        if(s.values[id]!==undefined&&$(id))$(id).value=s.values[id];
+        if($(id) && s.values[id]!==undefined) $(id).value=s.values[id];
       });
     }
   }catch(e){}
 }
 
-function saveState(){
+function saveUIState(){
   try{
-    localStorage.setItem(KEY,JSON.stringify({
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
       selectedSheet:selectedSheet,
       values:{
         w:$("w")?$("w").value:"",
         h:$("h")?$("h").value:"",
-        qty:$("qty")?$("qty").value:"",
-        cost:$("cost")?$("cost").value:"",
-        profitPercent:$("profitPercent")?$("profitPercent").value:""
+        qty:$("qty")?$ ("qty").value:"",
+        cost:$("cost")?$ ("cost").value:"",
+        profitPercent:$("profitPercent")?$ ("profitPercent").value:""
       }
     }));
   }catch(e){}
@@ -194,82 +195,51 @@ function saveState(){
 
 function renderSelect(){
   var sel=$("sheet");
-  if(!sel)return;
+  if(!sel) return;
+
   sel.innerHTML="";
   var ids=Object.keys(presets);
+
   if(!ids.length){
-    var loading=document.createElement("option");
-    loading.value="";
-    loading.textContent="กำลังโหลด Preset จาก Notion…";
-    loading.disabled=true;
-    loading.selected=true;
-    sel.appendChild(loading);
+    var opt=document.createElement("option");
+    opt.value="";
+    opt.textContent="กำลังโหลด Preset จาก Notion…";
+    opt.disabled=true;
+    opt.selected=true;
+    sel.appendChild(opt);
     return;
   }
+
   ids.forEach(function(id){
-    var p=presets[id],o=document.createElement("option");
-    o.value=id;
-    o.textContent=p.name+" ("+p.fullW+" × "+p.fullH+" cm)";
-    sel.appendChild(o);
+    var p=presets[id];
+    var opt=document.createElement("option");
+    opt.value=id;
+    opt.textContent=p.name+" ("+p.fullW+" × "+p.fullH+" cm)";
+    sel.appendChild(opt);
   });
-  if(!presets[selectedSheet])selectedSheet=ids[0];
+
+  if(!presets[selectedSheet]) selectedSheet=ids[0];
   sel.value=selectedSheet;
 }
 
 function selectPaper(id){
-  if(!presets[id])return;
+  if(!presets[id]) return;
   selectedSheet=id;
-  $("sheet").value=id;
-  saveState();
+  saveUIState();
   calculate();
-}
-
-async function syncNotion(){
-  try{
-    var r=await fetch(API_URL,{method:"GET",cache:"no-store"});
-    if(!r.ok)throw new Error("HTTP "+r.status);
-    var data=await r.json();
-    if(!data||!Array.isArray(data.presets))throw new Error("รูปแบบ API ไม่ถูกต้อง");
-
-    var next={};
-    data.presets.forEach(function(p){
-      if(!p||p.active===false||p.active==="false"||p.active===0)return;
-      if(!p.name||!(p.fullW>0)||!(p.fullH>0)||!(p.usableW>0)||!(p.usableH>0))return;
-      next[String(p.id)]={
-        name:String(p.name),
-        fullW:Number(p.fullW),
-        fullH:Number(p.fullH),
-        usableW:Number(p.usableW),
-        usableH:Number(p.usableH),
-        type:p.type||"",
-        pageId:String(p.id)
-      };
-    });
-
-    presets=next;
-    renderSelect();
-    saveState();
-    calculate();
-
-    var status=$("syncStatus");
-    if(status)status.textContent="Preset จาก Notion • "+Object.keys(presets).length+" รายการ";
-  }catch(e){
-    presets={};
-    selectedSheet="";
-    renderSelect();
-    calculate();
-    var status2=$("syncStatus");
-    if(status2)status2.textContent="เชื่อมต่อ Notion ไม่สำเร็จ";
-  }
 }
 
 function openPreset(){
   var modal=$("presetModal");
-  if(!modal)return;
-  $("presetError").textContent="";
+  if(!modal) return false;
+  var error=$("presetError");
+  if(error) error.textContent="";
   modal.style.display="block";
   modal.setAttribute("aria-hidden","false");
   document.body.style.overflow="hidden";
+  var first=$("pName");
+  if(first) setTimeout(function(){first.focus();},40);
+  return false;
 }
 
 function closePreset(){
@@ -279,40 +249,47 @@ function closePreset(){
     modal.setAttribute("aria-hidden","true");
   }
   document.body.style.overflow="";
+  return false;
 }
 
-async function submitPresetToNotion(){
+async function savePresetToNotion(){
   var name=$("pName").value.trim();
   var fw=parseFloat($("pW").value);
   var fh=parseFloat($("pH").value);
   var mode=$("pMode").value;
   var uw,uh;
 
-  if(!name||!(fw>0)||!(fh>0)){
+  if(!name || !(fw>0) || !(fh>0)){
     $("presetError").textContent="กรุณากรอกชื่อและขนาดแผ่น";
-    return;
+    return false;
   }
 
   if(mode==="full"){
-    uw=fw;uh=fh;
+    uw=fw; uh=fh;
   }else if(mode==="margin"){
-    uw=fw-3;uh=fh-3;
+    uw=fw-3; uh=fh-3;
   }else{
     uw=parseFloat($("pUW").value);
     uh=parseFloat($("pUH").value);
-    if(!(uw>0&&uh>0&&uw<=fw&&uh<=fh)){
+    if(!(uw>0 && uh>0 && uw<=fw && uh<=fh)){
       $("presetError").textContent="พื้นที่ใช้งานไม่ถูกต้อง";
-      return;
+      return false;
     }
   }
 
-  if(uw<=0||uh<=0){
+  if(uw<=0 || uh<=0){
     $("presetError").textContent="พื้นที่ใช้งานต้องมากกว่า 0";
-    return;
+    return false;
+  }
+
+  var saveBtn=$("savePreset");
+  if(saveBtn){
+    saveBtn.disabled=true;
+    saveBtn.textContent="กำลังบันทึก…";
   }
 
   try{
-    var r=await fetch(API_URL,{
+    var response=await fetch(API_URL,{
       method:"POST",
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify({
@@ -321,291 +298,327 @@ async function submitPresetToNotion(){
         fullH:fh,
         usableW:uw,
         usableH:uh,
-        type:mode==="full"?"เต็มพื้นที่":(mode==="margin"?"เผื่อมาร์คมาตรฐาน":"กำหนดเอง"),
+        type:mode==="full" ? "เต็มพื้นที่" : (mode==="margin" ? "เผื่อมาร์คมาตรฐาน" : "กำหนดเอง"),
         active:true
       })
     });
-    if(!r.ok){
-      var errText=await r.text();
-      throw new Error(errText||("HTTP "+r.status));
+
+    var text=await response.text();
+    var data;
+    try{ data=JSON.parse(text); }catch(e){ data={}; }
+
+    if(!response.ok){
+      throw new Error(data.detail || data.error || ("HTTP "+response.status));
     }
+
     closePreset();
     await syncNotion();
-    return false;
+
+    if(data.id) selectedSheet=String(data.id);
+    renderSelect();
+    calculate();
+    saveUIState();
+
   }catch(e){
-    $("presetError").textContent="เพิ่ม Preset ไม่สำเร็จ กรุณาตรวจ Cloudflare Worker";
-    console.error(e);
+    $("presetError").textContent="เพิ่ม Preset ไม่สำเร็จ: "+e.message;
+    console.error("POST /presets",e);
+  }finally{
+    if(saveBtn){
+      saveBtn.disabled=false;
+      saveBtn.textContent="เพิ่ม";
+    }
   }
+  return false;
 }
 
-async function deletePaper(){
-  if(!selectedSheet||!presets[selectedSheet]){
-    alert("ยังไม่มี Preset ที่เลือก");
-    return;
+async function deletePresetFromNotion(){
+  if(!selectedSheet || !presets[selectedSheet]){
+    alert("กรุณาเลือก Preset ก่อน");
+    return false;
   }
+
   var p=presets[selectedSheet];
-  if(!confirm('ต้องการลบ "'+p.name+'" จาก Notion Database ใช่หรือไม่?'))return;
+  if(!p.pageId){
+    alert("Preset นี้ไม่มี Page ID จาก Notion");
+    return false;
+  }
+
+  if(!confirm('ต้องการลบ "'+p.name+'" จาก Notion Database ใช่หรือไม่?')) return false;
 
   try{
-    var r=await fetch(API_URL+"?id="+encodeURIComponent(p.pageId),{
-      method:"DELETE",
-      headers:{"Content-Type":"application/json"}
+    var response=await fetch(API_URL+"?id="+encodeURIComponent(p.pageId),{
+      method:"DELETE"
     });
-    if(!r.ok){
-      var errText=await r.text();
-      throw new Error(errText||("HTTP "+r.status));
+
+    var text=await response.text();
+    var data;
+    try{data=JSON.parse(text);}catch(e){data={};}
+
+    if(!response.ok){
+      throw new Error(data.detail || data.error || ("HTTP "+response.status));
     }
+
     selectedSheet="";
     await syncNotion();
+    saveUIState();
+
   }catch(e){
-    alert("ลบ Preset ไม่สำเร็จ กรุณาตรวจ Cloudflare Worker");
-    console.error(e);
+    alert("ลบ Preset ไม่สำเร็จ: "+e.message);
+    console.error("DELETE /presets",e);
   }
-}
-
-function bindPresetEvents(){
-  var sheet=$("sheet");
-  if(sheet)sheet.addEventListener("change",function(){selectPaper(this.value)});
-
-  var add=$("addPreset");
-  if(add)add.addEventListener("click",function(e){e.preventDefault();openPreset()});
-
-  var del=$("deletePreset");
-  if(del)del.addEventListener("click",function(e){e.preventDefault();deletePaper()});
-
-  var save=$("savePreset");
-  if(save)save.addEventListener("click",function(e){e.preventDefault();window.Iprint.savePreset()});
-
-  var cancel=$("cancelPreset");
-  if(cancel)cancel.addEventListener("click",function(e){e.preventDefault();closePreset()});
-
-  var modal=$("presetModal");
-  if(modal)modal.addEventListener("click",function(e){if(e.target===modal)closePreset()});
-}
-function resetOutput(){
- ["sheets","yield","gap","total","profit","sale"].forEach(function(id){
-  var el=$(id);if(el)el.textContent="—";
- });
- var preview=$("sheetPreview");if(preview)preview.innerHTML="";
- var info=$("previewInfo");if(info)info.textContent="—";
-}
-
-function findBest(p,W,H){
- var uw=p.usableW*10,uh=p.usableH*10,best=null;
- for(var gap=2;gap<=10;gap++){
-  [false,true].forEach(function(rot){
-   var pw=(rot?H:W)*10+6;
-   var ph=(rot?W:H)*10+6;
-   var nx=Math.floor((uw+gap)/(pw+gap));
-   var ny=Math.floor((uh+gap)/(ph+gap));
-   var n=nx*ny;
-   if(n>0&&(!best||n>best.yield||(n===best.yield&&gap>best.gap))){
-    best={yield:n,gap:gap,rotate:rot,pieceW:pw,pieceH:ph,nx:nx,ny:ny};
-   }
-  });
- }
- return best;
-}
-
-function drawPreview(p,b){
- var preview=$("sheetPreview");
- if(!preview)return;
- preview.innerHTML="";
-
- var fw=p.fullW*10,fh=p.fullH*10,uw=p.usableW*10,uh=p.usableH*10;
- var viewport=(document.documentElement&&document.documentElement.clientWidth)||window.innerWidth||320;
- var maxWidth=Math.max(220,Math.min(330,viewport-58));
- var scale=Math.min(1,maxWidth/fw);
-
- preview.style.width=Math.round(fw*scale)+"px";
- preview.style.height=Math.round(fh*scale)+"px";
- preview.style.padding="0";
- preview.style.position="relative";
- preview.style.display="block";
- preview.style.boxSizing="border-box";
-
- var box=document.createElement("div");
- box.style.position="absolute";
- box.style.left=Math.round((fw-uw)/2*scale)+"px";
- box.style.top=Math.round((fh-uh)/2*scale)+"px";
- box.style.width=Math.round(uw*scale)+"px";
- box.style.height=Math.round(uh*scale)+"px";
- box.style.border="1px dashed #aeb4bb";
- box.style.overflow="hidden";
- box.style.background="#fff";
- box.style.display="grid";
- box.style.gridTemplateColumns="repeat("+b.nx+","+Math.max(1,Math.round(b.pieceW*scale))+"px)";
- box.style.gridAutoRows=Math.max(1,Math.round(b.pieceH*scale))+"px";
- box.style.columnGap=Math.round(b.gap*scale)+"px";
- box.style.rowGap=Math.round(b.gap*scale)+"px";
- box.style.alignContent="start";
-
- preview.appendChild(box);
-
- for(var i=0;i<b.yield;i++){
-  var piece=document.createElement("div");
-  piece.className="piece";
-  piece.style.width=Math.max(1,Math.round(b.pieceW*scale))+"px";
-  piece.style.height=Math.max(1,Math.round(b.pieceH*scale))+"px";
-  piece.textContent=i+1;
-  box.appendChild(piece);
- }
-
- var info=$("previewInfo");
- if(info){
-  info.textContent="กระดาษ "+p.fullW.toFixed(2)+" × "+p.fullH.toFixed(2)+" cm • พื้นที่ใช้งาน "+p.usableW.toFixed(2)+" × "+p.usableH.toFixed(2)+" cm • "+b.yield+" ดวง/แผ่น • ช่องไฟ "+b.gap+" mm • "+(b.rotate?"หมุน 90°":"แนวปกติ");
- }
-}
-
-function calculate(){
- try{
-  var p=presets[selectedSheet];
-  if(!p){resetOutput();return}
-
-  var W=parseFloat($("w").value);
-  var H=parseFloat($("h").value);
-  var Q=parseInt($("qty").value,10);
-  var C=parseFloat($("cost").value);
-  var P=parseFloat($("profitPercent").value);
-
-  if(!(W>0&&H>0&&Q>0&&C>=0&&P>=0)){
-   resetOutput();
-   return;
-  }
-
-  var b=findBest(p,W,H);
-  if(!b){
-   $("sheets").textContent="0";
-   $("yield").textContent="ขนาดใหญ่เกินไป";
-   $("gap").textContent="—";
-   ["total","profit","sale"].forEach(function(id){$(id).textContent="—"});
-   $("sheetPreview").innerHTML="";
-   $("previewInfo").textContent="ชิ้นงานใหญ่เกินพื้นที่ใช้งาน";
-   return;
-  }
-
-  var count=Math.ceil(Q/b.yield);
-  var tc=count*C;
-  var pa=tc*P/100;
-
-  $("sheets").textContent=count.toLocaleString("th-TH");
-  $("yield").textContent=b.yield.toLocaleString("th-TH");
-  $("gap").textContent=b.gap;
-  $("total").textContent=tc.toLocaleString("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2});
-  $("profit").textContent=pa.toLocaleString("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2});
-  $("sale").textContent=(tc+pa).toLocaleString("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2});
-
-  drawPreview(p,b);
- }catch(e){
-  console.error("Iprint calculate error:",e);
- }
+  return false;
 }
 
 async function syncNotion(){
- try{
-  var response=await fetch(API_URL,{method:"GET",cache:"no-store"});
-  if(!response.ok)throw new Error("HTTP "+response.status);
-  var data=await response.json();
-  if(!data||!Array.isArray(data.presets))throw new Error("Invalid API response");
+  try{
+    var response=await fetch(API_URL,{
+      method:"GET",
+      cache:"no-store"
+    });
 
-  data.presets.forEach(function(p){
-   if(!p||!p.name||!(p.fullW>0)||!(p.fullH>0)||!(p.usableW>0)||!(p.usableH>0))return;
+    if(!response.ok) throw new Error("HTTP "+response.status);
 
-   var existingId=Object.keys(presets).find(function(id){
-    return presets[id].name===p.name;
-   });
+    var data=await response.json();
+    if(!data || !Array.isArray(data.presets)) throw new Error("รูปแบบข้อมูลไม่ถูกต้อง");
 
-   var id=existingId||("notion_"+String(p.id||Date.now()).replace(/[^a-zA-Z0-9_-]/g,""));
-   presets[id]={
-    name:String(p.name),
-    fullW:Number(p.fullW),
-    fullH:Number(p.fullH),
-    usableW:Number(p.usableW),
-    usableH:Number(p.usableH),
-    type:p.type||""
-   };
+    var next={};
+
+    data.presets.forEach(function(p){
+      if(!p || !p.name) return;
+      if(!(Number(p.fullW)>0) || !(Number(p.fullH)>0)) return;
+      if(!(Number(p.usableW)>0) || !(Number(p.usableH)>0)) return;
+      if(p.active===false || p.active===0 || p.active==="false") return;
+
+      next[String(p.id)]={
+        pageId:String(p.id),
+        name:String(p.name),
+        fullW:Number(p.fullW),
+        fullH:Number(p.fullH),
+        usableW:Number(p.usableW),
+        usableH:Number(p.usableH),
+        type:p.type || ""
+      };
+    });
+
+    // IMPORTANT: replace the whole local collection.
+    // Notion is the single source of truth.
+    presets=next;
+
+    if(!presets[selectedSheet]){
+      var ids=Object.keys(presets);
+      selectedSheet=ids.length ? ids[0] : "";
+    }
+
+    renderSelect();
+    calculate();
+
+    var status=$("syncStatus");
+    if(status){
+      status.textContent=Object.keys(presets).length
+        ? "Preset จาก Notion • "+Object.keys(presets).length+" รายการ"
+        : "Notion ไม่มี Preset ที่ Active";
+    }
+
+  }catch(e){
+    // Never fabricate a preset locally. Keep database as the only source.
+    presets={};
+    selectedSheet="";
+    renderSelect();
+    resetOutput();
+
+    var status2=$("syncStatus");
+    if(status2) status2.textContent="เชื่อมต่อ Notion ไม่สำเร็จ";
+    console.error("GET /presets",e);
+  }
+}
+
+/* Calculation */
+function resetOutput(){
+  ["sheets","yield","gap","total","profit","sale"].forEach(function(id){
+    var el=$(id); if(el) el.textContent="—";
   });
+  var preview=$("sheetPreview"); if(preview) preview.innerHTML="";
+  var info=$("previewInfo"); if(info) info.textContent="—";
+}
 
-  renderSelect();
-  calculate();
+function findBest(p,W,H){
+  var uw=p.usableW*10;
+  var uh=p.usableH*10;
+  var best=null;
 
-  var status=$("syncStatus");
-  if(status)status.textContent="Preset จาก Notion • ซิงค์แล้ว";
- }catch(e){
-  // Never block the calculator if Notion is unavailable.
-  renderSelect();
-  calculate();
-  var status2=$("syncStatus");
-  if(status2)status2.textContent="Preset ในเครื่อง • ใช้งานแบบสำรอง";
- }
+  for(var gap=2;gap<=10;gap++){
+    [false,true].forEach(function(rot){
+      var pw=(rot?H:W)*10+6;
+      var ph=(rot?W:H)*10+6;
+      var nx=Math.floor((uw+gap)/(pw+gap));
+      var ny=Math.floor((uh+gap)/(ph+gap));
+      var n=nx*ny;
+
+      if(n>0 && (!best || n>best.yield || (n===best.yield && gap>best.gap))){
+        best={
+          yield:n,
+          gap:gap,
+          rotate:rot,
+          pieceW:pw,
+          pieceH:ph,
+          nx:nx,
+          ny:ny
+        };
+      }
+    });
+  }
+  return best;
+}
+
+function drawPreview(p,b){
+  var preview=$("sheetPreview");
+  if(!preview) return;
+
+  preview.innerHTML="";
+  var fw=p.fullW*10, fh=p.fullH*10;
+  var uw=p.usableW*10, uh=p.usableH*10;
+
+  var viewport=(document.documentElement && document.documentElement.clientWidth) || window.innerWidth || 320;
+  var maxWidth=Math.max(220,Math.min(330,viewport-58));
+  var scale=Math.min(1,maxWidth/fw);
+
+  preview.style.width=Math.round(fw*scale)+"px";
+  preview.style.height=Math.round(fh*scale)+"px";
+  preview.style.position="relative";
+  preview.style.display="block";
+  preview.style.boxSizing="border-box";
+  preview.style.margin="0 auto";
+
+  var box=document.createElement("div");
+  box.style.position="absolute";
+  box.style.left=Math.round((fw-uw)/2*scale)+"px";
+  box.style.top=Math.round((fh-uh)/2*scale)+"px";
+  box.style.width=Math.round(uw*scale)+"px";
+  box.style.height=Math.round(uh*scale)+"px";
+  box.style.border="1px dashed #aeb4bb";
+  box.style.overflow="hidden";
+  box.style.background="#fff";
+  box.style.display="grid";
+  box.style.gridTemplateColumns="repeat("+b.nx+","+Math.max(1,Math.round(b.pieceW*scale))+"px)";
+  box.style.gridAutoRows=Math.max(1,Math.round(b.pieceH*scale))+"px";
+  box.style.columnGap=Math.round(b.gap*scale)+"px";
+  box.style.rowGap=Math.round(b.gap*scale)+"px";
+  box.style.alignContent="start";
+
+  preview.appendChild(box);
+
+  for(var i=0;i<b.yield;i++){
+    var piece=document.createElement("div");
+    piece.className="piece";
+    piece.style.width=Math.max(1,Math.round(b.pieceW*scale))+"px";
+    piece.style.height=Math.max(1,Math.round(b.pieceH*scale))+"px";
+    piece.textContent=i+1;
+    box.appendChild(piece);
+  }
+
+  var info=$("previewInfo");
+  if(info){
+    info.textContent=
+      "กระดาษ "+p.fullW.toFixed(2)+" × "+p.fullH.toFixed(2)+" cm • "+
+      "พื้นที่ใช้งาน "+p.usableW.toFixed(2)+" × "+p.usableH.toFixed(2)+" cm • "+
+      b.yield+" ดวง/แผ่น • ช่องไฟ "+b.gap+" mm • "+
+      (b.rotate?"หมุน 90°":"แนวปกติ");
+  }
+}
+
+function calculate(){
+  try{
+    var p=presets[selectedSheet];
+    if(!p){ resetOutput(); return; }
+
+    var W=parseFloat($("w").value);
+    var H=parseFloat($("h").value);
+    var Q=parseInt($("qty").value,10);
+    var C=parseFloat($("cost").value);
+    var P=parseFloat($("profitPercent").value);
+
+    if(!(W>0&&H>0&&Q>0&&C>=0&&P>=0)){
+      resetOutput();
+      return;
+    }
+
+    var b=findBest(p,W,H);
+
+    if(!b){
+      $("sheets").textContent="0";
+      $("yield").textContent="ขนาดใหญ่เกินไป";
+      $("gap").textContent="—";
+      ["total","profit","sale"].forEach(function(id){$(id).textContent="—";});
+      $("sheetPreview").innerHTML="";
+      $("previewInfo").textContent="ชิ้นงานใหญ่เกินพื้นที่ใช้งาน";
+      return;
+    }
+
+    var count=Math.ceil(Q/b.yield);
+    var total=count*C;
+    var profit=total*P/100;
+    var sale=total+profit;
+
+    $("sheets").textContent=count.toLocaleString("th-TH");
+    $("yield").textContent=b.yield.toLocaleString("th-TH");
+    $("gap").textContent=b.gap;
+    $("total").textContent=total.toLocaleString("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2});
+    $("profit").textContent=profit.toLocaleString("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2});
+    $("sale").textContent=sale.toLocaleString("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2});
+
+    drawPreview(p,b);
+  }catch(e){
+    console.error("calculate",e);
+    resetOutput();
+  }
 }
 
 function bind(){
- loadState();
- renderSelect();
+  loadUIState();
+  renderSelect();
 
- var sheet=$("sheet");
- if(sheet)sheet.addEventListener("change",function(){
-  selectPaper(this.value);
- });
+  var mode=$("pMode");
+  if(mode) mode.addEventListener("change",function(){
+    var area=$("customArea");
+    if(area) area.style.display=this.value==="custom" ? "block" : "none";
+  });
 
- var mode=$("pMode");
- if(mode)mode.addEventListener("change",function(){
-  var area=$("customArea");
-  if(area)area.style.display=this.value==="custom"?"block":"none";
- });
+  ["w","h","qty","cost","profitPercent"].forEach(function(id){
+    var el=$(id);
+    if(el){
+      el.addEventListener("input",function(){saveUIState();calculate();});
+      el.addEventListener("change",function(){saveUIState();calculate();});
+    }
+  });
 
- ["w","h","qty","cost","profitPercent"].forEach(function(id){
-  var el=$(id);
-  if(el){
-   el.addEventListener("input",function(){saveState();calculate()});
-   el.addEventListener("change",function(){saveState();calculate()});
-  }
- });
+  var sheet=$("sheet");
+  if(sheet) sheet.addEventListener("change",function(){selectPaper(this.value);});
 
- // Existing buttons use inline handlers; these listeners are an extra safety net.
- var add=$("addPreset");
- if(add)add.addEventListener("click",function(e){e.preventDefault();openPreset()});
+  var modal=$("presetModal");
+  if(modal) modal.addEventListener("click",function(e){
+    if(e.target===modal) closePreset();
+  });
 
- var del=$("deletePreset");
- if(del)del.addEventListener("click",function(e){e.preventDefault();deletePaper()});
-
- var save=$("savePreset");
- if(save)save.addEventListener("click",function(e){e.preventDefault();window.Iprint.savePreset();});
-
- var cancel=$("cancelPreset");
- if(cancel)cancel.addEventListener("click",function(e){e.preventDefault();closePreset()});
-
- var modal=$("presetModal");
- if(modal)modal.addEventListener("click",function(e){
-  if(e.target===modal)closePreset();
- });
-
- calculate();
-
- window.addEventListener("resize",function(){setTimeout(calculate,50)});
- window.addEventListener("orientationchange",function(){setTimeout(calculate,100)});
-
- // Sync after the calculator is already functional.
- setTimeout(syncNotion,0);
+  calculate();
+  setTimeout(syncNotion,0);
 }
 
 window.Iprint={
- selectPaper:selectPaper,
- openPreset:openPreset,
- closePreset:closePreset,
- deletePaper:deletePaper,
- savePreset:submitPresetToNotion,
- calculate:calculate
+  selectPaper:selectPaper,
+  openPreset:openPreset,
+  closePreset:closePreset,
+  deletePaper:deletePresetFromNotion,
+  savePreset:savePresetToNotion,
+  calculate:calculate,
+  syncNotion:syncNotion
 };
 
 if(document.readyState==="loading"){
- document.addEventListener("DOMContentLoaded",bind);
+  document.addEventListener("DOMContentLoaded",bind);
 }else{
- bind();
+  bind();
 }
 
-})();
-</script>
+})();</script>
 </body>
 </html>
