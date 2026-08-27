@@ -63,6 +63,8 @@ button:disabled{opacity:.55;cursor:default}
 #error{color:#b42318;font-size:12px;margin-top:8px}
 #presetError{color:#b42318;font-size:12px;margin-top:8px;min-height:14px}
 @media(max-width:380px){.app{padding:12px}h1{font-size:20px}.big{font-size:32px}input,select{font-size:16px}}
+
+.service-section{margin-top:18px;padding-top:16px;border-top:1px solid #e5e7eb}.service-title{font-size:14px;font-weight:700;margin-bottom:10px}.service-list{display:grid;gap:8px}.service-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border:1px solid #e5e7eb;border-radius:10px;background:#fff}.service-left{display:flex;align-items:center;gap:10px;min-width:0}.service-name{font-size:13px;font-weight:600}.service-meta{font-size:11px;color:#737373;margin-top:2px}.service-price{font-size:12px;white-space:nowrap;color:#555}.service-switch{position:relative;width:40px;height:22px;display:block;flex:0 0 auto}.service-switch input{opacity:0;width:0;height:0}.service-slider{position:absolute;inset:0;background:#d1d5db;border-radius:99px;cursor:pointer;transition:.18s}.service-slider:before{content:"";position:absolute;width:18px;height:18px;left:2px;top:2px;background:#fff;border-radius:50%;transition:.18s;box-shadow:0 1px 3px rgba(0,0,0,.18)}.service-switch input:checked+.service-slider{background:#111827}.service-switch input:checked+.service-slider:before{transform:translateX(18px)}.service-empty{font-size:12px;color:#777;padding:8px 0}.service-total{display:flex;justify-content:space-between;margin-top:10px;padding-top:8px;border-top:1px dashed #ddd;font-size:12px;font-weight:700}
 </style>
 </head>
 <body>
@@ -165,6 +167,7 @@ button:disabled{opacity:.55;cursor:default}
 "use strict";
 
 var API_URL="https://iprint-preset-api.iprint-garphic1.workers.dev/presets";
+var MATERIALS_API_URL="https://iprint-preset-api.iprint-garphic1.workers.dev/materials";
 var KEY="iprint_mobile_v12";
 var selectedSheet="";
 var presets={};
@@ -375,6 +378,7 @@ async function deletePresetFromNotion(){
   return false;
 }
 function resetOutput(){
+ var st=$("serviceTotal");if(st)st.hidden=true;
  ["sheets","yield","gap","total","profit","sale"].forEach(function(id){
   var el=$(id);if(el)el.textContent="—";
  });
@@ -550,99 +554,185 @@ function drawPreview(p,b){
   }
 }
 
-function calculate(){
- try{
-  var p=presets[selectedSheet];
-  if(!p){resetOutput();return}
 
-  var W=parseFloat($("w").value);
-  var H=parseFloat($("h").value);
-  var Q=parseInt($("qty").value,10);
-  var C=parseFloat($("cost").value);
-  var P=parseFloat($("profitPercent").value);
 
-  if(!(W>0&&H>0&&Q>0&&C>=0&&P>=0)){
-   resetOutput();
-   return;
-  }
+var materials={};
+var selectedMaterials={};
 
-  var b=findBest(p,W,H);
-  if(!b){
-   $("sheets").textContent="0";
-   $("yield").textContent="ขนาดใหญ่เกินไป";
-   $("gap").textContent="—";
-   ["total","profit","sale"].forEach(function(id){$(id).textContent="—"});
-   $("sheetPreview").innerHTML="";
-   $("previewInfo").textContent="ชิ้นงานใหญ่เกินพื้นที่ใช้งาน";
-   return;
-  }
-
-  var count=Math.ceil(Q/b.yield);
-  var tc=count*C;
-  var pa=tc*P/100;
-
-  $("sheets").textContent=count.toLocaleString("th-TH");
-  $("yield").textContent=b.yield.toLocaleString("th-TH");
-  $("gap").textContent=b.gap;
-  $("total").textContent=tc.toLocaleString("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2});
-  $("profit").textContent=pa.toLocaleString("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2});
-  $("sale").textContent=(tc+pa).toLocaleString("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2});
-
-  drawPreview(p,b);
- }catch(e){
-  console.error("Iprint calculate error:",e);
- }
+function escMaterial(s){
+  return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 }
 
-async function syncNotion(){
- try{
-  var response=await fetch(API_URL,{method:"GET",cache:"no-store"});
-  if(!response.ok)throw new Error("HTTP "+response.status);
-  var data=await response.json();
-  if(!data||!Array.isArray(data.presets))throw new Error("Invalid API response");
+function normalizeMaterialUnit(unit){
+  var u=String(unit||"").trim().toLowerCase();
+  if(u==="sheet"||u==="sheets"||u==="แผ่น"||u==="per_sheet") return "sheet";
+  if(u==="piece"||u==="pieces"||u==="ชิ้น"||u==="ดวง"||u==="per_piece") return "piece";
+  if(u==="job"||u==="งาน"||u==="per_job") return "job";
+  return u;
+}
 
-  // Database is the ONLY source of preset definitions.
-  var next={};
-  data.presets.forEach(function(p){
-   if(!p || p.active===false || p.active==="false" || p.active===0) return;
-   if(!p.name || !(p.fullW>0) || !(p.fullH>0) || !(p.usableW>0) || !(p.usableH>0)) return;
+function materialUnitLabel(unit){
+  var u=normalizeMaterialUnit(unit);
+  if(u==="sheet") return "แผ่น";
+  if(u==="piece") return "ชิ้น";
+  if(u==="job") return "งาน";
+  return unit||"หน่วย";
+}
 
-   var id=String(p.id || ("notion_"+Date.now()+"_"+Math.random().toString(36).slice(2)));
-   next[id]={
-    name:String(p.name),
-    fullW:Number(p.fullW),
-    fullH:Number(p.fullH),
-    usableW:Number(p.usableW),
-    usableH:Number(p.usableH),
-    type:p.type||""
-   };
+function loadMaterials(){
+  var box=$("serviceList");
+  if(box) box.innerHTML='<div class="service-loading">กำลังโหลดข้อมูลจาก Notion…</div>';
+
+  fetch(MATERIALS_API_URL,{cache:"no-store"})
+    .then(function(r){
+      return r.text().then(function(t){
+        var d={};
+        try{d=JSON.parse(t)}catch(e){}
+        if(!r.ok) throw new Error(d.detail||d.error||("HTTP "+r.status));
+        return d;
+      });
+    })
+    .then(function(d){
+      materials={};
+      (d.materials||[]).forEach(function(m){materials[m.id]=m;});
+      renderMaterials();
+    })
+    .catch(function(e){
+      if(box) box.innerHTML='<div class="service-empty">โหลดข้อมูลไม่สำเร็จ: '+escMaterial(e.message)+'</div>';
+    });
+}
+
+function renderMaterials(){
+  var box=$("serviceList");
+  if(!box)return;
+
+  var ids=Object.keys(materials).sort(function(a,b){
+    return (Number(materials[a].sortOrder)||9999)-(Number(materials[b].sortOrder)||9999);
   });
 
-  presets=next;
-
-  if(!Object.keys(presets).length){
-   selectedSheet="";
-  }else if(!presets[selectedSheet]){
-   selectedSheet=Object.keys(presets)[0];
+  if(!ids.length){
+    box.innerHTML='<div class="service-empty">ยังไม่มีรายการ Active ใน Notion</div>';
+    return;
   }
 
-  renderSelect();
-  calculate();
+  box.innerHTML="";
 
-  var status=$("syncStatus");
-  if(status)status.textContent=Object.keys(presets).length
-    ? "Preset จาก Notion • "+Object.keys(presets).length+" รายการ"
-    : "Notion ไม่มี Preset ที่ Active อยู่";
- }catch(e){
-  // Do NOT fall back to embedded presets: there are none.
-  presets={};
-  selectedSheet="";
-  renderSelect();
-  calculate();
+  ids.forEach(function(id){
+    var m=materials[id];
 
-  var status2=$("syncStatus");
-  if(status2)status2.textContent="เชื่อมต่อ Notion ไม่สำเร็จ • ไม่มี Preset";
- }
+    var row=document.createElement("div");
+    row.className="service-item";
+
+    var left=document.createElement("div");
+    left.className="service-item-left";
+
+    var label=document.createElement("label");
+    label.className="service-switch";
+
+    var input=document.createElement("input");
+    input.type="checkbox";
+    input.checked=!!selectedMaterials[id];
+
+    input.addEventListener("change",function(){
+      if(input.checked) selectedMaterials[id]=true;
+      else delete selectedMaterials[id];
+
+      renderSelectedMaterials();
+    });
+
+    var slider=document.createElement("span");
+    slider.className="service-slider";
+    label.appendChild(input);
+    label.appendChild(slider);
+
+    var text=document.createElement("div");
+
+    var name=document.createElement("div");
+    name.className="service-item-name";
+    name.textContent=m.name;
+
+    var meta=document.createElement("div");
+    meta.className="service-item-meta";
+    meta.textContent=(m.material||m.category||"วัสดุ")+" • "+materialUnitLabel(m.unit);
+
+    text.appendChild(name);
+    text.appendChild(meta);
+
+    left.appendChild(label);
+    left.appendChild(text);
+
+    var price=document.createElement("div");
+    price.className="service-item-price";
+    price.textContent="+ ฿"+Number(m.price||0).toFixed(2)+" / "+materialUnitLabel(m.unit);
+
+    row.appendChild(left);
+    row.appendChild(price);
+    box.appendChild(row);
+  });
+
+  renderSelectedMaterials();
+}
+
+function getProductionCounts(){
+  var result=$("result");
+  var text=result?(result.innerText||""):"";
+  var sheets=0,pieces=0;
+
+  var sm=text.match(/(\d+(?:\.\d+)?)\s*แผ่น/i);
+  if(sm)sheets=Number(sm[1]);
+
+  var pm=text.match(/(\d+(?:\.\d+)?)\s*(?:ชิ้น|ดวง)/i);
+  if(pm)pieces=Number(pm[1]);
+
+  return {sheets:sheets,pieces:pieces};
+}
+
+function calculateMaterialCost(m){
+  var c=getProductionCounts();
+  var price=Number(m.price)||0;
+  var unit=normalizeMaterialUnit(m.unit);
+
+  if(unit==="sheet") return price*c.sheets;
+  if(unit==="piece") return price*c.pieces;
+  if(unit==="job") return price;
+
+  return 0;
+}
+
+function selectedMaterialTotal(){
+  var total=0;
+
+  Object.keys(selectedMaterials).forEach(function(id){
+    if(materials[id]) total+=calculateMaterialCost(materials[id]);
+  });
+
+  return total;
+}
+
+function renderSelectedMaterials(){
+  var box=$("selectedServices");
+  if(!box)return;
+
+  box.innerHTML="";
+
+  Object.keys(selectedMaterials).forEach(function(id){
+    var m=materials[id];
+    if(!m)return;
+
+    var row=document.createElement("div");
+    row.className="selected-service-row";
+
+    var left=document.createElement("span");
+    left.textContent=m.name;
+
+    var right=document.createElement("span");
+    right.textContent="+ ฿"+calculateMaterialCost(m).toFixed(2);
+
+    row.appendChild(left);
+    row.appendChild(right);
+    box.appendChild(row);
+  });
 }
 
 function bind(){
@@ -718,12 +808,14 @@ window.Iprint={
 };
 
 if(document.readyState==="loading"){
- document.addEventListener("DOMContentLoaded",bind);
+ document.addEventListener("DOMContentLoaded",function(){bind();loadMaterials();});
 }else{
  bind();
+ loadMaterials();
 }
 
 })();
 </script>
+<div class="service-section"><div class="service-title">วัสดุ / บริการเพิ่มเติม</div><div id="serviceList" class="service-list"><div class="service-loading">กำลังโหลดข้อมูลจาก Notion…</div></div><div id="selectedServices" class="selected-services"></div></div>
 </body>
 </html>
