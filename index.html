@@ -76,6 +76,7 @@ button{display:block;width:100%;min-height:48px;border-radius:11px;cursor:pointe
 <button type="button" id="deletePreset" onclick="Iprint.deletePaper()">ลบกระดาษ</button>
 </div>
 <div class="hint">สติกเกอร์ 13×19 ใช้พื้นที่ 30×40 cm • กระดาษทั่วไปเว้นขอบ 1.5 cm ทุกด้าน • ขนาดที่เพิ่มเองลบได้</div>
+<div class="hint" id="syncStatus">Preset ในเครื่อง • กำลังเชื่อมต่อ Notion…</div>
 </div>
 
 <div class="field">
@@ -162,15 +163,19 @@ button{display:block;width:100%;min-height:48px;border-radius:11px;cursor:pointe
 (function(){
 "use strict";
 var presets={
- sticker13x19:{name:'13 × 19" • สติกเกอร์',fullW:33.02,fullH:48.26,usableW:30,usableH:40},
- paper13x19:{name:'13 × 19" • กระดาษ',fullW:33.02,fullH:48.26,usableW:30.02,usableH:45.26},
- papera3:{name:'A3 • กระดาษ',fullW:29.7,fullH:42,usableW:26.7,usableH:39}
+  sticker13x19:{name:'13 × 19" • สติกเกอร์',fullW:33.02,fullH:48.26,usableW:30,usableH:40},
+  paper13x19:{name:'13 × 19" • กระดาษ',fullW:33.02,fullH:48.26,usableW:30.02,usableH:45.26},
+  full13x19_3mm:{name:'เต็มแผ่นเหลือแค่ เว้นขอบ 3mm',fullW:33.02,fullH:48.26,usableW:32.42,usableH:47.66}
 };
-var KEY="iprint_mobile_v7", selectedSheet="sticker13x19";
+var API_URL="https://iprint-preset-api.iprint-garphic1.workers.dev/presets";
+var KEY="iprint_mobile_v8", LEGACY_KEY="iprint_mobile_v7", selectedSheet="sticker13x19";
+
 function $(id){return document.getElementById(id)}
+
 function loadState(){
  try{
-  var s=JSON.parse(localStorage.getItem(KEY)||"{}");
+  var raw=localStorage.getItem(KEY)||localStorage.getItem(LEGACY_KEY)||"{}";
+  var s=JSON.parse(raw);
   if(s.customPresets)Object.assign(presets,s.customPresets);
   if(s.values){
    ["w","h","qty","cost","profitPercent"].forEach(function(id){
@@ -180,31 +185,80 @@ function loadState(){
   if(s.selectedSheet&&presets[s.selectedSheet])selectedSheet=s.selectedSheet;
  }catch(e){}
 }
+
 function saveState(){
  try{
   var custom={};
-  Object.keys(presets).forEach(function(id){if(id.indexOf("custom_")===0)custom[id]=presets[id]});
-  localStorage.setItem(KEY,JSON.stringify({customPresets:custom,selectedSheet:selectedSheet,
-   values:{w:$("w").value,h:$("h").value,qty:$("qty").value,cost:$("cost").value,profitPercent:$("profitPercent").value}}));
+  Object.keys(presets).forEach(function(id){
+   if(id.indexOf("custom_")===0)custom[id]=presets[id];
+  });
+  localStorage.setItem(KEY,JSON.stringify({
+   customPresets:custom,
+   selectedSheet:selectedSheet,
+   values:{w:$("w").value,h:$("h").value,qty:$("qty").value,cost:$("cost").value,profitPercent:$("profitPercent").value}
+  }));
  }catch(e){}
 }
+
 function renderSelect(){
  var sel=$("sheet"),wanted=selectedSheet;
  sel.innerHTML="";
  Object.keys(presets).forEach(function(id){
   var p=presets[id],o=document.createElement("option");
-  o.value=id;o.textContent=p.name+" ("+p.fullW+" × "+p.fullH+" cm)";sel.appendChild(o);
+  o.value=id;
+  o.textContent=p.name+" ("+p.fullW+" × "+p.fullH+" cm)";
+  sel.appendChild(o);
  });
  if(!presets[wanted])wanted=Object.keys(presets)[0];
- selectedSheet=wanted;sel.value=wanted;
+ selectedSheet=wanted;
+ sel.value=wanted;
 }
-function selectPaper(id){if(presets[id]){selectedSheet=id;$("sheet").value=id;saveState();calculate()}}
+
+function selectPaper(id){
+ if(presets[id]){
+  selectedSheet=id;
+  $("sheet").value=id;
+  saveState();
+  calculate();
+ }
+}
+
+async function loadRemotePresets(){
+ try{
+  var r=await fetch(API_URL,{method:"GET",cache:"no-store"});
+  if(!r.ok)throw new Error("HTTP "+r.status);
+  var data=await r.json();
+  if(!data||!Array.isArray(data.presets))throw new Error("Invalid data");
+
+  data.presets.forEach(function(p){
+   if(!p||!p.name||!(p.fullW>0)||!(p.fullH>0)||!(p.usableW>0)||!(p.usableH>0))return;
+   var id=Object.keys(presets).find(function(k){return presets[k].name===p.name});
+   if(!id)id="notion_"+String(p.id||Date.now()).replace(/[^a-zA-Z0-9_-]/g,"");
+   presets[id]={
+    name:p.name,fullW:Number(p.fullW),fullH:Number(p.fullH),
+    usableW:Number(p.usableW),usableH:Number(p.usableH),type:p.type||""
+   };
+  });
+
+  renderSelect();
+  calculate();
+  return true;
+ }catch(e){
+  renderSelect();
+  calculate();
+  return false;
+}
 function openPreset(){$("presetError").textContent="";$("presetModal").style.display="block";document.body.style.overflow="hidden"}
 function closePreset(){$("presetModal").style.display="none";document.body.style.overflow=""}
 function deletePaper(){
- if(selectedSheet.indexOf("custom_")!==0){alert("ขนาดมาตรฐานลบไม่ได้");return}
+ if(selectedSheet.indexOf("custom_")!==0){
+  alert("Preset มาตรฐานจาก Notion/ระบบกลางลบจากหน้านี้ไม่ได้");
+  return;
+ }
  if(!confirm('ต้องการลบ "'+presets[selectedSheet].name+'" ใช่หรือไม่?'))return;
- delete presets[selectedSheet];selectedSheet=Object.keys(presets)[0];renderSelect();saveState();calculate();
+ delete presets[selectedSheet];
+ selectedSheet=Object.keys(presets)[0];
+ renderSelect();saveState();calculate();
 }
 function savePreset(){
  var name=$("pName").value.trim(),fw=parseFloat($("pW").value),fh=parseFloat($("pH").value),mode=$("pMode").value,uw,uh;
@@ -283,7 +337,11 @@ $("pMode").addEventListener("change",function(){$("customArea").style.display=th
  $(id).addEventListener("input",function(){saveState();calculate()});
  $(id).addEventListener("change",function(){saveState();calculate()});
 });
-loadState();renderSelect();calculate();window.addEventListener("resize",function(){setTimeout(calculate,50)});
+loadState();renderSelect();calculate();
+loadRemotePresets().then(function(ok){
+ $("syncStatus").textContent=ok?"Preset จาก Notion • ซิงค์แล้ว":"Preset ในเครื่อง • ใช้งานแบบสำรอง";
+});
+window.addEventListener("resize",function(){setTimeout(calculate,50)});
 window.addEventListener("orientationchange",function(){setTimeout(calculate,100)});
 })();
 </script>
