@@ -37,28 +37,13 @@ button:disabled{opacity:.55;cursor:default}
 #iprint-preview{margin-top:18px;padding:13px;border:1px solid #e1e3e6;border-radius:14px;background:#f7f7f8}
 .preview-title{font-size:13px;font-weight:700;line-height:1.35;margin-bottom:4px}
 .preview-sub{font-size:11px;color:#73777e;margin-bottom:12px}
-.preview-scroll{width:100%;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch}
-.sheet-preview{position:relative;margin:0 auto;background:#fff;border:1.5px solid #9da3aa;overflow:hidden;display:flex;flex-wrap:wrap;align-content:flex-start;flex:none}
-.piece{background:#e8eaed;border:1px solid #8d949c;display:flex;align-items:center;justify-content:center;color:#656b72;font-size:9px;line-height:1;overflow:hidden}
+.preview-scroll{width:100%;overflow:auto;-webkit-overflow-scrolling:touch;padding:2px 0 4px}
+.sheet-preview{position:relative;margin:0 auto;background:#fff;border:1.5px solid #9da3aa;overflow:hidden;display:block;flex:none}
+.preview-usable{position:absolute;border:1px dashed #aeb4bb;background:#fff;overflow:hidden}
+.preview-grid{position:absolute;left:0;top:0;display:grid;align-content:start}
+.piece[data-rotate="true"]{font-weight:600}
+.piece{background:#e8eaed;border:1px solid #8d949c;display:flex;align-items:center;justify-content:center;color:#656b72;font-size:9px;line-height:1;overflow:hidden;min-width:0;min-height:0}
 .preview-note{font-size:11px;color:#73777e;line-height:1.4;margin-top:7px}
-
-
-.material-service-panel{margin-top:18px;padding:15px;border:1px solid #e1e3e6;border-radius:14px;background:#fff}
-.ms-title{font-size:15px;font-weight:800;margin-bottom:12px}
-.ms-section{margin-top:14px}
-.ms-section:first-child{margin-top:0}
-.ms-section-title{font-size:12px;font-weight:800;color:#73777e;text-transform:uppercase;letter-spacing:.03em;margin-bottom:7px}
-.ms-select{width:100%;height:48px;border:1px solid #d7dbe0;border-radius:10px;background:#fff;padding:0 12px;font-size:16px}
-.service-group{border:1px solid #eceef0;border-radius:10px;overflow:hidden;margin-top:8px}
-.service-row{display:flex;align-items:center;gap:10px;padding:11px 12px;border-top:1px solid #eceef0;cursor:pointer}
-.service-row:first-child{border-top:0}
-.service-row input{width:20px;height:20px;min-height:20px;flex:0 0 auto;accent-color:#17181a}
-.service-main{min-width:0;flex:1}
-.service-name{font-size:14px;font-weight:700}
-.service-meta{font-size:11px;color:#73777e;margin-top:2px}
-.service-price{font-size:13px;font-weight:800;white-space:nowrap}
-.ms-status{font-size:11px;color:#73777e;margin-top:8px}
-.ms-empty{font-size:12px;color:#999;padding:10px 0}
 
 .result{margin-top:18px;padding:18px 15px;border-radius:15px;background:#fff;border:1px solid #e1e1e1}
 .label{font-size:13px;color:#73777e}
@@ -78,6 +63,28 @@ button:disabled{opacity:.55;cursor:default}
 #error{color:#b42318;font-size:12px;margin-top:8px}
 #presetError{color:#b42318;font-size:12px;margin-top:8px;min-height:14px}
 @media(max-width:380px){.app{padding:12px}h1{font-size:20px}.big{font-size:32px}input,select{font-size:16px}}
+
+.service-section{margin-top:18px;padding-top:16px;border-top:1px solid #e5e7eb}.service-title{font-size:14px;font-weight:700;margin-bottom:10px}.service-list{display:grid;gap:8px}.service-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border:1px solid #e5e7eb;border-radius:10px;background:#fff}.service-left{display:flex;align-items:center;gap:10px;min-width:0}.service-name{font-size:13px;font-weight:600}.service-meta{font-size:11px;color:#737373;margin-top:2px}.service-price{font-size:12px;white-space:nowrap;color:#555}.service-switch{position:relative;width:40px;height:22px;display:block;flex:0 0 auto}.service-switch input{opacity:0;width:0;height:0}.service-slider{position:absolute;inset:0;background:#d1d5db;border-radius:99px;cursor:pointer;transition:.18s}.service-slider:before{content:"";position:absolute;width:18px;height:18px;left:2px;top:2px;background:#fff;border-radius:50%;transition:.18s;box-shadow:0 1px 3px rgba(0,0,0,.18)}.service-switch input:checked+.service-slider{background:#111827}.service-switch input:checked+.service-slider:before{transform:translateX(18px)}.service-empty{font-size:12px;color:#777;padding:8px 0}.service-total{display:flex;justify-content:space-between;margin-top:10px;padding-top:8px;border-top:1px dashed #ddd;font-size:12px;font-weight:700}
+.service-selected-cost{font-size:12px;font-weight:700;white-space:nowrap}
+#serviceTotal{display:none!important}
+
+.material-service-panel{margin-top:18px;padding:15px;border:1px solid #e1e3e6;border-radius:14px;background:#fff}
+.ms-title{font-size:14px;font-weight:800;margin-bottom:12px}
+.ms-section{margin-top:14px}
+.ms-section:first-child{margin-top:0}
+.ms-section-title{font-size:12px;font-weight:800;color:#73777e;margin-bottom:7px}
+.ms-select{width:100%;height:50px;border:1px solid #ddd;border-radius:11px;background:#fff;padding:0 13px;font-size:17px;color:#17181a}
+.ms-status{font-size:11px;line-height:1.4;color:#777;margin-top:6px}
+.ms-group{margin-top:9px;border:1px solid #e1e3e6;border-radius:11px;overflow:hidden}
+.ms-group-title{padding:8px 11px;background:#f7f7f8;font-size:11px;font-weight:800;color:#73777e}
+.ms-service-row{display:flex;align-items:center;gap:10px;padding:11px 12px;border-top:1px solid #eceef0;cursor:pointer}
+.ms-service-row:first-child{border-top:0}
+.ms-service-row input{width:20px;height:20px;min-height:20px;flex:0 0 auto;accent-color:#17181a}
+.ms-service-main{min-width:0;flex:1}
+.ms-service-name{font-size:13px;font-weight:700}
+.ms-service-meta{font-size:11px;color:#777;margin-top:2px}
+.ms-service-price{font-size:12px;font-weight:700;white-space:nowrap}
+
 </style>
 </head>
 <body>
@@ -86,11 +93,11 @@ button:disabled{opacity:.55;cursor:default}
 
 <div class="field">
 <label>ไซส์ / พื้นที่ใช้งาน</label>
-<select id="sheet" onchange="Iprint.selectPaper(this.value)" aria-label="เลือกขนาดกระดาษ">
+<select id="sheet" aria-label="เลือกขนาดกระดาษ">
 
 </select>
 <div class="paper-actions">
-<button type="button" id="addPreset" onclick="Iprint.openPreset();return false;">＋ เพิ่มขนาดกระดาษ</button>
+<button type="button" id="addPreset">＋ เพิ่มขนาดกระดาษ</button>
 <button type="button" id="deletePreset">ลบกระดาษ</button>
 </div>
 <div class="hint">สติกเกอร์ 13×19 ใช้พื้นที่ 30×40 cm • กระดาษทั่วไปเว้นขอบ 1.5 cm ทุกด้าน • ขนาดที่เพิ่มเองลบได้</div><div class="hint" id="syncStatus">Preset ในเครื่อง • กำลังเริ่มต้นระบบ…</div>
@@ -120,15 +127,15 @@ button:disabled{opacity:.55;cursor:default}
     <select id="materialSelect" class="ms-select" aria-label="เลือกวัสดุ">
       <option value="">กำลังโหลดวัสดุจาก Notion…</option>
     </select>
-    <div class="ms-status" id="materialStatus">—</div>
+    <div id="materialStatus" class="ms-status">—</div>
   </div>
 
   <div class="ms-section">
     <div class="ms-section-title">บริการเพิ่มเติม</div>
     <div id="servicesContainer">
-      <div class="ms-empty">กำลังโหลดบริการจาก Notion…</div>
+      <div class="ms-status">กำลังโหลดบริการจาก Notion…</div>
     </div>
-    <div class="ms-status" id="serviceStatus">—</div>
+    <div id="serviceStatus" class="ms-status">—</div>
   </div>
 </div>
 
@@ -136,7 +143,7 @@ button:disabled{opacity:.55;cursor:default}
 <div class="preview-title">Preview พื้นที่กระดาษคำนวนตามพื้นที่จริงแต่Layout ดูคร่าวๆเท่านั้นไม่ใช่การจัดวางงานจริง</div>
 <div class="preview-sub" id="previewInfo">—</div>
 <div class="preview-scroll"><div class="sheet-preview" id="sheetPreview"></div></div>
-<div class="preview-note">แสดงพื้นที่ใช้งาน + การวางชิ้นงานตาม Bleed 3 mm และช่องไฟที่ระบบเลือก</div>
+<div class="preview-note">แสดงพื้นที่ใช้งาน + การวางชิ้นงานตาม Bleed 3 mm โดยชิ้นงานชิดกันไม่มีช่องไฟ</div>
 </div>
 
 <div class="result">
@@ -150,6 +157,17 @@ button:disabled{opacity:.55;cursor:default}
 
 <div class="label" style="margin-top:16px">กำไรที่ต้องการ (%)</div>
 <input id="profitPercent" type="number" min="0" step="1" value="30" style="margin-top:7px">
+
+
+<div class="service-section">
+  <div class="service-title">วัสดุ / บริการเพิ่มเติม</div>
+  <div id="serviceList" class="service-list">
+    <div class="service-empty">กำลังโหลดจาก Notion…</div>
+  </div>
+  
+    <span>฿0.00</span>
+  </div>
+</div>
 
 <div class="label" style="margin-top:16px">ต้นทุนทั้งหมด</div>
 <div class="total"><span id="total">—</span> บาท</div>
@@ -200,17 +218,17 @@ button:disabled{opacity:.55;cursor:default}
 <script>(function(){
 "use strict";
 
-var API_BASE="https://iprint-preset-api.iprint-garphic1.workers.dev";
-var API_URL=API_BASE+"/presets";
-var MATERIALS_API_URL=API_BASE+"/materials";
-var SERVICES_API_URL=API_BASE+"/services";
+var API_URL="https://iprint-preset-api.iprint-garphic1.workers.dev/presets";
+var MATERIALS_API_URL="https://iprint-preset-api.iprint-garphic1.workers.dev/materials";
+var SERVICES_API_URL="https://iprint-preset-api.iprint-garphic1.workers.dev/services";
+var MATERIALS_API_URL="https://iprint-preset-api.iprint-garphic1.workers.dev/materials";
 var KEY="iprint_mobile_v12";
+var selectedSheet="";
+var presets={};
 var materials=[];
 var services=[];
 var selectedMaterialId="";
 var selectedServiceIds={};
-var selectedSheet="";
-var presets={};
 
 function $(id){return document.getElementById(id);}
 
@@ -418,7 +436,177 @@ async function deletePresetFromNotion(){
   return false;
 }
 
+function msFormatMoney(v){
+  var n=Number(v);
+  if(!isFinite(n))n=0;
+  return "฿"+n.toLocaleString("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+function msFormatUnit(v){
+  var x=String(v||"").toLowerCase().trim();
+  if(x==="sheet")return"แผ่น";
+  if(x==="piece")return"ชิ้น";
+  if(x==="job")return"งาน";
+  return v||"หน่วย";
+}
+
+function msRenderMaterials(){
+  var sel=$("materialSelect");
+  if(!sel)return;
+  sel.innerHTML="";
+
+  if(!materials.length){
+    var empty=document.createElement("option");
+    empty.value="";
+    empty.textContent="ไม่พบวัสดุที่ Active";
+    empty.disabled=true;
+    empty.selected=true;
+    sel.appendChild(empty);
+    if($("materialStatus"))$("materialStatus").textContent="ไม่พบข้อมูลจาก Notion";
+    return;
+  }
+
+  var placeholder=document.createElement("option");
+  placeholder.value="";
+  placeholder.textContent="เลือกวัสดุ";
+  placeholder.disabled=true;
+  placeholder.selected=!selectedMaterialId;
+  sel.appendChild(placeholder);
+
+  materials.forEach(function(m){
+    var opt=document.createElement("option");
+    opt.value=String(m.id);
+    opt.textContent=String(m.name)+" • "+msFormatMoney(m.price)+" / "+msFormatUnit(m.unit);
+    if(String(m.id)===String(selectedMaterialId))opt.selected=true;
+    sel.appendChild(opt);
+  });
+
+  if($("materialStatus"))$("materialStatus").textContent="Notion • "+materials.length+" วัสดุ";
+}
+
+function msRenderServices(){
+  var box=$("servicesContainer");
+  if(!box)return;
+  box.innerHTML="";
+
+  if(!services.length){
+    box.innerHTML='<div class="ms-status">ไม่พบบริการที่ Active</div>';
+    if($("serviceStatus"))$("serviceStatus").textContent="ไม่พบข้อมูลจาก Notion";
+    return;
+  }
+
+  var groups={};
+  services.forEach(function(s){
+    var cat=String(s.category||"Other");
+    if(!groups[cat])groups[cat]=[];
+    groups[cat].push(s);
+  });
+
+  Object.keys(groups).forEach(function(cat){
+    var wrap=document.createElement("div");
+    wrap.className="ms-group";
+
+    var title=document.createElement("div");
+    title.className="ms-group-title";
+    title.textContent=cat;
+    wrap.appendChild(title);
+
+    groups[cat].forEach(function(s){
+      var row=document.createElement("label");
+      row.className="ms-service-row";
+
+      var check=document.createElement("input");
+      check.type="checkbox";
+      check.value=String(s.id);
+      check.checked=!!selectedServiceIds[String(s.id)];
+      check.addEventListener("change",function(){
+        var id=String(s.id);
+        if(check.checked)selectedServiceIds[id]=true;
+        else delete selectedServiceIds[id];
+        // Phase 1: UI only. Do not touch existing price calculation.
+      });
+
+      var main=document.createElement("div");
+      main.className="ms-service-main";
+
+      var name=document.createElement("div");
+      name.className="ms-service-name";
+      name.textContent=String(s.name||"");
+
+      var meta=document.createElement("div");
+      meta.className="ms-service-meta";
+      meta.textContent=(s.material?String(s.material)+" • ":"")+"หน่วย "+msFormatUnit(s.unit);
+
+      main.appendChild(name);
+      main.appendChild(meta);
+
+      var price=document.createElement("div");
+      price.className="ms-service-price";
+      price.textContent=msFormatMoney(s.price);
+
+      row.appendChild(check);
+      row.appendChild(main);
+      row.appendChild(price);
+      wrap.appendChild(row);
+    });
+
+    box.appendChild(wrap);
+  });
+
+  if($("serviceStatus"))$("serviceStatus").textContent="Notion • "+services.length+" บริการ";
+}
+
+async function msLoadMaterials(){
+  try{
+    var r=await fetch(MATERIALS_API_URL,{method:"GET",cache:"no-store"});
+    var t=await r.text();
+    var d={}; try{d=JSON.parse(t)}catch(e){}
+    if(!r.ok)throw new Error(d.detail||d.error||("HTTP "+r.status));
+    if(!Array.isArray(d.materials))throw new Error("Invalid /materials response");
+    materials=d.materials.filter(function(m){return m&&m.name&&m.active===true;});
+    msRenderMaterials();
+  }catch(e){
+    materials=[];
+    msRenderMaterials();
+    if($("materialStatus"))$("materialStatus").textContent="เชื่อมต่อ Materials ไม่สำเร็จ";
+    console.error("GET /materials",e);
+  }
+}
+
+async function msLoadServices(){
+  try{
+    var r=await fetch(SERVICES_API_URL,{method:"GET",cache:"no-store"});
+    var t=await r.text();
+    var d={}; try{d=JSON.parse(t)}catch(e){}
+    if(!r.ok)throw new Error(d.detail||d.error||("HTTP "+r.status));
+    if(!Array.isArray(d.services))throw new Error("Invalid /services response");
+    services=d.services.filter(function(s){return s&&s.name&&s.active===true;})
+      .sort(function(a,b){return (Number(a.sortOrder)||9999)-(Number(b.sortOrder)||9999);});
+    msRenderServices();
+  }catch(e){
+    services=[];
+    msRenderServices();
+    if($("serviceStatus"))$("serviceStatus").textContent="เชื่อมต่อ Services ไม่สำเร็จ";
+    console.error("GET /services",e);
+  }
+}
+
+function msBindUI(){
+  var sel=$("materialSelect");
+  if(sel){
+    sel.addEventListener("change",function(){
+      selectedMaterialId=this.value||"";
+      // Phase 1: selection only.
+    });
+  }
+  msRenderMaterials();
+  msRenderServices();
+  msLoadMaterials();
+  msLoadServices();
+}
+
 function resetOutput(){
+ var st=$("serviceTotal");if(st)st.hidden=true;
  ["sheets","yield","gap","total","profit","sale"].forEach(function(id){
   var el=$(id);if(el)el.textContent="—";
  });
@@ -430,9 +618,18 @@ function findBest(p,W,H){
   var uw=p.usableW*10;
   var uh=p.usableH*10;
   var best=null;
+
+  // Montax-style calculation:
+  // - Position size = actual layout size (W x H)
+  // - Gap between positions = 0 mm
+  // - Bleed is NOT added to the position pitch
+  //   because bleed belongs inside/around the artwork position.
   var gap=0;
 
+  // IMPORTANT: Bleed 3 mm/ด้าน is visual/production bleed only.
+  // It must not reduce the number of 40x40 mm positions.
   [false,true].forEach(function(rot){
+
     var pw=(rot?H:W)*10;
     var ph=(rot?W:H)*10;
 
@@ -457,198 +654,282 @@ function findBest(p,W,H){
 }
 
 function drawPreview(p,b){
- var preview=$("sheetPreview");
- if(!preview)return;
- preview.innerHTML="";
+  var preview=$("sheetPreview");
+  if(!preview)return;
 
- var fw=p.fullW*10,fh=p.fullH*10,uw=p.usableW*10,uh=p.usableH*10;
- var viewport=(document.documentElement&&document.documentElement.clientWidth)||window.innerWidth||320;
- var maxWidth=Math.max(220,Math.min(330,viewport-58));
- var scale=Math.min(1,maxWidth/fw);
+  preview.innerHTML="";
 
- preview.style.width=Math.round(fw*scale)+"px";
- preview.style.height=Math.round(fh*scale)+"px";
- preview.style.padding="0";
- preview.style.position="relative";
- preview.style.display="block";
- preview.style.boxSizing="border-box";
+  // ทุกค่าของ Calculator เป็น mm
+  var fw=p.fullW*10;
+  var fh=p.fullH*10;
+  var uw=p.usableW*10;
+  var uh=p.usableH*10;
 
- var box=document.createElement("div");
- box.style.position="absolute";
- box.style.left=Math.round((fw-uw)/2*scale)+"px";
- box.style.top=Math.round((fh-uh)/2*scale)+"px";
- box.style.width=Math.round(uw*scale)+"px";
- box.style.height=Math.round(uh*scale)+"px";
- box.style.border="1px dashed #aeb4bb";
- box.style.overflow="hidden";
- box.style.background="#fff";
- box.style.display="grid";
- box.style.gridTemplateColumns="repeat("+b.nx+","+Math.max(1,Math.round(b.pieceW*scale))+"px)";
- box.style.gridAutoRows=Math.max(1,Math.round(b.pieceH*scale))+"px";
- box.style.columnGap=Math.round(b.gap*scale)+"px";
- box.style.rowGap=Math.round(b.gap*scale)+"px";
- box.style.alignContent="start";
+  var scroll=preview.parentElement;
+  var available=(scroll && scroll.clientWidth)||320;
 
- preview.appendChild(box);
+  // Scale เฉพาะการแสดงผล ไม่เปลี่ยน geometry จริง
+  var maxWidth=Math.max(220,Math.min(520,available-4));
+  var scale=Math.min(1,maxWidth/fw);
 
- for(var i=0;i<b.yield;i++){
-  var piece=document.createElement("div");
-  piece.className="piece";
-  piece.style.width=Math.max(1,Math.round(b.pieceW*scale))+"px";
-  piece.style.height=Math.max(1,Math.round(b.pieceH*scale))+"px";
-  piece.textContent=i+1;
-  box.appendChild(piece);
- }
+  var previewW=Math.max(1,Math.round(fw*scale));
+  var previewH=Math.max(1,Math.round(fh*scale));
 
- var info=$("previewInfo");
- if(info){
-  info.textContent="กระดาษ "+p.fullW.toFixed(2)+" × "+p.fullH.toFixed(2)+" cm • พื้นที่ใช้งาน "+p.usableW.toFixed(2)+" × "+p.usableH.toFixed(2)+" cm • "+b.yield+" ดวง/แผ่น • ช่องไฟ 0 mm • "+(b.rotate?"หมุน 90°":"แนวปกติ");
- }
+  preview.style.width=previewW+"px";
+  preview.style.height=previewH+"px";
+  preview.style.padding="0";
+  preview.style.position="relative";
+  preview.style.display="block";
+  preview.style.boxSizing="border-box";
+
+  // พื้นที่ใช้งานจริง อยู่ตรงกลางกระดาษ
+  var usableLeft=((fw-uw)/2)*scale;
+  var usableTop=((fh-uh)/2)*scale;
+  var usableWpx=uw*scale;
+  var usableHpx=uh*scale;
+
+  var usable=document.createElement("div");
+  usable.className="preview-usable";
+  usable.style.position="absolute";
+  usable.style.left=Math.round(usableLeft)+"px";
+  usable.style.top=Math.round(usableTop)+"px";
+  usable.style.width=Math.max(1,Math.round(usableWpx))+"px";
+  usable.style.height=Math.max(1,Math.round(usableHpx))+"px";
+  usable.style.boxSizing="border-box";
+  usable.style.overflow="hidden";
+  preview.appendChild(usable);
+
+  // =====================================================
+  // สำคัญ:
+  // b.pieceW / b.pieceH มาจาก findBest() แล้ว
+  // และจะสลับ W/H เมื่อ rotate=true
+  //
+  // ห้ามใช้ W/H จาก input ตรง ๆ ใน Preview เพราะจะทำให้
+  // Layout ที่หมุน 90° กลับมาเป็นแนวเดิม
+  // =====================================================
+
+  var pieceW=b.pieceW;
+  var pieceH=b.pieceH;
+  var gap=0;
+
+  var pieceWpx=Math.max(1,pieceW*scale);
+  var pieceHpx=Math.max(1,pieceH*scale);
+  var gapPx=Math.max(0,gap*scale);
+
+  // ขนาด Layout ที่คำนวณจริง
+  var layoutW=b.nx*pieceW + Math.max(0,b.nx-1)*gap;
+  var layoutH=b.ny*pieceH + Math.max(0,b.ny-1)*gap;
+
+  var layoutWpx=layoutW*scale;
+  var layoutHpx=layoutH*scale;
+
+  // จัด Layout ให้อยู่กลางพื้นที่ใช้งาน
+  // ถ้าเกินพื้นที่ ให้เริ่มจาก 0 เพื่อไม่ให้ถูกตัด
+  var startX=Math.max(0,(uw-layoutW)/2)*scale;
+  var startY=Math.max(0,(uh-layoutH)/2)*scale;
+
+  var layout=document.createElement("div");
+  layout.style.position="absolute";
+  layout.style.left=Math.round(startX)+"px";
+  layout.style.top=Math.round(startY)+"px";
+  layout.style.width=Math.max(1,Math.round(layoutWpx))+"px";
+  layout.style.height=Math.max(1,Math.round(layoutHpx))+"px";
+  layout.style.pointerEvents="none";
+  usable.appendChild(layout);
+
+  // วางแต่ละชิ้นด้วยตำแหน่งจริง
+  // ไม่ใช้ CSS Grid เพื่อป้องกัน browser เปลี่ยน geometry เอง
+  for(var i=0;i<b.yield;i++){
+
+    var col=i%b.nx;
+    var row=Math.floor(i/b.nx);
+
+    var piece=document.createElement("div");
+    piece.className="piece";
+
+    piece.style.position="absolute";
+    piece.style.left=Math.round(col*(pieceW+gap)*scale)+"px";
+    piece.style.top=Math.round(row*(pieceH+gap)*scale)+"px";
+    piece.style.width=Math.max(1,Math.round(pieceWpx))+"px";
+    piece.style.height=Math.max(1,Math.round(pieceHpx))+"px";
+    piece.style.boxSizing="border-box";
+    piece.style.margin="0";
+
+    piece.textContent=i+1;
+
+    if(b.rotate){
+      piece.setAttribute("data-rotate","true");
+      piece.title="งานหมุน 90°";
+    }
+
+    layout.appendChild(piece);
+  }
+
+  var info=$("previewInfo");
+
+  if(info){
+
+    var orientation=b.rotate
+      ? "หมุนงาน 90°"
+      : "แนวปกติ";
+
+    info.textContent=
+      "กระดาษ "+p.fullW.toFixed(2)+" × "+p.fullH.toFixed(2)+
+      " cm • พื้นที่ใช้งาน "+p.usableW.toFixed(2)+" × "+p.usableH.toFixed(2)+
+      " cm • "+b.yield+" ดวง/แผ่น • ช่องไฟ "+b.gap+
+      " mm • "+orientation+
+      " • Layout "+b.nx+" × "+b.ny;
+  }
+}
+
+
+var materials={};
+var selectedMaterials={};
+
+function escapeHtml(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+
+function loadMaterials(){
+  var box=$("serviceList");
+  if(box)box.innerHTML='<div class="service-empty">กำลังโหลดจาก Notion…</div>';
+  fetch(MATERIALS_API_URL,{method:"GET",cache:"no-store"})
+    .then(async function(r){var t=await r.text(),d={};try{d=JSON.parse(t)}catch(e){}if(!r.ok)throw new Error(d.detail||d.error||("HTTP "+r.status));return d;})
+    .then(function(d){materials={};(d.materials||[]).forEach(function(m){materials[String(m.id)]=m;});renderMaterials();calculate();})
+    .catch(function(e){if(box)box.innerHTML='<div class="service-empty">โหลดบริการไม่สำเร็จ: '+escapeHtml(e.message)+'</div>';});
+}
+
+function renderMaterials(){
+  var box=$("serviceList");if(!box)return;
+  var ids=Object.keys(materials).sort(function(a,b){return (Number(materials[a].sortOrder)||9999)-(Number(materials[b].sortOrder)||9999);});
+  if(!ids.length){box.innerHTML='<div class="service-empty">ยังไม่มีรายการ Active ใน Materials Database</div>';return;}
+  box.innerHTML="";
+  ids.forEach(function(id){
+    var m=materials[id],row=document.createElement("div");row.className="service-item";
+    var left=document.createElement("div");left.className="service-left";
+    var label=document.createElement("label");label.className="service-switch";
+    var input=document.createElement("input");input.type="checkbox";input.checked=!!selectedMaterials[id];
+    input.addEventListener("change",function(){
+      if(input.checked) selectedMaterials[id]=true;
+      else delete selectedMaterials[id];
+      calculate();
+    });
+    var slider=document.createElement("span");slider.className="service-slider";label.appendChild(input);label.appendChild(slider);
+    var txt=document.createElement("div"),name=document.createElement("div"),meta=document.createElement("div");
+    name.className="service-name";name.textContent=m.name;
+    meta.className="service-meta";meta.textContent=(m.category||"")+(m.material?" • "+m.material:"");
+    txt.appendChild(name);txt.appendChild(meta);left.appendChild(label);left.appendChild(txt);
+    var price=document.createElement("div");
+    price.className="service-price";
+    price.textContent="+ ฿"+Number(m.price||0).toFixed(2)+" / "+formatUnit(m.unit);
+    row.appendChild(left);row.appendChild(price);
+
+    var costRow=document.createElement("div");
+    costRow.className="service-selected-cost";
+    costRow.id="service-cost-"+id;
+    costRow.style.display=input.checked?"block":"none";
+    costRow.textContent="฿0.00";
+    row.appendChild(costRow);
+
+    box.appendChild(row);
+  });
+}
+function normalizeMaterialUnit(u){
+  var x=String(u||"").trim().toLowerCase();
+  if(x==="sheet"||x==="sheets"||x==="แผ่น"||x==="per_sheet")return"sheet";
+  if(x==="piece"||x==="pieces"||x==="ชิ้น"||x==="ดวง"||x==="per_piece")return"piece";
+  if(x==="job"||x==="งาน"||x==="per_job")return"job";
+  return x;
+}
+function formatUnit(u){
+  var x=normalizeMaterialUnit(u);
+  if(x==="sheet")return"แผ่น";
+  if(x==="piece")return"ชิ้น";
+  if(x==="job")return"งาน";
+  return u||"หน่วย";
+}
+function getSelectedServiceCost(sheetCount,pieceCount){
+  var total=0;
+  Object.keys(selectedMaterials).forEach(function(id){
+    var m=materials[id];if(!m)return;
+    var price=Number(m.price)||0;
+    var unit=normalizeMaterialUnit(m.unit);
+    if(unit==="sheet")total+=price*sheetCount;
+    else if(unit==="piece")total+=price*pieceCount;
+    else if(unit==="job")total+=price;
+  });
+  return total;
+}
+function updateServiceTotal(total,sheetCount,pieceCount){
+  var el=$("serviceTotal");
+  if(el){
+    if(total>0){
+      el.hidden=false;
+      el.lastElementChild.textContent="฿"+total.toLocaleString("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2});
+    }else{
+      el.hidden=true;
+    }
+  }
+
+  Object.keys(materials).forEach(function(id){
+    var row=document.getElementById("service-cost-"+id);
+    if(!row)return;
+    if(!selectedMaterials[id]){
+      row.style.display="none";
+      row.textContent="฿0.00";
+      return;
+    }
+    var m=materials[id];
+    var unit=normalizeMaterialUnit(m.unit);
+    var qty=unit==="sheet"?sheetCount:(unit==="piece"?pieceCount:1);
+    var amount=(Number(m.price)||0)*qty;
+    row.style.display="block";
+    row.textContent="฿"+amount.toLocaleString("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2});
+  });
 }
 
 function calculate(){
-  try{
-    var p=presets[selectedSheet];
-    if(!p){resetOutput();return}
+ try{
+  var p=presets[selectedSheet];
+  if(!p){resetOutput();return}
 
-    var W=parseFloat($("w").value);
-    var H=parseFloat($("h").value);
-    var Q=parseInt($("qty").value,10);
-    var C=parseFloat($("cost").value);
-    var P=parseFloat($("profitPercent").value);
+  var W=parseFloat($("w").value);
+  var H=parseFloat($("h").value);
+  var Q=parseInt($("qty").value,10);
+  var C=parseFloat($("cost").value);
+  var P=parseFloat($("profitPercent").value);
 
-    if(!(W>0&&H>0&&Q>0&&C>=0&&P>=0)){
-      resetOutput();
-      return;
-    }
-
-    var b=findBest(p,W,H);
-
-    if(!b){
-      $("sheets").textContent="0";
-      $("yield").textContent="ขนาดใหญ่เกินไป";
-      $("gap").textContent="—";
-      ["total","profit","sale"].forEach(function(id){$(id).textContent="—"});
-      $("sheetPreview").innerHTML="";
-      $("previewInfo").textContent="ชิ้นงานใหญ่เกินพื้นที่ใช้งาน";
-      return;
-    }
-
-    var count=Math.ceil(Q/b.yield);
-
-    // Base cost uses the existing calculator field.
-    var baseCost=count*C;
-
-    // Materials are selected as a single main material.
-    var materialCost=0;
-    if(selectedMaterialId){
-      var material=materials.find(function(m){
-        return String(m.id)===String(selectedMaterialId);
-      });
-
-      if(material){
-        var mu=normalizeMaterialUnit(material.unit);
-        var mp=Number(material.price)||0;
-
-        if(mu==="sheet")materialCost=mp*count;
-        else if(mu==="piece")materialCost=mp*Q;
-        else if(mu==="job")materialCost=mp;
-      }
-    }
-
-    // Services can be selected multiple times.
-    var serviceCost=0;
-    Object.keys(selectedServiceIds).forEach(function(id){
-      if(!selectedServiceIds[id])return;
-
-      var s=services.find(function(x){
-        return String(x.id)===String(id);
-      });
-
-      if(!s)return;
-
-      var su=normalizeMaterialUnit(s.unit);
-      var sp=Number(s.price)||0;
-
-      if(su==="sheet")serviceCost+=sp*count;
-      else if(su==="piece")serviceCost+=sp*Q;
-      else if(su==="job")serviceCost+=sp;
-    });
-
-    var tc=baseCost+materialCost+serviceCost;
-    var pa=tc*P/100;
-
-    $("sheets").textContent=count.toLocaleString("th-TH");
-    $("yield").textContent=b.yield.toLocaleString("th-TH");
-    $("gap").textContent="0";
-    $("total").textContent=tc.toLocaleString("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2});
-    $("profit").textContent=pa.toLocaleString("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2});
-    $("sale").textContent=(tc+pa).toLocaleString("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2});
-
-    drawPreview(p,b);
-  }catch(e){
-    console.error("Iprint calculate error:",e);
+  if(!(W>0&&H>0&&Q>0&&C>=0&&P>=0)){
+   resetOutput();
+   return;
   }
-}
 
-async function syncMaterials(){
-  var status=$("materialStatus");
-  try{
-    var response=await fetch(MATERIALS_API_URL,{method:"GET",cache:"no-store"});
-    var text=await response.text();
-    var data={};
-    try{data=JSON.parse(text);}catch(e){}
-
-    if(!response.ok){
-      throw new Error(data.detail||data.error||("HTTP "+response.status));
-    }
-
-    if(!data||!Array.isArray(data.materials)){
-      throw new Error("รูปแบบข้อมูล /materials ไม่ถูกต้อง");
-    }
-
-    materials=data.materials.filter(function(m){
-      return m && m.name && m.active===true;
-    });
-
-    renderMaterials();
-  }catch(e){
-    materials=[];
-    renderMaterials();
-    if(status)status.textContent="เชื่อมต่อ Materials ไม่สำเร็จ";
-    console.error("GET /materials:",e);
+  var b=findBest(p,W,H);
+  if(!b){
+   $("sheets").textContent="0";
+   $("yield").textContent="ขนาดใหญ่เกินไป";
+   $("gap").textContent="—";
+   ["total","profit","sale"].forEach(function(id){$(id).textContent="—"});
+   $("sheetPreview").innerHTML="";
+   $("previewInfo").textContent="ชิ้นงานใหญ่เกินพื้นที่ใช้งาน";
+   return;
   }
-}
 
-async function syncServices(){
-  var status=$("serviceStatus");
-  try{
-    var response=await fetch(SERVICES_API_URL,{method:"GET",cache:"no-store"});
-    var text=await response.text();
-    var data={};
-    try{data=JSON.parse(text);}catch(e){}
+  var count=Math.ceil(Q/b.yield);
+  var serviceCost=getSelectedServiceCost(count,Q);
+  var tc=(count*C)+serviceCost;
+  var pa=tc*P/100;
+  updateServiceTotal(serviceCost,count,Q);
 
-    if(!response.ok){
-      throw new Error(data.detail||data.error||("HTTP "+response.status));
-    }
+  $("sheets").textContent=count.toLocaleString("th-TH");
+  $("yield").textContent=b.yield.toLocaleString("th-TH");
+  $("gap").textContent=b.gap;
+  $("total").textContent=tc.toLocaleString("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2});
+  $("profit").textContent=pa.toLocaleString("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2});
+  $("sale").textContent=(tc+pa).toLocaleString("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2});
 
-    if(!data||!Array.isArray(data.services)){
-      throw new Error("รูปแบบข้อมูล /services ไม่ถูกต้อง");
-    }
-
-    services=data.services.filter(function(s){
-      return s && s.name && s.active===true;
-    }).sort(function(a,b){
-      return Number(a.sortOrder||9999)-Number(b.sortOrder||9999);
-    });
-
-    renderServices();
-  }catch(e){
-    services=[];
-    renderServices();
-    if(status)status.textContent="เชื่อมต่อ Services ไม่สำเร็จ";
-    console.error("GET /services:",e);
-  }
+  drawPreview(p,b);
+ }catch(e){
+  console.error("Iprint calculate error:",e);
+ }
 }
 
 async function syncNotion(){
@@ -760,8 +1041,7 @@ function bind(){
   window.addEventListener("orientationchange",function(){setTimeout(calculate,100);});
 
   // Load Notion after the local UI is initialized.
-  bindMaterialSelection();
-  setTimeout(function(){ syncNotion(); syncMaterials(); syncServices(); },0);
+  setTimeout(syncNotion,0);
 }
 
 // Public API exposed to the HTML buttons.
@@ -772,40 +1052,17 @@ window.Iprint={
   deletePaper:deletePresetFromNotion,
   savePreset:savePresetToNotion,
   calculate:calculate,
-  syncNotion:syncNotion,
-  syncMaterials:syncMaterials,
-  syncServices:syncServices
+  syncNotion:syncNotion
 };
 
 if(document.readyState==="loading"){
- document.addEventListener("DOMContentLoaded",bind);
+ document.addEventListener("DOMContentLoaded",function(){bind();loadMaterials();});
 }else{
  bind();
+ loadMaterials();
 }
 
 })();
 </script>
 </body>
-</html>function normalizeMaterialUnit(u){
-  var x=String(u||"").trim().toLowerCase();
-  if(x==="sheet"||x==="sheets"||x==="แผ่น"||x==="per_sheet")return"sheet";
-  if(x==="piece"||x==="pieces"||x==="ชิ้น"||x==="ดวง"||x==="per_piece")return"piece";
-  if(x==="job"||x==="งาน"||x==="per_job")return"job";
-  return x;
-}
-
-function formatUnit(u){
-  var x=normalizeMaterialUnit(u);
-  if(x==="sheet")return"แผ่น";
-  if(x==="piece")return"ชิ้น";
-  if(x==="job")return"งาน";
-  return u||"หน่วย";
-}
-
-function formatBaht(value){
-  var n=Number(value);
-  if(!isFinite(n))n=0;
-  return n.toLocaleString("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2});
-}
-
-
+</html>
