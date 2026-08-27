@@ -207,7 +207,10 @@ var SERVICES_API_URL=API_BASE+"/services";
 var KEY="iprint_mobile_v12";
 var materials=[];
 var services=[];
+var selectedMaterialId="";
+var selectedServiceIds={};
 var selectedSheet="";
+var presets={};
 
 function $(id){return document.getElementById(id);}
 
@@ -424,20 +427,33 @@ function resetOutput(){
 }
 
 function findBest(p,W,H){
- var uw=p.usableW*10,uh=p.usableH*10,best=null;
- for(var gap=2;gap<=10;gap++){
+  var uw=p.usableW*10;
+  var uh=p.usableH*10;
+  var best=null;
+  var gap=0;
+
   [false,true].forEach(function(rot){
-   var pw=(rot?H:W)*10+6;
-   var ph=(rot?W:H)*10+6;
-   var nx=Math.floor((uw+gap)/(pw+gap));
-   var ny=Math.floor((uh+gap)/(ph+gap));
-   var n=nx*ny;
-   if(n>0&&(!best||n>best.yield||(n===best.yield&&gap>best.gap))){
-    best={yield:n,gap:gap,rotate:rot,pieceW:pw,pieceH:ph,nx:nx,ny:ny};
-   }
+    var pw=(rot?H:W)*10;
+    var ph=(rot?W:H)*10;
+
+    var nx=Math.floor((uw+gap)/(pw+gap));
+    var ny=Math.floor((uh+gap)/(ph+gap));
+    var n=nx*ny;
+
+    if(n>0 && (!best || n>best.yield)){
+      best={
+        yield:n,
+        gap:0,
+        rotate:rot,
+        pieceW:pw,
+        pieceH:ph,
+        nx:nx,
+        ny:ny
+      };
+    }
   });
- }
- return best;
+
+  return best;
 }
 
 function drawPreview(p,b){
@@ -486,52 +502,153 @@ function drawPreview(p,b){
 
  var info=$("previewInfo");
  if(info){
-  info.textContent="กระดาษ "+p.fullW.toFixed(2)+" × "+p.fullH.toFixed(2)+" cm • พื้นที่ใช้งาน "+p.usableW.toFixed(2)+" × "+p.usableH.toFixed(2)+" cm • "+b.yield+" ดวง/แผ่น • ช่องไฟ "+b.gap+" mm • "+(b.rotate?"หมุน 90°":"แนวปกติ");
+  info.textContent="กระดาษ "+p.fullW.toFixed(2)+" × "+p.fullH.toFixed(2)+" cm • พื้นที่ใช้งาน "+p.usableW.toFixed(2)+" × "+p.usableH.toFixed(2)+" cm • "+b.yield+" ดวง/แผ่น • ช่องไฟ 0 mm • "+(b.rotate?"หมุน 90°":"แนวปกติ");
  }
 }
 
 function calculate(){
- try{
-  var p=presets[selectedSheet];
-  if(!p){resetOutput();return}
+  try{
+    var p=presets[selectedSheet];
+    if(!p){resetOutput();return}
 
-  var W=parseFloat($("w").value);
-  var H=parseFloat($("h").value);
-  var Q=parseInt($("qty").value,10);
-  var C=parseFloat($("cost").value);
-  var P=parseFloat($("profitPercent").value);
+    var W=parseFloat($("w").value);
+    var H=parseFloat($("h").value);
+    var Q=parseInt($("qty").value,10);
+    var C=parseFloat($("cost").value);
+    var P=parseFloat($("profitPercent").value);
 
-  if(!(W>0&&H>0&&Q>0&&C>=0&&P>=0)){
-   resetOutput();
-   return;
+    if(!(W>0&&H>0&&Q>0&&C>=0&&P>=0)){
+      resetOutput();
+      return;
+    }
+
+    var b=findBest(p,W,H);
+
+    if(!b){
+      $("sheets").textContent="0";
+      $("yield").textContent="ขนาดใหญ่เกินไป";
+      $("gap").textContent="—";
+      ["total","profit","sale"].forEach(function(id){$(id).textContent="—"});
+      $("sheetPreview").innerHTML="";
+      $("previewInfo").textContent="ชิ้นงานใหญ่เกินพื้นที่ใช้งาน";
+      return;
+    }
+
+    var count=Math.ceil(Q/b.yield);
+
+    // Base cost uses the existing calculator field.
+    var baseCost=count*C;
+
+    // Materials are selected as a single main material.
+    var materialCost=0;
+    if(selectedMaterialId){
+      var material=materials.find(function(m){
+        return String(m.id)===String(selectedMaterialId);
+      });
+
+      if(material){
+        var mu=normalizeMaterialUnit(material.unit);
+        var mp=Number(material.price)||0;
+
+        if(mu==="sheet")materialCost=mp*count;
+        else if(mu==="piece")materialCost=mp*Q;
+        else if(mu==="job")materialCost=mp;
+      }
+    }
+
+    // Services can be selected multiple times.
+    var serviceCost=0;
+    Object.keys(selectedServiceIds).forEach(function(id){
+      if(!selectedServiceIds[id])return;
+
+      var s=services.find(function(x){
+        return String(x.id)===String(id);
+      });
+
+      if(!s)return;
+
+      var su=normalizeMaterialUnit(s.unit);
+      var sp=Number(s.price)||0;
+
+      if(su==="sheet")serviceCost+=sp*count;
+      else if(su==="piece")serviceCost+=sp*Q;
+      else if(su==="job")serviceCost+=sp;
+    });
+
+    var tc=baseCost+materialCost+serviceCost;
+    var pa=tc*P/100;
+
+    $("sheets").textContent=count.toLocaleString("th-TH");
+    $("yield").textContent=b.yield.toLocaleString("th-TH");
+    $("gap").textContent="0";
+    $("total").textContent=tc.toLocaleString("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2});
+    $("profit").textContent=pa.toLocaleString("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2});
+    $("sale").textContent=(tc+pa).toLocaleString("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2});
+
+    drawPreview(p,b);
+  }catch(e){
+    console.error("Iprint calculate error:",e);
   }
+}
 
-  var b=findBest(p,W,H);
-  if(!b){
-   $("sheets").textContent="0";
-   $("yield").textContent="ขนาดใหญ่เกินไป";
-   $("gap").textContent="—";
-   ["total","profit","sale"].forEach(function(id){$(id).textContent="—"});
-   $("sheetPreview").innerHTML="";
-   $("previewInfo").textContent="ชิ้นงานใหญ่เกินพื้นที่ใช้งาน";
-   return;
+async function syncMaterials(){
+  var status=$("materialStatus");
+  try{
+    var response=await fetch(MATERIALS_API_URL,{method:"GET",cache:"no-store"});
+    var text=await response.text();
+    var data={};
+    try{data=JSON.parse(text);}catch(e){}
+
+    if(!response.ok){
+      throw new Error(data.detail||data.error||("HTTP "+response.status));
+    }
+
+    if(!data||!Array.isArray(data.materials)){
+      throw new Error("รูปแบบข้อมูล /materials ไม่ถูกต้อง");
+    }
+
+    materials=data.materials.filter(function(m){
+      return m && m.name && m.active===true;
+    });
+
+    renderMaterials();
+  }catch(e){
+    materials=[];
+    renderMaterials();
+    if(status)status.textContent="เชื่อมต่อ Materials ไม่สำเร็จ";
+    console.error("GET /materials:",e);
   }
+}
 
-  var count=Math.ceil(Q/b.yield);
-  var tc=count*C;
-  var pa=tc*P/100;
+async function syncServices(){
+  var status=$("serviceStatus");
+  try{
+    var response=await fetch(SERVICES_API_URL,{method:"GET",cache:"no-store"});
+    var text=await response.text();
+    var data={};
+    try{data=JSON.parse(text);}catch(e){}
 
-  $("sheets").textContent=count.toLocaleString("th-TH");
-  $("yield").textContent=b.yield.toLocaleString("th-TH");
-  $("gap").textContent=b.gap;
-  $("total").textContent=tc.toLocaleString("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2});
-  $("profit").textContent=pa.toLocaleString("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2});
-  $("sale").textContent=(tc+pa).toLocaleString("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2});
+    if(!response.ok){
+      throw new Error(data.detail||data.error||("HTTP "+response.status));
+    }
 
-  drawPreview(p,b);
- }catch(e){
-  console.error("Iprint calculate error:",e);
- }
+    if(!data||!Array.isArray(data.services)){
+      throw new Error("รูปแบบข้อมูล /services ไม่ถูกต้อง");
+    }
+
+    services=data.services.filter(function(s){
+      return s && s.name && s.active===true;
+    }).sort(function(a,b){
+      return Number(a.sortOrder||9999)-Number(b.sortOrder||9999);
+    });
+
+    renderServices();
+  }catch(e){
+    services=[];
+    renderServices();
+    if(status)status.textContent="เชื่อมต่อ Services ไม่สำเร็จ";
+    console.error("GET /services:",e);
+  }
 }
 
 async function syncNotion(){
@@ -643,6 +760,7 @@ function bind(){
   window.addEventListener("orientationchange",function(){setTimeout(calculate,100);});
 
   // Load Notion after the local UI is initialized.
+  bindMaterialSelection();
   setTimeout(function(){ syncNotion(); syncMaterials(); syncServices(); },0);
 }
 
@@ -668,4 +786,26 @@ if(document.readyState==="loading"){
 })();
 </script>
 </body>
-</html>
+</html>function normalizeMaterialUnit(u){
+  var x=String(u||"").trim().toLowerCase();
+  if(x==="sheet"||x==="sheets"||x==="แผ่น"||x==="per_sheet")return"sheet";
+  if(x==="piece"||x==="pieces"||x==="ชิ้น"||x==="ดวง"||x==="per_piece")return"piece";
+  if(x==="job"||x==="งาน"||x==="per_job")return"job";
+  return x;
+}
+
+function formatUnit(u){
+  var x=normalizeMaterialUnit(u);
+  if(x==="sheet")return"แผ่น";
+  if(x==="piece")return"ชิ้น";
+  if(x==="job")return"งาน";
+  return u||"หน่วย";
+}
+
+function formatBaht(value){
+  var n=Number(value);
+  if(!isFinite(n))n=0;
+  return n.toLocaleString("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+
