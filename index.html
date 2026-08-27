@@ -530,6 +530,25 @@ button:disabled{opacity:.55;cursor:default}
 
 .quote-size-row td:first-child{font-weight:800}
 
+
+.quote-service-list{
+  margin:0;
+  padding-left:18px;
+}
+.quote-service-list li{
+  margin:2px 0;
+}
+
+
+.quote-service-list{
+  margin:0;
+  padding-left:18px;
+  line-height:1.5;
+}
+.quote-service-list li{
+  margin:1px 0;
+}
+
 </style>
 
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,400,0,0">
@@ -1489,13 +1508,13 @@ button:disabled{opacity:.55;cursor:default}
     }
 
     var services=[];
-    document.querySelectorAll("#servicesContainer input[type='checkbox']").forEach(function(input){
-      if(input.checked){
-        var row=input.closest(".service-item,.ms-service-row,label");
-        var nameNode=row && row.querySelector(".service-name,.ms-service-name");
-        var name=nameNode?nameNode.textContent.trim():"";
-        if(name)services.push(name);
-      }
+    document.querySelectorAll("#servicesContainer .service-item").forEach(function(row){
+      var input=row.querySelector("input[type='checkbox']");
+      if(!input || !input.checked)return;
+
+      var nameNode=row.querySelector(".service-name,.ms-service-name");
+      var name=nameNode?nameNode.textContent.trim():"";
+      if(name)services.push(name);
     });
 
     preview.innerHTML=
@@ -1518,7 +1537,11 @@ button:disabled{opacity:.55;cursor:default}
           '<tr><td>จำนวนชิ้นงาน</td><td>จำนวนงานที่สั่งผลิต</td><td>'+esc(el("qty")?.value||"—")+' ชิ้น</td></tr>'+
           '<tr><td>กำลังผลิต</td><td>'+esc(yieldCount)+' ชิ้น/แผ่น</td><td>฿'+esc(paperCost)+'</td></tr>'+
           '<tr><td>วัสดุ</td><td>'+esc(materialName)+'</td><td>฿'+esc(materialCost)+'</td></tr>'+
-          '<tr><td>บริการ</td><td>'+esc(services.length?services.join(", "):"-")+'</td><td>฿'+esc(serviceCost)+'</td></tr>'+
+          '<tr><td>บริการเสริม</td><td>' +
+          (services.length
+            ? '<ul class="quote-service-list">' + services.map(function(s){ return '<li>'+esc(s)+'</li>'; }).join("") + '</ul>'
+            : '-') +
+          '</td><td>฿'+esc(serviceCost)+'</td></tr>'+
         '</tbody>'+
       '</table>'+
       '<div class="quote-total"><strong>ราคาขาย ฿'+esc(sale)+'</strong></div>'+
@@ -1648,9 +1671,10 @@ button:disabled{opacity:.55;cursor:default}
     document.addEventListener("change",function(e){
       if(e.target && (
         e.target.id==="materialSelect" ||
-        (e.target.closest && e.target.closest("#servicesContainer"))
+        e.target.matches("#servicesContainer input[type='checkbox']")
       )){
-        buildQuote();
+        // Rebuild immediately from the actual checkbox state in the DOM.
+        setTimeout(buildQuote,0);
       }
     });
 
