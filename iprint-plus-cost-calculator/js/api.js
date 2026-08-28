@@ -114,9 +114,14 @@ async function saveQuoteLocal(q) {
 async function saveQuoteRemote(q) {
     try {
       const apiKey = getWriteApiKey();
+      const date = String(q.date || '').trim();
 
       if (!apiKey) {
         throw new Error('ยังไม่ได้ตั้งค่า API Key');
+      }
+
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        throw new Error('วันที่ใบเสนอราคาไม่อยู่ในรูปแบบ YYYY-MM-DD');
       }
 
       const response = await fetch(API.quotes, {

@@ -13,6 +13,14 @@ function formatCreatedAt(value) {
     });
   }
 
+function formatNotionDate(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
+  }
+
 function buildQuote() {
     if (!lastCalc) return null;
 
@@ -39,12 +47,13 @@ function buildQuote() {
     const taxId = String($('quoteTaxId')?.value || '').trim();
     const address = String($('quoteAddress')?.value || '').trim() || '-';
     if(!currentQuoteMeta) {
+      const now = new Date();
       currentQuoteMeta= {
         quoteNo:quoteSeq(),
-        date:new Date().toLocaleDateString('th-TH', {
+        date:now.toLocaleDateString('th-TH', {
           year:'numeric',month:'2-digit',day:'2-digit'
-        }
-        )
+        }),
+        notionDate:formatNotionDate(now)
       }
       ;
     }
@@ -54,7 +63,8 @@ function buildQuote() {
     $('quotePreview').innerHTML='<div class="quote-top"><div><div class="quote-brand">iPrint</div><div class="quote-meta">Design & Production</div></div><div class="quote-title">ใบเสนอราคา<div class="quote-meta">เลขที่ '+currentQuoteMeta.quoteNo+'<br>'+currentQuoteMeta.date+'<br>สร้างเมื่อ '+formatCreatedAt(currentQuoteMeta.createdAt)+'</div></div></div><div class="quote-customer"><b>ลูกค้า:</b> '+escapeHtml(customer)+'<br><b>เลขประจำตัวผู้เสียภาษี:</b> '+escapeHtml(taxId || '-')+'<br><b>ติดต่อ:</b> '+escapeHtml(contact)+'<br><b>ที่อยู่:</b> '+escapeHtml(address)+'</div><table class="quote-table"><thead><tr><th>#</th><th>รายการ</th><th>จำนวน</th><th>ราคา</th></tr></thead><tbody>'+rows+'</tbody></table><div class="quote-total"><span>จำนวนแผ่นผลิต</span><span>'+lastCalc.sheets.toLocaleString('th-TH')+' แผ่น</span></div><div class="quote-total"><span>ราคาก่อน VAT</span><span>฿'+money(quotePriceSummary().subtotal)+'</span></div><div class="quote-total"><span>VAT 7%</span><span>฿'+money(quotePriceSummary().vat)+'</span></div><div class="quote-total" style="font-size:14px;border-top:2px solid #111;padding-top:8px"><span>ยอดรวมสุทธิ</span><span>฿'+money(quotePriceSummary().grandTotal)+'</span></div>';
     return {
       quoteNo:currentQuoteMeta.quoteNo,
-      date:currentQuoteMeta.date,
+      date:currentQuoteMeta.notionDate,
+      displayDate:currentQuoteMeta.date,
       createdAt:currentQuoteMeta.createdAt || new Date().toISOString(),
       customer,
       customerPageId,
