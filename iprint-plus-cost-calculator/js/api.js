@@ -1,0 +1,200 @@
+async function getJSON(url) {
+    const r=await fetch(url, {
+      method:'GET',cache:'no-store'
+    }
+    );
+    const t=await r.text();
+    let d= {
+    }
+    ;
+    try {
+      d=JSON.parse(t)
+    } catch(e) {
+    }
+    if(!r.ok)throw new Error(d.detail||d.error||('HTTP '+r.status));
+    return d
+  }
+
+async function savePreset() {
+    const err=$('presetError');
+    err.textContent='';
+    const name=$('pName').value.trim(),fw=Number($('pW').value),fh=Number($('pH').value),mode=$('pMode').value;
+    let uw,uh;
+    if(mode==='full') {
+      uw=fw;
+      uh=fh
+    } else if(mode==='margin') {
+      uw=fw-3;
+      uh=fh-3
+    } else {
+      uw=Number($('pUW').value);
+      uh=Number($('pUH').value)
+    }
+    if(!name||!(fw>0&&fh>0&&uw>0&&uh>0&&uw<=fw&&uh<=fh)) {
+      err.textContent='กรุณากรอกข้อมูลให้ถูกต้อง';
+      return
+    }
+    if(!getWriteApiKey()) {
+      err.textContent='ยังไม่ได้ตั้งค่า Write API Key — อ่านข้อมูลได้ตามปกติ แต่การเพิ่ม/ลบ Preset ต้องตั้งค่า authentication ก่อน';
+      return
+    }
+    try {
+      const r=await fetch(API.presets, {
+        method:'POST',headers:writeHeaders(),body:JSON.stringify( {
+          name,fullW:fw,fullH:fh,usableW:uw,usableH:uh,type:mode==='full'?'เต็มพื้นที่':mode==='margin'?'เผื่อมาร์คมาตรฐาน':'กำหนดเอง',active:true
+        }
+        )
+      }
+      );
+      const t=await r.text();
+      let d= {
+      }
+      ;
+      try {
+        d=JSON.parse(t)
+      } catch(e) {
+      }
+      if(!r.ok)throw new Error(d.detail||d.error||('HTTP '+r.status));
+      closePreset();
+      await syncPresets()
+    } catch(e) {
+      err.textContent='เพิ่ม Preset ไม่สำเร็จ: '+e.message;
+      console.error(e)
+    }
+  }
+
+async function deletePreset() {
+    const p=presets[selectedSheet];
+    if(!p) {
+      alert('กรุณาเลือก Preset ก่อน');
+      return
+    }
+    if(!getWriteApiKey()) {
+      alert('ยังไม่ได้ตั้งค่า Write API Key');
+      return
+    }
+    if(!confirm('ลบขนาดกระดาษ "'+p.name+'" จาก Notion Database ใช่หรือไม่?'))return;
+    try {
+      const r=await fetch(API.presets+'?id='+encodeURIComponent(p.pageId||selectedSheet), {
+        method:'DELETE',headers: {
+          'X-API-Key':getWriteApiKey()
+        }
+      }
+      );
+      const t=await r.text();
+      let d= {
+      }
+      ;
+      try {
+        d=JSON.parse(t)
+      } catch(e) {
+      }
+      if(!r.ok)throw new Error(d.detail||d.error||('HTTP '+r.status));
+      selectedSheet='';
+      await syncPresets()
+    } catch(e) {
+      alert('ลบ Preset ไม่สำเร็จ: '+e.message);
+      console.error(e)
+    }
+  }
+
+async function saveQuoteLocal(q) {
+    try {
+      const key='iprint_quote_history_v1';
+      const arr=JSON.parse(localStorage.getItem(key)||'[]');
+      arr.push( {
+        ...q,savedAt:new Date().toISOString()
+      }
+      );
+      localStorage.setItem(key,JSON.stringify(arr.slice(-500)))
+    } catch(e) {
+    }
+  }
+
+async function saveQuoteRemote(q) {
+    try {
+      const apiKey = getWriteApiKey();
+
+      if (!apiKey) {
+        throw new Error('ยังไม่ได้ตั้งค่า API Key');
+      }
+
+      const response = await fetch(API.quotes, {
+        method: 'POST',
+        headers: writeHeaders(),
+        body: JSON.stringify(q)
+      });
+
+      const text = await response.text();
+
+      let data = {};
+
+      try {
+        data = JSON.parse(text);
+      } catch (error) {
+        // Keep raw response text for diagnostics.
+      }
+
+      if (!response.ok) {
+        const detail =
+          data.detail ||
+          data.error ||
+          text ||
+          `HTTP ${response.status}`;
+
+        throw new Error(
+          `POST /quotes HTTP ${response.status}: ${detail}`
+        );
+      }
+
+      if (data.success !== true) {
+        throw new Error(
+          data.error ||
+          data.detail ||
+          'Worker did not return success:true'
+        );
+      }
+
+      return {
+        success: true,
+        id: data.id || null
+      };
+    } catch (error) {
+      console.error('POST /quotes', error);
+      return false;
+    }
+  }
+
+async function createCustomerRemote(customerData) {
+    try {
+      const response = await fetch(API.customers, {
+        method: 'POST',
+        headers: writeHeaders(),
+        body: JSON.stringify(customerData)
+      });
+
+      const text = await response.text();
+      let data = {};
+
+      try {
+        data = JSON.parse(text);
+      } catch (error) {
+        // Keep the original response text for diagnostics.
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          data.detail || data.error || 'HTTP ' + response.status
+        );
+      }
+
+      if (!data.id) {
+        throw new Error('POST /customers did not return id');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('POST /customers', error);
+      return null;
+    }
+  }
