@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>iPrint Cost Calculator</title>
+
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<main class="app">
+  <div class="brand">iPrint Cost Calculator</div>
+
+  <section class="card">
+    <div class="field">
+      <div class="label">ไซส์ / พื้นที่ใช้งาน</div>
+      <select id="sheet"><option value="">กำลังโหลด Preset จาก Notion…</option></select>
+      <div class="actions">
+        <button class="btn" id="addPreset" type="button">＋ เพิ่มขนาดกระดาษ</button>
+        <button class="btn danger" id="deletePreset" type="button">ลบกระดาษ</button>
+      </div>
+      <div class="status" id="syncStatus">กำลังเชื่อมต่อ Notion…</div>
+    </div>
+    <div class="field">
+      <div class="label">ขนาดชิ้นงาน (cm)</div>
+      <div class="size"><input id="w" type="number" min="0.1" step="0.1" value="10"><div class="x">×</div><input id="h" type="number" min="0.1" step="0.1" value="15"></div>
+      <div class="hint">Bleed 3 mm/ด้าน — ใช้สำหรับพื้นที่งาน/ภาพ ไม่ลดจำนวนชิ้นต่อแผ่น</div>
+    </div>
+    <div class="field">
+      <div class="label">ระบุจำนวน (ดวง)</div>
+      <input id="qty" type="number" min="1" step="1" value="500">
+    </div>
+    <div class="row2">
+      <div class="field"><div class="label">ต้นทุนต่อแผ่น (บาท)</div><input id="cost" type="number" min="0" step="0.01" value="25"></div>
+      <div class="field"><div class="label">กำไรที่ต้องการ (%)</div><input id="profitPercent" type="number" min="0" step="1" value="30"></div>
+    </div>
+  </section>
+
+  <section class="card" id="iprint-preview">
+    <div class="preview-head">
+      <div><div class="preview-title">Preview การวางชิ้นงาน</div><div class="preview-sub" id="previewInfo">—</div></div>
+      <div class="preview-count"><small>ใช้จำนวน</small><strong id="previewSheets">—</strong><small>แผ่น</small></div>
+    </div>
+    <div class="preview-scroll"><div class="sheet-preview" id="sheetPreview"></div></div>
+    <div class="preview-note">Preview แสดงขนาดชิ้นงานจริงและกรอบ Bleed 3 mm ภายในชิ้นงาน; Bleed ไม่ลดจำนวนชิ้นต่อแผ่น</div>
+  </section>
+
+  <section class="result-card">
+    <div class="result-label">ใช้จำนวน</div>
+    <div class="result-big"><span id="sheets">—</span> <span class="result-unit">แผ่น</span></div>
+    <div class="result-sub"><span id="yield">—</span> ดวง/แผ่น • Bleed <span id="gap">3</span> mm/ด้าน</div>
+    <div class="money-grid">
+      <div class="money"><span class="result-label">ต้นทุนทั้งหมด</span><strong>฿<span id="total">—</span></strong></div>
+      <div class="money"><span class="result-label">ราคาขาย</span><strong>฿<span id="sale">—</span></strong></div>
+    </div>
+    <button class="quote-btn" id="openQuote" type="button">ออกใบเสนอราคา</button>
+  </section>
+</main>
+
+<button id="openMaterialsServices" aria-label="วัสดุและบริการเพิ่มเติม" title="วัสดุและบริการเพิ่มเติม" type="button">
+  <img src="data:image/svg+xml;charset=UTF-8,%3C%3Fxml%20version%3D%221.0%22%20encoding%3D%22UTF-8%22%3F%3E%0A%3Csvg%20id%3D%22Layer_2%22%20data-name%3D%22Layer%202%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2048.5%2048.5%22%3E%0A%20%20%3Cdefs%3E%0A%20%20%20%20%3Cstyle%3E%0A%20%20%20%20%20%20.cls-1%20%7B%0A%20%20%20%20%20%20%20%20fill%3A%20%23fff;%0A%20%20%20%20%20%20%7D%0A%0A%20%20%20%20%20%20.cls-2%20%7B%0A%20%20%20%20%20%20%20%20stroke%3A%20%23fff;%0A%20%20%20%20%20%20%7D%0A%0A%20%20%20%20%20%20.cls-2%2C%20.cls-3%20%7B%0A%20%20%20%20%20%20%20%20fill%3A%20%23007fff;%0A%20%20%20%20%20%20%7D%0A%0A%20%20%20%20%20%20.cls-4%20%7B%0A%20%20%20%20%20%20%20%20fill%3A%20none;%0A%20%20%20%20%20%20%20%20stroke%3A%20%23e3e3e3;%0A%20%20%20%20%20%20%20%20stroke-width%3A%20.5px;%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%3C%2Fstyle%3E%0A%20%20%3C%2Fdefs%3E%0A%20%20%3Cg%20id%3D%22Layer_1-2%22%20data-name%3D%22Layer%201%22%3E%0A%20%20%20%20%3Cg%3E%0A%20%20%20%20%20%20%3Cg%3E%0A%20%20%20%20%20%20%20%20%3Cpath%20class%3D%22cls-1%22%20d%3D%22M48.25%2C24.18C48.25%2C10.92%2C37.5.18%2C24.25.18S.25%2C10.92.25%2C24.18s10.75%2C24%2C24%2C24%2C24-10.75%2C24-24Z%22%2F%3E%0A%20%20%20%20%20%20%20%20%3Cpath%20class%3D%22cls-4%22%20d%3D%22M48.25%2C24.25C48.25%2C11%2C37.5.25%2C24.25.25S.25%2C11%2C.25%2C24.25s10.75%2C24%2C24%2C24%2C24-10.75%2C24-24Z%22%2F%3E%0A%20%20%20%20%20%20%3C%2Fg%3E%0A%20%20%20%20%20%20%3Cpath%20class%3D%22cls-3%22%20d%3D%22M30.97%2C9.68h-15.69c-1.86%2C0-3.36%2C1.51-3.36%2C3.36v19.05c0%2C1.86%2C1.51%2C3.36%2C3.36%2C3.36h15.69c1.86%2C0%2C3.36-1.51%2C3.36-3.36V13.04c0-1.86-1.51-3.36-3.36-3.36Z%22%2F%3E%0A%20%20%20%20%20%20%3Cpath%20class%3D%22cls-2%22%20d%3D%22M34.34%2C11.36h-17.93c-1.55%2C0-2.8%2C1.25-2.8%2C2.8v21.29c0%2C1.55%2C1.25%2C2.8%2C2.8%2C2.8h17.93c1.55%2C0%2C2.8-1.25%2C2.8-2.8V14.16c0-1.55-1.25-2.8-2.8-2.8Z%22%2F%3E%0A%20%20%20%20%20%20%3Cpath%20class%3D%22cls-1%22%20d%3D%22M25.01%2C17.75c.03-.07.08-.13.15-.17.06-.04.14-.06.21-.06s.15.02.21.06c.06.04.11.1.15.17l1.89%2C4.05c.04.08.11.15.19.19l4.05%2C1.89c.07.03.13.08.17.15.04.06.06.14.06.21s-.02.15-.06.21c-.04.06-.1.11-.17.15l-4.05%2C1.89c-.08.04-.15.11-.19.19l-1.89%2C4.05c-.03.07-.08.13-.15.17-.06.04-.14.06-.21.06s-.15-.02-.21-.06c-.06-.04-.11-.1-.15-.17l-1.89-4.05c-.04-.08-.11-.15-.19-.19l-4.05-1.89c-.07-.03-.13-.08-.17-.15-.04-.06-.06-.14-.06-.21s.02-.15.06-.21c.04-.06.1-.11.17-.15l4.05-1.89c.08-.04.15-.11.19-.19l1.89-4.05Z%22%2F%3E%0A%20%20%20%20%3C%2Fg%3E%0A%20%20%3C%2Fg%3E%0A%3C%2Fsvg%3E" alt="" aria-hidden="true">
+</button>
+<div class="sheet-overlay" id="sheetOverlay"></div>
+<aside class="side-sheet" id="materialsServicesSheet" aria-hidden="true">
+  <div class="sheet-head"><h2>วัสดุและบริการเพิ่มเติม</h2><button class="close-sheet" id="closeMaterialsServices" type="button">×</button></div>
+  <div class="sheet-body">
+    <div class="ms-title">วัสดุ</div>
+    <select id="materialSelect"><option value="">กำลังโหลดวัสดุจาก Notion…</option></select>
+    <div class="ms-status" id="materialStatus">—</div>
+    <div id="selectedMaterialSummary" class="material-selected" hidden></div>
+    <div style="height:18px"></div>
+    <div class="ms-title">บริการเพิ่มเติม</div>
+    <div id="servicesContainer"><div class="ms-status">กำลังโหลดบริการจาก Notion…</div></div>
+    <div class="ms-status" id="serviceStatus">—</div>
+  </div>
+</aside>
+
+<div class="modal" id="presetModal" aria-hidden="true">
+  <div class="modal-card" style="max-width:430px">
+    <div class="modal-head"><h2>เพิ่มขนาดกระดาษ</h2><button class="close-sheet" id="cancelPreset" type="button">×</button></div>
+    <div class="modal-body">
+      <div class="field"><div class="label">ชื่อ</div><input id="pName" placeholder="เช่น SRA3"></div>
+      <div class="field"><div class="label">ขนาดแผ่น (cm)</div><div class="size"><input id="pW" type="number" min="0.1" step="0.1"><div class="x">×</div><input id="pH" type="number" min="0.1" step="0.1"></div></div>
+      <div class="field"><div class="label">พื้นที่ใช้งาน</div><select id="pMode"><option value="margin">เว้นขอบ 1.5 cm ทุกด้าน</option><option value="full">ใช้เต็มแผ่น</option><option value="custom">กำหนดพื้นที่เอง</option></select></div>
+      <div id="customArea" class="field" hidden><div class="size"><input id="pUW" type="number" min="0.1" step="0.1"><div class="x">×</div><input id="pUH" type="number" min="0.1" step="0.1"></div></div>
+      <div id="presetError" class="status warn"></div>
+      <button class="btn primary" id="savePreset" type="button">เพิ่ม</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="quoteModal" aria-hidden="true">
+  <div class="modal-card">
+    <div class="modal-head no-print"><h2>ใบเสนอราคา</h2><button class="close-sheet" id="closeQuote" type="button">×</button></div>
+    <div class="modal-body">
+      <form id="quoteForm" class="no-print">
+        <div class="row2">
+      <div class="field">
+        <div class="label">ลูกค้า</div>
+
+        <input
+          id="quoteCustomer"
+          list="quoteCustomerList"
+          autocomplete="off"
+          placeholder="พิมพ์ชื่อลูกค้า หรือเลือกลูกค้าเก่า"
+        >
+
+        <datalist id="quoteCustomerList"></datalist>
+
+        <input type="hidden" id="quoteCustomerPageId">
+
+        <div id="customerStatus" class="status"></div>
+      </div>
+
+      <div class="field">
+        <div class="label">ติดต่อ</div>
+        <input id="quoteContact" placeholder="โทร / LINE / Email">
+    </div>
+</div>
+        <div class="field">
+          <div class="label">เลขประจำตัวผู้เสียภาษี (Tax ID)</div>
+          <input id="quoteTaxId" type="text" inputmode="numeric" autocomplete="off" placeholder="เช่น 0105551234567">
+        </div>
+
+        <div class="field">
+          <div class="label">ที่อยู่</div>
+          <textarea id="quoteAddress" placeholder="ที่อยู่สำหรับออกใบเสนอราคา"></textarea>
+        </div>
+      </form>
+      <div id="quotePreview" class="quote-preview"></div>
+      <div class="print-actions no-print"><button class="btn" id="cancelQuote2" type="button">ปิด</button><button class="btn primary" id="printQuote" type="button">พิมพ์ / Save PDF</button></div>
+      <div class="tiny-note no-print" id="quoteSaveStatus">ข้อมูลต้นทุนภายในจะไม่แสดงในใบเสนอราคา</div>
+    </div>
+  </div>
+</div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
