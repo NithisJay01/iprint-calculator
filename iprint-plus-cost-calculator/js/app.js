@@ -58,3 +58,22 @@ function bind() {
     syncServices();
     syncCustomers()
   }
+
+function init() {
+  bind();
+  window.Iprint = {
+    calculate,
+    syncPresets,
+    syncMaterials,
+    syncServices,
+    syncCustomers,
+    openQuote,
+    buildQuote
+  };
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init, { once: true });
+} else {
+  init();
+}

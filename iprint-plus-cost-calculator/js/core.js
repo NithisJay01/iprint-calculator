@@ -14,6 +14,60 @@
   Preferred production setup: secure POST/DELETE at the Worker using Cloudflare Access or another authenticated backend. */
   const WRITE_API_KEY_STORAGE = 'iprint_write_api_key';
 
+  // Shared application state. These values intentionally remain mutable because
+  // the existing feature modules communicate through the global script scope.
+  let presets = {};
+  let materials = [];
+  let services = [];
+  let customers = [];
+  let selectedSheet = '';
+  let selectedMaterialId = '';
+  let selectedServiceIds = {};
+  let lastCalc = null;
+  let currentQuoteMeta = null;
+
+  const $ = id => document.getElementById(id);
+  const money = value => Number(value || 0).toLocaleString('th-TH', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+  const unit = value => {
+    const normalized = String(value || '').toLowerCase();
+
+    return normalized === 'sheet' || normalized === 'sheets'
+      ? 'แผ่น'
+      : normalized === 'piece' || normalized === 'pieces'
+        ? 'ชิ้น'
+        : normalized === 'job'
+          ? 'งาน'
+          : value || 'หน่วย';
+  };
+
+  const writeHeaders = () => {
+    const apiKey = getWriteApiKey();
+
+    return apiKey
+      ? { 'Content-Type': 'application/json', 'X-API-Key': apiKey }
+      : { 'Content-Type': 'application/json' };
+  };
+
+function localDateKey() {
+  const date = new Date();
+
+  return date.getFullYear() +
+    String(date.getMonth() + 1).padStart(2, '0') +
+    String(date.getDate()).padStart(2, '0');
+}
+
+function quoteSeq() {
+  const day = localDateKey();
+  const key = 'lastQuoteSeq:' + day;
+  const next = Number(localStorage.getItem(key) || 0) + 1;
+
+  localStorage.setItem(key, String(next));
+  return 'QT-' + day + '-' + String(next).padStart(3, '0');
+}
+
 function getWriteApiKey() {
   const input = document.getElementById('apiKeyInput');
   const fromInput = input ? input.value.trim() : '';
