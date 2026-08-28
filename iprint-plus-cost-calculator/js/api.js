@@ -170,6 +170,55 @@ async function saveQuoteRemote(q) {
     }
   }
 
+async function attachQuotePreviewRemote(pageId, image, filename) {
+    try {
+      const apiKey = getWriteApiKey();
+
+      if (!apiKey) {
+        throw new Error('ยังไม่ได้ตั้งค่า API Key');
+      }
+
+      if (!pageId || !image) {
+        throw new Error('ไม่พบข้อมูลภาพหรือใบเสนอราคา');
+      }
+
+      const form = new FormData();
+      form.append('image', image, filename);
+
+      const response = await fetch(
+        API.quotes + '/' + encodeURIComponent(pageId) + '/preview',
+        {
+          method: 'POST',
+          headers: { 'X-API-Key': apiKey },
+          body: form
+        }
+      );
+
+      const text = await response.text();
+      let data = {};
+
+      try {
+        data = JSON.parse(text);
+      } catch (error) {
+        // Keep raw text for the user-facing error below.
+      }
+
+      if (!response.ok || data.success !== true) {
+        throw new Error(
+          data.detail ||
+          data.error ||
+          text ||
+          'ไม่สามารถแนบภาพ Preview ใน Notion ได้'
+        );
+      }
+
+      return data;
+    } catch (error) {
+      console.error('POST /quotes/:id/preview', error);
+      return false;
+    }
+  }
+
 async function createCustomerRemote(customerData) {
     try {
       const response = await fetch(API.customers, {

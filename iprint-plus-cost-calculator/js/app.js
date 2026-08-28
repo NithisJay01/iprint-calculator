@@ -68,7 +68,8 @@ function init() {
     syncServices,
     syncCustomers,
     openQuote,
-    buildQuote
+    buildQuote,
+    captureQuotePreview
   };
 }
 

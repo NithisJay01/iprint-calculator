@@ -11,6 +11,8 @@
     button{padding:10px 14px;border:0;border-radius:8px;background:#0a8cff;color:#fff;font-weight:700;cursor:pointer}
     #summary{margin:16px 0;font-weight:700}.pass{color:#26734d}.fail{color:#c62828}
     #results{margin:0;padding-left:22px}.pass::marker{color:#26734d}.fail::marker{color:#c62828}
+    #generatedPreview{display:none;margin:20px 0;padding:16px;background:#fff;border:1px solid #d3d8de;border-radius:12px}
+    #generatedPreview h2{margin:0 0 12px;font-size:16px}#generatedPreview img{display:block;max-width:100%;height:auto;border:1px solid #d9dde2}
     iframe{width:100%;height:700px;border:1px solid #d3d8de;border-radius:12px;background:#fff}
   </style>
 </head>
@@ -21,6 +23,7 @@
     <button id="runTests" type="button">รันทดสอบทั้งหมด</button>
     <div id="summary" aria-live="polite">พร้อมทดสอบ</div>
     <ol id="results"></ol>
+    <section id="generatedPreview" aria-live="polite"><h2>ภาพที่จะถูกแนบใน Notion</h2><img alt="Quote preview for Notion"></section>
     <iframe id="app" src="../index.html" title="iPrint application under test"></iframe>
   </main>
   <script src="logic-test.js"></script>

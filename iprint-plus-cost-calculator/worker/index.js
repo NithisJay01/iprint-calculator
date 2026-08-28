@@ -119,7 +119,8 @@ export default {
             "GET /services",
             "GET /customers",
             "POST /customers",
-            "POST /quotes"
+            "POST /quotes",
+            "POST /quotes/:id/preview"
           ]
         });
       }
@@ -841,6 +842,154 @@ export default {
         });
       }
 
+
+      // ================================
+      // QUOTE PREVIEW - ATTACH IMAGE
+      // ================================
+
+      const previewMatch = url.pathname.match(/^\/quotes\/([^/]+)\/preview$/);
+
+      if (previewMatch && request.method === "POST") {
+        const authError = requireAuth(request);
+
+        if (authError) {
+          return authError;
+        }
+
+        let form;
+
+        try {
+          form = await request.formData();
+        } catch (error) {
+          return json({
+            success: false,
+            error: "Invalid preview upload"
+          }, 400);
+        }
+
+        const image = form.get("image");
+        const quoteId = previewMatch[1];
+
+        if (!image || typeof image.arrayBuffer !== "function") {
+          return json({
+            success: false,
+            error: "Missing preview image"
+          }, 400);
+        }
+
+        if (image.type !== "image/png") {
+          return json({
+            success: false,
+            error: "Preview image must be a PNG"
+          }, 400);
+        }
+
+        if (image.size > 10 * 1024 * 1024) {
+          return json({
+            success: false,
+            error: "Preview image exceeds the 10 MB limit"
+          }, 400);
+        }
+
+        const filename = String(image.name || "quote-preview.png");
+
+        const createUpload = await fetch(
+          "https://api.notion.com/v1/file_uploads",
+          {
+            method: "POST",
+            headers: notionHeaders,
+            body: JSON.stringify({
+              mode: "single_part",
+              filename,
+              content_type: "image/png"
+            })
+          }
+        );
+
+        const createText = await createUpload.text();
+
+        if (!createUpload.ok) {
+          return json({
+            success: false,
+            error: "Notion create preview upload error",
+            status: createUpload.status,
+            detail: createText
+          }, createUpload.status);
+        }
+
+        const upload = JSON.parse(createText);
+        const fileUploadId = upload.id;
+
+        if (!fileUploadId) {
+          return json({
+            success: false,
+            error: "Notion did not return a file upload ID"
+          }, 502);
+        }
+
+        const uploadForm = new FormData();
+        uploadForm.append("file", image, filename);
+
+        const sendUpload = await fetch(
+          `https://api.notion.com/v1/file_uploads/${fileUploadId}/send`,
+          {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${env.NOTION_TOKEN}`,
+              "Notion-Version": "2026-03-11"
+            },
+            body: uploadForm
+          }
+        );
+
+        const sendText = await sendUpload.text();
+
+        if (!sendUpload.ok) {
+          return json({
+            success: false,
+            error: "Notion preview upload error",
+            status: sendUpload.status,
+            detail: sendText
+          }, sendUpload.status);
+        }
+
+        const attachImage = await fetch(
+          `https://api.notion.com/v1/blocks/${quoteId}/children`,
+          {
+            method: "PATCH",
+            headers: notionHeaders,
+            body: JSON.stringify({
+              children: [
+                {
+                  object: "block",
+                  type: "image",
+                  image: {
+                    type: "file_upload",
+                    file_upload: { id: fileUploadId }
+                  }
+                }
+              ]
+            })
+          }
+        );
+
+        const attachText = await attachImage.text();
+
+        if (!attachImage.ok) {
+          return json({
+            success: false,
+            error: "Notion attach preview error",
+            status: attachImage.status,
+            detail: attachText
+          }, attachImage.status);
+        }
+
+        return json({
+          success: true,
+          quoteId,
+          fileUploadId
+        });
+      }
 
       // ================================
       // QUOTES - CREATE

@@ -3,6 +3,8 @@
   const runButton = document.getElementById('runTests');
   const summary = document.getElementById('summary');
   const results = document.getElementById('results');
+  const generatedPreview = document.getElementById('generatedPreview');
+  const generatedPreviewImage = generatedPreview.querySelector('img');
 
   const wait = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
   const numberFromText = value => Number(String(value).replace(/[^0-9.-]/g, ''));
@@ -136,9 +138,13 @@
         const vatRow = [...document.querySelectorAll('.quote-total')].find(row => row.textContent.includes('VAT 7%'));
         const vat = numberFromText(vatRow?.querySelector('span:last-child')?.textContent);
         const quote = window.Iprint.buildQuote();
+        const previewImage = await window.Iprint.captureQuotePreview(quote);
+        generatedPreviewImage.src = URL.createObjectURL(previewImage);
+        generatedPreview.style.display = 'block';
         assert(preview.includes('ใบเสนอราคา'), 'สร้าง Preview ใบเสนอราคาและ VAT', 'ไม่พบ Preview ใบเสนอราคา');
         assert(Math.abs(vat - sale * 0.07) < 0.01, 'สร้าง Preview ใบเสนอราคาและ VAT', 'VAT ไม่ตรงกับ 7%');
         assert(/^\d{4}-\d{2}-\d{2}$/.test(quote.date), 'สร้าง Preview ใบเสนอราคาและ VAT', 'วันที่สำหรับ Notion ต้องเป็น YYYY-MM-DD');
+        assert(previewImage.type === 'image/png' && previewImage.size > 0, 'สร้าง Preview ใบเสนอราคาและ VAT', 'สร้างภาพ Preview สำหรับ Notion ไม่สำเร็จ');
         document.getElementById('closeQuote').click();
       });
 
