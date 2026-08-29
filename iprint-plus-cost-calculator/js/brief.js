@@ -207,87 +207,43 @@ function briefDescriptionCard(description, y) {
   };
 }
 
-function briefImageSvg(calc, artworkUrl = '', referenceUrls = [], description = '') {
+function briefImageSvg(calc, artworkUrl='', referenceUrls=[], description='') {
+  const layoutWidth=1080;
+  const renderScale=2;
+  const extras=briefExtras(calc);
+  const previewTop=530;
+  const previewHeight=560;
+  const extraRowHeight=96;
+  const extraCount=Math.max(1,extras.length);
+  const references=(Array.isArray(referenceUrls)?referenceUrls:[]).filter(Boolean).slice(0,3);
+  const descriptionBlock=briefDescriptionCard(description,previewTop+previewHeight+32);
+  const extrasTitleY=previewTop+previewHeight+32+descriptionBlock.height+(descriptionBlock.height?28:22);
+  const extrasTop=extrasTitleY+24;
+  const referenceTop=extrasTop+92+extraCount*extraRowHeight+26;
+  const referenceGallery=briefReferenceGallery(references,referenceTop);
+  const contentBottom=referenceGallery.height
+    ? referenceTop+referenceGallery.height
+    : extrasTop+92+extraCount*extraRowHeight;
+  const height=contentBottom+56;
+  const paperName=briefShorten(calc.paper?.name || 'ไม่ระบุ Preset',38);
+  const size=(Number(calc.W)||0).toFixed(2)+' × '+(Number(calc.H)||0).toFixed(2)+' cm';
+  const quantity=(Number(calc.Q)||0).toLocaleString('th-TH')+' ชิ้นงาน';
+  const yieldValue=(Number(calc.b?.yield)||0).toLocaleString('th-TH')+' ดวง/แผ่น';
+  const sheetValue=(Number(calc.sheets)||0).toLocaleString('th-TH')+' แผ่น';
+  const extrasMarkup=extras.length
+    ? extras.map((item,index)=> {
+      const y=extrasTop+58+index*extraRowHeight;
+      const details='฿'+money(item.price)+' / '+item.unit+' • '+item.quantity.toLocaleString('th-TH')+' '+item.unit+' • รวม ฿'+money(item.total);
+      return `<rect x="50" y="${y}" width="980" height="78" rx="16" fill="#ffffff" stroke="#dfe5eb"/>
+        <rect x="70" y="${y+18}" width="118" height="30" rx="15" fill="#eaf5ff"/>
+        <text x="129" y="${y+39}" text-anchor="middle" class="pill">${briefEscapeSvg(item.kind)}</text>
+        <text x="210" y="${y+34}" class="extra-name">${briefEscapeSvg(briefShorten(item.name,48))}</text>
+        <text x="210" y="${y+58}" class="detail">${briefEscapeSvg(details)}</text>`;
+    }).join('')
+    : `<rect x="50" y="${extrasTop+58}" width="980" height="78" rx="16" fill="#ffffff" stroke="#dfe5eb"/>
+       <text x="540" y="${extrasTop+105}" text-anchor="middle" class="empty">ยังไม่ได้เลือกวัสดุหรือบริการเพิ่มเติม</text>`;
 
-  const layoutWidth = 1080;
-  const renderScale = 2;
-  const extras = briefExtras(calc);
-  const extraRowHeight = 96;
-  const extraCount = Math.max(1, extras.length);
-  const references = (Array.isArray(referenceUrls) ? referenceUrls : []).filter(Boolean).slice(0, 3);
-
-  // ---------- คำนวณ previewHeight จากขนาดจริง (แก้บัค) ----------
-  const previewContainerW = 880;
-  const fullW = Number(calc.paper?.fullW || 0) * 10;
-  const fullH = Number(calc.paper?.fullH || 0) * 10;
-  const previewScale = fullW > 0
-    ? Math.min(1, Math.min(560, previewContainerW) / fullW)
-    : 1;
-  const previewContentH = fullW > 0
-    ? Math.max(200, fullH * previewScale)
-    : 400;
-  const previewPadding = 100; // header + info row + margins
-  const previewHeight = previewContentH + previewPadding;
-
-  // ---------- Running Y (แก้บัค: ไม่ fix ตำแหน่งอีกต่อไป) ----------
-  const previewTop = 530;
-  const artworkPreview = briefArtworkPreview(calc, artworkUrl, previewTop);
-  const previewHeight = artworkPreview.height;  // ใช้ค่าจริง
-
-  // Description
-  const descriptionBlock = briefDescriptionCard(description, currentY);
-  currentY += descriptionBlock.height;
-  currentY += descriptionBlock.height ? 28 : 22;
-
-  // Production summary row
-  const hasProdSummary = !!(calc.b && calc.paper);
-  const prodSummaryH = hasProdSummary ? 60 : 0;
-  const prodSummaryY = currentY;
-  if (prodSummaryH > 0) currentY += prodSummaryH + 16;
-
-  // Extras
-  const extrasTitleY = currentY;
-  const extrasTop = extrasTitleY + 24;
-
-  // Reference gallery
-  const referenceTop = extrasTop + 92 + extraCount * extraRowHeight + 26;
-  const referenceGallery = briefReferenceGallery(references, referenceTop);
-  const contentBottom = referenceGallery.height
-    ? referenceTop + referenceGallery.height
-    : extrasTop + 92 + extraCount * extraRowHeight;
-  const height = contentBottom + 56;
-
-  // ---------- ข้อมูลแสดงผล ----------
-  const paperName = briefShorten(calc.paper?.name || 'ไม่ระบุ Preset', 38);
-  const size = (Number(calc.W) || 0).toFixed(2) + ' × ' + (Number(calc.H) || 0).toFixed(2) + ' cm';
-  const quantity = (Number(calc.Q) || 0).toLocaleString('th-TH') + ' ชิ้นงาน';
-  const yieldValue = (Number(calc.b?.yield) || 0).toLocaleString('th-TH') + ' ดวง/แผ่น';
-  const sheetValue = (Number(calc.sheets) || 0).toLocaleString('th-TH') + ' แผ่น';
-
-  // ---------- Extras markup ----------
-  const extrasMarkup = extras.length
-    ? extras.map((item, index) => {
-        const y = extrasTop + 58 + index * extraRowHeight;
-        const details = '฿' + money(item.price) + ' / ' + item.unit + ' • '
-          + item.quantity.toLocaleString('th-TH') + ' ' + item.unit
-          + ' • รวม ฿' + money(item.total);
-        return `<rect x="50" y="${y}" width="980" height="78" rx="16" fill="#ffffff" stroke="#dfe5eb"/>
-          <rect x="70" y="${y + 18}" width="118" height="30" rx="15" fill="#eaf5ff"/>
-          <text x="129" y="${y + 39}" text-anchor="middle" class="pill">${briefEscapeSvg(item.kind)}</text>
-          <text x="210" y="${y + 34}" class="extra-name">${briefEscapeSvg(briefShorten(item.name, 48))}</text>
-          <text x="210" y="${y + 58}" class="detail">${briefEscapeSvg(details)}</text>`;
-      }).join('')
-    : `<rect x="50" y="${extrasTop + 58}" width="980" height="78" rx="16" fill="#ffffff" stroke="#dfe5eb"/>
-       <text x="540" y="${extrasTop + 105}" text-anchor="middle" class="empty">ยังไม่ได้เลือกวัสดุหรือบริการเพิ่มเติม</text>`;
-
-  // ---------- Production summary markup (แก้บัค: วางหลัง description, ก่อน extras) ----------
-  const prodSummaryMarkup = hasProdSummary
-    ? `<rect x="50" y="${prodSummaryY}" width="980" height="${prodSummaryH}" rx="12" fill="#f8fafb" stroke="#e2e8ed"/>
-       <text x="78" y="${prodSummaryY + 24}" class="detail">กระดาษ ${Number(calc.paper.fullW).toFixed(2)} × ${Number(calc.paper.fullH).toFixed(2)} cm • พื้นที่ใช้งาน ${Number(calc.paper.usableW).toFixed(2)} × ${Number(calc.paper.usableH).toFixed(2)} cm</text>
-       <text x="78" y="${prodSummaryY + 46}" class="detail">${(calc.b?.yield || 0).toLocaleString('th-TH')} ดวง/แผ่น • Layout ${calc.b?.nx || 0} × ${calc.b?.ny || 0} • Gap ${Number(calc.gap || 0).toFixed(1)} mm • Bleed ${Number(calc.bleed || 0).toFixed(1)} mm/ด้าน${calc.b?.rotate ? ' • หมุน 90°' : ''}</text>`
-    : '';
-
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${layoutWidth * renderScale}" height="${height * renderScale}" viewBox="0 0 ${layoutWidth} ${height}">
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${layoutWidth*renderScale}" height="${height*renderScale}" viewBox="0 0 ${layoutWidth} ${height}">
     <style>
       text { font-family: Arial, Tahoma, sans-serif; fill: #111315; }
       .brand { font-size: 36px; font-weight: 800; fill: #ffffff; }
@@ -307,21 +263,17 @@ function briefImageSvg(calc, artworkUrl = '', referenceUrls = [], description = 
     <text x="50" y="103" class="header-meta">สรุปบรีฟงานพิมพ์</text>
     <text x="1030" y="68" text-anchor="end" class="title">WORK BRIEF</text>
     <text x="1030" y="103" text-anchor="end" class="header-meta">Preset: ${briefEscapeSvg(paperName)}</text>
-
     <rect x="50" y="188" width="980" height="134" rx="20" fill="#111315"/>
     <text x="78" y="228" class="header-meta">ขนาดชิ้นงาน</text>
     <text x="78" y="278" class="brand">${briefEscapeSvg(size)}</text>
     <line x1="550" y1="212" x2="550" y2="297" stroke="#3a4249"/>
     <text x="580" y="228" class="header-meta">จำนวนชิ้นงาน</text>
     <text x="580" y="278" class="brand">${briefEscapeSvg(quantity)}</text>
-
     <text x="50" y="374" class="section">แผนการผลิต</text>
-    ${briefCard(50, 400, 475, 'จำนวนชิ้นงานต่อแผ่น', yieldValue, 'Layout ' + (calc.b?.nx || 0) + ' × ' + (calc.b?.ny || 0) + ' • Gap ' + Number(calc.gap || 0).toLocaleString('th-TH', { maximumFractionDigits: 1 }) + ' mm • Bleed ' + Number(calc.bleed || 0).toLocaleString('th-TH', { maximumFractionDigits: 1 }) + ' mm/ด้าน')}
-    ${briefCard(555, 400, 475, 'จำนวนแผ่นที่ใช้', sheetValue, 'Preset ' + paperName)}
-
-    ${briefArtworkPreview(calc, artworkUrl, previewTop)}
+    ${briefCard(50,400,475,'จำนวนชิ้นงานต่อแผ่น',yieldValue,'Layout '+(calc.b?.nx||0)+' × '+(calc.b?.ny||0)+' • Gap '+Number(calc.gap||0).toLocaleString('th-TH',{maximumFractionDigits:1})+' mm • Bleed '+Number(calc.bleed||0).toLocaleString('th-TH',{maximumFractionDigits:1})+' mm/ด้าน')}
+    ${briefCard(555,400,475,'จำนวนแผ่นที่ใช้',sheetValue,'Preset '+paperName)}
+    ${briefArtworkPreview(calc,artworkUrl,previewTop)}
     ${descriptionBlock.markup}
-    ${prodSummaryMarkup}
     <text x="50" y="${extrasTitleY}" class="section">วัสดุและบริการเพิ่มเติม</text>
     ${extrasMarkup}
     ${referenceGallery.markup}
