@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>iPrint Cost Calculator</title>
-<link rel="stylesheet" href="css/app.css?v=20260829-print-action">
+<link rel="stylesheet" href="css/app.css?v=20260829-preview-image">
 </head>
 <body>
 
@@ -14,42 +14,43 @@
 
   <section class="card">
     <div class="field">
-      <div class="label">ไซส์ / พื้นที่ใช้งาน</div>
-      <select id="sheet"><option value="">กำลังโหลด Preset จาก Notion…</option></select>
-      <div class="actions">
-        <button class="btn" id="addPreset" type="button">＋ เพิ่มขนาดกระดาษ</button>
-        <button class="btn danger" id="deletePreset" type="button">ลบกระดาษ</button>
-      </div>
-      <div class="status" id="syncStatus">กำลังเชื่อมต่อ Notion…</div>
-    </div>
-    <div class="field">
       <div class="label">ขนาดชิ้นงาน (cm)</div>
       <div class="size"><input id="w" type="number" min="0.1" step="0.1" value="10"><div class="x">×</div><input id="h" type="number" min="0.1" step="0.1" value="15"></div>
-      <div class="hint">Bleed 3 mm/ด้าน — ใช้สำหรับพื้นที่งาน/ภาพ ไม่ลดจำนวนชิ้นต่อแผ่น</div>
     </div>
     <div class="field">
       <div class="label">ระบุจำนวน (ดวง)</div>
       <input id="qty" type="number" min="1" step="1" value="500">
     </div>
-    <div class="row2">
-      <div class="field"><div class="label">ต้นทุนต่อแผ่น (บาท)</div><input id="cost" type="number" min="0" step="0.01" value="25"></div>
-      <div class="field"><div class="label">กำไรที่ต้องการ (%)</div><input id="profitPercent" type="number" min="0" step="1" value="30"></div>
-    </div>
   </section>
 
   <section class="card" id="iprint-preview">
     <div class="preview-head">
-      <div><div class="preview-title">Preview การวางชิ้นงาน</div><div class="preview-sub" id="previewInfo">—</div></div>
+      <div><div class="preview-title">Preview การวางชิ้นงาน</div><div class="preview-paper" id="previewPaperName">Preset: —</div><div class="preview-sub" id="previewInfo">—</div></div>
       <div class="preview-count"><small>ใช้จำนวน</small><strong id="previewSheets">—</strong><small>แผ่น</small></div>
     </div>
-    <div class="preview-scroll"><div class="sheet-preview" id="sheetPreview"></div></div>
-    <div class="preview-note">Preview แสดงขนาดชิ้นงานจริงและกรอบ Bleed 3 mm ภายในชิ้นงาน; Bleed ไม่ลดจำนวนชิ้นต่อแผ่น</div>
+    <div class="preview-workspace">
+      <div class="preview-canvas-area" id="previewDropZone">
+        <div class="preview-scroll"><div class="sheet-preview" id="sheetPreview"></div></div>
+        <div class="preview-drop-hint" aria-hidden="true"><span>⇩</span> วางภาพงานใน Preview</div>
+        <div class="preview-note">ดับเบิลคลิกหรือ ลากภาพงานมาวางใน Preview ได้ • ชิ้นงานจะจัดกึ่งกลางในพื้นที่ใช้งานเสมอ • Gap มีผลต่อจำนวนชิ้นต่อแผ่น • Bleed ใช้แสดงแนวเผื่อสีใน Preview</div>
+      </div>
+      <nav class="preview-quick-actions" aria-label="เมนู Preview">
+        <button class="preview-quick-action orange" id="openPaperPreviewSettings" type="button"><span aria-hidden="true">◒</span><b>ตั้งค่า<br>Preview</b></button>
+        <button class="preview-quick-action green" id="openBriefAssets" type="button"><span aria-hidden="true">✦</span><b>บรีฟ<br>กราฟิก</b></button>
+        <button class="preview-quick-action blue" id="openMaterialsServices" type="button"><span aria-hidden="true">＋</span><b>วัสดุและ<br>บริการ</b></button>
+      </nav>
+    </div>
   </section>
 
   <section class="result-card">
-    <div class="result-label">ใช้จำนวน</div>
+    <div class="result-label">สรุปการผลิต</div>
     <div class="result-big"><span id="sheets">—</span> <span class="result-unit">แผ่น</span></div>
-    <div class="result-sub"><span id="yield">—</span> ดวง/แผ่น • Bleed <span id="gap">3</span> mm/ด้าน</div>
+    <div class="result-sub"><span id="yield">—</span> ดวง/แผ่น • Gap <span id="gap">3</span> mm • Bleed <span id="bleedSummary">3</span> mm/ด้าน</div>
+    <div class="result-piece-size"><span>ขนาดชิ้นงาน</span><strong id="resultSize">—</strong></div>
+    <div class="summary-settings">
+      <div class="summary-field"><label for="cost">ต้นทุนต่อแผ่น (บาท)</label><input id="cost" type="number" min="0" step="0.01" value="2.5"></div>
+      <div class="summary-field"><label for="profitPercent">กำไรที่ต้องการ (%)</label><input id="profitPercent" type="number" min="0" step="1" value="30"></div>
+    </div>
     <div class="money-grid">
       <div class="money"><span class="result-label">ต้นทุนทั้งหมด</span><strong>฿<span id="total">—</span></strong></div>
       <div class="money"><span class="result-label">ราคาขาย</span><strong>฿<span id="sale">—</span></strong></div>
@@ -58,10 +59,89 @@
   </section>
 </main>
 
-<button id="openMaterialsServices" aria-label="วัสดุและบริการเพิ่มเติม" title="วัสดุและบริการเพิ่มเติม" type="button">
+<button class="legacy-control" id="legacyOpenMaterialsServices" aria-hidden="true" type="button" tabindex="-1">
   <img src="data:image/svg+xml;charset=UTF-8,%3C%3Fxml%20version%3D%221.0%22%20encoding%3D%22UTF-8%22%3F%3E%0A%3Csvg%20id%3D%22Layer_2%22%20data-name%3D%22Layer%202%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2048.5%2048.5%22%3E%0A%20%20%3Cdefs%3E%0A%20%20%20%20%3Cstyle%3E%0A%20%20%20%20%20%20.cls-1%20%7B%0A%20%20%20%20%20%20%20%20fill%3A%20%23fff;%0A%20%20%20%20%20%20%7D%0A%0A%20%20%20%20%20%20.cls-2%20%7B%0A%20%20%20%20%20%20%20%20stroke%3A%20%23fff;%0A%20%20%20%20%20%20%7D%0A%0A%20%20%20%20%20%20.cls-2%2C%20.cls-3%20%7B%0A%20%20%20%20%20%20%20%20fill%3A%20%23007fff;%0A%20%20%20%20%20%20%7D%0A%0A%20%20%20%20%20%20.cls-4%20%7B%0A%20%20%20%20%20%20%20%20fill%3A%20none;%0A%20%20%20%20%20%20%20%20stroke%3A%20%23e3e3e3;%0A%20%20%20%20%20%20%20%20stroke-width%3A%20.5px;%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%3C%2Fstyle%3E%0A%20%20%3C%2Fdefs%3E%0A%20%20%3Cg%20id%3D%22Layer_1-2%22%20data-name%3D%22Layer%201%22%3E%0A%20%20%20%20%3Cg%3E%0A%20%20%20%20%20%20%3Cg%3E%0A%20%20%20%20%20%20%20%20%3Cpath%20class%3D%22cls-1%22%20d%3D%22M48.25%2C24.18C48.25%2C10.92%2C37.5.18%2C24.25.18S.25%2C10.92.25%2C24.18s10.75%2C24%2C24%2C24%2C24-10.75%2C24-24Z%22%2F%3E%0A%20%20%20%20%20%20%20%20%3Cpath%20class%3D%22cls-4%22%20d%3D%22M48.25%2C24.25C48.25%2C11%2C37.5.25%2C24.25.25S.25%2C11%2C.25%2C24.25s10.75%2C24%2C24%2C24%2C24-10.75%2C24-24Z%22%2F%3E%0A%20%20%20%20%20%20%3C%2Fg%3E%0A%20%20%20%20%20%20%3Cpath%20class%3D%22cls-3%22%20d%3D%22M30.97%2C9.68h-15.69c-1.86%2C0-3.36%2C1.51-3.36%2C3.36v19.05c0%2C1.86%2C1.51%2C3.36%2C3.36%2C3.36h15.69c1.86%2C0%2C3.36-1.51%2C3.36-3.36V13.04c0-1.86-1.51-3.36-3.36-3.36Z%22%2F%3E%0A%20%20%20%20%20%20%3Cpath%20class%3D%22cls-2%22%20d%3D%22M34.34%2C11.36h-17.93c-1.55%2C0-2.8%2C1.25-2.8%2C2.8v21.29c0%2C1.55%2C1.25%2C2.8%2C2.8%2C2.8h17.93c1.55%2C0%2C2.8-1.25%2C2.8-2.8V14.16c0-1.55-1.25-2.8-2.8-2.8Z%22%2F%3E%0A%20%20%20%20%20%20%3Cpath%20class%3D%22cls-1%22%20d%3D%22M25.01%2C17.75c.03-.07.08-.13.15-.17.06-.04.14-.06.21-.06s.15.02.21.06c.06.04.11.1.15.17l1.89%2C4.05c.04.08.11.15.19.19l4.05%2C1.89c.07.03.13.08.17.15.04.06.06.14.06.21s-.02.15-.06.21c-.04.06-.1.11-.17.15l-4.05%2C1.89c-.08.04-.15.11-.19.19l-1.89%2C4.05c-.03.07-.08.13-.15.17-.06.04-.14.06-.21.06s-.15-.02-.21-.06c-.06-.04-.11-.1-.15-.17l-1.89-4.05c-.04-.08-.11-.15-.19-.19l-4.05-1.89c-.07-.03-.13-.08-.17-.15-.04-.06-.06-.14-.06-.21s.02-.15.06-.21c.04-.06.1-.11.17-.15l4.05-1.89c.08-.04.15-.11.19-.19l1.89-4.05Z%22%2F%3E%0A%20%20%20%20%3C%2Fg%3E%0A%20%20%3C%2Fg%3E%0A%3C%2Fsvg%3E" alt="" aria-hidden="true">
 </button>
 <div class="sheet-overlay" id="sheetOverlay"></div>
+<aside class="side-sheet" id="paperPreviewSheet" aria-hidden="true">
+  <div class="sheet-head"><h2>ตั้งค่า Paper Preview</h2><button class="close-sheet" id="closePaperPreviewSettings" type="button">×</button></div>
+  <div class="sheet-body">
+    <section class="preview-sheet-settings" aria-labelledby="sheetSettingsTitle">
+      <div class="field">
+        <div class="label" id="sheetSettingsTitle">ไซส์ / พื้นที่ใช้งาน</div>
+        <select id="sheet"><option value="">กำลังโหลด Preset จาก Notion…</option></select>
+        <div class="actions">
+          <button class="btn" id="addPreset" type="button">＋ เพิ่มขนาดกระดาษ</button>
+          <button class="btn danger" id="deletePreset" type="button">ลบกระดาษ</button>
+        </div>
+        <div class="status" id="syncStatus">กำลังเชื่อมต่อ Notion…</div>
+      </div>
+    </section>
+    <div class="preview-toolbar paper-preview-toolbar">
+      <div class="preview-controls">
+        <label class="preview-control slider-control knob-control" for="pieceGap">
+          <span class="slider-control-head"><span>ระยะห่างระหว่างชิ้นงาน</span></span>
+          <span class="knob-stage">
+            <input class="knob-input" id="pieceGap" type="range" min="1" max="15" step="0.5" value="3" aria-label="ระยะห่างระหว่างชิ้นงาน">
+            <span class="virtual-knob" id="pieceGapKnob" aria-hidden="true"><span class="knob-marker"></span><span class="knob-readout"><output id="pieceGapValue" for="pieceGap">3 mm</output></span></span>
+            <span class="slider-scale" aria-hidden="true"><span>1 mm</span><span>15 mm</span></span>
+          </span>
+        </label>
+        <label class="preview-control slider-control knob-control" for="bleed">
+          <span class="slider-control-head"><span>Bleed รอบชิ้นงาน</span></span>
+          <span class="knob-stage">
+            <input class="knob-input" id="bleed" type="range" min="1" max="15" step="0.5" value="3" aria-label="Bleed รอบชิ้นงาน">
+            <span class="virtual-knob" id="bleedKnob" aria-hidden="true"><span class="knob-marker"></span><span class="knob-readout"><output id="bleedValue" for="bleed">3 mm/ด้าน</output></span></span>
+            <span class="slider-scale" aria-hidden="true"><span>1 mm</span><span>15 mm</span></span>
+          </span>
+        </label>
+      </div>
+    </div>
+  </div>
+</aside>
+<aside class="side-sheet" id="briefAssetsSheet" aria-hidden="true">
+  <div class="sheet-head"><h2>บรีฟให้แผนกกราฟิก</h2><button class="close-sheet" id="closeBriefAssets" type="button">×</button></div>
+  <div class="sheet-body">
+    <section class="brief-assets" aria-labelledby="briefAssetsTitle">
+      <div class="brief-assets-head">
+        <div>
+          <span class="brief-eyebrow">GRAPHIC BRIEF</span>
+          <strong id="briefAssetsTitle">ภาพงานและ Ref สำหรับบรีฟ</strong>
+          <span>ใช้ใน Preview และภาพสรุปบรีฟเท่านั้น ระบบจะล้างไฟล์หลังส่งบรีฟ</span>
+        </div>
+        <span class="brief-temp-badge">ชั่วคราว</span>
+      </div>
+      <div class="brief-asset-grid">
+        <label class="asset-picker primary" for="artworkImage">
+          <input id="artworkImage" type="file" accept="image/png,image/jpeg,image/webp">
+          <span class="asset-picker-icon" aria-hidden="true">↑</span>
+          <span class="asset-picker-copy"><b>ภาพงานหลัก</b><small>แสดงบนทุกชิ้นใน Preview</small></span>
+          <span class="asset-picker-action">เลือกภาพ</span>
+        </label>
+        <label class="asset-picker reference" for="referenceImages">
+          <input id="referenceImages" type="file" accept="image/png,image/jpeg,image/webp" multiple>
+          <span class="asset-picker-icon" aria-hidden="true">+</span>
+          <span class="asset-picker-copy"><b>ภาพ Ref</b><small id="referencePickerMeta">เพิ่มได้สูงสุด 3 ภาพ</small></span>
+          <span class="asset-picker-action">เพิ่ม Ref</span>
+        </label>
+      </div>
+      <div class="artwork-current" id="artworkCurrent" hidden>
+        <img id="artworkThumbnail" alt="ภาพงานหลักที่เลือก">
+        <div><strong id="artworkName">—</strong><span id="artworkMeta">—</span></div>
+        <button class="remove-asset" id="clearArtworkImage" type="button">ล้างภาพงานหลัก</button>
+      </div>
+      <div class="reference-list" id="referenceList" aria-live="polite"></div>
+      <div class="asset-status status" id="assetStatus" aria-live="polite">ยังไม่ได้เลือกภาพงานสำหรับ Preview</div>
+      <div class="field graphic-brief-field">
+        <label class="label" for="graphicBriefDescription">คำอธิบายเพิ่มเติมสำหรับกราฟิก</label>
+        <textarea id="graphicBriefDescription" maxlength="1200" placeholder="เช่น โทนสีที่ต้องการ, ตำแหน่งโลโก้, ข้อความสำคัญ หรือข้อควรระวังในการผลิต"></textarea>
+        <div class="hint">ข้อความนี้จะอยู่ในภาพสรุปบรีฟและ Ticket ใน Notion</div>
+      </div>
+    </section>
+    <button class="brief-btn" id="downloadBrief" type="button">ส่งบรีฟให้แผนกกราฟิก</button>
+    <div class="brief-status status" id="briefStatus" aria-live="polite"></div>
+  </div>
+</aside>
 <aside class="side-sheet" id="materialsServicesSheet" aria-hidden="true">
   <div class="sheet-head"><h2>วัสดุและบริการเพิ่มเติม</h2><button class="close-sheet" id="closeMaterialsServices" type="button">×</button></div>
   <div class="sheet-body">
@@ -135,14 +215,16 @@
   </div>
 </div>
 
-<script src="js/core.js?v=20260829-print-action"></script>
-<script src="js/api.js?v=20260829-print-action"></script>
-<script src="js/presets.js?v=20260829-print-action"></script>
-<script src="js/materials.js?v=20260829-print-action"></script>
-<script src="js/services.js?v=20260829-print-action"></script>
-<script src="js/calculator.js?v=20260829-print-action"></script>
-<script src="js/customer.js?v=20260829-print-action"></script>
-<script src="js/quote.js?v=20260829-print-action"></script>
-<script src="js/app.js?v=20260829-print-action"></script>
+<script src="js/core.js?v=20260829-modern-brief"></script>
+<script src="js/api.js?v=20260829-modern-brief"></script>
+<script src="js/presets.js?v=20260829-modern-brief"></script>
+<script src="js/materials.js?v=20260829-modern-brief"></script>
+<script src="js/services.js?v=20260829-modern-brief"></script>
+<script src="js/artwork.js?v=20260829-preview-image"></script>
+<script src="js/calculator.js?v=20260829-modern-brief"></script>
+<script src="js/brief.js?v=20260829-fixed-brief-preview-3"></script>
+<script src="js/customer.js?v=20260829-modern-brief"></script>
+<script src="js/quote.js?v=20260829-modern-brief"></script>
+<script src="js/app.js?v=20260829-modern-brief"></script>
 </body>
 </html>

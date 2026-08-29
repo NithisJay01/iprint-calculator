@@ -120,7 +120,8 @@ export default {
             "GET /customers",
             "POST /customers",
             "POST /quotes",
-            "POST /quotes/:id/preview"
+            "POST /quotes/:id/preview",
+            "POST /tickets"
           ]
         });
       }
@@ -844,6 +845,310 @@ export default {
 
 
       // ================================
+      // TICKETS - CREATE WITH BRIEF IMAGE
+      // ================================
+
+      if (url.pathname === "/tickets" && request.method === "POST") {
+        const authError = requireAuth(request);
+
+        if (authError) {
+          return authError;
+        }
+
+        if (!env.NOTION_TICKETS_DATA_SOURCE_ID) {
+          return json({
+            success: false,
+            error:
+              "NOTION_TICKETS_DATA_SOURCE_ID is missing"
+          }, 500);
+        }
+
+        let form;
+
+        try {
+          form = await request.formData();
+        } catch (error) {
+          return json({
+            success: false,
+            error: "Invalid ticket upload"
+          }, 400);
+        }
+
+        const rawTicket = form.get("ticket");
+        const image = form.get("image");
+
+        if (!rawTicket || typeof rawTicket !== "string") {
+          return json({
+            success: false,
+            error: "Missing ticket data"
+          }, 400);
+        }
+
+        if (!image || typeof image.arrayBuffer !== "function") {
+          return json({
+            success: false,
+            error: "Missing brief image"
+          }, 400);
+        }
+
+        if (image.type !== "image/png") {
+          return json({
+            success: false,
+            error: "Brief image must be a PNG"
+          }, 400);
+        }
+
+        if (image.size > 10 * 1024 * 1024) {
+          return json({
+            success: false,
+            error: "Brief image exceeds the 10 MB limit"
+          }, 400);
+        }
+
+        let ticket;
+
+        try {
+          ticket = JSON.parse(rawTicket);
+        } catch (error) {
+          return json({
+            success: false,
+            error: "Invalid ticket JSON"
+          }, 400);
+        }
+
+        const ticketTitle = String(ticket?.title || "").trim();
+
+        if (!ticketTitle) {
+          return json({
+            success: false,
+            error: "Missing ticket title"
+          }, 400);
+        }
+
+        const dataSourceResponse = await fetch(
+          `https://api.notion.com/v1/data_sources/${env.NOTION_TICKETS_DATA_SOURCE_ID}`,
+          {
+            method: "GET",
+            headers: notionHeaders
+          }
+        );
+        const dataSourceText = await dataSourceResponse.text();
+
+        if (!dataSourceResponse.ok) {
+          return json({
+            success: false,
+            error: "Notion GET Tickets data source error",
+            status: dataSourceResponse.status,
+            detail: dataSourceText
+          }, dataSourceResponse.status);
+        }
+
+        const dataSource = JSON.parse(dataSourceText);
+        const titleProperty = Object.entries(
+          dataSource.properties || {}
+        ).find(([, property]) => property?.type === "title");
+
+        if (!titleProperty) {
+          return json({
+            success: false,
+            error: "Ticket data source has no title property"
+          }, 502);
+        }
+
+        const [titlePropertyName] = titleProperty;
+        const shortText = value => String(value ?? "").slice(0, 1900);
+        const richText = value => [{
+          type: "text",
+          text: { content: shortText(value) }
+        }];
+
+        const createTicket = await fetch(
+          "https://api.notion.com/v1/pages",
+          {
+            method: "POST",
+            headers: notionHeaders,
+            body: JSON.stringify({
+              parent: {
+                type: "data_source_id",
+                data_source_id: env.NOTION_TICKETS_DATA_SOURCE_ID
+              },
+              properties: {
+                [titlePropertyName]: {
+                  title: richText(ticketTitle)
+                }
+              }
+            })
+          }
+        );
+        const createTicketText = await createTicket.text();
+
+        if (!createTicket.ok) {
+          return json({
+            success: false,
+            error: "Notion POST Ticket error",
+            status: createTicket.status,
+            detail: createTicketText
+          }, createTicket.status);
+        }
+
+        const ticketPage = JSON.parse(createTicketText);
+        const ticketId = ticketPage.id;
+        const uploadImageToNotion = async (file, fallbackFilename) => {
+          const filename = String(file.name || fallbackFilename);
+          const contentType = String(file.type || "image/png");
+          const createUpload = await fetch(
+            "https://api.notion.com/v1/file_uploads",
+            {
+              method: "POST",
+              headers: notionHeaders,
+              body: JSON.stringify({
+                mode: "single_part",
+                filename,
+                content_type: contentType
+              })
+            }
+          );
+          const createUploadText = await createUpload.text();
+
+          if (!createUpload.ok) {
+            throw Object.assign(new Error("Notion create image upload error"), {
+              status: createUpload.status,
+              detail: createUploadText
+            });
+          }
+
+          const fileUpload = JSON.parse(createUploadText);
+          const fileUploadId = fileUpload.id;
+
+          if (!fileUploadId) {
+            throw new Error("Notion did not return an image upload ID");
+          }
+
+          const uploadForm = new FormData();
+          uploadForm.append("file", file, filename);
+          const sendUpload = await fetch(
+            `https://api.notion.com/v1/file_uploads/${fileUploadId}/send`,
+            {
+              method: "POST",
+              headers: {
+                "Authorization": `Bearer ${env.NOTION_TOKEN}`,
+                "Notion-Version": "2026-03-11"
+              },
+              body: uploadForm
+            }
+          );
+          const sendUploadText = await sendUpload.text();
+
+          if (!sendUpload.ok) {
+            throw Object.assign(new Error("Notion image upload error"), {
+              status: sendUpload.status,
+              detail: sendUploadText
+            });
+          }
+
+          return { id: fileUploadId, filename };
+        };
+
+        let briefUpload;
+
+        try {
+          briefUpload = await uploadImageToNotion(image, "iprint-brief.png");
+        } catch (error) {
+          return json({
+            success: false,
+            error: error.message || "Notion ticket image upload error",
+            status: error.status || 502,
+            detail: error.detail || null,
+            ticketId
+          }, error.status || 502);
+        }
+
+        const fileUploadId = briefUpload.id;
+
+        const extras = Array.isArray(ticket.extras)
+          ? ticket.extras.filter(item => item && item.name)
+          : [];
+        const graphicBriefDescription = String(ticket.graphicBriefDescription || "")
+          .trim()
+          .slice(0, 1900);
+        const paragraph = text => ({
+          object: "block",
+          type: "paragraph",
+          paragraph: { rich_text: richText(text) }
+        });
+        const heading = text => ({
+          object: "block",
+          type: "heading_2",
+          heading_2: { rich_text: richText(text) }
+        });
+        const bullet = text => ({
+          object: "block",
+          type: "bulleted_list_item",
+          bulleted_list_item: { rich_text: richText(text) }
+        });
+        const number = value => Number(value || 0).toLocaleString("th-TH", {
+          maximumFractionDigits: 2
+        });
+        const children = [
+          heading("สรุปบรีฟงาน"),
+          paragraph(`Preset: ${shortText(ticket.paper || "-")}`),
+          paragraph(`ขนาดชิ้นงาน: ${shortText(ticket.size || "-")} • จำนวน ${number(ticket.pieceCount)} ชิ้นงาน`),
+          paragraph(`การผลิต: ${number(ticket.yield)} ดวง/แผ่น • ใช้ ${number(ticket.sheets)} แผ่น • Gap ${number(ticket.gap)} mm • Bleed ${number(ticket.bleed)} mm/ด้าน`),
+          paragraph(`ต้นทุนต่อแผ่น ฿${number(ticket.costPerSheet)} • กำไร ${number(ticket.profitPercent)}%`),
+          ...(graphicBriefDescription
+            ? [heading("คำอธิบายสำหรับแผนกกราฟิก"), paragraph(graphicBriefDescription)]
+            : []),
+          {
+            object: "block",
+            type: "image",
+            image: {
+              type: "file_upload",
+              file_upload: { id: fileUploadId }
+            }
+          },
+          heading("วัสดุและบริการเพิ่มเติม")
+        ];
+
+        if (extras.length) {
+          extras.forEach(item => {
+            children.push(bullet(
+              `${shortText(item.kind || "รายการ")}: ${shortText(item.name)} • ${number(item.quantity)} ${shortText(item.unit || "หน่วย")} • รวม ฿${number(item.total)}`
+            ));
+          });
+        } else {
+          children.push(paragraph("ยังไม่ได้เลือกวัสดุหรือบริการเพิ่มเติม"));
+        }
+
+        const appendBlocks = await fetch(
+          `https://api.notion.com/v1/blocks/${ticketId}/children`,
+          {
+            method: "PATCH",
+            headers: notionHeaders,
+            body: JSON.stringify({ children })
+          }
+        );
+        const appendBlocksText = await appendBlocks.text();
+
+        if (!appendBlocks.ok) {
+          return json({
+            success: false,
+            error: "Notion attach ticket detail error",
+            status: appendBlocks.status,
+            detail: appendBlocksText,
+            ticketId
+          }, appendBlocks.status);
+        }
+
+        return json({
+          success: true,
+          id: ticketId,
+          url: ticketPage.url || null,
+          fileUploadId
+        });
+      }
+
+
+      // ================================
       // QUOTE PREVIEW - ATTACH IMAGE
       // ================================
 
@@ -1199,7 +1504,9 @@ export default {
           "GET /services",
           "GET /customers",
           "POST /customers",
-          "POST /quotes"
+          "POST /quotes",
+          "POST /quotes/:id/preview",
+          "POST /tickets"
         ]
       }, 404);
 

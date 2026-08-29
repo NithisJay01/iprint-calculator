@@ -219,6 +219,55 @@ async function attachQuotePreviewRemote(pageId, image, filename) {
     }
   }
 
+async function createTicketRemote(ticket, image, filename) {
+    try {
+      const apiKey=getWriteApiKey();
+
+      if(!apiKey) {
+        throw new Error('ยังไม่ได้ตั้งค่า API Key');
+      }
+
+      if(!ticket || !image) {
+        throw new Error('ไม่พบข้อมูล Ticket หรือภาพสรุป');
+      }
+
+      const form=new FormData();
+      form.append('ticket',JSON.stringify(ticket));
+      form.append('image',image,filename||'iprint-brief.png');
+
+      const response=await fetch(API.tickets,{
+        method:'POST',
+        headers:{'X-API-Key':apiKey},
+        body:form
+      });
+      const text=await response.text();
+      let data={};
+
+      try {
+        data=JSON.parse(text);
+      } catch(error) {
+        // Keep raw text as a useful diagnostic below.
+      }
+
+      if(!response.ok || data.success!==true) {
+        throw new Error(
+          data.detail ||
+          data.error ||
+          text ||
+          'ไม่สามารถสร้าง Ticket ใน Notion ได้'
+        );
+      }
+
+      return data;
+    } catch(error) {
+      console.error('POST /tickets',error);
+      return {
+        success:false,
+        error:error.message||String(error)
+      };
+    }
+  }
+
 async function createCustomerRemote(customerData) {
     try {
       const response = await fetch(API.customers, {

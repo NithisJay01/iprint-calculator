@@ -27,6 +27,33 @@
     element.dispatchEvent(new window.Event('change', { bubbles: true }));
   }
 
+  function samplePngFile(window, name) {
+    const base64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL9JwAAAABJRU5ErkJggg==';
+    const bytes = Uint8Array.from(window.atob(base64), character => character.charCodeAt(0));
+    return new window.File([bytes], name, { type: 'image/png' });
+  }
+
+  function setFiles(window, element, files) {
+    const transfer = new window.DataTransfer();
+    files.forEach(file => transfer.items.add(file));
+    Object.defineProperty(element, 'files', {
+      configurable: true,
+      value: transfer.files
+    });
+    element.dispatchEvent(new window.Event('change', { bubbles: true }));
+  }
+
+  function dropFiles(window, element, files) {
+    const transfer = new window.DataTransfer();
+    files.forEach(file => transfer.items.add(file));
+    const event = new window.Event('drop', { bubbles: true, cancelable: true });
+    Object.defineProperty(event, 'dataTransfer', {
+      configurable: true,
+      value: transfer
+    });
+    element.dispatchEvent(event);
+  }
+
   async function waitForApp() {
     for (let attempt = 0; attempt < 80; attempt += 1) {
       const appWindow = frame.contentWindow;
@@ -66,11 +93,20 @@
       const app = await waitForApp();
       const { window, document } = app;
       const qty = document.getElementById('qty');
+      const cost = document.getElementById('cost');
+      const pieceGap = document.getElementById('pieceGap');
+      const bleed = document.getElementById('bleed');
+      const artwork = document.getElementById('artworkImage');
+      const references = document.getElementById('referenceImages');
+      const graphicBriefDescription = document.getElementById('graphicBriefDescription');
       const material = document.getElementById('materialSelect');
       const services = [...document.querySelectorAll('#servicesContainer input[type="checkbox"]')];
       const original = {
         qty: qty.value,
+        pieceGap: pieceGap.value,
+        bleed: bleed.value,
         material: material.value,
+        graphicBriefDescription: graphicBriefDescription.value,
         services: services.map(service => service.checked)
       };
       const now = new Date();
@@ -82,6 +118,97 @@
       await check('เริ่มต้นแอปและโหลด Preset', () => {
         assert(window.Iprint && typeof window.Iprint.calculate === 'function', 'เริ่มต้นแอปและโหลด Preset', 'ไม่พบ API ของแอป');
         assert(document.getElementById('sheet').options.length > 0, 'เริ่มต้นแอปและโหลด Preset', 'ไม่พบ Preset');
+        assert(document.getElementById('paperPreviewSheet').contains(document.getElementById('sheet')), 'เริ่มต้นแอปและโหลด Preset', 'ส่วนไซส์ / พื้นที่ใช้งานต้องอยู่ใน Side Sheet ตั้งค่า Preview');
+        assert(Number(cost.value) === 2.5, 'เริ่มต้นแอปและโหลด Preset', 'ต้นทุนต่อแผ่นเริ่มต้นต้องเป็น 2.5 บาท');
+        assert(Number(pieceGap.value) === 3, 'เริ่มต้นแอปและโหลด Preset', 'Gap เริ่มต้นต้องเป็น 3 mm');
+        assert(pieceGap.type === 'range' && pieceGap.min === '1' && pieceGap.max === '15' && pieceGap.step === '0.5', 'เริ่มต้นแอปและโหลด Preset', 'Slider ระยะห่างต้องเป็น 1–15 mm ทีละ 0.5 mm');
+        assert(bleed.type === 'range' && bleed.min === '1' && bleed.max === '15' && bleed.step === '0.5', 'เริ่มต้นแอปและโหลด Preset', 'Slider Bleed ต้องเป็น 1–15 mm ทีละ 0.5 mm');
+        assert(document.getElementById('pieceGapKnob') && document.getElementById('bleedKnob'), 'เริ่มต้นแอปและโหลด Preset', 'ไม่พบ Virtual Knob สำหรับ Gap และ Bleed');
+        const quickActions = document.querySelector('.preview-quick-actions');
+        assert(quickActions?.contains(document.getElementById('openPaperPreviewSettings')) && quickActions?.contains(document.getElementById('openBriefAssets')) && quickActions?.contains(document.getElementById('openMaterialsServices')), 'เริ่มต้นแอปและโหลด Preset', 'ไม่พบปุ่มด่วนด้านขวาของ Preview');
+        document.getElementById('openPaperPreviewSettings').click();
+        assert(document.getElementById('paperPreviewSheet').classList.contains('open'), 'เริ่มต้นแอปและโหลด Preset', 'ปุ่มตั้งค่า Preview ไม่เปิด Side Sheet');
+        document.getElementById('closePaperPreviewSettings').click();
+      });
+
+      await check('Preview แสดง Preset และจัดชิ้นงานกึ่งกลาง', () => {
+        const usable = document.querySelector('.preview-usable');
+        const grid = document.querySelector('.preview-grid');
+        const preset = document.getElementById('previewPaperName').textContent;
+        const usableWidth = parseFloat(usable?.style.width || 0);
+        const usableHeight = parseFloat(usable?.style.height || 0);
+        const gridWidth = grid?.getBoundingClientRect().width || 0;
+        const gridHeight = grid?.getBoundingClientRect().height || 0;
+        const left = parseFloat(grid?.style.left || 0);
+        const top = parseFloat(grid?.style.top || 0);
+
+        assert(usable && grid, 'Preview แสดง Preset และจัดชิ้นงานกึ่งกลาง', 'ไม่พบ Preview layout');
+        assert(preset.startsWith('Preset: ') && preset !== 'Preset: —', 'Preview แสดง Preset และจัดชิ้นงานกึ่งกลาง', 'ไม่แสดงชื่อ Preset');
+        assert(Math.abs(left - (usableWidth - gridWidth) / 2) < 1.5, 'Preview แสดง Preset และจัดชิ้นงานกึ่งกลาง', 'ชิ้นงานไม่ได้อยู่กึ่งกลางแนวนอน');
+        assert(Math.abs(top - (usableHeight - gridHeight) / 2) < 1.5, 'Preview แสดง Preset และจัดชิ้นงานกึ่งกลาง', 'ชิ้นงานไม่ได้อยู่กึ่งกลางแนวตั้ง');
+      });
+
+      await check('ดับเบิลคลิก Preview เพื่อเลือกภาพได้', () => {
+        const preview = document.getElementById('previewDropZone');
+        const originalClick = artwork.click;
+        let pickerOpened = false;
+        artwork.click = () => { pickerOpened = true; };
+        try {
+          preview.dispatchEvent(new window.MouseEvent('dblclick', { bubbles: true }));
+          assert(pickerOpened, 'ดับเบิลคลิก Preview เพื่อเลือกภาพได้', 'ดับเบิลคลิกแล้วไม่เปิดตัวเลือกภาพ');
+        } finally {
+          artwork.click = originalClick;
+        }
+      });
+
+      await check('ปรับ Bleed ใน Preview ได้โดยไม่เปลี่ยนสูตร', async () => {
+        const yieldBefore = numberFromText(document.getElementById('yield').textContent);
+        setValue(window, bleed, 5);
+        await wait(50);
+        const yieldAfter = numberFromText(document.getElementById('yield').textContent);
+        const bleedBox = document.querySelector('.piece .bleed');
+        assert(document.getElementById('bleedSummary').textContent === '5', 'ปรับ Bleed ใน Preview ได้โดยไม่เปลี่ยนสูตร', 'ค่า Bleed ในสรุปไม่อัปเดต');
+        assert(document.getElementById('bleedValue').textContent === '5 mm/ด้าน', 'ปรับ Bleed ใน Preview ได้โดยไม่เปลี่ยนสูตร', 'ค่า Bleed บน Slider ไม่อัปเดต');
+        assert(document.getElementById('previewInfo').textContent.includes('Bleed 5 mm/ด้าน'), 'ปรับ Bleed ใน Preview ได้โดยไม่เปลี่ยนสูตร', 'Preview ไม่อัปเดต Bleed');
+        assert(parseFloat(bleedBox?.style.left || 0) > 0, 'ปรับ Bleed ใน Preview ได้โดยไม่เปลี่ยนสูตร', 'ไม่พบกรอบ Bleed ที่อัปเดต');
+        assert(yieldAfter === yieldBefore, 'ปรับ Bleed ใน Preview ได้โดยไม่เปลี่ยนสูตร', 'Bleed ไม่ควรเปลี่ยนจำนวนชิ้นต่อแผ่น');
+      });
+
+      await check('ควบคุม Gap และใช้ในสูตรการวางชิ้นงาน', async () => {
+        const withoutGap = window.Iprint.findBest({ usableW: 8.1, usableH: 8.1 }, 4, 4, 0);
+        const withGap = window.Iprint.findBest({ usableW: 8.1, usableH: 8.1 }, 4, 4, 3);
+
+        assert(withoutGap?.yield === 4, 'ควบคุม Gap และใช้ในสูตรการวางชิ้นงาน', 'สูตรไม่คำนวณกรณีไม่มี Gap ถูกต้อง');
+        assert(withGap?.yield === 1, 'ควบคุม Gap และใช้ในสูตรการวางชิ้นงาน', 'Gap ต้องลดจำนวนที่วางได้ตามพื้นที่จริง');
+
+        setValue(window, pieceGap, 3);
+        await wait(50);
+        const grid = document.querySelector('.preview-grid');
+        assert(document.getElementById('gap').textContent === '3', 'ควบคุม Gap และใช้ในสูตรการวางชิ้นงาน', 'ค่า Gap ในสรุปไม่อัปเดต');
+        assert(document.getElementById('pieceGapValue').textContent === '3 mm', 'ควบคุม Gap และใช้ในสูตรการวางชิ้นงาน', 'ค่า Gap บน Slider ไม่อัปเดต');
+        assert(document.getElementById('previewInfo').textContent.includes('Gap 3 mm'), 'ควบคุม Gap และใช้ในสูตรการวางชิ้นงาน', 'Preview ไม่อัปเดต Gap');
+        assert(parseFloat(grid?.style.gap || 0) > 0, 'ควบคุม Gap และใช้ในสูตรการวางชิ้นงาน', 'Preview ไม่แสดงช่องว่างระหว่างชิ้นงาน');
+      });
+
+      await check('ภาพงานใน Preview เป็นข้อมูลชั่วคราว', async () => {
+        setFiles(window, artwork, [samplePngFile(window, 'artwork.png')]);
+        setFiles(window, references, [
+          samplePngFile(window, 'ref-1.png'),
+          samplePngFile(window, 'ref-2.png'),
+          samplePngFile(window, 'ref-3.png'),
+          samplePngFile(window, 'ref-4.png')
+        ]);
+        await wait(50);
+        dropFiles(window, document.getElementById('previewDropZone'), [samplePngFile(window, 'dragged-artwork.png')]);
+        await wait(50);
+        const yieldPerSheet = numberFromText(document.getElementById('yield').textContent);
+        const artworkPreviews = document.querySelectorAll('.piece-artwork');
+
+        assert(artworkPreviews.length === yieldPerSheet, 'ภาพงานใน Preview เป็นข้อมูลชั่วคราว', 'ภาพงานหลักไม่แสดงในทุกชิ้นของ Preview');
+        assert(document.getElementById('artworkCurrent').hidden === false, 'ภาพงานใน Preview เป็นข้อมูลชั่วคราว', 'ไม่แสดงรายการภาพงานหลัก');
+        assert(document.getElementById('artworkName').textContent === 'dragged-artwork.png', 'ภาพงานใน Preview เป็นข้อมูลชั่วคราว', 'ไม่สามารถลากภาพลง Preview ได้');
+        assert(document.querySelectorAll('.reference-item').length === 3, 'ภาพงานใน Preview เป็นข้อมูลชั่วคราว', 'Ref ต้องแนบได้สูงสุด 3 ภาพ');
+        assert(window.Iprint.captureBriefImage, 'ภาพงานใน Preview เป็นข้อมูลชั่วคราว', 'ไม่สามารถสร้างภาพสรุปจากภาพงานหลัก');
       });
 
       await check('สูตรจำนวนแผ่นและราคาขาย', () => {
@@ -148,7 +275,39 @@
         document.getElementById('closeQuote').click();
       });
 
+      await check('สร้างภาพสรุปบรีฟงาน', async () => {
+        graphicBriefDescription.value = 'ใช้โทนสีน้ำเงิน และเว้นพื้นที่โลโก้ด้านบน';
+        const briefImage = await window.Iprint.captureBriefImage();
+        const imageBitmap = await window.createImageBitmap(briefImage);
+        const sampleCanvas = document.createElement('canvas');
+        sampleCanvas.width = 1;
+        sampleCanvas.height = 1;
+        sampleCanvas.getContext('2d').drawImage(imageBitmap, 20, 20, 1, 1, 0, 0, 1, 1);
+        const headerPixel = sampleCanvas.getContext('2d').getImageData(0, 0, 1, 1).data;
+        generatedPreviewImage.src = URL.createObjectURL(briefImage);
+        generatedPreview.style.display = 'block';
+        assert(briefImage.type === 'image/png' && briefImage.size > 0, 'สร้างภาพสรุปบรีฟงาน', 'สร้าง PNG สรุปบรีฟงานไม่สำเร็จ');
+        assert(imageBitmap.width === 2160, 'สร้างภาพสรุปบรีฟงาน', 'ภาพสรุปต้องสร้างที่ความละเอียด 2160 px เพื่อให้ Preview ชัดเจน');
+        assert(headerPixel[2] > 200 && headerPixel[0] < 30, 'สร้างภาพสรุปบรีฟงาน', 'ส่วนหัวของภาพสรุปแสดงผลผิดปกติ');
+        imageBitmap.close();
+      });
+
+      await check('เตรียมข้อมูล Ticket จากบรีฟงาน', () => {
+        const ticket = window.Iprint.buildBriefTicket();
+        assert(ticket && ticket.title.startsWith('BRIEF-'), 'เตรียมข้อมูล Ticket จากบรีฟงาน', 'ไม่พบชื่อ Ticket');
+        assert(ticket.size === document.getElementById('resultSize').textContent, 'เตรียมข้อมูล Ticket จากบรีฟงาน', 'ขนาดใน Ticket ไม่ตรงกับผลคำนวณ');
+        assert(ticket.sheets === numberFromText(document.getElementById('sheets').textContent), 'เตรียมข้อมูล Ticket จากบรีฟงาน', 'จำนวนแผ่นใน Ticket ไม่ตรงกับผลคำนวณ');
+        assert(ticket.gap === Number(pieceGap.value), 'เตรียมข้อมูล Ticket จากบรีฟงาน', 'Gap ใน Ticket ไม่ตรงกับผลคำนวณ');
+        assert(ticket.graphicBriefDescription === graphicBriefDescription.value, 'เตรียมข้อมูล Ticket จากบรีฟงาน', 'คำอธิบายสำหรับกราฟิกไม่อยู่ใน Ticket');
+      });
+
       setValue(window, qty, original.qty);
+      setValue(window, pieceGap, original.pieceGap);
+      setValue(window, bleed, original.bleed);
+      graphicBriefDescription.value = original.graphicBriefDescription;
+      window.Iprint.clearTemporaryImages();
+      assert(document.getElementById('artworkCurrent').hidden === true, 'ล้างภาพงานชั่วคราว', 'ล้างภาพงานหลักไม่สำเร็จ');
+      assert(document.querySelectorAll('.reference-item').length === 0, 'ล้างภาพงานชั่วคราว', 'ล้าง Ref ชั่วคราวไม่สำเร็จ');
       setValue(window, material, original.material);
       services.forEach((service, index) => {
         if (service.checked !== original.services[index]) {

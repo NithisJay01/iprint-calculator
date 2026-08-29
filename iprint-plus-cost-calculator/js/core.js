@@ -1,7 +1,7 @@
 'use strict';
   const API_ROOT='https://iprint-preset-api.iprint-garphic1.workers.dev';
   const API= {
-    presets:API_ROOT+'/presets',materials:API_ROOT+'/materials',services:API_ROOT+'/services',quotes:API_ROOT+'/quotes',customers: API_ROOT + '/customers',
+    presets:API_ROOT+'/presets',materials:API_ROOT+'/materials',services:API_ROOT+'/services',quotes:API_ROOT+'/quotes',tickets:API_ROOT+'/tickets',customers: API_ROOT + '/customers',
   }
   ;
   const BLEED_MM=3;
@@ -25,6 +25,10 @@
   let selectedServiceIds = {};
   let lastCalc = null;
   let currentQuoteMeta = null;
+  // The preview image stays in memory only and is cleared after creating a brief.
+  let artworkImage = null;
+  let artworkImageUrl = '';
+  let referenceImages = [];
 
   const $ = id => document.getElementById(id);
   const money = value => Number(value || 0).toLocaleString('th-TH', {
