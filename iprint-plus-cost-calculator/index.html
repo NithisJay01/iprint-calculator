@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>iPrint Cost Calculator</title>
-<link rel="stylesheet" href="css/app.css?v=20260829-preview-image">
+<link rel="stylesheet" href="css/app.css?v=20260830-order-cart">
 </head>
 <body>
 
@@ -55,7 +55,11 @@
       <div class="money"><span class="result-label">ต้นทุนทั้งหมด</span><strong>฿<span id="total">—</span></strong></div>
       <div class="money"><span class="result-label">ราคาขาย</span><strong>฿<span id="sale">—</span></strong></div>
     </div>
-    <button class="quote-btn" id="openQuote" type="button">ออกใบเสนอราคา</button>
+    <div class="order-actions">
+      <button class="quote-btn" id="addToCart" type="button">เพิ่มงานลงตะกร้า</button>
+      <button class="cart-btn" id="openCart" type="button">ตะกร้า <span id="cartCount">0</span></button>
+    </div>
+    <div class="brief-status status" id="cartStatus" aria-live="polite"></div>
   </section>
 </main>
 
@@ -169,6 +173,17 @@
   </div>
 </div>
 
+<div class="modal" id="cartModal" aria-hidden="true">
+  <div class="modal-card cart-modal-card">
+    <div class="modal-head"><div><h2>ตะกร้าชิ้นงาน</h2><span class="cart-subtitle">หนึ่งตะกร้าจะสร้างหนึ่ง Ticket ใน Iprint Jobs</span></div><button class="close-sheet" id="closeCart" type="button">×</button></div>
+    <div class="modal-body">
+      <div class="cart-list" id="cartList" aria-live="polite"></div>
+      <div class="cart-summary"><span>ยอดรวมก่อน VAT</span><strong id="cartTotal">฿0.00</strong></div>
+      <div class="print-actions"><button class="btn" id="cancelCart" type="button">ปิด</button><button class="btn primary" id="openQuote" type="button">ตรวจสอบและสร้างใบเสนอราคา</button></div>
+    </div>
+  </div>
+</div>
+
 <div class="modal" id="quoteModal" aria-hidden="true">
   <div class="modal-card">
     <div class="modal-head no-print"><h2>ใบเสนอราคา</h2><button class="close-sheet" id="closeQuote" type="button">×</button></div>
@@ -208,22 +223,23 @@
         </div>
       </form>
       <div id="quotePreview" class="quote-preview"></div>
-      <div class="print-actions no-print"><button class="btn" id="cancelQuote2" type="button">ปิด</button><button class="btn primary" id="printQuote" type="button">พิมพ์ / Save PDF</button></div>
+      <div class="print-actions no-print"><button class="btn" id="cancelQuote2" type="button">ปิด</button><button class="btn primary" id="printQuote" type="button">สร้างออเดอร์ / พิมพ์ PDF</button></div>
       <div class="tiny-note no-print" id="quoteSaveStatus">ข้อมูลต้นทุนภายในจะไม่แสดงในใบเสนอราคา</div>
     </div>
   </div>
 </div>
 
-<script src="js/core.js?v=20260829-modern-brief"></script>
-<script src="js/api.js?v=20260829-modern-brief"></script>
+<script src="js/core.js?v=20260830-order-cart"></script>
+<script src="js/api.js?v=20260830-order-cart"></script>
 <script src="js/presets.js?v=20260829-modern-brief"></script>
 <script src="js/materials.js?v=20260829-modern-brief"></script>
 <script src="js/services.js?v=20260829-modern-brief"></script>
 <script src="js/artwork.js?v=20260829-preview-image"></script>
-<script src="js/calculator.js?v=20260829-modern-brief"></script>
+<script src="js/calculator.js?v=20260830-order-cart"></script>
 <script src="js/brief.js?v=20260830-ticket-cleanup"></script>
+<script src="js/cart.js?v=20260830-order-cart"></script>
 <script src="js/customer.js?v=20260829-modern-brief"></script>
-<script src="js/quote.js?v=20260829-modern-brief"></script>
-<script src="js/app.js?v=20260829-modern-brief"></script>
+<script src="js/quote.js?v=20260830-order-cart"></script>
+<script src="js/app.js?v=20260830-order-cart"></script>
 </body>
 </html>

@@ -97,6 +97,7 @@ function bind() {
     );
     bindVirtualKnobs();
     bindArtwork();
+    bindCart();
     $('addPreset').addEventListener('click',openPreset);
     $('cancelPreset').addEventListener('click',closePreset);
     $('savePreset').addEventListener('click',savePreset);
@@ -151,7 +152,12 @@ function init() {
     buildBriefTicket,
     downloadBrief,
     clearArtworkImage,
-    clearTemporaryImages
+    clearTemporaryImages,
+    addCurrentJobToCart,
+    openCart,
+    publicOrderItems,
+    cartTotal,
+    clearCartAfterOrder
   };
 }
 

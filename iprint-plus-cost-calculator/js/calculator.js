@@ -217,6 +217,19 @@ function calculate() {
   }
 
 function quoteItems() {
+    if (Array.isArray(cartItems) && cartItems.length) {
+      return cartItems.map((item, index) => ({
+        id: item.id,
+        name: item.name || `งานพิมพ์ ${index + 1}`,
+        size: [item.size, item.paper?.name, item.material?.name]
+          .filter(Boolean)
+          .join(' • '),
+        qty: Number(item.quantity) || 0,
+        unit: item.unit || 'ดวง',
+        price: Number(item.price) || 0
+      }));
+    }
+
     if (!lastCalc) return [];
 
     const addon = [];
@@ -282,7 +295,9 @@ function quoteItems() {
   }
 
 function quotePriceSummary() {
-    const subtotal = Number(lastCalc?.sale) || 0;
+    const subtotal = Array.isArray(cartItems) && cartItems.length
+      ? cartItems.reduce((sum, item) => sum + (Number(item.price) || 0), 0)
+      : Number(lastCalc?.sale) || 0;
     const vat = subtotal * 0.07;
     const grandTotal = subtotal + vat;
 

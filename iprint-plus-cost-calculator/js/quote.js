@@ -29,7 +29,7 @@ function setPrintQuoteLoading(isLoading) {
       return;
     }
 
-    button.textContent = button.dataset.defaultLabel || 'พิมพ์ / Save PDF';
+    button.textContent = button.dataset.defaultLabel || 'สร้างออเดอร์ / พิมพ์ PDF';
     button.classList.remove('is-loading');
     button.disabled = false;
     button.removeAttribute('aria-busy');
@@ -44,7 +44,7 @@ function formatNotionDate(date) {
   }
 
 function buildQuote() {
-    if (!lastCalc) return null;
+    if (!Array.isArray(cartItems) || !cartItems.length) return null;
 
     const customerInput = $('quoteCustomer');
     const customerPageIdInput = $('quoteCustomerPageId');
@@ -75,15 +75,20 @@ function buildQuote() {
         date:now.toLocaleDateString('th-TH', {
           year:'numeric',month:'2-digit',day:'2-digit'
         }),
-        notionDate:formatNotionDate(now)
+        notionDate:formatNotionDate(now),
+        createdAt:now.toISOString(),
+        requestKey:cartId('order')
       }
       ;
     }
     const items=quoteItems();
     let rows='';
     items.forEach((it,i)=>rows+='<tr><td>'+(i+1)+'</td><td><b>'+escapeHtml(it.name)+'</b><br><span>'+escapeHtml(it.size)+'</span></td><td>'+Number(it.qty).toLocaleString('th-TH')+' '+escapeHtml(it.unit)+'</td><td>฿'+money(it.price)+'</td></tr>');
-    $('quotePreview').innerHTML='<div class="quote-top"><div><div class="quote-brand">iPrint</div><div class="quote-meta">Design & Production</div></div><div class="quote-title">ใบเสนอราคา<div class="quote-meta">เลขที่ '+currentQuoteMeta.quoteNo+'<br>'+currentQuoteMeta.date+'<br>สร้างเมื่อ '+formatCreatedAt(currentQuoteMeta.createdAt)+'</div></div></div><div class="quote-customer"><b>ลูกค้า:</b> '+escapeHtml(customer)+'<br><b>เลขประจำตัวผู้เสียภาษี:</b> '+escapeHtml(taxId || '-')+'<br><b>ติดต่อ:</b> '+escapeHtml(contact)+'<br><b>ที่อยู่:</b> '+escapeHtml(address)+'</div><table class="quote-table"><thead><tr><th>#</th><th>รายการ</th><th>จำนวน</th><th>ราคา</th></tr></thead><tbody>'+rows+'</tbody></table><div class="quote-total"><span>จำนวนแผ่นผลิต</span><span>'+lastCalc.sheets.toLocaleString('th-TH')+' แผ่น</span></div><div class="quote-total"><span>ราคาก่อน VAT</span><span>฿'+money(quotePriceSummary().subtotal)+'</span></div><div class="quote-total"><span>VAT 7%</span><span>฿'+money(quotePriceSummary().vat)+'</span></div><div class="quote-total" style="font-size:14px;border-top:2px solid #111;padding-top:8px"><span>ยอดรวมสุทธิ</span><span>฿'+money(quotePriceSummary().grandTotal)+'</span></div>';
+    const totalSheets=cartItems.reduce((sum,item)=>sum+(Number(item.sheets)||0),0);
+    const summary=quotePriceSummary();
+    $('quotePreview').innerHTML='<div class="quote-top"><div><div class="quote-brand">iPrint</div><div class="quote-meta">Design & Production</div></div><div class="quote-title">ใบเสนอราคา<div class="quote-meta">เลขที่ '+currentQuoteMeta.quoteNo+'<br>'+currentQuoteMeta.date+'<br>สร้างเมื่อ '+formatCreatedAt(currentQuoteMeta.createdAt)+'</div></div></div><div class="quote-customer"><b>ลูกค้า:</b> '+escapeHtml(customer)+'<br><b>เลขประจำตัวผู้เสียภาษี:</b> '+escapeHtml(taxId || '-')+'<br><b>ติดต่อ:</b> '+escapeHtml(contact)+'<br><b>ที่อยู่:</b> '+escapeHtml(address)+'</div><table class="quote-table"><thead><tr><th>#</th><th>รายการ</th><th>จำนวน</th><th>ราคา</th></tr></thead><tbody>'+rows+'</tbody></table><div class="quote-total"><span>จำนวนรายการ</span><span>'+cartItems.length.toLocaleString('th-TH')+' รายการ • '+totalSheets.toLocaleString('th-TH')+' แผ่น</span></div><div class="quote-total"><span>ราคาก่อน VAT</span><span>฿'+money(summary.subtotal)+'</span></div><div class="quote-total"><span>VAT 7%</span><span>฿'+money(summary.vat)+'</span></div><div class="quote-total" style="font-size:14px;border-top:2px solid #111;padding-top:8px"><span>ยอดรวมสุทธิ</span><span>฿'+money(summary.grandTotal)+'</span></div>';
     return {
+      orderKey:currentQuoteMeta.requestKey,
       quoteNo:currentQuoteMeta.quoteNo,
       date:currentQuoteMeta.notionDate,
       displayDate:currentQuoteMeta.date,
@@ -94,11 +99,14 @@ function buildQuote() {
       taxId,
       address,
       items,
-      total:lastCalc.sale,
-      sheets:lastCalc.sheets,
-      pieceCount:lastCalc.Q,
-      size:lastCalc.W.toFixed(2)+' × '+lastCalc.H.toFixed(2)+' cm',
-      paper:lastCalc.paper?.name || ''
+      orderItems:publicOrderItems(),
+      total:summary.subtotal,
+      vat:summary.vat,
+      grandTotal:summary.grandTotal,
+      sheets:totalSheets,
+      pieceCount:cartItems.reduce((sum,item)=>sum+(Number(item.quantity)||0),0),
+      size:cartItems.length+' รายการ',
+      paper:''
     }
     ;
   }
@@ -224,10 +232,11 @@ async function attachQuotePreview(quoteId, quote) {
   }
 
 function openQuote() {
-    if(!lastCalc) {
-      alert('กรุณากรอกข้อมูลให้คำนวณก่อน');
+    if(!Array.isArray(cartItems)||!cartItems.length) {
+      alert('กรุณาเพิ่มชิ้นงานลงตะกร้าก่อน');
       return
     }
+    closeCart();
     currentQuoteMeta=null;
     $('quoteModal').classList.add('open');
     $('quoteModal').setAttribute('aria-hidden','false');
@@ -273,28 +282,23 @@ async function printQuote() {
       }
 
       const hasApiKey = !!getWriteApiKey();
+      const quotePreviewImage = await captureQuotePreview(q);
+      const briefImages = await cartBriefImages();
       const remote = hasApiKey
-        ? await saveQuoteRemote(q)
+        ? await createOrderRemote(q, quotePreviewImage, briefImages)
         : false;
 
-      if (!remote) {
+      if (!remote?.success) {
         await saveQuoteLocal(q);
 
         $('quoteSaveStatus').textContent = hasApiKey
-          ? 'บันทึก Notion ไม่สำเร็จ • เก็บประวัติไว้ในเครื่องแล้ว'
+          ? `สร้างออเดอร์ใน Notion ไม่สำเร็จ: ${remote?.error || 'ไม่ทราบสาเหตุ'} • เก็บประวัติไว้ในเครื่องแล้ว`
           : 'ยังไม่ได้ตั้ง API Key • เก็บประวัติไว้ในเครื่องแล้ว';
       } else {
-        let preview = false;
-
-        try {
-          preview = await attachQuotePreview(remote.id, q);
-        } catch (error) {
-          console.error('Attach quote preview', error);
-        }
-
-        $('quoteSaveStatus').textContent = preview
-          ? 'บันทึกใบเสนอราคาและแนบภาพ Preview ใน Notion แล้ว'
-          : 'บันทึกใบเสนอราคาใน Notion แล้ว • แนบภาพ Preview ไม่สำเร็จ';
+        await clearCartAfterOrder();
+        $('quoteSaveStatus').textContent = remote.duplicate
+          ? 'ออเดอร์นี้มีอยู่ใน Notion แล้ว • ไม่สร้างข้อมูลซ้ำ'
+          : `สร้าง Ticket และ Order Items ${remote.itemIds?.length || q.orderItems.length} รายการใน Notion แล้ว`;
       }
 
       setTimeout(() => window.print(), 80);

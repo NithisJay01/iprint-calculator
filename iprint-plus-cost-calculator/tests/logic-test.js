@@ -114,6 +114,7 @@
         String(now.getMonth() + 1).padStart(2, '0') +
         String(now.getDate()).padStart(2, '0');
       const originalQuoteSequence = window.localStorage.getItem(quoteSequenceKey);
+      const addedCartItemIds = [];
 
       await check('เริ่มต้นแอปและโหลด Preset', () => {
         assert(window.Iprint && typeof window.Iprint.calculate === 'function', 'เริ่มต้นแอปและโหลด Preset', 'ไม่พบ API ของแอป');
@@ -257,21 +258,38 @@
         assert(totalAfter >= totalBefore, 'บริการมีผลต่อยอดต้นทุน', 'เลือกบริการแล้วต้นทุนไม่อัปเดต');
       });
 
-      await check('สร้าง Preview ใบเสนอราคาและ VAT', async () => {
-        document.getElementById('openQuote').click();
+      await check('ตะกร้ารองรับหลายชิ้นงานในออเดอร์เดียว', async () => {
+        const beforeIds = new Set(window.Iprint.publicOrderItems().map(item => item.id));
+        const firstAdded = await window.Iprint.addCurrentJobToCart();
+        setValue(window, qty, Number(qty.value) + 100);
+        await wait(40);
+        const secondAdded = await window.Iprint.addCurrentJobToCart();
+        const orderItems = window.Iprint.publicOrderItems();
+        orderItems.forEach(item => {
+          if (!beforeIds.has(item.id)) addedCartItemIds.push(item.id);
+        });
+
+        assert(firstAdded && secondAdded, 'ตะกร้ารองรับหลายชิ้นงานในออเดอร์เดียว', 'เพิ่มชิ้นงานลงตะกร้าไม่สำเร็จ');
+        assert(addedCartItemIds.length === 2, 'ตะกร้ารองรับหลายชิ้นงานในออเดอร์เดียว', 'จำนวนรายการที่เพิ่มไม่ถูกต้อง');
+        assert(orderItems.every(item => !('gap' in item) && !('bleed' in item) && !('editor' in item)), 'ตะกร้ารองรับหลายชิ้นงานในออเดอร์เดียว', 'ข้อมูลภายในของต้นทุน/Gap/Bleed ไม่ควรออกไปกับ Order Item');
+      });
+
+      await check('สร้าง Preview ใบเสนอราคาหลายรายการและ VAT', async () => {
+        window.Iprint.openQuote();
         await wait(30);
         const preview = document.getElementById('quotePreview').textContent;
-        const sale = numberFromText(document.getElementById('sale').textContent);
         const vatRow = [...document.querySelectorAll('.quote-total')].find(row => row.textContent.includes('VAT 7%'));
         const vat = numberFromText(vatRow?.querySelector('span:last-child')?.textContent);
         const quote = window.Iprint.buildQuote();
         const previewImage = await window.Iprint.captureQuotePreview(quote);
         generatedPreviewImage.src = URL.createObjectURL(previewImage);
         generatedPreview.style.display = 'block';
-        assert(preview.includes('ใบเสนอราคา'), 'สร้าง Preview ใบเสนอราคาและ VAT', 'ไม่พบ Preview ใบเสนอราคา');
-        assert(Math.abs(vat - sale * 0.07) < 0.01, 'สร้าง Preview ใบเสนอราคาและ VAT', 'VAT ไม่ตรงกับ 7%');
-        assert(/^\d{4}-\d{2}-\d{2}$/.test(quote.date), 'สร้าง Preview ใบเสนอราคาและ VAT', 'วันที่สำหรับ Notion ต้องเป็น YYYY-MM-DD');
-        assert(previewImage.type === 'image/png' && previewImage.size > 0, 'สร้าง Preview ใบเสนอราคาและ VAT', 'สร้างภาพ Preview สำหรับ Notion ไม่สำเร็จ');
+        assert(preview.includes('ใบเสนอราคา'), 'สร้าง Preview ใบเสนอราคาหลายรายการและ VAT', 'ไม่พบ Preview ใบเสนอราคา');
+        assert(quote.items.length >= 2 && quote.orderItems.length === quote.items.length, 'สร้าง Preview ใบเสนอราคาหลายรายการและ VAT', 'ใบเสนอราคาไม่รวมทุกรายการในตะกร้า');
+        assert(Math.abs(quote.total - window.Iprint.cartTotal()) < 0.01, 'สร้าง Preview ใบเสนอราคาหลายรายการและ VAT', 'ยอดรวมใบเสนอราคาไม่ตรงกับตะกร้า');
+        assert(Math.abs(vat - quote.total * 0.07) < 0.01, 'สร้าง Preview ใบเสนอราคาหลายรายการและ VAT', 'VAT ไม่ตรงกับ 7%');
+        assert(/^\d{4}-\d{2}-\d{2}$/.test(quote.date), 'สร้าง Preview ใบเสนอราคาหลายรายการและ VAT', 'วันที่สำหรับ Notion ต้องเป็น YYYY-MM-DD');
+        assert(previewImage.type === 'image/png' && previewImage.size > 0, 'สร้าง Preview ใบเสนอราคาหลายรายการและ VAT', 'สร้างภาพ Preview สำหรับ Notion ไม่สำเร็จ');
         document.getElementById('closeQuote').click();
       });
 
@@ -317,6 +335,18 @@
           service.dispatchEvent(new window.Event('change', { bubbles: true }));
         }
       });
+
+      if (addedCartItemIds.length) {
+        window.Iprint.openCart();
+        for (const id of addedCartItemIds) {
+          const removeButton = document.querySelector(
+            `[data-cart-id="${window.CSS.escape(id)}"] [data-cart-action="remove"]`
+          );
+          removeButton?.click();
+          await wait(30);
+        }
+        document.getElementById('closeCart').click();
+      }
 
       if (originalQuoteSequence === null) {
         window.localStorage.removeItem(quoteSequenceKey);

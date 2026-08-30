@@ -163,7 +163,8 @@ try {
       NOTION_SERVICES_DATA_SOURCE_ID: 'services-id',
       NOTION_CUSTOMERS_DATA_SOURCE_ID: 'customers-id',
       NOTION_QUOTES_DATA_SOURCE_ID: 'quotes-id',
-      NOTION_TICKETS_DATA_SOURCE_ID: 'tickets-database-id'
+      NOTION_TICKETS_DATA_SOURCE_ID: 'tickets-database-id',
+      NOTION_ORDER_ITEMS_DATA_SOURCE_ID: 'order-items-id'
     }
   );
   const result = await response.json();

@@ -71,6 +71,13 @@ export default {
       }, 500);
     }
 
+    if (!env.NOTION_ORDER_ITEMS_DATA_SOURCE_ID) {
+      return json({
+        success: false,
+        error: "NOTION_ORDER_ITEMS_DATA_SOURCE_ID is missing"
+      }, 500);
+    }
+
     const notionHeaders = {
       "Authorization": `Bearer ${env.NOTION_TOKEN}`,
       "Notion-Version": "2026-03-11",
@@ -121,7 +128,8 @@ export default {
             "POST /customers",
             "POST /quotes",
             "POST /quotes/:id/preview",
-            "POST /tickets"
+            "POST /tickets",
+            "POST /orders"
           ]
         });
       }
@@ -840,6 +848,418 @@ export default {
           id: page.id,
           customerId,
           name: customerName
+        });
+      }
+
+
+      // ================================
+      // ORDERS - ONE TICKET WITH MANY ORDER ITEMS
+      // ================================
+
+      if (url.pathname === "/orders" && request.method === "POST") {
+        const authError = requireAuth(request);
+        if (authError) return authError;
+        if (!env.NOTION_TICKETS_DATA_SOURCE_ID) {
+          return json({
+            success: false,
+            error: "NOTION_TICKETS_DATA_SOURCE_ID is missing"
+          }, 500);
+        }
+
+        let form;
+        try {
+          form = await request.formData();
+        } catch (error) {
+          return json({ success: false, error: "Invalid order upload" }, 400);
+        }
+
+        const rawOrder = form.get("order");
+        if (!rawOrder || typeof rawOrder !== "string") {
+          return json({ success: false, error: "Missing order data" }, 400);
+        }
+
+        let order;
+        try {
+          order = JSON.parse(rawOrder);
+        } catch (error) {
+          return json({ success: false, error: "Invalid order JSON" }, 400);
+        }
+
+        const orderItems = Array.isArray(order?.orderItems)
+          ? order.orderItems.filter(item => item && item.id && item.name)
+          : [];
+        const orderKey = String(order?.orderKey || "").trim();
+        const quoteNo = String(order?.quoteNo || "").trim();
+
+        if (!orderKey || !quoteNo) {
+          return json({ success: false, error: "Missing orderKey or quoteNo" }, 400);
+        }
+        if (!orderItems.length || orderItems.length > 20) {
+          return json({ success: false, error: "Order must contain 1-20 items" }, 400);
+        }
+
+        const resolveDataSource = async configuredId => {
+          let dataSourceId = String(configuredId || "").trim();
+          let response = await fetch(
+            `https://api.notion.com/v1/data_sources/${dataSourceId}`,
+            { method: "GET", headers: notionHeaders }
+          );
+          let responseText = await response.text();
+
+          if (!response.ok && response.status === 404) {
+            const databaseResponse = await fetch(
+              `https://api.notion.com/v1/databases/${dataSourceId}`,
+              { method: "GET", headers: notionHeaders }
+            );
+            const databaseText = await databaseResponse.text();
+
+            if (databaseResponse.ok) {
+              const database = JSON.parse(databaseText);
+              dataSourceId = String(database?.data_sources?.[0]?.id || "").trim();
+              if (dataSourceId) {
+                response = await fetch(
+                  `https://api.notion.com/v1/data_sources/${dataSourceId}`,
+                  { method: "GET", headers: notionHeaders }
+                );
+                responseText = await response.text();
+              }
+            }
+          }
+
+          if (!response.ok) {
+            throw Object.assign(new Error("Notion data source not found"), {
+              status: response.status,
+              detail: responseText
+            });
+          }
+
+          return { id: dataSourceId, data: JSON.parse(responseText) };
+        };
+
+        let ticketsSource;
+        let itemsSource;
+        try {
+          ticketsSource = await resolveDataSource(env.NOTION_TICKETS_DATA_SOURCE_ID);
+          itemsSource = await resolveDataSource(env.NOTION_ORDER_ITEMS_DATA_SOURCE_ID);
+        } catch (error) {
+          return json({
+            success: false,
+            error: error.message || "Notion order data source error",
+            detail: error.detail || null
+          }, error.status || 502);
+        }
+
+        const shortText = value => String(value ?? "").slice(0, 1900);
+        const richText = value => [{ type: "text", text: { content: shortText(value) } }];
+        const plainText = property => (property?.rich_text || property?.title || [])
+          .map(item => item?.plain_text || item?.text?.content || "")
+          .join("");
+        const ticketSchema = ticketsSource.data.properties || {};
+        const itemSchema = itemsSource.data.properties || {};
+        const ticketTitleProperty = Object.entries(ticketSchema)
+          .find(([, property]) => property?.type === "title")?.[0];
+        const itemTitleProperty = Object.entries(itemSchema)
+          .find(([, property]) => property?.type === "title")?.[0];
+
+        if (!ticketTitleProperty || !itemTitleProperty) {
+          return json({ success: false, error: "Order database title property is missing" }, 502);
+        }
+
+        const findExisting = async (dataSourceId, property, value) => {
+          const response = await fetch(
+            `https://api.notion.com/v1/data_sources/${dataSourceId}/query`,
+            {
+              method: "POST",
+              headers: notionHeaders,
+              body: JSON.stringify({
+                page_size: 1,
+                filter: { property, rich_text: { equals: String(value) } }
+              })
+            }
+          );
+          const text = await response.text();
+          if (!response.ok) {
+            throw Object.assign(new Error("Notion order lookup error"), {
+              status: response.status,
+              detail: text
+            });
+          }
+          return JSON.parse(text).results?.[0] || null;
+        };
+
+        let ticketPage;
+        try {
+          ticketPage = ticketSchema["Order Key"]?.type === "rich_text"
+            ? await findExisting(ticketsSource.id, "Order Key", orderKey)
+            : null;
+        } catch (error) {
+          return json({ success: false, error: error.message, detail: error.detail }, error.status || 502);
+        }
+
+        if (ticketPage && plainText(ticketPage.properties?.["Presentation/Proof"]) === "ORDER_READY") {
+          return json({
+            success: true,
+            duplicate: true,
+            id: ticketPage.id,
+            url: ticketPage.url || null,
+            itemIds: []
+          });
+        }
+
+        if (!ticketPage) {
+          const ticketProperties = {
+            [ticketTitleProperty]: {
+              title: richText(`${quoteNo} • ${order.customer || "ไม่ระบุลูกค้า"} • ${orderItems.length} รายการ`)
+            }
+          };
+          const setTicket = (name, type, value) => {
+            if (ticketSchema[name]?.type === type) ticketProperties[name] = value;
+          };
+
+          setTicket("Order Key", "rich_text", { rich_text: richText(orderKey) });
+          setTicket("Order Total", "number", { number: Number(order.total) || 0 });
+          setTicket("Item Count", "number", { number: orderItems.length });
+          setTicket("ชื่อลูกค้า", "rich_text", { rich_text: richText(order.customer || "-") });
+          setTicket("จำนวนรวม", "number", {
+            number: orderItems.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0)
+          });
+          setTicket("ขนาด", "rich_text", { rich_text: richText(`${orderItems.length} รายการ`) });
+          setTicket("สถานะ", "status", { status: { name: "NEW" } });
+          setTicket("มอบหมาย", "select", { select: { name: "GRAPHIC" } });
+          setTicket("งานประเภท", "select", { select: { name: "Design" } });
+          setTicket("Presentation/Proof", "rich_text", { rich_text: richText("ORDER_CREATING") });
+
+          const response = await fetch("https://api.notion.com/v1/pages", {
+            method: "POST",
+            headers: notionHeaders,
+            body: JSON.stringify({
+              parent: { type: "data_source_id", data_source_id: ticketsSource.id },
+              properties: ticketProperties
+            })
+          });
+          const text = await response.text();
+          if (!response.ok) {
+            return json({ success: false, error: "Notion POST Order Ticket error", detail: text }, response.status);
+          }
+          ticketPage = JSON.parse(text);
+        }
+
+        const ticketId = ticketPage.id;
+        const itemIds = [];
+
+        for (const [index, item] of orderItems.entries()) {
+          let existingItem = null;
+          try {
+            existingItem = itemSchema["Item Key"]?.type === "rich_text"
+              ? await findExisting(itemsSource.id, "Item Key", item.id)
+              : null;
+          } catch (error) {
+            return json({ success: false, error: error.message, detail: error.detail, ticketId }, error.status || 502);
+          }
+
+          if (existingItem) {
+            itemIds.push(existingItem.id);
+            continue;
+          }
+
+          const properties = {
+            [itemTitleProperty]: {
+              title: richText(`#${String(index + 1).padStart(2, "0")} • ${item.name}`)
+            }
+          };
+          const setItem = (name, type, value) => {
+            if (itemSchema[name]?.type === type) properties[name] = value;
+          };
+          const serviceIds = (Array.isArray(item.services) ? item.services : [])
+            .map(service => String(service?.id || "").trim())
+            .filter(Boolean);
+
+          setItem("Order Ticket", "relation", { relation: [{ id: ticketId }] });
+          setItem("Line No", "number", { number: index + 1 });
+          setItem("Item Key", "rich_text", { rich_text: richText(item.id) });
+          setItem("Size", "rich_text", { rich_text: richText(item.size || "-") });
+          setItem("Quantity", "number", { number: Number(item.quantity) || 0 });
+          setItem("Unit", "select", { select: { name: item.unit || "ดวง" } });
+          setItem("Paper", "rich_text", { rich_text: richText(item.paper?.name || "-") });
+          setItem("Sheets", "number", { number: Number(item.sheets) || 0 });
+          setItem("Yield", "number", { number: Number(item.yield) || 0 });
+          setItem("Price", "number", { number: Number(item.price) || 0 });
+          setItem("Brief", "rich_text", { rich_text: richText(item.brief || "") });
+          setItem("Status", "select", { select: { name: "NEW" } });
+          setItem("Material", "relation", {
+            relation: item.material?.id ? [{ id: String(item.material.id) }] : []
+          });
+          setItem("Services", "relation", { relation: serviceIds.map(id => ({ id })) });
+          setItem("Snapshot", "rich_text", {
+            rich_text: richText(JSON.stringify({
+              id: item.id,
+              size: item.size,
+              quantity: item.quantity,
+              unit: item.unit,
+              paper: item.paper,
+              sheets: item.sheets,
+              yield: item.yield,
+              material: item.material,
+              services: item.services,
+              price: item.price,
+              brief: item.brief
+            }))
+          });
+
+          const response = await fetch("https://api.notion.com/v1/pages", {
+            method: "POST",
+            headers: notionHeaders,
+            body: JSON.stringify({
+              parent: { type: "data_source_id", data_source_id: itemsSource.id },
+              properties
+            })
+          });
+          const text = await response.text();
+          if (!response.ok) {
+            return json({
+              success: false,
+              error: "Notion POST Order Item error",
+              detail: text,
+              ticketId,
+              createdItemIds: itemIds
+            }, response.status);
+          }
+          itemIds.push(JSON.parse(text).id);
+        }
+
+        const uploadFile = async (file, fallbackFilename) => {
+          if (!file || typeof file.arrayBuffer !== "function") return null;
+          if (file.size > 10 * 1024 * 1024) {
+            throw Object.assign(new Error("Order image exceeds the 10 MB limit"), { status: 400 });
+          }
+          const filename = String(file.name || fallbackFilename);
+          const contentType = String(file.type || "image/png");
+          const create = await fetch("https://api.notion.com/v1/file_uploads", {
+            method: "POST",
+            headers: notionHeaders,
+            body: JSON.stringify({ mode: "single_part", filename, content_type: contentType })
+          });
+          const createText = await create.text();
+          if (!create.ok) {
+            throw Object.assign(new Error("Notion create order image upload error"), {
+              status: create.status,
+              detail: createText
+            });
+          }
+          const uploadId = JSON.parse(createText).id;
+          const uploadForm = new FormData();
+          uploadForm.append("file", file, filename);
+          const send = await fetch(`https://api.notion.com/v1/file_uploads/${uploadId}/send`, {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${env.NOTION_TOKEN}`,
+              "Notion-Version": "2026-03-11"
+            },
+            body: uploadForm
+          });
+          const sendText = await send.text();
+          if (!send.ok) {
+            throw Object.assign(new Error("Notion order image upload error"), {
+              status: send.status,
+              detail: sendText
+            });
+          }
+          return uploadId;
+        };
+
+        const paragraph = text => ({
+          object: "block",
+          type: "paragraph",
+          paragraph: { rich_text: richText(text) }
+        });
+        const heading = (text, level = 2) => ({
+          object: "block",
+          type: `heading_${level}`,
+          [`heading_${level}`]: { rich_text: richText(text) }
+        });
+        const imageBlock = uploadId => ({
+          object: "block",
+          type: "image",
+          image: { type: "file_upload", file_upload: { id: uploadId } }
+        });
+        const children = [
+          heading(`ออเดอร์ ${quoteNo}`, 1),
+          paragraph(`ลูกค้า: ${shortText(order.customer || "-")} • ${orderItems.length} รายการ`),
+          paragraph(`ติดต่อ: ${shortText(order.contact || "-")} • ยอดรวม ฿${Number(order.grandTotal || order.total || 0).toLocaleString("th-TH", { maximumFractionDigits: 2 })}`)
+        ];
+
+        try {
+          const quoteUploadId = await uploadFile(form.get("quotePreview"), `${quoteNo}-quote.png`);
+          if (quoteUploadId) {
+            children.push(heading("ใบเสนอราคา"), imageBlock(quoteUploadId));
+          }
+
+          children.push(heading("รายการชิ้นงาน"));
+          for (const [index, item] of orderItems.entries()) {
+            children.push(
+              heading(`#${index + 1} ${item.name}`),
+              paragraph(`ขนาด ${shortText(item.size || "-")} • จำนวน ${Number(item.quantity || 0).toLocaleString("th-TH")} ${shortText(item.unit || "ดวง")}`),
+              paragraph(`Preset: ${shortText(item.paper?.name || "-")} • ${Number(item.yield || 0).toLocaleString("th-TH")} ดวง/แผ่น • ใช้ ${Number(item.sheets || 0).toLocaleString("th-TH")} แผ่น`),
+              paragraph(`วัสดุ: ${shortText(item.material?.name || "-")} • บริการ: ${(item.services || []).map(service => shortText(service.name)).join(", ") || "-"}`),
+              paragraph(`ราคาขาย ฿${Number(item.price || 0).toLocaleString("th-TH", { maximumFractionDigits: 2 })}`)
+            );
+            if (item.brief) children.push(paragraph(`บรีฟ: ${shortText(item.brief)}`));
+            const briefUploadId = await uploadFile(form.get(`brief_${index}`), `${quoteNo}-item-${index + 1}.png`);
+            if (briefUploadId) children.push(imageBlock(briefUploadId));
+          }
+
+          for (let index = 0; index < children.length; index += 80) {
+            const append = await fetch(`https://api.notion.com/v1/blocks/${ticketId}/children`, {
+              method: "PATCH",
+              headers: notionHeaders,
+              body: JSON.stringify({ children: children.slice(index, index + 80) })
+            });
+            const appendText = await append.text();
+            if (!append.ok) {
+              throw Object.assign(new Error("Notion append order detail error"), {
+                status: append.status,
+                detail: appendText
+              });
+            }
+          }
+        } catch (error) {
+          return json({
+            success: false,
+            error: error.message || "Notion order attachment error",
+            detail: error.detail || null,
+            ticketId,
+            itemIds
+          }, error.status || 502);
+        }
+
+        if (ticketSchema["Presentation/Proof"]?.type === "rich_text") {
+          const readyResponse = await fetch(`https://api.notion.com/v1/pages/${ticketId}`, {
+            method: "PATCH",
+            headers: notionHeaders,
+            body: JSON.stringify({
+              properties: {
+                "Presentation/Proof": { rich_text: richText("ORDER_READY") }
+              }
+            })
+          });
+          const readyText = await readyResponse.text();
+          if (!readyResponse.ok) {
+            return json({
+              success: false,
+              error: "Notion finalize order error",
+              detail: readyText,
+              ticketId,
+              itemIds
+            }, readyResponse.status);
+          }
+        }
+
+        return json({
+          success: true,
+          duplicate: false,
+          id: ticketId,
+          url: ticketPage.url || null,
+          itemIds
         });
       }
 
@@ -1592,6 +2012,7 @@ export default {
           "POST /customers",
           "POST /quotes",
           "POST /quotes/:id/preview",
+          "POST /orders",
           "POST /tickets"
         ]
       }, 404);

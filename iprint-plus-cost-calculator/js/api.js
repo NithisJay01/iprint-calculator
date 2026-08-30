@@ -268,6 +268,56 @@ async function createTicketRemote(ticket, image, filename) {
     }
   }
 
+async function createOrderRemote(order, quotePreview, briefImages) {
+  try {
+    const apiKey = getWriteApiKey();
+
+    if (!apiKey) throw new Error('ยังไม่ได้ตั้งค่า API Key');
+    if (!order || !Array.isArray(order.orderItems) || !order.orderItems.length) {
+      throw new Error('ไม่พบรายการชิ้นงานในออเดอร์');
+    }
+
+    const form = new FormData();
+    form.append('order', JSON.stringify(order));
+    if (quotePreview) {
+      form.append('quotePreview', quotePreview, `${order.quoteNo || 'order'}-quote.png`);
+    }
+    (Array.isArray(briefImages) ? briefImages : []).forEach((image, index) => {
+      if (image instanceof Blob) {
+        form.append(`brief_${index}`, image, `${order.quoteNo || 'order'}-item-${index + 1}.png`);
+      }
+    });
+
+    const response = await fetch(API.orders, {
+      method: 'POST',
+      headers: { 'X-API-Key': apiKey },
+      body: form
+    });
+    const text = await response.text();
+    let data = {};
+
+    try {
+      data = JSON.parse(text);
+    } catch (error) {
+      // Preserve the raw response in the error below.
+    }
+
+    if (!response.ok || data.success !== true) {
+      throw new Error(
+        data.detail || data.error || text || `POST /orders HTTP ${response.status}`
+      );
+    }
+
+    return data;
+  } catch (error) {
+    console.error('POST /orders', error);
+    return {
+      success: false,
+      error: error.message || String(error)
+    };
+  }
+}
+
 async function createCustomerRemote(customerData) {
     try {
       const response = await fetch(API.customers, {
