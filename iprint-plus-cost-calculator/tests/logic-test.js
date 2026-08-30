@@ -297,8 +297,10 @@
         assert(ticket && ticket.title.startsWith('BRIEF-'), 'เตรียมข้อมูล Ticket จากบรีฟงาน', 'ไม่พบชื่อ Ticket');
         assert(ticket.size === document.getElementById('resultSize').textContent, 'เตรียมข้อมูล Ticket จากบรีฟงาน', 'ขนาดใน Ticket ไม่ตรงกับผลคำนวณ');
         assert(ticket.sheets === numberFromText(document.getElementById('sheets').textContent), 'เตรียมข้อมูล Ticket จากบรีฟงาน', 'จำนวนแผ่นใน Ticket ไม่ตรงกับผลคำนวณ');
-        assert(ticket.gap === Number(pieceGap.value), 'เตรียมข้อมูล Ticket จากบรีฟงาน', 'Gap ใน Ticket ไม่ตรงกับผลคำนวณ');
+        assert(!('gap' in ticket) && !('bleed' in ticket), 'เตรียมข้อมูล Ticket จากบรีฟงาน', 'Ticket ไม่ควรส่ง Gap หรือ Bleed ไป Notion');
+        assert(!('costPerSheet' in ticket) && !('profitPercent' in ticket), 'เตรียมข้อมูล Ticket จากบรีฟงาน', 'Ticket ไม่ควรส่งต้นทุนต่อแผ่นหรือกำไรไป Notion');
         assert(ticket.graphicBriefDescription === graphicBriefDescription.value, 'เตรียมข้อมูล Ticket จากบรีฟงาน', 'คำอธิบายสำหรับกราฟิกไม่อยู่ใน Ticket');
+        assert(ticket.extras.length > 0 && ticket.extras.every(item => item.pageId), 'เตรียมข้อมูล Ticket จากบรีฟงาน', 'Ticket ต้องเก็บ Page ID สำหรับ Relation วัสดุและบริการ');
       });
 
       setValue(window, qty, original.qty);

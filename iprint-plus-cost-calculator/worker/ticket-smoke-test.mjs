@@ -16,10 +16,33 @@ globalThis.fetch = async (url, options = {}) => {
   const requestUrl = String(url);
   calls.push({ url: requestUrl, options });
 
-  if (requestUrl.includes('/v1/data_sources/')) {
+  if (requestUrl.endsWith('/v1/data_sources/tickets-database-id')) {
+    return Response.json({
+      object: 'error',
+      status: 404,
+      code: 'object_not_found'
+    }, { status: 404 });
+  }
+
+  if (requestUrl.endsWith('/v1/databases/tickets-database-id')) {
+    return Response.json({
+      data_sources: [{ id: 'resolved-tickets-id', name: 'Tickets' }]
+    });
+  }
+
+  if (requestUrl.endsWith('/v1/data_sources/resolved-tickets-id')) {
     return Response.json({
       properties: {
-        'ชื่องาน': { type: 'title' }
+        'ชื่องาน': { type: 'title' },
+        'ขนาด': { type: 'rich_text' },
+        'จำนวนรวม': { type: 'number' },
+        'อธิบายเพิ่ม': { type: 'rich_text' },
+        'สถานะ': { type: 'status' },
+        'มอบหมาย': { type: 'select' },
+        'งานประเภท': { type: 'select' },
+        'ไฟล์ประเภท': { type: 'multi_select' },
+        'วัสดุที่ใช้': { type: 'relation' },
+        'บริการที่ใช้': { type: 'relation' }
       }
     });
   }
@@ -29,6 +52,20 @@ globalThis.fetch = async (url, options = {}) => {
     assert.equal(
       payload.properties['ชื่องาน'].title[0].text.content,
       'BRIEF-TEST'
+    );
+    assert.equal(payload.parent.data_source_id, 'resolved-tickets-id');
+    assert.equal(payload.properties['ขนาด'].rich_text[0].text.content, '10.00 × 15.00 cm');
+    assert.equal(payload.properties['จำนวนรวม'].number, 500);
+    assert.equal(payload.properties['สถานะ'].status.name, 'NEW');
+    assert.equal(payload.properties['มอบหมาย'].select.name, 'GRAPHIC');
+    assert.equal(payload.properties['งานประเภท'].select.name, 'Design');
+    assert.deepEqual(
+      payload.properties['วัสดุที่ใช้'].relation,
+      [{ id: 'material-page-id' }]
+    );
+    assert.deepEqual(
+      payload.properties['บริการที่ใช้'].relation,
+      [{ id: 'service-page-id' }]
     );
     return Response.json({
       id: 'ticket-page-id',
@@ -58,12 +95,13 @@ globalThis.fetch = async (url, options = {}) => {
         block.bulleted_list_item.rich_text[0].text.content.includes('Sticker PP')
       )
     );
-    assert.ok(
-      payload.children.some(block =>
-        block.type === 'paragraph' &&
-        block.paragraph.rich_text[0].text.content.includes('Gap 3 mm')
-      )
-    );
+    const ticketText = payload.children
+      .map(block => block[block.type]?.rich_text?.[0]?.text?.content || '')
+      .join('\n');
+    assert.equal(ticketText.includes('Gap'), false);
+    assert.equal(ticketText.includes('Bleed'), false);
+    assert.equal(ticketText.includes('ต้นทุนต่อแผ่น'), false);
+    assert.equal(ticketText.includes('กำไร'), false);
     assert.ok(
       payload.children.some(block =>
         block.type === 'paragraph' &&
@@ -85,18 +123,23 @@ try {
     pieceCount: 500,
     yield: 8,
     sheets: 63,
-    gap: 3,
-    bleed: 3,
-    costPerSheet: 2.5,
-    profitPercent: 30,
     graphicBriefDescription: 'ใช้โทนสีน้ำเงิน และเว้นพื้นที่โลโก้ด้านบน',
     extras: [
       {
+        pageId: 'material-page-id',
         kind: 'วัสดุ',
         name: 'Sticker PP',
         quantity: 63,
         unit: 'แผ่น',
         total: 441
+      },
+      {
+        pageId: 'service-page-id',
+        kind: 'บริการเพิ่มเติม',
+        name: 'เคลือบด้าน',
+        quantity: 63,
+        unit: 'แผ่น',
+        total: 630
       }
     ]
   }));
@@ -120,7 +163,7 @@ try {
       NOTION_SERVICES_DATA_SOURCE_ID: 'services-id',
       NOTION_CUSTOMERS_DATA_SOURCE_ID: 'customers-id',
       NOTION_QUOTES_DATA_SOURCE_ID: 'quotes-id',
-      NOTION_TICKETS_DATA_SOURCE_ID: 'tickets-id'
+      NOTION_TICKETS_DATA_SOURCE_ID: 'tickets-database-id'
     }
   );
   const result = await response.json();
@@ -129,7 +172,7 @@ try {
   assert.equal(result.success, true);
   assert.equal(result.id, 'ticket-page-id');
   assert.equal(result.fileUploadId, 'ticket-file-id');
-  assert.equal(calls.length, 5);
+  assert.equal(calls.length, 7);
   console.log('Ticket Worker smoke test passed');
 } finally {
   globalThis.fetch = originalFetch;

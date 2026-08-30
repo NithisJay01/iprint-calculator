@@ -917,6 +917,9 @@ export default {
         }
 
         const ticketTitle = String(ticket?.title || "").trim();
+        const extras = Array.isArray(ticket?.extras)
+          ? ticket.extras.filter(item => item && item.name)
+          : [];
 
         if (!ticketTitle) {
           return json({
@@ -925,14 +928,55 @@ export default {
           }, 400);
         }
 
-        const dataSourceResponse = await fetch(
-          `https://api.notion.com/v1/data_sources/${env.NOTION_TICKETS_DATA_SOURCE_ID}`,
+        let ticketDataSourceId = String(
+          env.NOTION_TICKETS_DATA_SOURCE_ID
+        ).trim();
+        let dataSourceResponse = await fetch(
+          `https://api.notion.com/v1/data_sources/${ticketDataSourceId}`,
           {
             method: "GET",
             headers: notionHeaders
           }
         );
-        const dataSourceText = await dataSourceResponse.text();
+        let dataSourceText = await dataSourceResponse.text();
+
+        // Notion database URLs expose a database ID, not a data source ID.
+        // Accept either value so the Worker can resolve the first table
+        // automatically when a database ID was configured.
+        if (!dataSourceResponse.ok && dataSourceResponse.status === 404) {
+          const databaseResponse = await fetch(
+            `https://api.notion.com/v1/databases/${ticketDataSourceId}`,
+            {
+              method: "GET",
+              headers: notionHeaders
+            }
+          );
+          const databaseText = await databaseResponse.text();
+
+          if (databaseResponse.ok) {
+            const database = JSON.parse(databaseText);
+            const resolvedDataSourceId = String(
+              database?.data_sources?.[0]?.id || ""
+            ).trim();
+
+            if (!resolvedDataSourceId) {
+              return json({
+                success: false,
+                error: "Ticket database has no data source"
+              }, 502);
+            }
+
+            ticketDataSourceId = resolvedDataSourceId;
+            dataSourceResponse = await fetch(
+              `https://api.notion.com/v1/data_sources/${ticketDataSourceId}`,
+              {
+                method: "GET",
+                headers: notionHeaders
+              }
+            );
+            dataSourceText = await dataSourceResponse.text();
+          }
+        }
 
         if (!dataSourceResponse.ok) {
           return json({
@@ -961,6 +1005,56 @@ export default {
           type: "text",
           text: { content: shortText(value) }
         }];
+        const ticketProperties = {
+          [titlePropertyName]: {
+            title: richText(ticketTitle)
+          }
+        };
+        const sourceProperties = dataSource.properties || {};
+        const setTicketProperty = (name, expectedType, value) => {
+          if (sourceProperties[name]?.type === expectedType && value !== undefined) {
+            ticketProperties[name] = value;
+          }
+        };
+        const materialPageIds = [...new Set(extras
+          .filter(item => item.kind === "วัสดุ" && item.pageId)
+          .map(item => String(item.pageId))
+        )];
+        const servicePageIds = [...new Set(extras
+          .filter(item => item.kind === "บริการเพิ่มเติม" && item.pageId)
+          .map(item => String(item.pageId))
+        )];
+
+        setTicketProperty("ขนาด", "rich_text", {
+          rich_text: richText(ticket.size || "-")
+        });
+        setTicketProperty("จำนวนรวม", "number", {
+          number: Number(ticket.pieceCount) || 0
+        });
+        setTicketProperty("อธิบายเพิ่ม", "rich_text", {
+          rich_text: richText(ticket.graphicBriefDescription || "")
+        });
+        setTicketProperty("สถานะ", "status", {
+          status: { name: "NEW" }
+        });
+        setTicketProperty("มอบหมาย", "select", {
+          select: { name: "GRAPHIC" }
+        });
+        setTicketProperty("งานประเภท", "select", {
+          select: { name: "Design" }
+        });
+        setTicketProperty("ไฟล์ประเภท", "multi_select", {
+          multi_select: [
+            { name: "ทำแบบ" },
+            { name: "ส่งให้ตรวจก่อน" }
+          ]
+        });
+        setTicketProperty("วัสดุที่ใช้", "relation", {
+          relation: materialPageIds.map(id => ({ id }))
+        });
+        setTicketProperty("บริการที่ใช้", "relation", {
+          relation: servicePageIds.map(id => ({ id }))
+        });
 
         const createTicket = await fetch(
           "https://api.notion.com/v1/pages",
@@ -970,13 +1064,9 @@ export default {
             body: JSON.stringify({
               parent: {
                 type: "data_source_id",
-                data_source_id: env.NOTION_TICKETS_DATA_SOURCE_ID
+                data_source_id: ticketDataSourceId
               },
-              properties: {
-                [titlePropertyName]: {
-                  title: richText(ticketTitle)
-                }
-              }
+              properties: ticketProperties
             })
           }
         );
@@ -1065,9 +1155,6 @@ export default {
 
         const fileUploadId = briefUpload.id;
 
-        const extras = Array.isArray(ticket.extras)
-          ? ticket.extras.filter(item => item && item.name)
-          : [];
         const graphicBriefDescription = String(ticket.graphicBriefDescription || "")
           .trim()
           .slice(0, 1900);
@@ -1093,8 +1180,7 @@ export default {
           heading("สรุปบรีฟงาน"),
           paragraph(`Preset: ${shortText(ticket.paper || "-")}`),
           paragraph(`ขนาดชิ้นงาน: ${shortText(ticket.size || "-")} • จำนวน ${number(ticket.pieceCount)} ชิ้นงาน`),
-          paragraph(`การผลิต: ${number(ticket.yield)} ดวง/แผ่น • ใช้ ${number(ticket.sheets)} แผ่น • Gap ${number(ticket.gap)} mm • Bleed ${number(ticket.bleed)} mm/ด้าน`),
-          paragraph(`ต้นทุนต่อแผ่น ฿${number(ticket.costPerSheet)} • กำไร ${number(ticket.profitPercent)}%`),
+          paragraph(`การผลิต: ${number(ticket.yield)} ดวง/แผ่น • ใช้ ${number(ticket.sheets)} แผ่น`),
           ...(graphicBriefDescription
             ? [heading("คำอธิบายสำหรับแผนกกราฟิก"), paragraph(graphicBriefDescription)]
             : []),

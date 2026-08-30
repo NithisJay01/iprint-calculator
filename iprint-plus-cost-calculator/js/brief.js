@@ -34,6 +34,7 @@ function briefExtras(calc) {
     const quantity=briefQuantity(item,calc);
     const price=Number(item.price)||0;
     extras.push({
+      pageId:String(item.id||''),
       kind,
       name:String(item.name||kind),
       quantity,
@@ -72,10 +73,6 @@ function buildBriefTicket(calc=lastCalc) {
     pieceCount:Number(calc.Q)||0,
     yield:Number(calc.b?.yield)||0,
     sheets:Number(calc.sheets)||0,
-    gap:Number(calc.gap)||0,
-    bleed:Number(calc.bleed)||0,
-    costPerSheet:Number(calc.C)||0,
-    profitPercent:Number(calc.P)||0,
     totalCost:Number(calc.total)||0,
     sale:Number(calc.sale)||0,
     graphicBriefDescription:graphicBriefDescription(),
@@ -134,14 +131,16 @@ function briefArtworkPreview(calc, artworkUrl, top=574) {
       const width=pieceW*paperScale;
       const height=pieceH*paperScale;
       const inset=Math.min(width/3,height/3,bleed/10*paperScale);
+      const clipId=`briefPieceClip${row}-${column}`;
+      const clip=`<defs><clipPath id="${clipId}"><rect x="${x+1}" y="${y+1}" width="${Math.max(1,width-2)}" height="${Math.max(1,height-2)}" rx="2"/></clipPath></defs>`;
       const placeholder=`<rect x="${x}" y="${y}" width="${width}" height="${height}" rx="3" fill="#eaf5ff" stroke="#8fc6ef"/>`;
       const image=artworkUrl
-        ? `<image href="${briefEscapeSvg(artworkUrl)}" x="${x+1}" y="${y+1}" width="${Math.max(1,width-2)}" height="${Math.max(1,height-2)}" preserveAspectRatio="xMidYMid meet"/>`
+        ? `<image href="${briefEscapeSvg(artworkUrl)}" x="${x+1}" y="${y+1}" width="${Math.max(1,width-2)}" height="${Math.max(1,height-2)}" preserveAspectRatio="xMidYMid meet" clip-path="url(#${clipId})"/>`
         : '';
       const bleedMark=inset>0
         ? `<rect x="${x+inset}" y="${y+inset}" width="${Math.max(1,width-inset*2)}" height="${Math.max(1,height-inset*2)}" fill="none" stroke="#0a8cff" stroke-dasharray="2 2" stroke-width=".8"/>`
         : '';
-      cells.push(placeholder+image+bleedMark);
+      cells.push(clip+placeholder+image+bleedMark);
     }
   }
 
@@ -174,8 +173,10 @@ function briefReferenceGallery(referenceUrls, y) {
   const cardY = y + 26;
   const cards = references.map((url, index) => {
     const x = 68 + index * (width + gap);
-    return `<rect x="${x}" y="${cardY + 12}" width="${width}" height="${imageHeight}" rx="10" fill="#f6f8fa" stroke="#dfe5eb"/>
-      <image href="${briefEscapeSvg(url)}" x="${x + 1}" y="${cardY + 13}" width="${width - 2}" height="${imageHeight - 2}" preserveAspectRatio="xMidYMid meet"/>
+    const clipId=`briefReferenceClip${index}`;
+    return `<defs><clipPath id="${clipId}"><rect x="${x + 1}" y="${cardY + 13}" width="${width - 2}" height="${imageHeight - 2}" rx="9"/></clipPath></defs>
+      <rect x="${x}" y="${cardY + 12}" width="${width}" height="${imageHeight}" rx="10" fill="#f6f8fa" stroke="#dfe5eb"/>
+      <image href="${briefEscapeSvg(url)}" x="${x + 1}" y="${cardY + 13}" width="${width - 2}" height="${imageHeight - 2}" preserveAspectRatio="xMidYMid meet" clip-path="url(#${clipId})"/>
       <text x="${x}" y="${cardY + cardHeight - 18}" class="detail">Ref ${index + 1} สำหรับกราฟิก</text>`;
   }).join('');
 

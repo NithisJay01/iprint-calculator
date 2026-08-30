@@ -5,12 +5,17 @@
 เพิ่ม Environment Variable ใน Cloudflare Worker:
 
 ```
-NOTION_TICKETS_DATA_SOURCE_ID=<Data source ID ของฐานข้อมูล Ticket>
+NOTION_TICKETS_DATA_SOURCE_ID=<Data source ID หรือ Database ID ของฐานข้อมูล Ticket>
 ```
 
 ข้อกำหนด:
 
 - แชร์ฐานข้อมูล Ticket ให้ Integration เดียวกับ `NOTION_TOKEN`
+- ฐาน `Iprint Jobs` ใช้ Relation ชื่อ `วัสดุที่ใช้` ไปยัง `Iprint Materials`
+  และ `บริการที่ใช้` ไปยัง `Iprint Service`
+- Worker จะบันทึก Relation จาก Page ID ของรายการที่ผู้ใช้เลือก พร้อมตั้งค่าเริ่มต้น
+  `สถานะ = NEW`, `มอบหมาย = GRAPHIC` และ `งานประเภท = Design`
+- Worker รองรับทั้ง Data Source ID และ Database ID โดยจะเลือก Data Source แรกในฐานข้อมูลให้อัตโนมัติ
 - ฐานข้อมูลต้องมี property ประเภท **Title** อย่างน้อยหนึ่งช่อง (ชื่อ property ใดก็ได้)
 - คงค่า `NOTION_TOKEN` และ `WRITE_API_KEY` เดิมไว้
 
