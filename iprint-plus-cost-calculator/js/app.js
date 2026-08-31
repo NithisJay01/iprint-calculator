@@ -81,7 +81,13 @@ async function downloadBrief() {
   }
 
 function bind() {
+    if (IPRINT_RESET_TEST_DATA) localStorage.removeItem(KEY);
     loadState();
+    if (IPRINT_TEST_MODE) {
+      document.body.dataset.testMode = 'true';
+      const badge = $('testModeBadge');
+      if (badge) badge.hidden = false;
+    }
     renderPresets();
     $('sheet').addEventListener('change',e=> {
       selectedSheet=e.target.value;
@@ -154,9 +160,17 @@ function init() {
     downloadBrief,
     clearArtworkImage,
     clearTemporaryImages,
+    rotateArtworkImage,
     setActiveArtworkSide,
+    getArtworkRotation,
+    setCostPreviewMode,
+    getCostPreviewMode,
+    rotateCostPiecePaper,
+    getCostPiecePaperRotation,
     getArtworkSideState,
     syncMaterialPreviewEffect,
+    setMaterialPreviewEnabled,
+    getMaterialPreviewEnabled,
     addCurrentJobToCart,
     openCart,
     publicOrderItems,

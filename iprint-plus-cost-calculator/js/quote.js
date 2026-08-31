@@ -321,7 +321,9 @@ async function printQuote() {
         await clearCartAfterOrder();
         $('quoteSaveStatus').textContent = remote.duplicate
           ? 'ออเดอร์นี้มีอยู่ใน Notion แล้ว • ไม่สร้างข้อมูลซ้ำ'
-          : `สร้าง Ticket และ Order Items ${remote.itemIds?.length || q.orderItems.length} รายการใน Notion แล้ว`;
+          : IPRINT_TEST_MODE
+            ? `Test Mode • สร้าง Mock Ticket และ Order Items ${remote.itemIds?.length || q.orderItems.length} รายการแล้ว (ไม่เรียก API)`
+            : `สร้าง Ticket และ Order Items ${remote.itemIds?.length || q.orderItems.length} รายการใน Notion แล้ว`;
         closeQuote(false);
         if (typeof showAppView === 'function') showAppView('home');
         if (typeof showOrderSuccess === 'function') showOrderSuccess(remote, q);

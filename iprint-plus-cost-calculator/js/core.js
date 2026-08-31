@@ -1,13 +1,17 @@
 'use strict';
+  const IPRINT_TEST_MODE=new URLSearchParams(window.location.search).get('testMode')==='1';
+  const IPRINT_RESET_TEST_DATA=IPRINT_TEST_MODE&&new URLSearchParams(window.location.search).get('resetTest')==='1';
   const API_ROOT='https://iprint-preset-api.iprint-garphic1.workers.dev';
   const API= {
     presets:API_ROOT+'/presets',materials:API_ROOT+'/materials',services:API_ROOT+'/services',quotes:API_ROOT+'/quotes',tickets:API_ROOT+'/tickets',orders:API_ROOT+'/orders',orderItems:API_ROOT+'/order-items',customers: API_ROOT + '/customers',
   }
   ;
   const BLEED_MM=3;
-  const KEY='iprint_calculator_v16';
+  const KEY=IPRINT_TEST_MODE?'iprint_test_calculator_v1':'iprint_calculator_v16';
   const CACHE= {
-    presets:'iprint_cache_presets_v1',materials:'iprint_cache_materials_v1',services:'iprint_cache_services_v1'
+    presets:IPRINT_TEST_MODE?'iprint_test_cache_presets_v1':'iprint_cache_presets_v1',
+    materials:IPRINT_TEST_MODE?'iprint_test_cache_materials_v1':'iprint_cache_materials_v1',
+    services:IPRINT_TEST_MODE?'iprint_test_cache_services_v1':'iprint_cache_services_v1'
   }
   ;
   /* Static HTML cannot keep a write key secret. Leave blank unless you accept that the key is visible to browser users.
@@ -35,6 +39,8 @@
   let artworkBackImageUrl = '';
   let activeArtworkSide = 'front';
   let useFrontArtworkForBack = false;
+  let artworkRotationFront = 0;
+  let artworkRotationBack = 0;
   let referenceImages = [];
 
   const $ = id => document.getElementById(id);
@@ -72,7 +78,7 @@ function localDateKey() {
 
 function quoteSeq() {
   const day = localDateKey();
-  const key = 'lastQuoteSeq:' + day;
+  const key = (IPRINT_TEST_MODE ? 'testQuoteSeq:' : 'lastQuoteSeq:') + day;
   const next = Number(localStorage.getItem(key) || 0) + 1;
 
   localStorage.setItem(key, String(next));
@@ -80,6 +86,7 @@ function quoteSeq() {
 }
 
 function getWriteApiKey() {
+  if (IPRINT_TEST_MODE) return 'IPRINT-LOCAL-TEST-MODE';
   const input = document.getElementById('apiKeyInput');
   const fromInput = input ? input.value.trim() : '';
 
@@ -99,9 +106,15 @@ function updateApiKeyStatus() {
   if (!status) return;
 
   const key = getWriteApiKey();
-  status.textContent = key
+  status.textContent = IPRINT_TEST_MODE
+    ? 'Test Mode • Mock data เท่านั้น'
+    : key
     ? `ตั้งค่าแล้ว (${key.length} ตัวอักษร)`
     : 'ยังไม่ได้ตั้งค่า';
+}
+
+function dataSourceLabel() {
+  return IPRINT_TEST_MODE ? 'Test Mode' : 'Notion';
 }
 
 function setStatus(id,text,kind) {

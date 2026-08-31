@@ -65,12 +65,19 @@ function renderServiceRow(service, group) {
   name.textContent = service.name;
   const meta = document.createElement('div');
   meta.className = 'service-meta';
-  meta.textContent = (service.material ? `${service.material} • ` : '') + `หน่วย ${unit(service.unit)}`;
+  meta.textContent = service.material || '';
+  meta.hidden = !meta.textContent;
   main.append(name, meta);
+  const priceBlock = document.createElement('div');
+  priceBlock.className = 'service-price-block';
   const price = document.createElement('div');
   price.className = 'service-price';
   price.textContent = `฿${money(service.price)}`;
-  row.append(control, main, price);
+  const priceUnit = document.createElement('small');
+  priceUnit.className = 'service-price-unit';
+  priceUnit.textContent = `/ต่อ${unit(service.unit)}`;
+  priceBlock.append(price, priceUnit);
+  row.append(control, main, priceBlock);
   return row;
 }
 
@@ -101,7 +108,10 @@ function renderNoneServiceRow(group) {
   const price = document.createElement('div');
   price.className = 'service-price';
   price.textContent = '—';
-  row.append(control, main, price);
+  const priceBlock = document.createElement('div');
+  priceBlock.className = 'service-price-block';
+  priceBlock.append(price);
+  row.append(control, main, priceBlock);
   return row;
 }
 
@@ -137,7 +147,7 @@ function renderServices() {
     groupData.services.forEach(service => group.appendChild(renderServiceRow(service, groupData)));
     box.appendChild(group);
   });
-  $('serviceStatus').textContent = `Notion • ${services.length} บริการ`;
+  $('serviceStatus').textContent = `${dataSourceLabel()} • ${services.length} บริการ`;
   if (typeof syncArtworkSideControls === 'function') syncArtworkSideControls();
 }
 

@@ -1,6 +1,7 @@
 'use strict';
 
 const materialPreviewState = {
+  enabled: true,
   mode: 'none',
   effect: 'none',
   pointerId: null,
@@ -204,7 +205,12 @@ function syncMaterialPreviewLayout() {
 }
 
 function syncMaterialPreviewEffect(calc = lastCalc) {
-  const config = materialPreviewConfig(calc);
+  const baseConfig = materialPreviewConfig(calc);
+  const pieceMode = $('materialPreviewStage')?.dataset.previewKind === 'piece';
+  const enabledConfig = pieceMode && baseConfig.mode === 'none'
+    ? { mode: 'css', effect: 'paper' }
+    : baseConfig;
+  const config = materialPreviewState.enabled ? enabledConfig : { mode: 'none', effect: 'none' };
   const previousMode = materialPreviewState.mode;
   materialPreviewState.mode = config.mode;
   materialPreviewState.effect = config.effect;
@@ -212,6 +218,7 @@ function syncMaterialPreviewEffect(calc = lastCalc) {
   const canvas = $('materialShaderCanvas');
   const hint = $('materialPreviewHint');
   if (!stage || !canvas) return;
+  stage.dataset.shaderEnabled = materialPreviewState.enabled ? 'true' : 'false';
   stage.dataset.previewRenderer = config.mode;
   stage.dataset.previewEffect = config.effect;
   stage.classList.toggle('is-interactive', config.mode !== 'none');
@@ -232,11 +239,26 @@ function syncMaterialPreviewEffect(calc = lastCalc) {
   syncMaterialPreviewLayout();
 }
 
+function setMaterialPreviewEnabled(enabled) {
+  materialPreviewState.enabled = Boolean(enabled);
+  const input = $('materialShaderToggle');
+  const status = $('materialShaderToggleStatus');
+  if (input) input.checked = materialPreviewState.enabled;
+  if (status) status.textContent = materialPreviewState.enabled ? 'เปิด' : 'ปิด';
+  syncMaterialPreviewEffect(lastCalc);
+  return materialPreviewState.enabled;
+}
+
+function getMaterialPreviewEnabled() {
+  return materialPreviewState.enabled;
+}
+
 function bindMaterialPreviewInteraction() {
   if (materialPreviewState.bound) return;
   const interaction = $('materialPreviewInteraction');
   if (!interaction) return;
   materialPreviewState.bound = true;
+  $('materialShaderToggle')?.addEventListener('change', event => setMaterialPreviewEnabled(event.target.checked));
   interaction.addEventListener('pointerdown', event => {
     if (materialPreviewState.mode === 'none' || (event.pointerType === 'mouse' && event.button !== 0)) return;
     materialPreviewState.pointerId = event.pointerId;
@@ -271,3 +293,5 @@ else bindMaterialPreviewInteraction();
 window.syncMaterialPreviewEffect = syncMaterialPreviewEffect;
 window.syncMaterialPreviewLayout = syncMaterialPreviewLayout;
 window.materialPreviewConfig = materialPreviewConfig;
+window.setMaterialPreviewEnabled = setMaterialPreviewEnabled;
+window.getMaterialPreviewEnabled = getMaterialPreviewEnabled;

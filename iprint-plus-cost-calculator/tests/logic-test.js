@@ -143,9 +143,18 @@
         assert(document.querySelector('[data-service-option="inkjet"]')?.classList.contains('is-coming-soon'), 'เริ่มต้นแอปและโหลด Preset', 'บริการ Inkjet ต้องแสดง Coming soon');
         assert(document.querySelector('[data-remove-variant]')?.hidden, 'เริ่มต้นแอปและโหลด Preset', 'แบบเดียวต้องไม่แสดงปุ่มลบ');
         assert(document.querySelector('[data-app-view="layout"]')?.contains(document.getElementById('clearArtworkImage')), 'เริ่มต้นแอปและโหลด Preset', 'ปุ่มล้างภาพต้องอยู่หน้า Preview เท่านั้น');
+        assert(window.getComputedStyle(document.getElementById('artworkCurrent')).display === 'none', 'เริ่มต้นแอปและโหลด Preset', 'ชุดปุ่ม Artwork ต้องซ่อนเมื่อยังไม่มีภาพ');
+        assert(document.getElementById('rotateArtworkImage') && typeof window.Iprint.rotateArtworkImage === 'function', 'เริ่มต้นแอปและโหลด Preset', 'ไม่พบปุ่มหมุน Artwork 90°');
         assert(document.getElementById('materialPreviewStage') && typeof window.materialPreviewConfig === 'function', 'เริ่มต้นแอปและโหลด Preset', 'ไม่พบระบบ Preview วัสดุแบบ 2.5D');
         assert(window.materialPreviewConfig({ services: [{ name: 'เคลือบโฮโลแกรม' }] }).mode === 'webgl', 'เริ่มต้นแอปและโหลด Preset', 'วัสดุพิเศษต้องเลือก WebGL renderer');
+        assert(document.getElementById('materialShaderToggle')?.checked && typeof window.Iprint.setMaterialPreviewEnabled === 'function', 'เริ่มต้นแอปและโหลด Preset', 'ไม่พบ Toggle เปิด–ปิด Shader Preview');
         assert(document.getElementById('artworkSideControls'), 'เริ่มต้นแอปและโหลด Preset', 'ไม่พบตัวเลือก Artwork ด้านหน้า/ด้านหลัง');
+        assert(document.getElementById('costPreviewModeToggle') && typeof window.Iprint.setCostPreviewMode === 'function', 'เริ่มต้นแอปและโหลด Preset', 'ไม่พบระบบ Preview รายชิ้นแบบสลับในหน้า');
+        assert(document.querySelectorAll('[data-cost-preview-mode]').length === 2 && typeof window.Iprint.getCostPreviewMode === 'function', 'เริ่มต้นแอปและโหลด Preset', 'ไม่พบปุ่มสลับ Preview รายแผ่น/รายชิ้น');
+        assert(document.getElementById('rotateCostPiecePaper') && typeof window.Iprint.rotateCostPiecePaper === 'function', 'เริ่มต้นแอปและโหลด Preset', 'ไม่พบระบบหมุนหน้ากระดาษของ Preview รายชิ้น');
+        assert(document.querySelector('[data-variant-name]')?.placeholder === 'คำตัวอย่าง แบบเวอร์ชั่นภาษาไทย', 'เริ่มต้นแอปและโหลด Preset', 'คำตัวอย่างชื่อแบบไม่ตรงตาม Brief');
+        assert(window.getComputedStyle(document.getElementById('materialPreviewInteraction')).scrollbarWidth === 'none', 'เริ่มต้นแอปและโหลด Preset', 'กรอบ Preview ต้องซ่อน scrollbar');
+        assert(document.querySelector('.service-price-unit')?.textContent.startsWith('/ต่อ'), 'เริ่มต้นแอปและโหลด Preset', 'หน่วยบริการต้องอยู่ใต้ราคาในรูปแบบ /ต่อชิ้น หรือ /ต่อแผ่น');
       });
 
       await check('Preview แสดง Preset และจัดชิ้นงานกึ่งกลาง', () => {
@@ -163,6 +172,31 @@
         assert(preset.startsWith('Preset: ') && preset !== 'Preset: —', 'Preview แสดง Preset และจัดชิ้นงานกึ่งกลาง', 'ไม่แสดงชื่อ Preset');
         assert(Math.abs(left - (usableWidth - gridWidth) / 2) < 1.5, 'Preview แสดง Preset และจัดชิ้นงานกึ่งกลาง', 'ชิ้นงานไม่ได้อยู่กึ่งกลางแนวนอน');
         assert(Math.abs(top - (usableHeight - gridHeight) / 2) < 1.5, 'Preview แสดง Preset และจัดชิ้นงานกึ่งกลาง', 'ชิ้นงานไม่ได้อยู่กึ่งกลางแนวตั้ง');
+      });
+
+      await check('สลับ Preview รายแผ่นและรายชิ้นได้', async () => {
+        window.showAppView('cost', { instant: true });
+        const sheetPieceRect = document.querySelector('#sheetPreview .piece').getBoundingClientRect();
+        const expectedRatio = sheetPieceRect.width / sheetPieceRect.height;
+        document.querySelector('[data-cost-preview-mode="piece"]').click();
+        await wait(50);
+        const preview = document.getElementById('costSheetPreview');
+        const pieceRect = preview.getBoundingClientRect();
+        assert(window.Iprint.getCostPreviewMode() === 'piece' && preview.classList.contains('is-piece-preview'), 'สลับ Preview รายแผ่นและรายชิ้นได้', 'โหมดรายชิ้นไม่ทำงาน');
+        assert(preview.querySelectorAll('.piece').length === 1, 'สลับ Preview รายแผ่นและรายชิ้นได้', 'Preview รายชิ้นต้องแสดง Artwork เพียงชิ้นเดียว');
+        assert(Math.abs(pieceRect.width / pieceRect.height - expectedRatio) < .04, 'สลับ Preview รายแผ่นและรายชิ้นได้', 'Preview รายชิ้นและรายแผ่นต้องใช้ Ratio เดียวกัน');
+        assert(document.getElementById('materialPreviewStage').dataset.previewKind === 'piece', 'สลับ Preview รายแผ่นและรายชิ้นได้', 'Material Stage ไม่ทราบว่าเป็น Preview รายชิ้น');
+        document.getElementById('rotateCostPiecePaper').click();
+        await wait(30);
+        const rotatedRect = preview.getBoundingClientRect();
+        assert(window.Iprint.getCostPiecePaperRotation() === 90 && Math.abs(rotatedRect.width / rotatedRect.height - 1 / expectedRatio) < .04, 'สลับ Preview รายแผ่นและรายชิ้นได้', 'หมุนหน้ากระดาษแล้ว Ratio ต้องสลับด้านโดยไม่เปลี่ยน Artwork');
+        document.getElementById('rotateCostPiecePaper').click();
+        document.getElementById('rotateCostPiecePaper').click();
+        document.getElementById('rotateCostPiecePaper').click();
+        document.querySelector('[data-cost-preview-mode="sheet"]').click();
+        await wait(30);
+        assert(preview.querySelectorAll('.piece').length === numberFromText(document.getElementById('yield').textContent), 'สลับ Preview รายแผ่นและรายชิ้นได้', 'กลับโหมดรายแผ่นแล้วจำนวนชิ้นไม่ครบ');
+        window.showAppView('layout', { instant: true });
       });
 
       await check('ดับเบิลคลิก Preview เพื่อเลือกภาพได้', () => {
@@ -226,6 +260,32 @@
         assert(document.getElementById('artworkName').textContent.includes('dragged-artwork.png'), 'ภาพงานใน Preview เป็นข้อมูลชั่วคราว', 'ไม่สามารถลากภาพลง Preview ได้');
         assert(document.querySelectorAll('.reference-item').length === 3, 'ภาพงานใน Preview เป็นข้อมูลชั่วคราว', 'Ref ต้องแนบได้สูงสุด 3 ภาพ');
         assert(window.Iprint.captureBriefImage, 'ภาพงานใน Preview เป็นข้อมูลชั่วคราว', 'ไม่สามารถสร้างภาพสรุปจากภาพงานหลัก');
+        window.syncFlowSummary();
+        const briefGallery = document.getElementById('briefArtworkPreview');
+        const briefSlides = [...briefGallery.querySelectorAll('[data-preview-carousel-slide]')];
+        assert(briefGallery.querySelector('[data-preview-carousel]') && new Set(briefSlides.map(slide => slide.dataset.previewKind)).size === 2, 'ภาพงานใน Preview เป็นข้อมูลชั่วคราว', 'หน้า Brief ต้องมี Carousel สำหรับ Preview รายแผ่นและรายชิ้น');
+        assert(briefSlides.filter(slide => !slide.hidden).length === 1, 'ภาพงานใน Preview เป็นข้อมูลชั่วคราว', 'Carousel ต้องแสดง Preview ครั้งละหนึ่งภาพ');
+        window.renderBriefReview({ skipValidation: true });
+        const reviewGallery = document.querySelector('#briefReviewContent .preview-gallery');
+        assert(reviewGallery && reviewGallery.innerHTML === briefGallery.innerHTML, 'ภาพงานใน Preview เป็นข้อมูลชั่วคราว', 'Preview ใน Brief และ Review ต้องใช้ข้อมูลชุดเดียวกัน');
+        assert([...reviewGallery.querySelectorAll('.preview-gallery-card>strong')].every(label => label.textContent.startsWith('Preview ')), 'ภาพงานใน Preview เป็นข้อมูลชั่วคราว', 'หัวข้อ Carousel ต้องระบุชนิด Preview และด้านของ Artwork');
+      });
+
+      await check('หมุน Artwork 90° โดยไม่เปลี่ยนสูตร Layout', async () => {
+        const yieldBefore = numberFromText(document.getElementById('yield').textContent);
+        const sheetsBefore = numberFromText(document.getElementById('sheets').textContent);
+        document.getElementById('rotateArtworkImage').click();
+        await wait(50);
+        const rotatedArtwork = [...document.querySelectorAll('#sheetPreview .piece-artwork')];
+        assert(rotatedArtwork.length > 0 && rotatedArtwork.every(image => image.dataset.rotation === '90'), 'หมุน Artwork 90° โดยไม่เปลี่ยนสูตร Layout', 'ภาพใน Sheet Preview ไม่ได้หมุน 90° ทุกชิ้น');
+        assert(rotatedArtwork.every(image => Number.parseFloat(image.style.getPropertyValue('--artwork-rotation-scale')) >= 1 && getComputedStyle(image).objectFit === 'cover'), 'หมุน Artwork 90° โดยไม่เปลี่ยนสูตร Layout', 'Artwork ที่หมุนต้อง Snap เต็มกรอบชิ้นงาน');
+        assert(document.getElementById('artworkMeta').textContent.includes('มุม 90°'), 'หมุน Artwork 90° โดยไม่เปลี่ยนสูตร Layout', 'สถานะภาพไม่แสดงมุมล่าสุด');
+        assert(numberFromText(document.getElementById('yield').textContent) === yieldBefore && numberFromText(document.getElementById('sheets').textContent) === sheetsBefore, 'หมุน Artwork 90° โดยไม่เปลี่ยนสูตร Layout', 'การหมุนภาพต้องไม่เปลี่ยนจำนวนชิ้นหรือจำนวนแผ่น');
+        document.getElementById('rotateArtworkImage').click();
+        document.getElementById('rotateArtworkImage').click();
+        document.getElementById('rotateArtworkImage').click();
+        await wait(30);
+        assert(window.Iprint.getArtworkRotation('front') === 0, 'หมุน Artwork 90° โดยไม่เปลี่ยนสูตร Layout', 'หมุนครบ 360° ต้องกลับเป็น 0°');
       });
 
       await check('สูตรจำนวนแผ่นและราคาขาย', () => {
@@ -272,6 +332,40 @@
         await wait(50);
         const totalAfter = numberFromText(document.getElementById('total').textContent);
         assert(totalAfter >= totalBefore, 'บริการมีผลต่อยอดต้นทุน', 'เลือกบริการแล้วต้นทุนไม่อัปเดต');
+      });
+
+      await check('เคลือบด้านและเงาแสดงแสงบนแผ่นรวมเท่านั้น', async () => {
+        if (typeof window.showAppView === 'function') window.showAppView('cost', { instant: true });
+        const selectFinish = async name => {
+          const row = [...document.querySelectorAll('#servicesContainer .service-row')]
+            .find(candidate => candidate.querySelector('.service-name')?.textContent === name);
+          const input = row?.querySelector('input[type="radio"]');
+          assert(input, 'เคลือบด้านและเงาแสดงแสงบนแผ่นรวมเท่านั้น', `ไม่พบบริการ ${name}`);
+          input.checked = true;
+          input.dispatchEvent(new window.Event('change', { bubbles: true }));
+          await wait(280);
+          assert(document.querySelectorAll('.piece-finish-effect').length === 0, 'เคลือบด้านและเงาแสดงแสงบนแผ่นรวมเท่านั้น', `${name} ยังสร้างเงาทับรายชิ้น`);
+          assert(document.getElementById('materialPreviewStage')?.dataset.previewRenderer === 'css', 'เคลือบด้านและเงาแสดงแสงบนแผ่นรวมเท่านั้น', `${name} ไม่ได้ใช้ Preview รวมระดับแผ่น`);
+          const stageRect = document.getElementById('materialPreviewStage').getBoundingClientRect();
+          const reflection = document.querySelector('.material-css-reflection');
+          const reflectionRect = reflection.getBoundingClientRect();
+          assert(stageRect.width > 0 && Math.abs(stageRect.width - reflectionRect.width) < 1, 'เคลือบด้านและเงาแสดงแสงบนแผ่นรวมเท่านั้น', `แสงของ ${name} ไม่ครอบคลุมแผ่น Preview`);
+          assert(document.getElementById('materialPreviewStage').dataset.previewEffect === (name === 'เคลือบด้าน' ? 'matte' : 'gloss'), 'เคลือบด้านและเงาแสดงแสงบนแผ่นรวมเท่านั้น', `ชนิดแสงสะท้อนของ ${name} ไม่ถูกต้อง`);
+        };
+        await selectFinish('เคลือบด้าน');
+        await selectFinish('เคลือบเงา');
+        document.getElementById('materialShaderToggle').click();
+        await wait(50);
+        assert(window.Iprint.getMaterialPreviewEnabled() === false && document.getElementById('materialPreviewStage').dataset.previewRenderer === 'none' && document.getElementById('materialShaderCanvas').hidden, 'เคลือบด้านและเงาแสดงแสงบนแผ่นรวมเท่านั้น', 'ปิด Shader แล้วเอฟเฟกต์ Preview ยังทำงาน');
+        document.getElementById('materialShaderToggle').click();
+        await wait(50);
+        assert(window.Iprint.getMaterialPreviewEnabled() === true && document.getElementById('materialPreviewStage').dataset.previewRenderer === 'css', 'เคลือบด้านและเงาแสดงแสงบนแผ่นรวมเท่านั้น', 'เปิด Shader แล้วเอฟเฟกต์ Preview ไม่กลับมาทำงาน');
+        document.querySelector('[data-cost-preview-mode="piece"]').click();
+        await wait(80);
+        assert(document.getElementById('costSheetPreview').querySelectorAll('.piece').length === 1, 'เคลือบด้านและเงาแสดงแสงบนแผ่นรวมเท่านั้น', 'Preview รายชิ้นต้องเหลือภาพหลักเพียงภาพเดียว');
+        assert(document.getElementById('materialPreviewStage').dataset.previewRenderer !== 'none' && document.querySelector('.material-css-reflection'), 'เคลือบด้านและเงาแสดงแสงบนแผ่นรวมเท่านั้น', 'Preview รายชิ้นต้องมีระบบแสงสะท้อนของวัสดุ');
+        document.querySelector('[data-cost-preview-mode="sheet"]').click();
+        if (typeof window.showAppView === 'function') window.showAppView('layout', { instant: true });
       });
 
       await check('ตะกร้ารองรับหลายชิ้นงานในออเดอร์เดียว', async () => {
@@ -328,7 +422,8 @@
         generatedPreview.style.display = 'block';
         assert(briefImage.type === 'image/png' && briefImage.size > 0, 'สร้างภาพสรุปบรีฟงาน', 'สร้าง PNG สรุปบรีฟงานไม่สำเร็จ');
         assert(imageBitmap.width === 2160, 'สร้างภาพสรุปบรีฟงาน', 'ภาพสรุปต้องสร้างที่ความละเอียด 2160 px เพื่อให้ Preview ชัดเจน');
-        assert(headerPixel[2] > 200 && headerPixel[0] < 30, 'สร้างภาพสรุปบรีฟงาน', 'ส่วนหัวของภาพสรุปแสดงผลผิดปกติ');
+        assert(headerPixel[2] > 240 && headerPixel[0] > 220, 'สร้างภาพสรุปบรีฟงาน', 'พื้นหลังของภาพการ์ด Review แสดงผลผิดปกติ');
+        assert(document.querySelectorAll('#briefReviewContent [data-preview-carousel-slide]').length >= 2, 'สร้างภาพสรุปบรีฟงาน', 'ภาพ Ticket ต้องมาจากการ์ด Review ที่มี Preview Carousel ครบ');
         imageBitmap.close();
       });
 
@@ -342,6 +437,7 @@
         assert(ticket.graphicBriefDescription === graphicBriefDescription.value, 'เตรียมข้อมูล Ticket จากบรีฟงาน', 'คำอธิบายสำหรับกราฟิกไม่อยู่ใน Ticket');
         assert(ticket.extras.length > 0 && ticket.extras.every(item => item.pageId), 'เตรียมข้อมูล Ticket จากบรีฟงาน', 'Ticket ต้องเก็บ Page ID สำหรับ Relation วัสดุและบริการ');
         assert(typeof ticket.artworkSides?.hasFront === 'boolean' && typeof ticket.artworkSides?.hasBack === 'boolean', 'เตรียมข้อมูล Ticket จากบรีฟงาน', 'Ticket ต้องบันทึกสถานะ Artwork ทั้งสองด้าน');
+        assert(typeof ticket.artworkSides?.frontRotation === 'number' && typeof ticket.artworkSides?.backRotation === 'number', 'เตรียมข้อมูล Ticket จากบรีฟงาน', 'Ticket ต้องบันทึกมุมหมุน Artwork หน้าและหลัง');
       });
 
       setValue(window, qty, original.qty);

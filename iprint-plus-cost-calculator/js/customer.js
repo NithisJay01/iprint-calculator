@@ -11,16 +11,16 @@ async function syncCustomers() {
         ? data.customers
         : [];
 
-      cachePut('iprint_cache_customers_v1', customers);
+      cachePut(IPRINT_TEST_MODE ? 'iprint_test_cache_customers_v1' : 'iprint_cache_customers_v1', customers);
       renderCustomerOptions();
 
       setStatus(
         'customerStatus',
-        'Notion • ' + customers.length + ' ลูกค้า',
+        dataSourceLabel() + ' • ' + customers.length + ' ลูกค้า',
         'ok'
       );
     } catch (error) {
-      const cached = cacheGet('iprint_cache_customers_v1');
+      const cached = cacheGet(IPRINT_TEST_MODE ? 'iprint_test_cache_customers_v1' : 'iprint_cache_customers_v1');
 
       if (cached) {
         customers = cached.data || [];

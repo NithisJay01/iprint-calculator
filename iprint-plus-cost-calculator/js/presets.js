@@ -32,7 +32,7 @@ async function syncPresets() {
       presets=next;
       cachePut(CACHE.presets,presets);
       renderPresets();
-      setStatus('syncStatus','Notion • '+Object.keys(presets).length+' Preset','ok');
+      setStatus('syncStatus',dataSourceLabel()+' • '+Object.keys(presets).length+' Preset','ok');
       calculate()
     } catch(e) {
       const c=cacheGet(CACHE.presets);

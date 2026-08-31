@@ -1,5 +1,5 @@
-const CART_STORAGE_KEY = 'iprint_order_cart_v1';
-const CART_ASSET_DB = 'iprint_order_cart_assets_v1';
+const CART_STORAGE_KEY = IPRINT_TEST_MODE ? 'iprint_test_order_cart_v1' : 'iprint_order_cart_v1';
+const CART_ASSET_DB = IPRINT_TEST_MODE ? 'iprint_test_order_cart_assets_v1' : 'iprint_order_cart_assets_v1';
 const CART_ASSET_STORE = 'briefs';
 const CART_MAX_ITEMS = 20;
 
@@ -57,6 +57,7 @@ async function cartAsset(action, key, value) {
 
 function loadCart() {
   try {
+    if (IPRINT_RESET_TEST_DATA) localStorage.removeItem(CART_STORAGE_KEY);
     const stored = JSON.parse(localStorage.getItem(CART_STORAGE_KEY) || '[]');
     cartItems = Array.isArray(stored)
       ? stored.filter(item => item && item.id && item.size).slice(0, CART_MAX_ITEMS)
@@ -146,7 +147,9 @@ function snapshotCartItem(calc, id) {
     artworkSides: {
       hasFront: Boolean(artworkSides.hasFront),
       hasBack: Boolean(artworkSides.hasBack),
-      useFrontForBack: Boolean(artworkSides.useFrontForBack)
+      useFrontForBack: Boolean(artworkSides.useFrontForBack),
+      frontRotation: Number(artworkSides.frontRotation) || 0,
+      backRotation: Number(artworkSides.backRotation) || 0
     },
     briefFileLink: String($('briefFileLink')?.value || '').trim(),
     brief: String($('graphicBriefDescription')?.value || '').trim(),

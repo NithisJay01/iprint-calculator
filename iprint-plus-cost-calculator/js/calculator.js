@@ -141,10 +141,9 @@ function drawPreview(p,b,bleedMm,gapMm) {
     grid.style.gridTemplateRows='repeat('+b.ny+','+(b.pieceH*scale)+'px)';
     grid.style.gap=gapPx+'px';
     const artworkUrl=typeof getArtworkPreviewUrl==='function'?getArtworkPreviewUrl():'';
+    const artworkSide=typeof activeArtworkSide==='string'?activeArtworkSide:'front';
     const selectedServiceNames=services.filter(service=>selectedServiceIds[String(service.id)]).map(service=>String(service.name||'').toLowerCase());
     const selectedMaterialName=String(materials.find(material=>String(material.id)===String(selectedMaterialId))?.name||'').toLowerCase();
-    const hasGloss=selectedServiceNames.some(name=>/เคลือบเงา|gloss/.test(name));
-    const hasMatte=selectedServiceNames.some(name=>/เคลือบด้าน|matt/.test(name));
     const hasDiecut=selectedServiceNames.some(name=>/ไดคัท|die.?cut/.test(name));
     const materialEffect=/kraft|คราฟท์/.test(selectedMaterialName)?'is-kraft':/pvc|pp|sticker|สติกเกอร์/.test(selectedMaterialName)?'is-sticker':/art|อาร์ท/.test(selectedMaterialName)?'is-art-paper':'';
     for(let i=0;
@@ -152,13 +151,19 @@ function drawPreview(p,b,bleedMm,gapMm) {
     i++) {
       const piece=document.createElement('div');
       piece.className='piece';
+      piece.tabIndex=0;
+      piece.setAttribute('role','button');
+      piece.setAttribute('aria-label','ดูตัวอย่างชิ้นที่ '+(i+1));
+      piece.dataset.pieceIndex=String(i+1);
       piece.style.width=(b.pieceW*scale)+'px';
       piece.style.height=(b.pieceH*scale)+'px';
       if(artworkUrl) {
+        piece.classList.add('has-artwork');
         const artwork=document.createElement('img');
         artwork.className='piece-artwork';
         artwork.src=artworkUrl;
         artwork.alt='';
+        if(typeof applyArtworkRotation==='function')applyArtworkRotation(artwork,artworkSide,b.pieceW,b.pieceH);
         piece.appendChild(artwork)
       }
       if(materialEffect) {
@@ -166,12 +171,6 @@ function drawPreview(p,b,bleedMm,gapMm) {
         materialOverlay.className='piece-material-effect '+materialEffect;
         materialOverlay.setAttribute('aria-hidden','true');
         piece.appendChild(materialOverlay)
-      }
-      if(hasGloss||hasMatte) {
-        const finish=document.createElement('span');
-        finish.className='piece-finish-effect '+(hasGloss?'is-gloss':'is-matte');
-        finish.setAttribute('aria-hidden','true');
-        piece.appendChild(finish)
       }
       if(hasDiecut)piece.classList.add('has-diecut-effect');
       const number=document.createElement('span');

@@ -4,6 +4,8 @@ const FLOW_STEPS = { layout: 1, cost: 2, brief: 3, review: 4 };
 let currentAppView = 'home';
 let currentJobVariants = [];
 let selectedHomeService = 'laser';
+let costPreviewMode = 'sheet';
+let costPiecePaperRotation = 0;
 
 function flowEscape(value) {
   return String(value || '')
@@ -51,9 +53,197 @@ function updateFlowStepper(view) {
 function miniLayoutMarkup(maximum = 9, side = 'front') {
   const count = Math.max(1, Math.min(maximum, Number(lastCalc?.b?.yield) || 9));
   const artwork = typeof getArtworkPreviewUrl === 'function' ? getArtworkPreviewUrl(side) : '';
+  const rotation = typeof getArtworkRotation === 'function' ? getArtworkRotation(side) : 0;
+  const scale = typeof artworkRotationScale === 'function'
+    ? artworkRotationScale(rotation, lastCalc?.b?.pieceW, lastCalc?.b?.pieceH)
+    : 1;
   return Array.from({ length: count }, () =>
-    `<span${artwork ? ` style="background-image:url('${flowEscape(artwork)}')"` : ''}></span>`
+    `<span>${artwork ? `<i class="mini-artwork" style="background-image:url('${flowEscape(artwork)}');--artwork-rotation:${rotation}deg;--artwork-rotation-scale:${scale}"></i>` : ''}</span>`
   ).join('');
+}
+
+function flowPreviewMaterialClass() {
+  const materialName = String(lastCalc?.material?.name || '').toLowerCase();
+  if (/kraft|คราฟท์/.test(materialName)) return 'is-kraft';
+  if (/pvc|pp|sticker|สติกเกอร์/.test(materialName)) return 'is-sticker';
+  if (/art|อาร์ท/.test(materialName)) return 'is-art-paper';
+  return '';
+}
+
+function flowPreviewHasDiecut() {
+  return (lastCalc?.services || []).some(service => /ไดคัท|die.?cut/.test(String(service?.name || '').toLowerCase()));
+}
+
+function previewArtworkMarkup(side, width, height) {
+  const artwork = typeof getArtworkPreviewUrl === 'function' ? getArtworkPreviewUrl(side) : '';
+  if (!artwork) return '<span class="preview-gallery-empty">ยังไม่มีภาพ</span>';
+  const rotation = typeof getArtworkRotation === 'function' ? getArtworkRotation(side) : 0;
+  const scale = typeof artworkRotationScale === 'function' ? artworkRotationScale(rotation, width, height) : 1;
+  return `<img class="preview-gallery-artwork" data-preview-side="${side}" src="${flowEscape(artwork)}" alt="ภาพงาน${side === 'back' ? 'ด้านหลัง' : 'ด้านหน้า'}" style="--artwork-rotation:${rotation}deg;--artwork-rotation-scale:${scale}">`;
+}
+
+function previewGalleryPieceMarkup(side, width, height) {
+  const materialClass = flowPreviewMaterialClass();
+  const diecutClass = flowPreviewHasDiecut() ? ' has-diecut-effect' : '';
+  return `<span class="preview-gallery-piece${diecutClass}">${previewArtworkMarkup(side, width, height)}${materialClass ? `<i class="piece-material-effect ${materialClass}" aria-hidden="true"></i>` : ''}</span>`;
+}
+
+function imposedPieceDimensions() {
+  return {
+    width: Math.max(.05, Number(lastCalc?.b?.pieceW) || Number(lastCalc?.W) * 10 || 1),
+    height: Math.max(.05, Number(lastCalc?.b?.pieceH) || Number(lastCalc?.H) * 10 || 1)
+  };
+}
+
+function previewGallerySurfaceAttributes() {
+  const enabled = typeof getMaterialPreviewEnabled !== 'function' || getMaterialPreviewEnabled();
+  const config = enabled && typeof materialPreviewConfig === 'function' ? materialPreviewConfig(lastCalc) : { mode: 'none', effect: 'none' };
+  return `data-preview-renderer="${flowEscape(config.mode)}" data-preview-effect="${flowEscape(config.effect)}"`;
+}
+
+function sheetPreviewGalleryMarkup(side = 'front') {
+  if (!lastCalc) return '';
+  const paper = lastCalc.paper || {};
+  const fullW = Math.max(1, Number(paper.fullW) * 10 || 1);
+  const fullH = Math.max(1, Number(paper.fullH) * 10 || 1);
+  const usableW = Math.max(1, Math.min(fullW, Number(paper.usableW) * 10 || fullW));
+  const usableH = Math.max(1, Math.min(fullH, Number(paper.usableH) * 10 || fullH));
+  const nx = Math.max(1, Number(lastCalc.b?.nx) || 1);
+  const ny = Math.max(1, Number(lastCalc.b?.ny) || 1);
+  const pieceW = Math.max(1, Number(lastCalc.b?.pieceW) || 1);
+  const pieceH = Math.max(1, Number(lastCalc.b?.pieceH) || 1);
+  const gap = Math.max(0, Number(lastCalc.gap) || 0);
+  const gridW = nx * pieceW + Math.max(0, nx - 1) * gap;
+  const gridH = ny * pieceH + Math.max(0, ny - 1) * gap;
+  const count = Math.max(1, Number(lastCalc.b?.yield) || nx * ny);
+  const pieces = Array.from({ length: count }, () => previewGalleryPieceMarkup(side, pieceW, pieceH)).join('');
+  const usableStyle = `left:${(fullW - usableW) / fullW * 50}%;top:${(fullH - usableH) / fullH * 50}%;width:${usableW / fullW * 100}%;height:${usableH / fullH * 100}%`;
+  const gridStyle = `left:${Math.max(0, (usableW - gridW) / usableW * 50)}%;top:${Math.max(0, (usableH - gridH) / usableH * 50)}%;width:${Math.min(100, gridW / usableW * 100)}%;height:${Math.min(100, gridH / usableH * 100)}%;grid-template-columns:repeat(${nx},1fr);grid-template-rows:repeat(${ny},1fr);column-gap:${gap / usableW * 100}%;row-gap:${gap / usableH * 100}%`;
+  return `<div class="preview-gallery-surface preview-gallery-sheet" ${previewGallerySurfaceAttributes()} style="aspect-ratio:${fullW}/${fullH}"><div class="preview-gallery-usable" style="${usableStyle}"><div class="preview-gallery-grid" style="${gridStyle}">${pieces}</div></div><i class="preview-gallery-reflection" aria-hidden="true"></i></div>`;
+}
+
+function piecePreviewGalleryMarkup(side = 'front') {
+  if (!lastCalc) return '';
+  const { width, height } = imposedPieceDimensions();
+  const maxWidth = 320;
+  const maxHeight = 300;
+  const displayScale = Math.min(maxWidth / width, maxHeight / height);
+  const displayWidth = Math.max(72, width * displayScale);
+  return `<div class="preview-gallery-surface preview-gallery-piece-frame" ${previewGallerySurfaceAttributes()} style="width:${displayWidth}px;aspect-ratio:${width}/${height}">${previewGalleryPieceMarkup(side, width, height)}<i class="preview-gallery-reflection" aria-hidden="true"></i></div>`;
+}
+
+function previewGalleryMarkup() {
+  const doubleSided = typeof getSelectedPrintSide === 'function' && getSelectedPrintSide() === 'double';
+  const hasBackArtwork = typeof getArtworkPreviewUrl === 'function' && Boolean(getArtworkPreviewUrl('back'));
+  const sides = doubleSided && hasBackArtwork ? ['front', 'back'] : ['front'];
+  const sideLabel = side => side === 'back' ? 'ด้านหลัง' : 'ด้านหน้า';
+  const definitions = [
+    { kind: 'รายแผ่น', renderer: sheetPreviewGalleryMarkup },
+    { kind: 'รายชิ้น', renderer: piecePreviewGalleryMarkup }
+  ];
+  const slides = definitions.flatMap(({ kind, renderer }) => sides.map(side => ({ kind, side, renderer })));
+  const slideMarkup = slides.map((slide, index) => `<article class="preview-gallery-card preview-carousel-slide${index === 0 ? ' is-active' : ''}" data-preview-carousel-slide data-preview-kind="${slide.kind}" data-preview-side="${slide.side}" aria-hidden="${index === 0 ? 'false' : 'true'}"${index === 0 ? '' : ' hidden'}><strong>Preview ${slide.kind} • ${sideLabel(slide.side)}</strong>${slide.renderer(slide.side)}</article>`).join('');
+  const dots = slides.map((slide, index) => `<button type="button" data-preview-carousel-index="${index}" class="${index === 0 ? 'is-selected' : ''}" aria-label="ดู Preview ${slide.kind} ${sideLabel(slide.side)}" aria-pressed="${index === 0 ? 'true' : 'false'}"></button>`).join('');
+  return `<section class="preview-carousel" data-preview-carousel data-preview-index="0"><div class="preview-carousel-viewport">${slideMarkup}</div><div class="preview-carousel-controls"><button type="button" data-preview-carousel-action="prev" aria-label="ดู Preview ก่อนหน้า">‹</button><div class="preview-carousel-dots">${dots}</div><output data-preview-carousel-status>1 / ${slides.length}</output><button type="button" data-preview-carousel-action="next" aria-label="ดู Preview ถัดไป">›</button></div></section>`;
+}
+
+function syncPreviewCarousel(carousel, requestedIndex) {
+  const slides = [...carousel.querySelectorAll('[data-preview-carousel-slide]')];
+  if (!slides.length) return;
+  const index = ((Number(requestedIndex) || 0) % slides.length + slides.length) % slides.length;
+  carousel.dataset.previewIndex = String(index);
+  slides.forEach((slide, slideIndex) => {
+    const selected = slideIndex === index;
+    slide.hidden = !selected;
+    slide.classList.toggle('is-active', selected);
+    slide.setAttribute('aria-hidden', selected ? 'false' : 'true');
+  });
+  carousel.querySelectorAll('[data-preview-carousel-index]').forEach(button => {
+    const selected = Number(button.dataset.previewCarouselIndex) === index;
+    button.classList.toggle('is-selected', selected);
+    button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+  });
+  const status = carousel.querySelector('[data-preview-carousel-status]');
+  if (status) status.textContent = `${index + 1} / ${slides.length}`;
+  carousel.querySelectorAll('[data-preview-carousel-action]').forEach(button => { button.disabled = slides.length < 2; });
+}
+
+function renderCostPreviewMode() {
+  if (!lastCalc) return;
+  const source = $('sheetPreview');
+  const preview = $('costSheetPreview');
+  const stage = $('materialPreviewStage');
+  if (!source || !preview || !stage) return;
+  preview.classList.toggle('is-piece-preview', costPreviewMode === 'piece');
+  stage.dataset.previewKind = costPreviewMode;
+  const pieceTools = $('costPieceTools');
+  const rotatePaperButton = $('rotateCostPiecePaper');
+  const rotationOutput = $('costPiecePaperRotation');
+  if (pieceTools) pieceTools.hidden = costPreviewMode !== 'piece';
+  if (rotatePaperButton) rotatePaperButton.setAttribute('aria-label', `หมุนหน้ากระดาษ Preview รายชิ้น 90 องศา มุมปัจจุบัน ${costPiecePaperRotation} องศา`);
+  if (rotationOutput) rotationOutput.textContent = `มุมหน้ากระดาษ ${costPiecePaperRotation}°`;
+  if (costPreviewMode === 'piece') {
+    const sourcePiece = source.querySelector('.piece');
+    const piece = sourcePiece ? sourcePiece.cloneNode(true) : document.createElement('div');
+    piece.classList.add('piece', 'cost-single-piece');
+    piece.removeAttribute('tabindex');
+    piece.removeAttribute('role');
+    piece.removeAttribute('aria-label');
+    piece.querySelector('.piece-number')?.remove();
+    piece.querySelector('.bleed')?.remove();
+    const { width: pieceWidth, height: pieceHeight } = imposedPieceDimensions();
+    const swapsSides = costPiecePaperRotation % 180 !== 0;
+    const viewWidth = swapsSides ? pieceHeight : pieceWidth;
+    const viewHeight = swapsSides ? pieceWidth : pieceHeight;
+    const available = Math.max(220, Math.min(380, ($('materialPreviewInteraction')?.clientWidth || 360) - 24));
+    const ratio = Math.max(.05, viewWidth / Math.max(.05, viewHeight));
+    let width = available;
+    let height = width / ratio;
+    if (height > 360) { height = 360; width = height * ratio; }
+    preview.replaceChildren(piece);
+    preview.style.width = `${Math.max(1, width)}px`;
+    preview.style.height = `${Math.max(1, height)}px`;
+    preview.style.setProperty('--piece-paper-width', `${Math.max(1, swapsSides ? height : width)}px`);
+    preview.style.setProperty('--piece-paper-height', `${Math.max(1, swapsSides ? width : height)}px`);
+    preview.style.setProperty('--piece-paper-rotation', `${costPiecePaperRotation}deg`);
+    preview.classList.toggle('has-paper-rotation', costPiecePaperRotation !== 0);
+    stage.dataset.paperRotation = String(costPiecePaperRotation);
+  } else {
+    preview.classList.remove('has-paper-rotation');
+    preview.style.removeProperty('--piece-paper-width');
+    preview.style.removeProperty('--piece-paper-height');
+    preview.style.removeProperty('--piece-paper-rotation');
+    delete stage.dataset.paperRotation;
+    preview.innerHTML = source.innerHTML;
+    preview.style.width = source.style.width;
+    preview.style.height = source.style.height;
+  }
+  document.querySelectorAll('[data-cost-preview-mode]').forEach(button => {
+    const selected = button.dataset.costPreviewMode === costPreviewMode;
+    button.classList.toggle('is-selected', selected);
+    button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+  });
+  if (typeof syncMaterialPreviewEffect === 'function') syncMaterialPreviewEffect(lastCalc);
+}
+
+function setCostPreviewMode(mode) {
+  costPreviewMode = mode === 'piece' ? 'piece' : 'sheet';
+  renderCostPreviewMode();
+}
+
+function getCostPreviewMode() {
+  return costPreviewMode;
+}
+
+function rotateCostPiecePaper() {
+  if (costPreviewMode !== 'piece') return false;
+  costPiecePaperRotation = (costPiecePaperRotation + 90) % 360;
+  renderCostPreviewMode();
+  return true;
+}
+
+function getCostPiecePaperRotation() {
+  return costPiecePaperRotation;
 }
 
 function syncFlowSummary() {
@@ -69,23 +259,19 @@ function syncFlowSummary() {
   if ($('briefCalcSummary')) {
     $('briefCalcSummary').innerHTML = `ขนาด ${Number(lastCalc.W).toLocaleString('th-TH')}×${Number(lastCalc.H).toLocaleString('th-TH')} cm • ${Number(lastCalc.Q).toLocaleString('th-TH')} ชิ้น<br>• ${lastCalc.b.yield} ชิ้น / แผ่น รวม ${lastCalc.sheets} แผ่น`;
   }
-  if ($('briefArtworkPreview')) $('briefArtworkPreview').innerHTML = miniLayoutMarkup(9, 'front');
+  if ($('briefArtworkPreview')) $('briefArtworkPreview').innerHTML = previewGalleryMarkup();
   if ($('previewFinishStatus')) {
     const finishNames = [lastCalc.material?.name, ...(lastCalc.services || []).map(service => service.name)].filter(Boolean);
-    const renderer = typeof materialPreviewConfig === 'function' ? materialPreviewConfig(lastCalc) : { mode: 'none' };
+    const rendererEnabled = typeof getMaterialPreviewEnabled !== 'function' || getMaterialPreviewEnabled();
+    const renderer = rendererEnabled && typeof materialPreviewConfig === 'function' ? materialPreviewConfig(lastCalc) : { mode: 'none' };
     const rendererLabel = renderer.mode === 'webgl' ? ' • WebGL 2.5D' : renderer.mode === 'css' ? ' • CSS 2.5D' : '';
     $('previewFinishStatus').textContent = finishNames.length
       ? `Preview: ${finishNames.join(' • ')}${rendererLabel}`
       : 'Preview วัสดุและ Option เสริม';
   }
 
-  if (source && costPreview) {
-    costPreview.innerHTML = source.innerHTML;
-    costPreview.style.width = source.style.width;
-    costPreview.style.height = source.style.height;
-  }
+  if (source && costPreview) renderCostPreviewMode();
   if (typeof syncArtworkSideControls === 'function') syncArtworkSideControls();
-  if (typeof syncMaterialPreviewEffect === 'function') syncMaterialPreviewEffect(lastCalc);
 }
 
 function variantId() {
@@ -108,7 +294,7 @@ function renderJobVariants() {
   container.innerHTML = currentJobVariants.map((variant, index) => `
     <div class="job-variant" data-variant-id="${flowEscape(variant.id)}">
       <strong>แบบที่ ${index + 1}</strong>
-      <input data-variant-name maxlength="80" value="${flowEscape(variant.name)}" placeholder="เวอร์ชั่นภาษาไทย">
+      <input data-variant-name maxlength="80" value="${flowEscape(variant.name)}" placeholder="คำตัวอย่าง แบบเวอร์ชั่นภาษาไทย">
       <div class="variant-quantity-field"><input data-variant-quantity type="number" min="1" step="1" value="${variant.quantity || ''}" placeholder="จำนวน" aria-label="จำนวนแบบที่ ${index + 1}"><span>ชิ้น</span></div>
       <button data-remove-variant type="button" aria-label="ลบแบบที่ ${index + 1}"${currentJobVariants.length === 1 ? ' hidden' : ''}>×</button>
     </div>`).join('');
@@ -213,9 +399,9 @@ function validateBriefForm() {
   return true;
 }
 
-function renderBriefReview() {
+function renderBriefReview(options = {}) {
   if (!lastCalc) return false;
-  if (!validateBriefForm()) return false;
+  if (!options.skipValidation && !validateBriefForm()) return false;
 
   const variants = getJobVariants();
   const services = (lastCalc.services || []).map(service => service.name).filter(Boolean).join(' • ') || 'ไม่มีบริการเพิ่มเติม';
@@ -227,9 +413,10 @@ function renderBriefReview() {
     <div class="brief-review-variants"><strong>จำนวนแบบ : ${variants.length} แบบ</strong>${variants.map((variant, index) => `<div class="brief-review-variant"><b>แบบที่ ${index + 1}</b><span>${flowEscape(variant.name || '-')}</span><strong>${variant.quantity.toLocaleString('th-TH')} ชิ้น</strong></div>`).join('')}</div>
     <div class="brief-review-metrics"><div><span>ขนาด / จำนวน</span><strong>${flowEscape(lastCalc.W)}×${flowEscape(lastCalc.H)} cm (${Number(lastCalc.Q).toLocaleString('th-TH')} ชิ้น)</strong></div><div><span>การจัดวางชิ้นงาน</span><strong>${lastCalc.b.yield} ชิ้น/แผ่น (${lastCalc.sheets} แผ่น)</strong></div><div><span>วัสดุ / การผลิต</span><strong>${flowEscape(lastCalc.material?.name || lastCalc.paper?.name || '-')}</strong></div><div><span>กำหนดส่งงาน</span><strong>${flowEscape(formatGregorianDate($('deliveryDeadline').value))}</strong></div></div>
     <div class="brief-review-note">${flowEscape(note)}<br><small>${flowEscape(services)}</small></div>
-    <div class="brief-review-layout"><strong>ตัวอย่าง Layout • ด้านหน้า</strong><div class="mini-layout-preview">${miniLayoutMarkup(9, 'front')}</div></div>
-    ${typeof getSelectedPrintSide === 'function' && getSelectedPrintSide() === 'double' ? `<div class="brief-review-layout"><strong>ตัวอย่าง Layout • ด้านหลัง</strong><div class="mini-layout-preview">${miniLayoutMarkup(9, 'back')}</div></div>` : ''}
+    <div class="brief-review-layout preview-gallery">${previewGalleryMarkup()}</div>
+    <div class="artwork-summary-slot brief-review-artwork-summary" data-artwork-summary></div>
     ${link ? `<div class="brief-review-note"><strong>ลิงก์ไฟล์ต้นฉบับ</strong><br>${flowEscape(link)}</div>` : ''}`;
+  if (typeof renderArtworkSummaries === 'function') renderArtworkSummaries();
   return true;
 }
 
@@ -343,6 +530,23 @@ function bindFlow() {
     if (typeof closeSide === 'function') closeSide();
     showAppView('cost');
   });
+  $('costPreviewModeToggle')?.addEventListener('click', event => {
+    const button = event.target.closest('[data-cost-preview-mode]');
+    if (button) setCostPreviewMode(button.dataset.costPreviewMode);
+  });
+  $('rotateCostPiecePaper')?.addEventListener('click', rotateCostPiecePaper);
+  document.addEventListener('click', event => {
+    const control = event.target.closest('[data-preview-carousel-action], [data-preview-carousel-index]');
+    if (!control) return;
+    const carousel = control.closest('[data-preview-carousel]');
+    if (!carousel) return;
+    if (control.dataset.previewCarouselIndex !== undefined) {
+      syncPreviewCarousel(carousel, Number(control.dataset.previewCarouselIndex));
+      return;
+    }
+    const current = Number(carousel.dataset.previewIndex) || 0;
+    syncPreviewCarousel(carousel, current + (control.dataset.previewCarouselAction === 'prev' ? -1 : 1));
+  });
   window.addEventListener('iprint:calculated', syncFlowSummary);
 }
 
@@ -365,3 +569,8 @@ window.normalizeFlowDateValue = normalizeFlowDateValue;
 window.formatFlowDateInput = formatFlowDateInput;
 window.showOrderSuccess = showOrderSuccess;
 window.renderBriefReview = renderBriefReview;
+window.previewGalleryMarkup = previewGalleryMarkup;
+window.setCostPreviewMode = setCostPreviewMode;
+window.getCostPreviewMode = getCostPreviewMode;
+window.rotateCostPiecePaper = rotateCostPiecePaper;
+window.getCostPiecePaperRotation = getCostPiecePaperRotation;

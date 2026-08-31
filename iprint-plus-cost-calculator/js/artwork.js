@@ -29,6 +29,30 @@ function setAssetStatus(text, kind = '') {
   status.className = 'asset-status status' + (kind ? ` ${kind}` : '');
 }
 
+function normalizeArtworkRotation(value) {
+  return ((Math.round(Number(value) || 0) % 360) + 360) % 360;
+}
+
+function getArtworkRotation(side = activeArtworkSide) {
+  return normalizeArtworkRotation(side === 'back' ? artworkRotationBack : artworkRotationFront);
+}
+
+function artworkRotationScale(rotation, width, height) {
+  const angle = normalizeArtworkRotation(rotation);
+  const safeWidth = Math.max(1, Number(width) || 1);
+  const safeHeight = Math.max(1, Number(height) || 1);
+  return angle % 180 === 0 ? 1 : Math.max(safeWidth / safeHeight, safeHeight / safeWidth);
+}
+
+function applyArtworkRotation(element, side = activeArtworkSide, width = 1, height = 1) {
+  if (!element) return;
+  const rotation = getArtworkRotation(side);
+  const scale = artworkRotationScale(rotation, width, height);
+  element.style.setProperty('--artwork-rotation', `${rotation}deg`);
+  element.style.setProperty('--artwork-rotation-scale', String(scale));
+  element.dataset.rotation = String(rotation);
+}
+
 function renderReferences() {
   const list = $('referenceList');
   if (!list) return;
@@ -53,6 +77,52 @@ function renderReferences() {
     remove.addEventListener('click', () => removeReferenceImage(reference.id));
     item.append(image, details, remove);
     list.appendChild(item);
+  });
+}
+
+function renderArtworkSummaries() {
+  const activeFile = activeArtworkSide === 'back'
+    ? (useFrontArtworkForBack ? artworkImage : artworkBackImage)
+    : artworkImage;
+  const activeUrl = getArtworkPreviewUrl(activeArtworkSide);
+  const rotation = getArtworkRotation(activeArtworkSide);
+  const sideLabel = activeArtworkSide === 'back' ? 'ด้านหลัง' : 'ด้านหน้า';
+
+  document.querySelectorAll('[data-artwork-summary]').forEach(slot => {
+    slot.replaceChildren();
+    if (!activeFile || !activeUrl) {
+      slot.hidden = true;
+      return;
+    }
+
+    const card = document.createElement('div');
+    card.className = 'artwork-current artwork-summary-card';
+    const image = document.createElement('img');
+    image.src = activeUrl;
+    image.alt = `ภาพงานหลัก${sideLabel}`;
+    applyArtworkRotation(image, activeArtworkSide, 1, 1);
+    const details = document.createElement('div');
+    const name = document.createElement('strong');
+    const meta = document.createElement('span');
+    name.textContent = `${sideLabel} • ${activeFile.name}`;
+    meta.textContent = `${artworkFileSize(activeFile.size)} • มุม ${rotation}° • ใช้ชั่วคราวและล้างเมื่อส่งบรีฟ`;
+    details.append(name, meta);
+    const actions = document.createElement('div');
+    actions.className = 'artwork-current-actions';
+    const rotate = document.createElement('button');
+    rotate.type = 'button';
+    rotate.className = 'artwork-summary-rotate';
+    rotate.textContent = '↻ หมุน 90°';
+    rotate.addEventListener('click', () => rotateArtworkImage(activeArtworkSide));
+    const clear = document.createElement('button');
+    clear.type = 'button';
+    clear.className = 'artwork-summary-clear';
+    clear.textContent = 'ล้างภาพ';
+    clear.addEventListener('click', clearArtworkImage);
+    actions.append(rotate, clear);
+    card.append(image, details, actions);
+    slot.appendChild(card);
+    slot.hidden = false;
   });
 }
 
@@ -81,12 +151,15 @@ function updateArtworkControls() {
     current.hidden = false;
     thumbnail.src = activeUrl;
     name.textContent = `${activeArtworkSide === 'back' ? 'ด้านหลัง' : 'ด้านหน้า'} • ${activeFile.name}`;
-    meta.textContent = `${artworkFileSize(activeFile.size)} • ใช้ชั่วคราวและล้างเมื่อส่งบรีฟ`;
+    const rotation = getArtworkRotation(activeArtworkSide);
+    meta.textContent = `${artworkFileSize(activeFile.size)} • มุม ${rotation}° • ใช้ชั่วคราวและล้างเมื่อส่งบรีฟ`;
+    applyArtworkRotation(thumbnail, activeArtworkSide, 1, 1);
   } else {
     current.hidden = true;
     thumbnail.removeAttribute('src');
   }
 
+  renderArtworkSummaries();
   renderReferences();
   if (hasArtwork || referenceCount) {
     const artworkLabel = hasArtwork ? 'ภาพงานหลัก' : '';
@@ -108,11 +181,14 @@ function setArtworkImage(file, side = activeArtworkSide) {
     if (artworkBackImageUrl) URL.revokeObjectURL(artworkBackImageUrl);
     artworkBackImage = file;
     artworkBackImageUrl = URL.createObjectURL(file);
+    artworkRotationBack = 0;
     useFrontArtworkForBack = false;
   } else {
     if (artworkImageUrl) URL.revokeObjectURL(artworkImageUrl);
     artworkImage = file;
     artworkImageUrl = URL.createObjectURL(file);
+    artworkRotationFront = 0;
+    if (useFrontArtworkForBack) artworkRotationBack = 0;
   }
   updateArtworkControls();
   calculate();
@@ -167,21 +243,29 @@ function hasTemporaryImages() {
   return hasTemporaryArtwork() || referenceImages.length > 0;
 }
 
+function refreshActiveArtworkReview() {
+  const reviewView = document.querySelector('[data-app-view="review"].is-active');
+  if (reviewView && typeof renderBriefReview === 'function') renderBriefReview({ skipValidation: true });
+}
+
 function clearArtworkImage() {
   if (activeArtworkSide === 'back') {
     if (artworkBackImageUrl) URL.revokeObjectURL(artworkBackImageUrl);
     artworkBackImage = null;
     artworkBackImageUrl = '';
+    artworkRotationBack = 0;
     useFrontArtworkForBack = false;
   } else {
     if (artworkImageUrl) URL.revokeObjectURL(artworkImageUrl);
     artworkImage = null;
     artworkImageUrl = '';
+    artworkRotationFront = 0;
     useFrontArtworkForBack = false;
   }
   $('artworkImage').value = '';
   updateArtworkControls();
   calculate();
+  refreshActiveArtworkReview();
 }
 
 function clearTemporaryImages() {
@@ -194,6 +278,8 @@ function clearTemporaryImages() {
   artworkBackImageUrl = '';
   activeArtworkSide = 'front';
   useFrontArtworkForBack = false;
+  artworkRotationFront = 0;
+  artworkRotationBack = 0;
   referenceImages = [];
   $('artworkImage').value = '';
   $('referenceImages').value = '';
@@ -211,8 +297,21 @@ function getArtworkSideState() {
     activeSide: activeArtworkSide,
     hasFront: Boolean(artworkImage && artworkImageUrl),
     hasBack: Boolean((artworkBackImage && artworkBackImageUrl) || (useFrontArtworkForBack && artworkImageUrl)),
-    useFrontForBack: useFrontArtworkForBack
+    useFrontForBack: useFrontArtworkForBack,
+    frontRotation: getArtworkRotation('front'),
+    backRotation: getArtworkRotation('back')
   };
+}
+
+function rotateArtworkImage(side = activeArtworkSide) {
+  const targetSide = side === 'back' ? 'back' : 'front';
+  if (!getArtworkPreviewUrl(targetSide)) return false;
+  if (targetSide === 'back') artworkRotationBack = normalizeArtworkRotation(artworkRotationBack + 90);
+  else artworkRotationFront = normalizeArtworkRotation(artworkRotationFront + 90);
+  updateArtworkControls();
+  calculate();
+  refreshActiveArtworkReview();
+  return true;
 }
 
 function setActiveArtworkSide(side) {
@@ -227,7 +326,9 @@ function setActiveArtworkSide(side) {
 }
 
 function setUseFrontArtworkForBack(enabled) {
-  useFrontArtworkForBack = Boolean(enabled);
+  const nextValue = Boolean(enabled);
+  if (nextValue && !useFrontArtworkForBack) artworkRotationBack = artworkRotationFront;
+  useFrontArtworkForBack = nextValue;
   updateArtworkControls();
   calculate();
 }
@@ -254,11 +355,11 @@ function syncArtworkSideControls() {
   const sideStatus = $('artworkSideStatus');
   if (sideStatus) {
     const state = getArtworkSideState();
-    sideStatus.textContent = `หน้า ${state.hasFront ? 'พร้อม' : 'ยังไม่มีภาพ'} • หลัง ${state.hasBack ? 'พร้อม' : 'ยังไม่มีภาพ'}`;
+    sideStatus.textContent = `หน้า ${state.hasFront ? `พร้อม (${state.frontRotation}°)` : 'ยังไม่มีภาพ'} • หลัง ${state.hasBack ? `พร้อม (${state.backRotation}°)` : 'ยังไม่มีภาพ'}`;
   }
 }
 
-function createBriefImageDataUrl(file, maximum = 520) {
+function createBriefImageDataUrl(file, maximum = 520, rotation = 0) {
   if (!file) return Promise.resolve('');
   const sourceUrl = URL.createObjectURL(file);
   return new Promise((resolve, reject) => {
@@ -266,14 +367,22 @@ function createBriefImageDataUrl(file, maximum = 520) {
     image.onload = () => {
       const width = image.naturalWidth || image.width || 1;
       const height = image.naturalHeight || image.height || 1;
-      const scale = Math.min(1, maximum / Math.max(width, height));
+      const angle = normalizeArtworkRotation(rotation);
+      const swapsSides = angle % 180 !== 0;
+      const rotatedWidth = swapsSides ? height : width;
+      const rotatedHeight = swapsSides ? width : height;
+      const scale = Math.min(1, maximum / Math.max(rotatedWidth, rotatedHeight));
       const canvas = document.createElement('canvas');
-      canvas.width = Math.max(1, Math.round(width * scale));
-      canvas.height = Math.max(1, Math.round(height * scale));
+      canvas.width = Math.max(1, Math.round(rotatedWidth * scale));
+      canvas.height = Math.max(1, Math.round(rotatedHeight * scale));
       const context = canvas.getContext('2d');
       context.fillStyle = '#ffffff';
       context.fillRect(0, 0, canvas.width, canvas.height);
-      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      context.save();
+      context.translate(canvas.width / 2, canvas.height / 2);
+      context.rotate(angle * Math.PI / 180);
+      context.drawImage(image, -width * scale / 2, -height * scale / 2, width * scale, height * scale);
+      context.restore();
       URL.revokeObjectURL(sourceUrl);
       resolve(canvas.toDataURL('image/jpeg', 0.82));
     };
@@ -286,14 +395,13 @@ function createBriefImageDataUrl(file, maximum = 520) {
 }
 
 function getArtworkPreviewDataUrl() {
-  return createBriefImageDataUrl(artworkImage, 520);
+  return createBriefImageDataUrl(artworkImage, 520, getArtworkRotation('front'));
 }
 
 async function getArtworkPreviewDataUrls() {
-  const front = await createBriefImageDataUrl(artworkImage, 520);
-  const back = useFrontArtworkForBack
-    ? front
-    : await createBriefImageDataUrl(artworkBackImage, 520);
+  const front = await createBriefImageDataUrl(artworkImage, 520, getArtworkRotation('front'));
+  const backFile = useFrontArtworkForBack ? artworkImage : artworkBackImage;
+  const back = await createBriefImageDataUrl(backFile, 520, getArtworkRotation('back'));
   return { front, back };
 }
 
@@ -357,6 +465,7 @@ function bindArtwork() {
     event.target.value = '';
   });
   $('clearArtworkImage').addEventListener('click', clearArtworkImage);
+  $('rotateArtworkImage')?.addEventListener('click', () => rotateArtworkImage(activeArtworkSide));
   $('artworkSideControls')?.addEventListener('click', event => {
     const button = event.target.closest('[data-artwork-side]');
     if (button) setActiveArtworkSide(button.dataset.artworkSide);
@@ -365,3 +474,5 @@ function bindArtwork() {
   bindPreviewArtworkDrop();
   updateArtworkControls();
 }
+
+window.renderArtworkSummaries = renderArtworkSummaries;

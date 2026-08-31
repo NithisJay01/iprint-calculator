@@ -1,4 +1,4 @@
-const LAST_ORDER_STORAGE_KEY = 'iprint_last_order_v1';
+const LAST_ORDER_STORAGE_KEY = IPRINT_TEST_MODE ? 'iprint_test_last_order_v1' : 'iprint_last_order_v1';
 
 const WORKFLOW_LABELS = {
   NEW: 'งานใหม่',
@@ -182,13 +182,13 @@ async function loadWorkflow() {
   const button = $('refreshWorkflow');
   button.disabled = true;
   button.textContent = 'กำลังโหลด…';
-  setWorkflowStatus('กำลังดึงสถานะจาก Notion…');
+  setWorkflowStatus(IPRINT_TEST_MODE ? 'กำลังโหลดสถานะจาก Mock data…' : 'กำลังดึงสถานะจาก Notion…');
 
   try {
     const order = await fetchOrderWorkflowRemote(ticketId);
     if (!order?.success) throw new Error(order?.error || 'โหลดสถานะไม่สำเร็จ');
     renderWorkflow(order);
-    setWorkflowStatus('อัปเดตสถานะล่าสุดจาก Notion แล้ว', 'ok');
+    setWorkflowStatus(IPRINT_TEST_MODE ? 'โหลดสถานะล่าสุดจาก Mock data แล้ว • ไม่เรียก API' : 'อัปเดตสถานะล่าสุดจาก Notion แล้ว', 'ok');
     return true;
   } catch (error) {
     renderWorkflow(null);
@@ -241,6 +241,7 @@ function closeWorkflow() {
 }
 
 function bindWorkflow() {
+  if (IPRINT_RESET_TEST_DATA) localStorage.removeItem(LAST_ORDER_STORAGE_KEY);
   const reference = readLastOrder();
   if (reference?.ticketId) $('workflowTicketId').value = reference.ticketId;
   $('openWorkflow')?.addEventListener('click', openWorkflow);

@@ -14,7 +14,7 @@ function renderMaterials() {
     }
     );
     if(selectedMaterialId)sel.value=selectedMaterialId;
-    setStatus('materialStatus','Notion • '+materials.length+' วัสดุ','ok');
+    setStatus('materialStatus',dataSourceLabel()+' • '+materials.length+' วัสดุ','ok');
     const m=materials.find(x=>String(x.id)===String(selectedMaterialId));
     const s=$('selectedMaterialSummary');
     if(m) {

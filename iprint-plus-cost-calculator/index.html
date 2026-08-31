@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#eef6ff">
   <title>iPrint</title>
-  <link rel="stylesheet" href="css/app.css?v=20260831-material-preview">
+  <link rel="stylesheet" href="css/app.css?v=20260901-shader-toggle">
 </head>
 <body>
 <div class="mobile-app" id="mobileApp">
@@ -17,6 +17,7 @@
       <img src="image/cart.svg" alt=""><span id="cartCount">0</span>
     </button>
   </header>
+  <div class="test-mode-badge" id="testModeBadge" hidden>TEST MODE • MOCK DATA • NO API</div>
 
   <nav class="flow-stepper" id="flowStepper" aria-label="ขั้นตอนการสั่งพิมพ์" hidden>
     <div class="flow-step" data-step="1"><span>1</span><small>จัดวาง</small></div>
@@ -42,12 +43,15 @@
     <section class="app-view" data-app-view="layout">
       <div class="page-intro"><h1>คำนวณการวางชิ้นงาน</h1><p>กำหนดมาร์จินและระยะขอบ เพื่อคำนวณจำนวนชิ้นงานสูงสุดต่อแผ่น</p></div>
       <h2 class="section-title">คำนวณปริมาณต่อ 1 แผ่น</h2>
-      <div class="layout-preview-card" id="previewDropZone">
-        <div class="preview-scroll"><div class="sheet-preview" id="sheetPreview"></div></div>
-        <div class="sheet-dimensions"><span id="sheetWidthLabel">— mm</span><span id="sheetHeightLabel">— mm</span></div>
-        <div class="preview-drop-hint" aria-hidden="true"><span>⇩</span> วางภาพงานใน Preview</div>
-      </div>
-      <label class="artwork-upload-button" for="artworkImage"><span>อัพโหลดตัวอย่าง Artwork</span></label>
+      <section class="preview-artwork-section">
+        <div class="layout-preview-card" id="previewDropZone">
+          <div class="preview-scroll"><div class="sheet-preview" id="sheetPreview"></div></div>
+          <div class="sheet-dimensions"><span id="sheetWidthLabel">— mm</span><span id="sheetHeightLabel">— mm</span></div>
+          <div class="preview-drop-hint" aria-hidden="true"><span>⇩</span> วางภาพงานใน Preview</div>
+        </div>
+        <label class="artwork-upload-button" for="artworkImage"><span>อัพโหลดตัวอย่าง Artwork</span></label>
+        <div class="artwork-current layout-artwork-current" id="artworkCurrent" hidden><img id="artworkThumbnail" alt="ภาพงานหลักที่เลือก"><div><strong id="artworkName">—</strong><span id="artworkMeta">—</span></div><div class="artwork-current-actions"><button id="rotateArtworkImage" type="button">↻ หมุน 90°</button><button id="clearArtworkImage" type="button">ล้างภาพ</button></div></div>
+      </section>
 
       <section class="form-card">
         <div class="field"><label class="label" for="sheet">Preset กระดาษที่ใช้</label><select id="sheet"><option value="">กำลังโหลด Preset จาก Notion…</option></select></div>
@@ -66,16 +70,19 @@
         <h2>ผลลัพธ์การคำนวณ Layout</h2>
         <dl><div><dt>จำนวนต่อแผ่น</dt><dd><span id="yield">—</span> ชิ้น / แผ่น</dd></div><div><dt>การจัดเรียง (Layout)</dt><dd id="layoutDirection">—</dd></div><div class="summary-total"><dt>จำนวนแผ่นที่ต้องใช้</dt><dd><span id="sheets">—</span> แผ่น</dd></div></dl>
       </section>
-      <div class="artwork-current layout-artwork-current" id="artworkCurrent" hidden><img id="artworkThumbnail" alt="ภาพงานหลักที่เลือก"><div><strong id="artworkName">—</strong><span id="artworkMeta">—</span></div><button id="clearArtworkImage" type="button">ล้างภาพ</button></div>
       <div class="flow-actions"><button class="secondary-action" data-flow-back="home" type="button">‹ กลับ</button><button class="primary-action" id="openMaterialsServices" type="button">เลือกดูวัสดุ</button></div>
     </section>
 
     <section class="app-view" data-app-view="cost">
       <section class="form-card preview-summary-card">
         <div class="card-summary-line"><strong>สรุปการวางชิ้นงาน</strong><b id="costLayoutSummary">—</b></div>
+        <div class="cost-preview-mode-toggle" id="costPreviewModeToggle" role="group" aria-label="เลือกรูปแบบ Preview"><button class="is-selected" type="button" data-cost-preview-mode="sheet" aria-pressed="true">Preview รายแผ่น</button><button type="button" data-cost-preview-mode="piece" aria-pressed="false">Preview รายชิ้น</button></div>
+        <div class="material-effect-toggle"><span><strong>Shader Preview</strong><small>แสงสะท้อนและเอฟเฟกต์วัสดุ</small></span><label class="switch-control" for="materialShaderToggle"><input id="materialShaderToggle" type="checkbox" checked><i aria-hidden="true"></i><b id="materialShaderToggleStatus">เปิด</b></label></div>
+        <div class="cost-piece-tools" id="costPieceTools" hidden><button id="rotateCostPiecePaper" type="button">↻ หมุนหน้ากระดาษ 90°</button><output id="costPiecePaperRotation">มุมหน้ากระดาษ 0°</output></div>
         <div class="cost-preview-wrap" id="materialPreviewInteraction"><div class="material-preview-stage" id="materialPreviewStage"><div class="sheet-preview cost-sheet-preview" id="costSheetPreview"></div><div class="material-css-reflection" aria-hidden="true"></div><canvas id="materialShaderCanvas" class="material-shader-canvas" aria-hidden="true" hidden></canvas></div></div>
         <div class="preview-interaction-hint" id="materialPreviewHint" hidden>ลากซ้าย–ขวาเพื่อดูแสงสะท้อน</div>
-        <div class="artwork-side-controls" id="artworkSideControls" hidden><div class="artwork-side-toggle" role="group" aria-label="เลือกด้านของ Artwork"><button type="button" data-artwork-side="front" class="is-selected" aria-pressed="true">ด้านหน้า</button><button type="button" data-artwork-side="back" aria-pressed="false">ด้านหลัง</button></div><label class="same-artwork-option"><input id="useFrontArtworkForBack" type="checkbox"> ใช้ภาพด้านหน้าเป็นด้านหลัง</label><label class="active-artwork-upload" for="artworkImage" id="activeArtworkUploadLabel">เปลี่ยนภาพด้านหน้า</label><small id="artworkSideStatus">หน้า ยังไม่มีภาพ • หลัง ยังไม่มีภาพ</small></div>
+        <div class="artwork-summary-slot" data-artwork-summary></div>
+        <div class="artwork-side-controls" id="artworkSideControls" hidden><div class="artwork-side-toggle" role="group" aria-label="เลือกด้านของ Artwork"><button type="button" data-artwork-side="front" class="is-selected" aria-pressed="true">ด้านหน้า</button><button type="button" data-artwork-side="back" aria-pressed="false">ด้านหลัง</button></div><label class="same-artwork-option"><input id="useFrontArtworkForBack" type="checkbox"> ใช้ภาพด้านหน้าเป็นด้านหลัง</label><div class="artwork-side-action-row"><label class="active-artwork-upload" for="artworkImage" id="activeArtworkUploadLabel">เปลี่ยนภาพด้านหน้า</label></div><small id="artworkSideStatus">หน้า ยังไม่มีภาพ • หลัง ยังไม่มีภาพ</small></div>
         <div class="preview-finish-status" id="previewFinishStatus">Preview วัสดุและ Option เสริม</div>
       </section>
       <section class="form-card">
@@ -95,7 +102,7 @@
     <section class="app-view" data-app-view="brief">
       <div class="page-intro"><h1>สร้าง Brief สำหรับกราฟิก</h1><p>ส่งข้อมูลความต้องการ ดีไซน์ และภาพตัวอย่างเพื่อให้ทีมกราฟิกเริ่มออกแบบ</p></div>
       <h2 class="section-title">ภาพงานหลัก (Main Layout/Artwork)</h2>
-      <label class="brief-main-preview" for="artworkImage"><div id="briefArtworkPreview" class="mini-layout-preview"></div><span>แตะเพื่อเลือกภาพงานหลัก</span></label>
+      <section class="brief-main-preview"><div id="briefArtworkPreview" class="preview-gallery"></div><div class="artwork-summary-slot" data-artwork-summary></div><label class="brief-preview-upload" for="artworkImage">เปลี่ยนภาพงานหลัก</label></section>
       <div class="field"><label class="label" for="jobName">ชื่องาน</label><input id="jobName" maxlength="120" placeholder="ใส่ชื่องาน ตัวอย่าง “แผ่นพับโปรโมชั่นปีใหม่ 2026”"></div>
       <div class="brief-calc-summary" id="briefCalcSummary">—</div>
       <section class="variants-section"><div class="section-heading"><strong>จำนวนแบบ</strong><small>เฉพาะขนาดและวัสดุเดียวกัน</small></div><div id="jobVariants"></div><button class="add-variant-button" id="addJobVariant" type="button">+ เพิ่ม</button><div class="status" id="variantStatus"></div></section>
@@ -150,22 +157,25 @@
 
 <div class="modal success-modal" id="orderSuccessModal" aria-hidden="true"><div class="modal-card"><div class="success-copy"><h2>สร้างออเดอร์สำเร็จ</h2><strong id="successOrderId">Order: —</strong><p id="successOrderSummary">สร้างรายการและส่ง Brief ให้กราฟิกแล้ว</p></div><div class="modal-actions"><button class="secondary-action" id="startNewOrder" type="button">เริ่มออเดอร์ใหม่</button><button class="primary-action" id="viewOrderStatus" type="button">ดูสถานะออเดอร์</button></div></div></div>
 
+<div class="modal piece-preview-modal" id="piecePreviewModal" aria-hidden="true"><div class="modal-card"><div class="modal-head"><div><small>PREVIEW รายชิ้น</small><h2 id="piecePreviewTitle">ตัวอย่างชิ้นงาน</h2></div><button class="close-sheet" id="closePiecePreview" type="button" aria-label="ปิด Preview รายชิ้น">×</button></div><div class="piece-preview-body"><div class="piece-preview-frame" id="piecePreviewFrame"></div><div class="piece-preview-side-toggle" id="piecePreviewSideToggle" role="group" aria-label="เลือกด้านของ Preview รายชิ้น"><button class="is-selected" id="piecePreviewFront" type="button" data-piece-preview-side="front" aria-pressed="true">ด้านหน้า</button><button id="piecePreviewBack" type="button" data-piece-preview-side="back" aria-pressed="false">ด้านหลัง</button></div><p id="piecePreviewStatus">กำลังแสดงด้านหน้า</p></div></div></div>
+
 <button id="downloadBrief" type="button" hidden>ส่งบรีฟ</button><div id="briefStatus" hidden></div>
 
-<script src="js/core.js?v=20260831-material-preview"></script>
+<script src="js/core.js?v=20260901-artwork-rotation"></script>
 <script src="js/api.js?v=20260831-material-preview"></script>
 <script src="js/presets.js?v=20260831-material-preview"></script>
 <script src="js/materials.js?v=20260831-material-preview"></script>
 <script src="js/services.js?v=20260831-material-preview"></script>
-<script src="js/artwork.js?v=20260831-material-preview"></script>
-<script src="js/material-preview.js?v=20260831-material-preview"></script>
-<script src="js/calculator.js?v=20260831-material-preview"></script>
-<script src="js/brief.js?v=20260831-material-preview"></script>
-<script src="js/cart.js?v=20260831-material-preview"></script>
+<script src="js/artwork.js?v=20260901-preview-carousel"></script>
+<script src="js/material-preview.js?v=20260901-shader-toggle"></script>
+<script src="js/piece-preview.js?v=20260901-preview-modes"></script>
+<script src="js/calculator.js?v=20260901-artwork-rotation"></script>
+<script src="js/brief.js?v=20260901-shader-toggle"></script>
+<script src="js/cart.js?v=20260901-artwork-rotation"></script>
 <script src="js/customer.js?v=20260831-material-preview"></script>
 <script src="js/workflow.js?v=20260831-material-preview"></script>
 <script src="js/quote.js?v=20260831-material-preview"></script>
-<script src="js/app.js?v=20260831-material-preview"></script>
-<script src="js/flow.js?v=20260831-material-preview"></script>
+<script src="js/app.js?v=20260901-shader-toggle"></script>
+<script src="js/flow.js?v=20260901-shader-toggle"></script>
 </body>
 </html>

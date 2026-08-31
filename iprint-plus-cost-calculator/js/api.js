@@ -1,4 +1,60 @@
+const IPRINT_TEST_FIXTURES = {
+  presets: {
+    presets: [
+      { id: 'test-sra3', name: 'SRA3', fullW: 32.9, fullH: 48.3, usableW: 31.5, usableH: 46.9, type: 'เผื่อมาร์คมาตรฐาน', active: true }
+    ]
+  },
+  materials: {
+    materials: [
+      { id: 'test-art-card', name: 'Art Card 300 แกรม', price: 3.87, unit: 'sheet', active: true },
+      { id: 'test-pp', name: 'PP Sticker ขาวเงา', price: 6.5, unit: 'sheet', active: true, previewRenderer: 'css', previewEffect: 'gloss' }
+    ]
+  },
+  services: {
+    services: [
+      { id: 'test-print-single', category: 'รูปแบบการพิมพ์', name: 'พิมพ์หน้าเดียว', material: 'All Paper', price: 0.5, unit: 'sheet', sortOrder: 10, active: true },
+      { id: 'test-print-double', category: 'รูปแบบการพิมพ์', name: 'พิมพ์ 2 หน้า', material: 'All Paper', price: 0.5, unit: 'sheet', sortOrder: 20, active: true },
+      { id: 'test-lam-matte', category: 'การเคลือบ', name: 'เคลือบด้าน', material: 'Matt Film', price: 0.25, unit: 'piece', sortOrder: 30, active: true, previewRenderer: 'css', previewEffect: 'matte' },
+      { id: 'test-lam-gloss', category: 'การเคลือบ', name: 'เคลือบเงา', material: 'Glossy Film', price: 0.25, unit: 'piece', sortOrder: 40, active: true, previewRenderer: 'css', previewEffect: 'gloss' },
+      { id: 'test-lam-hologram', category: 'การเคลือบ', name: 'เคลือบโฮโลแกรม', material: 'Hologram Film', price: 0.75, unit: 'piece', sortOrder: 50, active: true, previewRenderer: 'webgl', previewEffect: 'hologram' },
+      { id: 'test-cut-sticker', category: 'การตัด', name: 'ไดคัท', material: 'All Sticker', price: 1, unit: 'piece', sortOrder: 60, active: true },
+      { id: 'test-cut-acrylic', category: 'การตัด', name: 'ติดแผ่นอคลีลิก Die-cut', material: 'Acrylic', price: 50, unit: 'piece', sortOrder: 70, active: true },
+      { id: 'test-cut-plastwood', category: 'การตัด', name: 'ติดแผ่นพลาสวูด Die-cut', material: 'Plastwood', price: 20, unit: 'sheet', sortOrder: 80, active: true },
+      { id: 'test-diy', category: 'DIY Solution', name: 'DIY ส่วนเสริม', material: 'Plastwood', price: 0.5, unit: 'piece', sortOrder: 90, active: true }
+    ]
+  },
+  customers: {
+    customers: [
+      { id: 'test-customer-001', name: 'ลูกค้าทดสอบ iPrint', company: 'Mock Studio', phone: '0812345678', email: 'test@example.com', address: '123 ถนนทดสอบ กรุงเทพฯ', active: true }
+    ]
+  }
+};
+
+const IPRINT_TEST_ORDER_KEY = 'iprint_test_workflow_order_v1';
+
+function cloneTestData(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function getTestApiFixture(url) {
+  const path = new URL(url, window.location.href).pathname;
+  if (path.endsWith('/presets')) return cloneTestData(IPRINT_TEST_FIXTURES.presets);
+  if (path.endsWith('/materials')) return cloneTestData(IPRINT_TEST_FIXTURES.materials);
+  if (path.endsWith('/services')) return cloneTestData(IPRINT_TEST_FIXTURES.services);
+  if (path.endsWith('/customers')) return cloneTestData(IPRINT_TEST_FIXTURES.customers);
+  throw new Error(`Test Mode ไม่มี fixture สำหรับ ${path}`);
+}
+
+function readTestWorkflowOrder() {
+  try {
+    return JSON.parse(sessionStorage.getItem(IPRINT_TEST_ORDER_KEY) || 'null');
+  } catch (error) {
+    return null;
+  }
+}
+
 async function getJSON(url) {
+    if (IPRINT_TEST_MODE) return getTestApiFixture(url);
     const r=await fetch(url, {
       method:'GET',cache:'no-store'
     }
@@ -100,7 +156,7 @@ async function deletePreset() {
 
 async function saveQuoteLocal(q) {
     try {
-      const key='iprint_quote_history_v1';
+      const key=IPRINT_TEST_MODE?'iprint_test_quote_history_v1':'iprint_quote_history_v1';
       const arr=JSON.parse(localStorage.getItem(key)||'[]');
       arr.push( {
         ...q,savedAt:new Date().toISOString()
@@ -113,6 +169,7 @@ async function saveQuoteLocal(q) {
 
 async function saveQuoteRemote(q) {
     try {
+      if (IPRINT_TEST_MODE) return { success: true, id: 'test-quote-001' };
       const apiKey = getWriteApiKey();
       const date = String(q.date || '').trim();
 
@@ -172,6 +229,7 @@ async function saveQuoteRemote(q) {
 
 async function attachQuotePreviewRemote(pageId, image, filename) {
     try {
+      if (IPRINT_TEST_MODE) return { success: true, id: pageId, filename };
       const apiKey = getWriteApiKey();
 
       if (!apiKey) {
@@ -221,6 +279,7 @@ async function attachQuotePreviewRemote(pageId, image, filename) {
 
 async function createTicketRemote(ticket, image, filename) {
     try {
+      if (IPRINT_TEST_MODE) return { success: true, id: 'test-ticket-brief-001', itemIds: [] };
       const apiKey=getWriteApiKey();
 
       if(!apiKey) {
@@ -270,6 +329,25 @@ async function createTicketRemote(ticket, image, filename) {
 
 async function createOrderRemote(order, quotePreview, briefImages) {
   try {
+    if (IPRINT_TEST_MODE) {
+      const id = 'test-ticket-order-001';
+      const now = new Date().toISOString();
+      const items = order.orderItems.map((item, index) => ({
+        ...cloneTestData(item),
+        id: `test-order-item-${index + 1}`,
+        title: item.name || item.title || `รายการที่ ${index + 1}`,
+        status: 'NEW',
+        phase: 'GRAPHIC',
+        allowedTransitions: ['GRAPHIC_ACCEPTED']
+      }));
+      const workflow = {
+        success: true,
+        ticket: { id, title: order.quoteNo || 'iPrint Test Order', status: 'NEW', updatedAt: now },
+        items
+      };
+      sessionStorage.setItem(IPRINT_TEST_ORDER_KEY, JSON.stringify(workflow));
+      return { success: true, id, url: '#test-mode', itemIds: items.map(item => item.id), testMode: true };
+    }
     const apiKey = getWriteApiKey();
 
     if (!apiKey) throw new Error('ยังไม่ได้ตั้งค่า API Key');
@@ -320,6 +398,10 @@ async function createOrderRemote(order, quotePreview, briefImages) {
 
 async function fetchOrderWorkflowRemote(ticketId) {
   try {
+    if (IPRINT_TEST_MODE) {
+      const workflow = readTestWorkflowOrder();
+      return workflow || { success: false, error: `ไม่พบ Mock order ${ticketId}` };
+    }
     const apiKey = getWriteApiKey();
     if (!apiKey) throw new Error('กรุณาตั้ง API Key ก่อนติดตามงาน');
 
@@ -349,6 +431,20 @@ async function fetchOrderWorkflowRemote(ticketId) {
 
 async function updateOrderItemStatusRemote(itemId, status, note = '') {
   try {
+    if (IPRINT_TEST_MODE) {
+      const workflow = readTestWorkflowOrder();
+      const item = workflow?.items?.find(entry => String(entry.id) === String(itemId));
+      if (!workflow || !item) return { success: false, error: 'ไม่พบ Mock order item' };
+      item.status = status;
+      item.note = note;
+      item.allowedTransitions = typeof WORKFLOW_TRANSITIONS === 'object'
+        ? (WORKFLOW_TRANSITIONS[status] || [])
+        : [];
+      workflow.ticket.status = status;
+      workflow.ticket.updatedAt = new Date().toISOString();
+      sessionStorage.setItem(IPRINT_TEST_ORDER_KEY, JSON.stringify(workflow));
+      return { success: true, item: cloneTestData(item), testMode: true };
+    }
     const apiKey = getWriteApiKey();
     if (!apiKey) throw new Error('กรุณาตั้ง API Key ก่อนอัปเดตงาน');
 
@@ -382,6 +478,9 @@ async function updateOrderItemStatusRemote(itemId, status, note = '') {
 
 async function createCustomerRemote(customerData) {
     try {
+      if (IPRINT_TEST_MODE) {
+        return { id: `test-customer-${Date.now()}`, ...cloneTestData(customerData), testMode: true };
+      }
       const response = await fetch(API.customers, {
         method: 'POST',
         headers: writeHeaders(),
