@@ -83,6 +83,8 @@ function cartTotal() {
 }
 
 function cartItemName(calc, index = cartItems.length + 1) {
+  const jobName = String($('jobName')?.value || '').trim();
+  if (jobName) return jobName;
   const materialName = String(calc.material?.name || '').trim();
   const size = `${(Number(calc.W) || 0).toFixed(2)} × ${(Number(calc.H) || 0).toFixed(2)} cm`;
 
@@ -92,19 +94,30 @@ function cartItemName(calc, index = cartItems.length + 1) {
 }
 
 function snapshotCartItem(calc, id) {
+  const artworkSides = typeof getArtworkSideState === 'function'
+    ? getArtworkSideState()
+    : { hasFront: false, hasBack: false, useFrontForBack: false };
   const material = calc.material
     ? {
         id: String(calc.material.id || ''),
         name: String(calc.material.name || ''),
         unit: String(calc.material.unit || ''),
-        price: Number(calc.material.price) || 0
+        price: Number(calc.material.price) || 0,
+        previewRenderer: String(calc.material.previewRenderer || ''),
+        previewEffect: String(calc.material.previewEffect || ''),
+        shaderPreset: String(calc.material.shaderPreset || ''),
+        textureUrl: String(calc.material.textureUrl || '')
       }
     : null;
   const selectedServices = (Array.isArray(calc.services) ? calc.services : []).map(service => ({
     id: String(service.id || ''),
     name: String(service.name || ''),
     unit: String(service.unit || ''),
-    price: Number(service.price) || 0
+    price: Number(service.price) || 0,
+    previewRenderer: String(service.previewRenderer || ''),
+    previewEffect: String(service.previewEffect || ''),
+    shaderPreset: String(service.shaderPreset || ''),
+    textureUrl: String(service.textureUrl || '')
   }));
 
   return {
@@ -127,7 +140,18 @@ function snapshotCartItem(calc, id) {
     material,
     services: selectedServices,
     price: Number(calc.sale) || 0,
+    variants: typeof getJobVariants === 'function' ? getJobVariants() : [],
+    printSide: typeof getSelectedPrintSide === 'function' ? getSelectedPrintSide() : 'unspecified',
+    productionService: typeof getSelectedHomeService === 'function' ? getSelectedHomeService() : 'laser',
+    artworkSides: {
+      hasFront: Boolean(artworkSides.hasFront),
+      hasBack: Boolean(artworkSides.hasBack),
+      useFrontForBack: Boolean(artworkSides.useFrontForBack)
+    },
+    briefFileLink: String($('briefFileLink')?.value || '').trim(),
     brief: String($('graphicBriefDescription')?.value || '').trim(),
+    briefDeadline: typeof normalizeFlowDateValue === 'function' ? normalizeFlowDateValue($('briefDeadline')?.value) : String($('briefDeadline')?.value || '').trim(),
+    deliveryDeadline: typeof normalizeFlowDateValue === 'function' ? normalizeFlowDateValue($('deliveryDeadline')?.value) : String($('deliveryDeadline')?.value || '').trim(),
     editor: {
       costPerSheet: Number(calc.C) || 0,
       profitPercent: Number(calc.P) || 0
@@ -142,6 +166,12 @@ async function addCurrentJobToCart() {
 
   if (!lastCalc) {
     status.textContent = 'กรุณากรอกข้อมูลชิ้นงานให้ครบก่อนเพิ่มลงตะกร้า';
+    status.className = 'brief-status status warn';
+    return false;
+  }
+
+  if (typeof validateJobVariants === 'function' && !validateJobVariants(true)) {
+    status.textContent = 'กรุณาตรวจสอบจำนวนของแต่ละแบบก่อนเพิ่มลงตะกร้า';
     status.className = 'brief-status status warn';
     return false;
   }
@@ -174,10 +204,13 @@ async function addCurrentJobToCart() {
     saveCart();
     if (typeof clearTemporaryImages === 'function') clearTemporaryImages();
     if ($('graphicBriefDescription')) $('graphicBriefDescription').value = '';
+    if ($('briefDeadline')) $('briefDeadline').value = '';
+    if ($('deliveryDeadline')) $('deliveryDeadline').value = '';
     status.textContent = existingIndex >= 0
       ? 'อัปเดตรายการในตะกร้าแล้ว'
       : `เพิ่มลงตะกร้าแล้ว • ${cartItems.length} รายการ`;
     status.className = 'brief-status status ok';
+    if (typeof showAppView === 'function') showAppView('cart');
     return true;
   } catch (error) {
     console.error('Add cart item', error);
@@ -200,6 +233,13 @@ function renderCart() {
 
   if (count) count.textContent = String(cartItems.length);
   if (total) total.textContent = '฿' + money(cartTotal());
+  if ($('cartItemLabel')) $('cartItemLabel').textContent = `${cartItems.length.toLocaleString('th-TH')} รายการ`;
+  const subtotal = cartTotal();
+  const vat = subtotal * 0.07;
+  if ($('cartSubtotal')) $('cartSubtotal').textContent = '฿' + money(subtotal);
+  if ($('cartDiscount')) $('cartDiscount').textContent = '-฿0.00';
+  if ($('cartVat')) $('cartVat').textContent = '฿' + money(vat);
+  if ($('cartGrandTotal')) $('cartGrandTotal').textContent = '฿' + money(subtotal + vat);
   if (openQuoteButton) openQuoteButton.disabled = cartItems.length === 0;
   if (!list) return;
 
@@ -211,33 +251,26 @@ function renderCart() {
   list.innerHTML = cartItems.map((item, index) => {
     const services = (item.services || []).map(service => service.name).filter(Boolean).join(', ');
     const detail = [item.paper?.name, item.material?.name, services].filter(Boolean).join(' • ');
+    const variants = Array.isArray(item.variants) && item.variants.length
+      ? item.variants
+      : [{ name: '', quantity: item.quantity }];
 
     return `<article class="cart-item" data-cart-id="${cartEscape(item.id)}">
-      <div class="cart-item-index">${index + 1}</div>
-      <div class="cart-item-main">
-        <strong>${cartEscape(item.name)}</strong>
-        <span>${cartEscape(item.size)} • ${Number(item.quantity).toLocaleString('th-TH')} ${cartEscape(item.unit)}</span>
-        <small>${cartEscape(detail || 'ยังไม่ได้เลือกวัสดุหรือบริการ')}</small>
-      </div>
-      <div class="cart-item-price">฿${money(item.price)}</div>
-      <div class="cart-item-actions">
-        <button type="button" data-cart-action="edit">แก้ไข</button>
-        <button type="button" data-cart-action="duplicate">คัดลอก</button>
-        <button type="button" data-cart-action="remove">ลบ</button>
-      </div>
+      <div class="cart-item-head"><div><small>รายการที่ ${index + 1}</small><strong>${cartEscape(item.name)}</strong><span>${cartEscape(item.size)} • ${cartEscape(detail || 'ยังไม่ได้เลือกวัสดุหรือบริการ')}</span></div><button class="cart-item-remove" type="button" data-cart-action="remove" aria-label="ลบรายการ">×</button></div>
+      <div class="cart-variant-list">${variants.map((variant, variantIndex) => `<div class="cart-variant-row"><b>แบบที่ ${variantIndex + 1}</b><span>${cartEscape(variant.name || '-')}</span><strong>${Number(variant.quantity || 0).toLocaleString('th-TH')} ชิ้น</strong></div>`).join('')}</div>
+      <div class="cart-production-row"><span>จัดวาง ${Number(item.yield || 0).toLocaleString('th-TH')} ชิ้น/แผ่น</span><span>ใช้ ${Number(item.sheets || 0).toLocaleString('th-TH')} แผ่น</span><span>รวม ${Number(item.quantity || 0).toLocaleString('th-TH')} ชิ้น</span><strong>฿${money(item.price)}</strong></div>
+      <div class="cart-item-actions"><button type="button" data-cart-action="edit">แก้ไขรายการ</button><button type="button" data-cart-action="duplicate">+ สร้างก็อปปี้ลิสต์</button></div>
     </article>`;
   }).join('');
 }
 
 function openCart() {
   renderCart();
-  $('cartModal').classList.add('open');
-  $('cartModal').setAttribute('aria-hidden', 'false');
+  if (typeof showAppView === 'function') showAppView('cart');
 }
 
 function closeCart() {
-  $('cartModal').classList.remove('open');
-  $('cartModal').setAttribute('aria-hidden', 'true');
+  if (typeof showAppView === 'function') showAppView('home');
 }
 
 function restoreCartItem(item) {
@@ -261,6 +294,14 @@ function restoreCartItem(item) {
     if (service.id) selectedServiceIds[String(service.id)] = true;
   });
   $('graphicBriefDescription').value = item.brief || '';
+  $('briefDeadline').value = typeof formatFlowDateInput === 'function' ? formatFlowDateInput(item.briefDeadline) : (item.briefDeadline || '');
+  $('deliveryDeadline').value = typeof formatFlowDateInput === 'function' ? formatFlowDateInput(item.deliveryDeadline) : (item.deliveryDeadline || '');
+  if ($('jobName')) $('jobName').value = item.name || '';
+  if ($('briefFileLink')) {
+    $('briefFileLink').value = item.briefFileLink || '';
+    $('briefFileLink').hidden = !item.briefFileLink;
+  }
+  if (typeof setJobVariants === 'function') setJobVariants(item.variants || [{ name: '', quantity: item.quantity }]);
   renderMaterials();
   renderServices();
   saveState();
@@ -269,6 +310,7 @@ function restoreCartItem(item) {
   $('cartStatus').textContent = 'กำลังแก้ไขรายการจากตะกร้า';
   $('cartStatus').className = 'brief-status status';
   closeCart();
+  if (typeof showAppView === 'function') showAppView('layout');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -324,7 +366,14 @@ function publicOrderItems() {
     material: item.material,
     services: item.services,
     price: item.price,
-    brief: item.brief
+    brief: item.brief,
+    briefDeadline: item.briefDeadline || '',
+    deliveryDeadline: item.deliveryDeadline || ''
+    ,variants: item.variants || []
+    ,printSide: item.printSide || 'unspecified'
+    ,productionService: item.productionService || 'laser'
+    ,artworkSides: item.artworkSides || { hasFront: false, hasBack: false, useFrontForBack: false }
+    ,briefFileLink: item.briefFileLink || ''
   }));
 }
 

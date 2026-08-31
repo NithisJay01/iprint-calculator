@@ -99,6 +99,8 @@
       const artwork = document.getElementById('artworkImage');
       const references = document.getElementById('referenceImages');
       const graphicBriefDescription = document.getElementById('graphicBriefDescription');
+      const briefDeadline = document.getElementById('briefDeadline');
+      const deliveryDeadline = document.getElementById('deliveryDeadline');
       const material = document.getElementById('materialSelect');
       const services = [...document.querySelectorAll('#servicesContainer input[type="checkbox"]')];
       const original = {
@@ -107,6 +109,8 @@
         bleed: bleed.value,
         material: material.value,
         graphicBriefDescription: graphicBriefDescription.value,
+        briefDeadline: briefDeadline.value,
+        deliveryDeadline: deliveryDeadline.value,
         services: services.map(service => service.checked)
       };
       const now = new Date();
@@ -116,20 +120,32 @@
       const originalQuoteSequence = window.localStorage.getItem(quoteSequenceKey);
       const addedCartItemIds = [];
 
+      if (typeof window.showAppView === 'function') {
+        window.showAppView('layout', { instant: true });
+        await wait(80);
+      }
+
       await check('เริ่มต้นแอปและโหลด Preset', () => {
         assert(window.Iprint && typeof window.Iprint.calculate === 'function', 'เริ่มต้นแอปและโหลด Preset', 'ไม่พบ API ของแอป');
         assert(document.getElementById('sheet').options.length > 0, 'เริ่มต้นแอปและโหลด Preset', 'ไม่พบ Preset');
-        assert(document.getElementById('paperPreviewSheet').contains(document.getElementById('sheet')), 'เริ่มต้นแอปและโหลด Preset', 'ส่วนไซส์ / พื้นที่ใช้งานต้องอยู่ใน Side Sheet ตั้งค่า Preview');
+        assert(document.querySelector('[data-app-view="layout"]').contains(document.getElementById('sheet')), 'เริ่มต้นแอปและโหลด Preset', 'Preset และขนาดงานต้องอยู่ในขั้นจัดวาง');
         assert(Number(cost.value) === 2.5, 'เริ่มต้นแอปและโหลด Preset', 'ต้นทุนต่อแผ่นเริ่มต้นต้องเป็น 2.5 บาท');
         assert(Number(pieceGap.value) === 3, 'เริ่มต้นแอปและโหลด Preset', 'Gap เริ่มต้นต้องเป็น 3 mm');
-        assert(pieceGap.type === 'range' && pieceGap.min === '1' && pieceGap.max === '15' && pieceGap.step === '0.5', 'เริ่มต้นแอปและโหลด Preset', 'Slider ระยะห่างต้องเป็น 1–15 mm ทีละ 0.5 mm');
-        assert(bleed.type === 'range' && bleed.min === '1' && bleed.max === '15' && bleed.step === '0.5', 'เริ่มต้นแอปและโหลด Preset', 'Slider Bleed ต้องเป็น 1–15 mm ทีละ 0.5 mm');
-        assert(document.getElementById('pieceGapKnob') && document.getElementById('bleedKnob'), 'เริ่มต้นแอปและโหลด Preset', 'ไม่พบ Virtual Knob สำหรับ Gap และ Bleed');
-        const quickActions = document.querySelector('.preview-quick-actions');
-        assert(quickActions?.contains(document.getElementById('openPaperPreviewSettings')) && quickActions?.contains(document.getElementById('openBriefAssets')) && quickActions?.contains(document.getElementById('openMaterialsServices')), 'เริ่มต้นแอปและโหลด Preset', 'ไม่พบปุ่มด่วนด้านขวาของ Preview');
-        document.getElementById('openPaperPreviewSettings').click();
-        assert(document.getElementById('paperPreviewSheet').classList.contains('open'), 'เริ่มต้นแอปและโหลด Preset', 'ปุ่มตั้งค่า Preview ไม่เปิด Side Sheet');
-        document.getElementById('closePaperPreviewSettings').click();
+        assert(pieceGap.type === 'range' && pieceGap.min === '1' && pieceGap.max === '15' && pieceGap.step === '0.5', 'เริ่มต้นแอปและโหลด Preset', 'Gap Slider ต้องปรับได้ 1–15 mm ทีละ 0.5 mm');
+        assert(bleed.type === 'range' && bleed.min === '1' && bleed.max === '15' && bleed.step === '0.5', 'เริ่มต้นแอปและโหลด Preset', 'Bleed Slider ต้องปรับได้ 1–15 mm ทีละ 0.5 mm');
+        assert(document.getElementById('flowStepper') && document.getElementById('cartModal'), 'เริ่มต้นแอปและโหลด Preset', 'ไม่พบ Stepper หรือตะกร้าของ Flow ใหม่');
+        assert(document.getElementById('workflowModal'), 'เริ่มต้นแอปและโหลด Preset', 'ไม่พบหน้าติดตาม Workflow');
+        assert(briefDeadline?.placeholder === 'DD/MM/YYYY' && deliveryDeadline?.placeholder === 'DD/MM/YYYY', 'เริ่มต้นแอปและโหลด Preset', 'Deadline ต้องแสดงรูปแบบ DD/MM/YYYY');
+        assert(document.querySelectorAll('.native-date-control[type="date"]').length === 2, 'เริ่มต้นแอปและโหลด Preset', 'Deadline ต้องเลือกผ่านปฏิทินได้');
+        assert(document.querySelector('label[for="pieceGap"]')?.textContent === 'Gap Between' && document.querySelector('label[for="bleed"]')?.textContent === 'Margin', 'เริ่มต้นแอปและโหลด Preset', 'ชื่อ Slider ไม่ตรงกับ UX ล่าสุด');
+        assert(!document.querySelector('.print-side-toggle'), 'เริ่มต้นแอปและโหลด Preset', 'ต้องเลือกพิมพ์หน้าเดียว/สองหน้าจากรายการบริการเท่านั้น');
+        assert(document.querySelector('[data-service-option="laser"]')?.classList.contains('is-selected'), 'เริ่มต้นแอปและโหลด Preset', 'บริการ Laser ต้องเริ่มต้นเป็น Selected');
+        assert(document.querySelector('[data-service-option="inkjet"]')?.classList.contains('is-coming-soon'), 'เริ่มต้นแอปและโหลด Preset', 'บริการ Inkjet ต้องแสดง Coming soon');
+        assert(document.querySelector('[data-remove-variant]')?.hidden, 'เริ่มต้นแอปและโหลด Preset', 'แบบเดียวต้องไม่แสดงปุ่มลบ');
+        assert(document.querySelector('[data-app-view="layout"]')?.contains(document.getElementById('clearArtworkImage')), 'เริ่มต้นแอปและโหลด Preset', 'ปุ่มล้างภาพต้องอยู่หน้า Preview เท่านั้น');
+        assert(document.getElementById('materialPreviewStage') && typeof window.materialPreviewConfig === 'function', 'เริ่มต้นแอปและโหลด Preset', 'ไม่พบระบบ Preview วัสดุแบบ 2.5D');
+        assert(window.materialPreviewConfig({ services: [{ name: 'เคลือบโฮโลแกรม' }] }).mode === 'webgl', 'เริ่มต้นแอปและโหลด Preset', 'วัสดุพิเศษต้องเลือก WebGL renderer');
+        assert(document.getElementById('artworkSideControls'), 'เริ่มต้นแอปและโหลด Preset', 'ไม่พบตัวเลือก Artwork ด้านหน้า/ด้านหลัง');
       });
 
       await check('Preview แสดง Preset และจัดชิ้นงานกึ่งกลาง', () => {
@@ -203,11 +219,11 @@
         dropFiles(window, document.getElementById('previewDropZone'), [samplePngFile(window, 'dragged-artwork.png')]);
         await wait(50);
         const yieldPerSheet = numberFromText(document.getElementById('yield').textContent);
-        const artworkPreviews = document.querySelectorAll('.piece-artwork');
+        const artworkPreviews = document.querySelectorAll('#sheetPreview .piece-artwork');
 
         assert(artworkPreviews.length === yieldPerSheet, 'ภาพงานใน Preview เป็นข้อมูลชั่วคราว', 'ภาพงานหลักไม่แสดงในทุกชิ้นของ Preview');
         assert(document.getElementById('artworkCurrent').hidden === false, 'ภาพงานใน Preview เป็นข้อมูลชั่วคราว', 'ไม่แสดงรายการภาพงานหลัก');
-        assert(document.getElementById('artworkName').textContent === 'dragged-artwork.png', 'ภาพงานใน Preview เป็นข้อมูลชั่วคราว', 'ไม่สามารถลากภาพลง Preview ได้');
+        assert(document.getElementById('artworkName').textContent.includes('dragged-artwork.png'), 'ภาพงานใน Preview เป็นข้อมูลชั่วคราว', 'ไม่สามารถลากภาพลง Preview ได้');
         assert(document.querySelectorAll('.reference-item').length === 3, 'ภาพงานใน Preview เป็นข้อมูลชั่วคราว', 'Ref ต้องแนบได้สูงสุด 3 ภาพ');
         assert(window.Iprint.captureBriefImage, 'ภาพงานใน Preview เป็นข้อมูลชั่วคราว', 'ไม่สามารถสร้างภาพสรุปจากภาพงานหลัก');
       });
@@ -260,8 +276,12 @@
 
       await check('ตะกร้ารองรับหลายชิ้นงานในออเดอร์เดียว', async () => {
         const beforeIds = new Set(window.Iprint.publicOrderItems().map(item => item.id));
+        setValue(window, briefDeadline, '01/09/2026');
+        setValue(window, deliveryDeadline, '03/09/2026');
         const firstAdded = await window.Iprint.addCurrentJobToCart();
         setValue(window, qty, Number(qty.value) + 100);
+        setValue(window, briefDeadline, '02/09/2026');
+        setValue(window, deliveryDeadline, '04/09/2026');
         await wait(40);
         const secondAdded = await window.Iprint.addCurrentJobToCart();
         const orderItems = window.Iprint.publicOrderItems();
@@ -272,6 +292,8 @@
         assert(firstAdded && secondAdded, 'ตะกร้ารองรับหลายชิ้นงานในออเดอร์เดียว', 'เพิ่มชิ้นงานลงตะกร้าไม่สำเร็จ');
         assert(addedCartItemIds.length === 2, 'ตะกร้ารองรับหลายชิ้นงานในออเดอร์เดียว', 'จำนวนรายการที่เพิ่มไม่ถูกต้อง');
         assert(orderItems.every(item => !('gap' in item) && !('bleed' in item) && !('editor' in item)), 'ตะกร้ารองรับหลายชิ้นงานในออเดอร์เดียว', 'ข้อมูลภายในของต้นทุน/Gap/Bleed ไม่ควรออกไปกับ Order Item');
+        const addedItems = orderItems.filter(item => addedCartItemIds.includes(item.id));
+        assert(addedItems.every(item => /^\d{4}-\d{2}-\d{2}$/.test(item.briefDeadline) && /^\d{4}-\d{2}-\d{2}$/.test(item.deliveryDeadline)), 'ตะกร้ารองรับหลายชิ้นงานในออเดอร์เดียว', 'Deadline รายชิ้นงานไม่ถูกเก็บใน Order Item');
       });
 
       await check('สร้าง Preview ใบเสนอราคาหลายรายการและ VAT', async () => {
@@ -319,12 +341,15 @@
         assert(!('costPerSheet' in ticket) && !('profitPercent' in ticket), 'เตรียมข้อมูล Ticket จากบรีฟงาน', 'Ticket ไม่ควรส่งต้นทุนต่อแผ่นหรือกำไรไป Notion');
         assert(ticket.graphicBriefDescription === graphicBriefDescription.value, 'เตรียมข้อมูล Ticket จากบรีฟงาน', 'คำอธิบายสำหรับกราฟิกไม่อยู่ใน Ticket');
         assert(ticket.extras.length > 0 && ticket.extras.every(item => item.pageId), 'เตรียมข้อมูล Ticket จากบรีฟงาน', 'Ticket ต้องเก็บ Page ID สำหรับ Relation วัสดุและบริการ');
+        assert(typeof ticket.artworkSides?.hasFront === 'boolean' && typeof ticket.artworkSides?.hasBack === 'boolean', 'เตรียมข้อมูล Ticket จากบรีฟงาน', 'Ticket ต้องบันทึกสถานะ Artwork ทั้งสองด้าน');
       });
 
       setValue(window, qty, original.qty);
       setValue(window, pieceGap, original.pieceGap);
       setValue(window, bleed, original.bleed);
       graphicBriefDescription.value = original.graphicBriefDescription;
+      briefDeadline.value = original.briefDeadline;
+      deliveryDeadline.value = original.deliveryDeadline;
       window.Iprint.clearTemporaryImages();
       assert(document.getElementById('artworkCurrent').hidden === true, 'ล้างภาพงานชั่วคราว', 'ล้างภาพงานหลักไม่สำเร็จ');
       assert(document.querySelectorAll('.reference-item').length === 0, 'ล้างภาพงานชั่วคราว', 'ล้าง Ref ชั่วคราวไม่สำเร็จ');

@@ -103,9 +103,8 @@ function selectQuoteCustomer() {
     if (customer) {
       pageIdInput.value = customer.id;
 
-      if (customer.phone || customer.email) {
-        $('quoteContact').value = customer.phone || customer.email || '';
-      }
+      if ($('quotePhone')) $('quotePhone').value = customer.phone || '';
+      if ($('quoteContact')) $('quoteContact').value = customer.email || '';
 
       if (customer.address) {
         $('quoteAddress').value = customer.address;
@@ -144,9 +143,9 @@ async function ensureQuoteCustomer(q) {
 
     const customerData = {
       name,
-      contactPerson: '',
-      phone: q.contact || '',
-      email: '',
+      contactPerson: q.recipient || '',
+      phone: q.phone || '',
+      email: q.email || '',
       taxId: q.taxId || '',
       address: q.address || '',
       active: true
@@ -179,8 +178,8 @@ async function ensureQuoteCustomer(q) {
       name,
       company: '',
       contactPerson: '',
-      phone: q.contact || '',
-      email: '',
+      phone: q.phone || '',
+      email: q.email || '',
       address: q.address || '',
       active: true
     });

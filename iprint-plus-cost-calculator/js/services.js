@@ -1,96 +1,176 @@
+function isPrintSideService(service) {
+  return /พิม|พิพม์|print/i.test(String(service?.name || '')) && /หน้า|side/i.test(String(service?.name || ''));
+}
+
+function isLaminationService(service) {
+  const text = `${service?.category || ''} ${service?.name || ''}`;
+  return /เคลือบ|laminat|film|flim|hologram|holo|โฮโลแกรม|foil|ฟอยล์/i.test(text);
+}
+
+function isCuttingService(service) {
+  const text = `${service?.category || ''} ${service?.name || ''}`;
+  return /ไดคัท|ไดคัต|ตัด\s*(?:50|100|ครึ่ง|เต็ม)|die.?cut|kiss.?cut|cutting/i.test(text);
+}
+
+function serviceGroupDefinition(service) {
+  if (isPrintSideService(service)) return { key: 'print', title: 'รูปแบบการพิมพ์', exclusive: true, noneLabel: '' };
+  if (isLaminationService(service)) return { key: 'lamination', title: 'การเคลือบ', exclusive: true, noneLabel: 'ไม่เคลือบ' };
+  if (isCuttingService(service)) return { key: 'cutting', title: 'การตัด', exclusive: true, noneLabel: 'ไม่ตัด' };
+  const title = String(service?.category || 'บริการเพิ่มเติม');
+  return { key: `other-${title}`, title, exclusive: false, noneLabel: '' };
+}
+
+function serviceGroupPriority(group) {
+  if (group.key === 'print') return 0;
+  if (group.key === 'lamination') return 1;
+  if (group.key === 'cutting') return 2;
+  return 3;
+}
+
+function normalizeExclusiveSelections(grouped) {
+  grouped.forEach(group => {
+    if (!group.definition.exclusive) return;
+    const selected = group.services.filter(service => selectedServiceIds[String(service.id)]);
+    selected.slice(1).forEach(service => delete selectedServiceIds[String(service.id)]);
+  });
+}
+
+function renderServiceRow(service, group) {
+  const row = document.createElement('label');
+  row.className = 'service-row';
+  const control = document.createElement('input');
+  control.type = group.definition.exclusive ? 'radio' : 'checkbox';
+  if (group.definition.exclusive) control.name = `service-${group.definition.key}`;
+  control.checked = Boolean(selectedServiceIds[String(service.id)]);
+  row.classList.toggle('is-selected', control.checked);
+  control.addEventListener('change', () => {
+    if (group.definition.exclusive && control.checked) {
+      group.services.forEach(candidate => delete selectedServiceIds[String(candidate.id)]);
+      selectedServiceIds[String(service.id)] = true;
+    } else if (control.checked) {
+      selectedServiceIds[String(service.id)] = true;
+    } else {
+      delete selectedServiceIds[String(service.id)];
+    }
+    saveState();
+    if (group.definition.exclusive) renderServices();
+    else row.classList.toggle('is-selected', control.checked);
+    calculate();
+  });
+
+  const main = document.createElement('div');
+  main.className = 'service-main';
+  const name = document.createElement('div');
+  name.className = 'service-name';
+  name.textContent = service.name;
+  const meta = document.createElement('div');
+  meta.className = 'service-meta';
+  meta.textContent = (service.material ? `${service.material} • ` : '') + `หน่วย ${unit(service.unit)}`;
+  main.append(name, meta);
+  const price = document.createElement('div');
+  price.className = 'service-price';
+  price.textContent = `฿${money(service.price)}`;
+  row.append(control, main, price);
+  return row;
+}
+
+function renderNoneServiceRow(group) {
+  const row = document.createElement('label');
+  row.className = 'service-row service-row-none';
+  const control = document.createElement('input');
+  control.type = 'radio';
+  control.name = `service-${group.definition.key}`;
+  control.checked = !group.services.some(service => selectedServiceIds[String(service.id)]);
+  row.classList.toggle('is-selected', control.checked);
+  control.addEventListener('change', () => {
+    if (!control.checked) return;
+    group.services.forEach(service => delete selectedServiceIds[String(service.id)]);
+    saveState();
+    renderServices();
+    calculate();
+  });
+  const main = document.createElement('div');
+  main.className = 'service-main';
+  const name = document.createElement('div');
+  name.className = 'service-name';
+  name.textContent = group.definition.noneLabel;
+  const meta = document.createElement('div');
+  meta.className = 'service-meta';
+  meta.textContent = 'ไม่คิดค่าบริการเพิ่มเติม';
+  main.append(name, meta);
+  const price = document.createElement('div');
+  price.className = 'service-price';
+  price.textContent = '—';
+  row.append(control, main, price);
+  return row;
+}
+
 function renderServices() {
-    const box=$('servicesContainer');
-    box.innerHTML='';
-    if(!services.length) {
-      box.innerHTML='<div class="ms-status">ไม่พบบริการที่ Active</div>';
-      return
-    }
-    const groups= {
-    }
-    ;
-    services.forEach(s=>(groups[String(s.category||'Other')]??=[]).push(s));
-    Object.keys(groups).forEach(cat=> {
-      const g=document.createElement('div');
-      g.className='service-group';
-      const t=document.createElement('div');
-      t.className='service-group-title';
-      t.textContent=cat;
-      g.appendChild(t);
-      groups[cat].forEach(s=> {
-        const row=document.createElement('label');
-        row.className='service-row';
-        const cb=document.createElement('input');
-        cb.type='checkbox';
-        cb.checked=!!selectedServiceIds[String(s.id)];
-        cb.addEventListener('change',()=> {
-          if(cb.checked)selectedServiceIds[String(s.id)]=true;
-          else delete selectedServiceIds[String(s.id)];
-          saveState();
-          calculate()
-        }
-        );
-        const main=document.createElement('div');
-        main.className='service-main';
-        const n=document.createElement('div');
-        n.className='service-name';
-        n.textContent=s.name;
-        const meta=document.createElement('div');
-        meta.className='service-meta';
-        meta.textContent=(s.material?s.material+' • ':'')+'หน่วย '+unit(s.unit);
-        main.append(n,meta);
-        const pr=document.createElement('div');
-        pr.className='service-price';
-        pr.textContent='฿'+money(s.price);
-        row.append(cb,main,pr);
-        g.appendChild(row)
-      }
-      );
-      box.appendChild(g)
-    }
-    );
-    $('serviceStatus').textContent='Notion • '+services.length+' บริการ';
+  const box = $('servicesContainer');
+  box.innerHTML = '';
+  if (!services.length) {
+    box.innerHTML = '<div class="ms-status">ไม่พบบริการที่ Active</div>';
+    return;
   }
+
+  const groupMap = new Map();
+  services.forEach(service => {
+    const definition = serviceGroupDefinition(service);
+    if (!groupMap.has(definition.key)) groupMap.set(definition.key, { definition, services: [] });
+    groupMap.get(definition.key).services.push(service);
+  });
+  const groups = [...groupMap.values()].sort((a, b) => {
+    const priority = serviceGroupPriority(a.definition) - serviceGroupPriority(b.definition);
+    return priority || a.definition.title.localeCompare(b.definition.title, 'th');
+  });
+  normalizeExclusiveSelections(groups);
+
+  groups.forEach(groupData => {
+    const group = document.createElement('div');
+    group.className = `service-group service-group-${groupData.definition.key.replace(/[^a-z0-9-]/gi, '-')}`;
+    group.dataset.serviceGroup = groupData.definition.key;
+    const title = document.createElement('div');
+    title.className = 'service-group-title';
+    title.textContent = groupData.definition.title;
+    group.appendChild(title);
+    if (groupData.definition.noneLabel) group.appendChild(renderNoneServiceRow(groupData));
+    groupData.services.forEach(service => group.appendChild(renderServiceRow(service, groupData)));
+    box.appendChild(group);
+  });
+  $('serviceStatus').textContent = `Notion • ${services.length} บริการ`;
+  if (typeof syncArtworkSideControls === 'function') syncArtworkSideControls();
+}
 
 async function syncServices() {
-    try {
-      const d=await getJSON(API.services);
-      services=(d.services||[])
-      .filter(s=>s&&s.name&&s.active!==false)
-      .sort((a,b)=>
-      (Number(a.sortOrder)||9999)-
-      (Number(b.sortOrder)||9999)
-      );
-      cachePut(CACHE.services,services);
+  try {
+    const data = await getJSON(API.services);
+    services = (data.services || []).filter(service => service && service.name && service.active !== false)
+      .sort((a, b) => (Number(a.sortOrder) || 9999) - (Number(b.sortOrder) || 9999));
+    cachePut(CACHE.services, services);
+    renderServices();
+  } catch (error) {
+    const cached = cacheGet(CACHE.services);
+    if (cached) {
+      services = cached.data;
       renderServices();
-    } catch(e) {
-      const c=cacheGet(CACHE.services);
-      if(c) {
-        services=c.data;
-        renderServices();
-        setCachedStatus(
-        'serviceStatus',
-        'Cache Services',
-        c.timestamp
-        );
-      } else {
-        services=[];
-        renderServices();
-        setStatus(
-        'serviceStatus',
-        'เชื่อมต่อ Services ไม่สำเร็จ',
-        'warn'
-        );
-      }
-      console.error('GET /services',e);
+      setCachedStatus('serviceStatus', 'Cache Services', cached.timestamp);
+    } else {
+      services = [];
+      renderServices();
+      setStatus('serviceStatus', 'เชื่อมต่อ Services ไม่สำเร็จ', 'warn');
     }
+    console.error('GET /services', error);
   }
+}
 
-function serviceCost(sheetCount,pieceCount) {
-    let total=0;
-    services.filter(s=>selectedServiceIds[String(s.id)]).forEach(s=> {
-      const p=Number(s.price)||0,u=normalizeUnit(s.unit);
-      total+=u==='sheet'?p*sheetCount:u==='piece'?p*pieceCount:p
-    }
-    );
-    return total
-  }
+function serviceCost(sheetCount, pieceCount) {
+  let total = 0;
+  services.filter(service => selectedServiceIds[String(service.id)]).forEach(service => {
+    const price = Number(service.price) || 0;
+    const serviceUnit = normalizeUnit(service.unit);
+    total += serviceUnit === 'sheet' ? price * sheetCount : serviceUnit === 'piece' ? price * pieceCount : price;
+  });
+  return total;
+}
+
+window.serviceGroupDefinition = serviceGroupDefinition;

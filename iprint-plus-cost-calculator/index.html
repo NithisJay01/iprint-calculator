@@ -1,245 +1,171 @@
 <!doctype html>
 <html lang="th">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>iPrint Cost Calculator</title>
-<link rel="stylesheet" href="css/app.css?v=20260830-order-cart">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#eef6ff">
+  <title>iPrint</title>
+  <link rel="stylesheet" href="css/app.css?v=20260831-material-preview">
 </head>
 <body>
+<div class="mobile-app" id="mobileApp">
+  <header class="app-header">
+    <button class="brand-button" id="goHome" type="button" aria-label="กลับหน้าหลัก">
+      <img src="image/iprint-logo.svg" alt=""><strong>iPrint</strong>
+    </button>
+    <button class="header-cart" id="openCart" type="button" aria-label="เปิดตะกร้า">
+      <img src="image/cart.svg" alt=""><span id="cartCount">0</span>
+    </button>
+  </header>
 
+  <nav class="flow-stepper" id="flowStepper" aria-label="ขั้นตอนการสั่งพิมพ์" hidden>
+    <div class="flow-step" data-step="1"><span>1</span><small>จัดวาง</small></div>
+    <div class="flow-step" data-step="2"><span>2</span><small>ราคา</small></div>
+    <div class="flow-step" data-step="3"><span>3</span><small>บรีฟ</small></div>
+    <div class="flow-step" data-step="4"><span>4</span><small>ตรวจสอบ</small></div>
+  </nav>
 
-<main class="app">
-  <div class="brand">iPrint Cost Calculator</div>
+  <main class="app-views">
+    <section class="app-view is-active home-view" data-app-view="home">
+      <div class="page-intro"><h1>พิมพ์ กับ iPrint+</h1><p>พิมพ์กับทีมงานหลังบ้านที่เข้าใจคุณ</p></div>
+      <div class="home-hero" id="serviceHero" data-selected-service="laser" aria-label="กำลังเลือกบริการพิมพ์ Laser"><div class="service-art laser hero-service-art">✦</div><div><small>บริการที่เลือก</small><strong id="serviceHeroTitle">พิมพ์ Laser เครื่อง Konica</strong><span id="serviceHeroDescription">งานสีคมชัด เหมาะกับงานจำนวนน้อยถึงกลาง</span></div></div>
+      <button class="primary-action" id="startPrintOrder" type="button">สั่งพิมพ์</button>
+      <section class="service-showcase">
+        <div class="section-heading"><strong>เลือกบริการ</strong><span>บริการอื่นๆ</span></div>
+        <div class="service-showcase-grid">
+          <button class="service-card is-selected" type="button" data-service-option="laser" data-title="พิมพ์ Laser เครื่อง Konica" data-description="งานสีคมชัด เหมาะกับงานจำนวนน้อยถึงกลาง" aria-pressed="true"><span class="service-state">Selected</span><div class="service-art laser">✦</div><strong>บริการพิมพ์ Laser เครื่อง Konica</strong><p>งานสีคมชัด เหมาะกับงานจำนวนน้อยถึงกลาง</p></button>
+          <button class="service-card is-coming-soon" type="button" data-service-option="inkjet" data-title="พิมพ์ Inkjet ระบบ HP Latex" data-description="งานป้าย สติกเกอร์ และงานขนาดใหญ่" aria-disabled="true"><span class="service-state">Coming soon</span><div class="service-art inkjet">▦</div><strong>บริการพิมพ์ Inkjet ระบบ HP Latex</strong><p>งานป้าย สติกเกอร์ และงานขนาดใหญ่</p></button>
+        </div>
+      </section>
+    </section>
 
-  <section class="card">
-    <div class="field">
-      <div class="label">ขนาดชิ้นงาน (cm)</div>
-      <div class="size"><input id="w" type="number" min="0.1" step="0.1" value="10"><div class="x">×</div><input id="h" type="number" min="0.1" step="0.1" value="15"></div>
-    </div>
-    <div class="field">
-      <div class="label">ระบุจำนวน (ดวง)</div>
-      <input id="qty" type="number" min="1" step="1" value="500">
-    </div>
-  </section>
-
-  <section class="card" id="iprint-preview">
-    <div class="preview-head">
-      <div><div class="preview-title">Preview การวางชิ้นงาน</div><div class="preview-paper" id="previewPaperName">Preset: —</div><div class="preview-sub" id="previewInfo">—</div></div>
-      <div class="preview-count"><small>ใช้จำนวน</small><strong id="previewSheets">—</strong><small>แผ่น</small></div>
-    </div>
-    <div class="preview-workspace">
-      <div class="preview-canvas-area" id="previewDropZone">
+    <section class="app-view" data-app-view="layout">
+      <div class="page-intro"><h1>คำนวณการวางชิ้นงาน</h1><p>กำหนดมาร์จินและระยะขอบ เพื่อคำนวณจำนวนชิ้นงานสูงสุดต่อแผ่น</p></div>
+      <h2 class="section-title">คำนวณปริมาณต่อ 1 แผ่น</h2>
+      <div class="layout-preview-card" id="previewDropZone">
         <div class="preview-scroll"><div class="sheet-preview" id="sheetPreview"></div></div>
+        <div class="sheet-dimensions"><span id="sheetWidthLabel">— mm</span><span id="sheetHeightLabel">— mm</span></div>
         <div class="preview-drop-hint" aria-hidden="true"><span>⇩</span> วางภาพงานใน Preview</div>
-        <div class="preview-note">ดับเบิลคลิกหรือ ลากภาพงานมาวางใน Preview ได้ • ชิ้นงานจะจัดกึ่งกลางในพื้นที่ใช้งานเสมอ • Gap มีผลต่อจำนวนชิ้นต่อแผ่น • Bleed ใช้แสดงแนวเผื่อสีใน Preview</div>
       </div>
-      <nav class="preview-quick-actions" aria-label="เมนู Preview">
-        <button class="preview-quick-action orange" id="openPaperPreviewSettings" type="button"><span aria-hidden="true">◒</span><b>ตั้งค่า<br>Preview</b></button>
-        <button class="preview-quick-action green" id="openBriefAssets" type="button"><span aria-hidden="true">✦</span><b>บรีฟ<br>กราฟิก</b></button>
-        <button class="preview-quick-action blue" id="openMaterialsServices" type="button"><span aria-hidden="true">＋</span><b>วัสดุและ<br>บริการ</b></button>
-      </nav>
-    </div>
-  </section>
+      <label class="artwork-upload-button" for="artworkImage"><span>อัพโหลดตัวอย่าง Artwork</span></label>
 
-  <section class="result-card">
-    <div class="result-label">สรุปการผลิต</div>
-    <div class="result-big"><span id="sheets">—</span> <span class="result-unit">แผ่น</span></div>
-    <div class="result-sub"><span id="yield">—</span> ดวง/แผ่น • Gap <span id="gap">3</span> mm • Bleed <span id="bleedSummary">3</span> mm/ด้าน</div>
-    <div class="result-piece-size"><span>ขนาดชิ้นงาน</span><strong id="resultSize">—</strong></div>
-    <div class="summary-settings">
-      <div class="summary-field"><label for="cost">ต้นทุนต่อแผ่น (บาท)</label><input id="cost" type="number" min="0" step="0.01" value="2.5"></div>
-      <div class="summary-field"><label for="profitPercent">กำไรที่ต้องการ (%)</label><input id="profitPercent" type="number" min="0" step="1" value="30"></div>
-    </div>
-    <div class="money-grid">
-      <div class="money"><span class="result-label">ต้นทุนทั้งหมด</span><strong>฿<span id="total">—</span></strong></div>
-      <div class="money"><span class="result-label">ราคาขาย</span><strong>฿<span id="sale">—</span></strong></div>
-    </div>
-    <div class="order-actions">
-      <button class="quote-btn" id="addToCart" type="button">เพิ่มงานลงตะกร้า</button>
-      <button class="cart-btn" id="openCart" type="button">ตะกร้า <span id="cartCount">0</span></button>
-    </div>
-    <div class="brief-status status" id="cartStatus" aria-live="polite"></div>
-  </section>
-</main>
-
-<button class="legacy-control" id="legacyOpenMaterialsServices" aria-hidden="true" type="button" tabindex="-1">
-  <img src="data:image/svg+xml;charset=UTF-8,%3C%3Fxml%20version%3D%221.0%22%20encoding%3D%22UTF-8%22%3F%3E%0A%3Csvg%20id%3D%22Layer_2%22%20data-name%3D%22Layer%202%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2048.5%2048.5%22%3E%0A%20%20%3Cdefs%3E%0A%20%20%20%20%3Cstyle%3E%0A%20%20%20%20%20%20.cls-1%20%7B%0A%20%20%20%20%20%20%20%20fill%3A%20%23fff;%0A%20%20%20%20%20%20%7D%0A%0A%20%20%20%20%20%20.cls-2%20%7B%0A%20%20%20%20%20%20%20%20stroke%3A%20%23fff;%0A%20%20%20%20%20%20%7D%0A%0A%20%20%20%20%20%20.cls-2%2C%20.cls-3%20%7B%0A%20%20%20%20%20%20%20%20fill%3A%20%23007fff;%0A%20%20%20%20%20%20%7D%0A%0A%20%20%20%20%20%20.cls-4%20%7B%0A%20%20%20%20%20%20%20%20fill%3A%20none;%0A%20%20%20%20%20%20%20%20stroke%3A%20%23e3e3e3;%0A%20%20%20%20%20%20%20%20stroke-width%3A%20.5px;%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%3C%2Fstyle%3E%0A%20%20%3C%2Fdefs%3E%0A%20%20%3Cg%20id%3D%22Layer_1-2%22%20data-name%3D%22Layer%201%22%3E%0A%20%20%20%20%3Cg%3E%0A%20%20%20%20%20%20%3Cg%3E%0A%20%20%20%20%20%20%20%20%3Cpath%20class%3D%22cls-1%22%20d%3D%22M48.25%2C24.18C48.25%2C10.92%2C37.5.18%2C24.25.18S.25%2C10.92.25%2C24.18s10.75%2C24%2C24%2C24%2C24-10.75%2C24-24Z%22%2F%3E%0A%20%20%20%20%20%20%20%20%3Cpath%20class%3D%22cls-4%22%20d%3D%22M48.25%2C24.25C48.25%2C11%2C37.5.25%2C24.25.25S.25%2C11%2C.25%2C24.25s10.75%2C24%2C24%2C24%2C24-10.75%2C24-24Z%22%2F%3E%0A%20%20%20%20%20%20%3C%2Fg%3E%0A%20%20%20%20%20%20%3Cpath%20class%3D%22cls-3%22%20d%3D%22M30.97%2C9.68h-15.69c-1.86%2C0-3.36%2C1.51-3.36%2C3.36v19.05c0%2C1.86%2C1.51%2C3.36%2C3.36%2C3.36h15.69c1.86%2C0%2C3.36-1.51%2C3.36-3.36V13.04c0-1.86-1.51-3.36-3.36-3.36Z%22%2F%3E%0A%20%20%20%20%20%20%3Cpath%20class%3D%22cls-2%22%20d%3D%22M34.34%2C11.36h-17.93c-1.55%2C0-2.8%2C1.25-2.8%2C2.8v21.29c0%2C1.55%2C1.25%2C2.8%2C2.8%2C2.8h17.93c1.55%2C0%2C2.8-1.25%2C2.8-2.8V14.16c0-1.55-1.25-2.8-2.8-2.8Z%22%2F%3E%0A%20%20%20%20%20%20%3Cpath%20class%3D%22cls-1%22%20d%3D%22M25.01%2C17.75c.03-.07.08-.13.15-.17.06-.04.14-.06.21-.06s.15.02.21.06c.06.04.11.1.15.17l1.89%2C4.05c.04.08.11.15.19.19l4.05%2C1.89c.07.03.13.08.17.15.04.06.06.14.06.21s-.02.15-.06.21c-.04.06-.1.11-.17.15l-4.05%2C1.89c-.08.04-.15.11-.19.19l-1.89%2C4.05c-.03.07-.08.13-.15.17-.06.04-.14.06-.21.06s-.15-.02-.21-.06c-.06-.04-.11-.1-.15-.17l-1.89-4.05c-.04-.08-.11-.15-.19-.19l-4.05-1.89c-.07-.03-.13-.08-.17-.15-.04-.06-.06-.14-.06-.21s.02-.15.06-.21c.04-.06.1-.11.17-.15l4.05-1.89c.08-.04.15-.11.19-.19l1.89-4.05Z%22%2F%3E%0A%20%20%20%20%3C%2Fg%3E%0A%20%20%3C%2Fg%3E%0A%3C%2Fsvg%3E" alt="" aria-hidden="true">
-</button>
-<div class="sheet-overlay" id="sheetOverlay"></div>
-<aside class="side-sheet" id="paperPreviewSheet" aria-hidden="true">
-  <div class="sheet-head"><h2>ตั้งค่า Paper Preview</h2><button class="close-sheet" id="closePaperPreviewSettings" type="button">×</button></div>
-  <div class="sheet-body">
-    <section class="preview-sheet-settings" aria-labelledby="sheetSettingsTitle">
-      <div class="field">
-        <div class="label" id="sheetSettingsTitle">ไซส์ / พื้นที่ใช้งาน</div>
-        <select id="sheet"><option value="">กำลังโหลด Preset จาก Notion…</option></select>
-        <div class="actions">
-          <button class="btn" id="addPreset" type="button">＋ เพิ่มขนาดกระดาษ</button>
-          <button class="btn danger" id="deletePreset" type="button">ลบกระดาษ</button>
-        </div>
-        <div class="status" id="syncStatus">กำลังเชื่อมต่อ Notion…</div>
-      </div>
-    </section>
-    <div class="preview-toolbar paper-preview-toolbar">
-      <div class="preview-controls">
-        <label class="preview-control slider-control knob-control" for="pieceGap">
-          <span class="slider-control-head"><span>ระยะห่างระหว่างชิ้นงาน</span></span>
-          <span class="knob-stage">
-            <input class="knob-input" id="pieceGap" type="range" min="1" max="15" step="0.5" value="3" aria-label="ระยะห่างระหว่างชิ้นงาน">
-            <span class="virtual-knob" id="pieceGapKnob" aria-hidden="true"><span class="knob-marker"></span><span class="knob-readout"><output id="pieceGapValue" for="pieceGap">3 mm</output></span></span>
-            <span class="slider-scale" aria-hidden="true"><span>1 mm</span><span>15 mm</span></span>
-          </span>
-        </label>
-        <label class="preview-control slider-control knob-control" for="bleed">
-          <span class="slider-control-head"><span>Bleed รอบชิ้นงาน</span></span>
-          <span class="knob-stage">
-            <input class="knob-input" id="bleed" type="range" min="1" max="15" step="0.5" value="3" aria-label="Bleed รอบชิ้นงาน">
-            <span class="virtual-knob" id="bleedKnob" aria-hidden="true"><span class="knob-marker"></span><span class="knob-readout"><output id="bleedValue" for="bleed">3 mm/ด้าน</output></span></span>
-            <span class="slider-scale" aria-hidden="true"><span>1 mm</span><span>15 mm</span></span>
-          </span>
-        </label>
-      </div>
-    </div>
-  </div>
-</aside>
-<aside class="side-sheet" id="briefAssetsSheet" aria-hidden="true">
-  <div class="sheet-head"><h2>บรีฟให้แผนกกราฟิก</h2><button class="close-sheet" id="closeBriefAssets" type="button">×</button></div>
-  <div class="sheet-body">
-    <section class="brief-assets" aria-labelledby="briefAssetsTitle">
-      <div class="brief-assets-head">
-        <div>
-          <span class="brief-eyebrow">GRAPHIC BRIEF</span>
-          <strong id="briefAssetsTitle">ภาพงานและ Ref สำหรับบรีฟ</strong>
-          <span>ใช้ใน Preview และภาพสรุปบรีฟเท่านั้น ระบบจะล้างไฟล์หลังส่งบรีฟ</span>
-        </div>
-      </div>
-      <div class="brief-asset-grid">
-        <label class="asset-picker primary" for="artworkImage">
-          <input id="artworkImage" type="file" accept="image/png,image/jpeg,image/webp">
-          <span class="asset-picker-icon" aria-hidden="true">↑</span>
-          <span class="asset-picker-copy"><b>ภาพงานหลัก</b><small>แสดงบนทุกชิ้นใน Preview</small></span>
-          <span class="asset-picker-action">เลือกภาพ</span>
-        </label>
-        <label class="asset-picker reference" for="referenceImages">
-          <input id="referenceImages" type="file" accept="image/png,image/jpeg,image/webp" multiple>
-          <span class="asset-picker-icon" aria-hidden="true">+</span>
-          <span class="asset-picker-copy"><b>ภาพ Ref</b><small id="referencePickerMeta">เพิ่มได้สูงสุด 3 ภาพ</small></span>
-          <span class="asset-picker-action">เพิ่ม Ref</span>
-        </label>
-      </div>
-      <div class="artwork-current" id="artworkCurrent" hidden>
-        <img id="artworkThumbnail" alt="ภาพงานหลักที่เลือก">
-        <div><strong id="artworkName">—</strong><span id="artworkMeta">—</span></div>
-        <button class="remove-asset" id="clearArtworkImage" type="button">ล้างภาพงานหลัก</button>
-      </div>
-      <div class="reference-list" id="referenceList" aria-live="polite"></div>
-      <div class="asset-status status" id="assetStatus" aria-live="polite">ยังไม่ได้เลือกภาพงานสำหรับ Preview</div>
-      <div class="field graphic-brief-field">
-        <label class="label" for="graphicBriefDescription">คำอธิบายเพิ่มเติมสำหรับกราฟิก</label>
-        <textarea id="graphicBriefDescription" maxlength="1200" placeholder="เช่น โทนสีที่ต้องการ, ตำแหน่งโลโก้, ข้อความสำคัญ หรือข้อควรระวังในการผลิต"></textarea>
-        <div class="hint">ข้อความนี้จะอยู่ในภาพสรุปบรีฟและ Ticket ใน Notion</div>
-      </div>
-    </section>
-    <button class="brief-btn" id="downloadBrief" type="button">ส่งบรีฟให้แผนกกราฟิก</button>
-    <div class="brief-status status" id="briefStatus" aria-live="polite"></div>
-  </div>
-</aside>
-<aside class="side-sheet" id="materialsServicesSheet" aria-hidden="true">
-  <div class="sheet-head"><h2>วัสดุและบริการเพิ่มเติม</h2><button class="close-sheet" id="closeMaterialsServices" type="button">×</button></div>
-  <div class="sheet-body">
-    <div class="ms-title">วัสดุ</div>
-    <select id="materialSelect"><option value="">กำลังโหลดวัสดุจาก Notion…</option></select>
-    <div class="ms-status" id="materialStatus">—</div>
-    <div id="selectedMaterialSummary" class="material-selected" hidden></div>
-    <div style="height:18px"></div>
-    <div class="ms-title">บริการเพิ่มเติม</div>
-    <div id="servicesContainer"><div class="ms-status">กำลังโหลดบริการจาก Notion…</div></div>
-    <div class="ms-status" id="serviceStatus">—</div>
-  </div>
-</aside>
-
-<div class="modal" id="presetModal" aria-hidden="true">
-  <div class="modal-card" style="max-width:430px">
-    <div class="modal-head"><h2>เพิ่มขนาดกระดาษ</h2><button class="close-sheet" id="cancelPreset" type="button">×</button></div>
-    <div class="modal-body">
-      <div class="field"><div class="label">ชื่อ</div><input id="pName" placeholder="เช่น SRA3"></div>
-      <div class="field"><div class="label">ขนาดแผ่น (cm)</div><div class="size"><input id="pW" type="number" min="0.1" step="0.1"><div class="x">×</div><input id="pH" type="number" min="0.1" step="0.1"></div></div>
-      <div class="field"><div class="label">พื้นที่ใช้งาน</div><select id="pMode"><option value="margin">เว้นขอบ 1.5 cm ทุกด้าน</option><option value="full">ใช้เต็มแผ่น</option><option value="custom">กำหนดพื้นที่เอง</option></select></div>
-      <div id="customArea" class="field" hidden><div class="size"><input id="pUW" type="number" min="0.1" step="0.1"><div class="x">×</div><input id="pUH" type="number" min="0.1" step="0.1"></div></div>
-      <div id="presetError" class="status warn"></div>
-      <button class="btn primary" id="savePreset" type="button">เพิ่ม</button>
-    </div>
-  </div>
-</div>
-
-<div class="modal" id="cartModal" aria-hidden="true">
-  <div class="modal-card cart-modal-card">
-    <div class="modal-head"><div><h2>ตะกร้าชิ้นงาน</h2><span class="cart-subtitle">หนึ่งตะกร้าจะสร้างหนึ่ง Ticket ใน Iprint Jobs</span></div><button class="close-sheet" id="closeCart" type="button">×</button></div>
-    <div class="modal-body">
-      <div class="cart-list" id="cartList" aria-live="polite"></div>
-      <div class="cart-summary"><span>ยอดรวมก่อน VAT</span><strong id="cartTotal">฿0.00</strong></div>
-      <div class="print-actions"><button class="btn" id="cancelCart" type="button">ปิด</button><button class="btn primary" id="openQuote" type="button">ตรวจสอบและสร้างใบเสนอราคา</button></div>
-    </div>
-  </div>
-</div>
-
-<div class="modal" id="quoteModal" aria-hidden="true">
-  <div class="modal-card">
-    <div class="modal-head no-print"><h2>ใบเสนอราคา</h2><button class="close-sheet" id="closeQuote" type="button">×</button></div>
-    <div class="modal-body">
-      <form id="quoteForm" class="no-print">
+      <section class="form-card">
+        <div class="field"><label class="label" for="sheet">Preset กระดาษที่ใช้</label><select id="sheet"><option value="">กำลังโหลด Preset จาก Notion…</option></select></div>
         <div class="row2">
-      <div class="field">
-        <div class="label">ลูกค้า</div>
-
-        <input
-          id="quoteCustomer"
-          list="quoteCustomerList"
-          autocomplete="off"
-          placeholder="พิมพ์ชื่อลูกค้า หรือเลือกลูกค้าเก่า"
-        >
-
-        <datalist id="quoteCustomerList"></datalist>
-
-        <input type="hidden" id="quoteCustomerPageId">
-
-        <div id="customerStatus" class="status"></div>
-      </div>
-
-      <div class="field">
-        <div class="label">ติดต่อ</div>
-        <input id="quoteContact" placeholder="โทร / LINE / Email">
-    </div>
-</div>
-        <div class="field">
-          <div class="label">เลขประจำตัวผู้เสียภาษี (Tax ID)</div>
-          <input id="quoteTaxId" type="text" inputmode="numeric" autocomplete="off" placeholder="เช่น 0105551234567">
+          <div class="field"><label class="label" for="w">กว้าง (ซม.)</label><input id="w" type="number" min="0.1" step="0.1" value="9"></div>
+          <div class="field"><label class="label" for="h">สูง (ซม.)</label><input id="h" type="number" min="0.1" step="0.1" value="5.4"></div>
         </div>
-
-        <div class="field">
-          <div class="label">ที่อยู่</div>
-          <textarea id="quoteAddress" placeholder="ที่อยู่สำหรับออกใบเสนอราคา"></textarea>
+        <div class="field"><label class="label" for="qty">จำนวนที่ต้องการ (ดวง)</label><div class="input-suffix"><input id="qty" type="number" min="1" step="1" value="500"><span>ชิ้น</span></div></div>
+        <div class="row2 slider-settings">
+          <div class="field slider-field"><div class="slider-label"><label class="label" for="pieceGap">Gap Between</label><output id="pieceGapValue" for="pieceGap">3 mm</output></div><input id="pieceGap" type="range" min="1" max="15" step="0.5" value="3"><div class="slider-scale"><span>1</span><span>15 mm</span></div></div>
+          <div class="field slider-field"><div class="slider-label"><label class="label" for="bleed">Margin</label><output id="bleedValue" for="bleed">3 mm/ด้าน</output></div><input id="bleed" type="range" min="1" max="15" step="0.5" value="3"><div class="slider-scale"><span>1</span><span>15 mm</span></div></div>
         </div>
-      </form>
-      <div id="quotePreview" class="quote-preview"></div>
-      <div class="print-actions no-print"><button class="btn" id="cancelQuote2" type="button">ปิด</button><button class="btn primary" id="printQuote" type="button">สร้างออเดอร์ / พิมพ์ PDF</button></div>
-      <div class="tiny-note no-print" id="quoteSaveStatus">ข้อมูลต้นทุนภายในจะไม่แสดงในใบเสนอราคา</div>
-    </div>
-  </div>
+      </section>
+
+      <section class="outline-summary">
+        <h2>ผลลัพธ์การคำนวณ Layout</h2>
+        <dl><div><dt>จำนวนต่อแผ่น</dt><dd><span id="yield">—</span> ชิ้น / แผ่น</dd></div><div><dt>การจัดเรียง (Layout)</dt><dd id="layoutDirection">—</dd></div><div class="summary-total"><dt>จำนวนแผ่นที่ต้องใช้</dt><dd><span id="sheets">—</span> แผ่น</dd></div></dl>
+      </section>
+      <div class="artwork-current layout-artwork-current" id="artworkCurrent" hidden><img id="artworkThumbnail" alt="ภาพงานหลักที่เลือก"><div><strong id="artworkName">—</strong><span id="artworkMeta">—</span></div><button id="clearArtworkImage" type="button">ล้างภาพ</button></div>
+      <div class="flow-actions"><button class="secondary-action" data-flow-back="home" type="button">‹ กลับ</button><button class="primary-action" id="openMaterialsServices" type="button">เลือกดูวัสดุ</button></div>
+    </section>
+
+    <section class="app-view" data-app-view="cost">
+      <section class="form-card preview-summary-card">
+        <div class="card-summary-line"><strong>สรุปการวางชิ้นงาน</strong><b id="costLayoutSummary">—</b></div>
+        <div class="cost-preview-wrap" id="materialPreviewInteraction"><div class="material-preview-stage" id="materialPreviewStage"><div class="sheet-preview cost-sheet-preview" id="costSheetPreview"></div><div class="material-css-reflection" aria-hidden="true"></div><canvas id="materialShaderCanvas" class="material-shader-canvas" aria-hidden="true" hidden></canvas></div></div>
+        <div class="preview-interaction-hint" id="materialPreviewHint" hidden>ลากซ้าย–ขวาเพื่อดูแสงสะท้อน</div>
+        <div class="artwork-side-controls" id="artworkSideControls" hidden><div class="artwork-side-toggle" role="group" aria-label="เลือกด้านของ Artwork"><button type="button" data-artwork-side="front" class="is-selected" aria-pressed="true">ด้านหน้า</button><button type="button" data-artwork-side="back" aria-pressed="false">ด้านหลัง</button></div><label class="same-artwork-option"><input id="useFrontArtworkForBack" type="checkbox"> ใช้ภาพด้านหน้าเป็นด้านหลัง</label><label class="active-artwork-upload" for="artworkImage" id="activeArtworkUploadLabel">เปลี่ยนภาพด้านหน้า</label><small id="artworkSideStatus">หน้า ยังไม่มีภาพ • หลัง ยังไม่มีภาพ</small></div>
+        <div class="preview-finish-status" id="previewFinishStatus">Preview วัสดุและ Option เสริม</div>
+      </section>
+      <section class="form-card">
+        <h2 class="section-title">เลือกวัสดุ และบริการเพิ่มเติม (Add-ons)</h2>
+        <div class="field"><select id="materialSelect"><option value="">กำลังโหลดวัสดุจาก Notion…</option></select><div class="ms-status" id="materialStatus">—</div><div id="selectedMaterialSummary" class="material-selected" hidden></div></div>
+        <div id="servicesContainer"><div class="ms-status">กำลังโหลดบริการจาก Notion…</div></div><div class="ms-status" id="serviceStatus">—</div>
+      </section>
+      <div class="flow-actions cost-cta-actions"><button class="secondary-action" data-flow-back="layout" type="button">‹ กลับ</button><button class="primary-action" data-flow-next="brief" type="button">ขั้นตอนถัดไป</button></div>
+      <section class="outline-summary cost-analysis">
+        <h2>คำนวณต้นทุนและราคา</h2><p class="internal-note">“ข้อมูลภายในสำหรับคำนวนดูเท่านั้นระบบจะไม่ส่งข้อมูล”</p>
+        <div class="summary-settings row2"><div class="field"><label class="label" for="cost">ต้นทุนต่อแผ่น</label><input id="cost" type="number" min="0" step="0.01" value="2.5"></div><div class="field"><label class="label" for="profitPercent">กำไรที่ต้องการ (%)</label><input id="profitPercent" type="number" min="0" step="1" value="30"></div></div>
+        <dl><div><dt>ขนาดชิ้นงาน</dt><dd id="resultSize">—</dd></div><div><dt>จำนวนกระดาษพิมพ์</dt><dd><span id="previewSheets">—</span> แผ่น</dd></div><div><dt>ต้นทุนรวมสุทธิ</dt><dd>฿<span id="total">—</span></dd></div><div class="summary-total"><dt>ราคาขาย</dt><dd>฿<span id="sale">—</span></dd></div></dl>
+        <div class="calculation-meta" hidden><span id="previewPaperName">Preset: —</span><span id="previewInfo">—</span><span id="gap">3</span><span id="bleedSummary">3</span></div>
+      </section>
+    </section>
+
+    <section class="app-view" data-app-view="brief">
+      <div class="page-intro"><h1>สร้าง Brief สำหรับกราฟิก</h1><p>ส่งข้อมูลความต้องการ ดีไซน์ และภาพตัวอย่างเพื่อให้ทีมกราฟิกเริ่มออกแบบ</p></div>
+      <h2 class="section-title">ภาพงานหลัก (Main Layout/Artwork)</h2>
+      <label class="brief-main-preview" for="artworkImage"><div id="briefArtworkPreview" class="mini-layout-preview"></div><span>แตะเพื่อเลือกภาพงานหลัก</span></label>
+      <div class="field"><label class="label" for="jobName">ชื่องาน</label><input id="jobName" maxlength="120" placeholder="ใส่ชื่องาน ตัวอย่าง “แผ่นพับโปรโมชั่นปีใหม่ 2026”"></div>
+      <div class="brief-calc-summary" id="briefCalcSummary">—</div>
+      <section class="variants-section"><div class="section-heading"><strong>จำนวนแบบ</strong><small>เฉพาะขนาดและวัสดุเดียวกัน</small></div><div id="jobVariants"></div><button class="add-variant-button" id="addJobVariant" type="button">+ เพิ่ม</button><div class="status" id="variantStatus"></div></section>
+      <div class="field file-provider-field"><div class="file-link-box"><strong>เลือกไฟล์ต้นฉบับจาก Cloud</strong><small>เลือกผู้ให้บริการ แล้ววาง Share link ของไฟล์</small><div class="file-provider-options"><button type="button" data-file-provider="gdrive" data-provider-url="https://drive.google.com/drive/my-drive">Google Drive</button><button type="button" data-file-provider="dropbox" data-provider-url="https://www.dropbox.com/home">Dropbox</button><button type="button" data-file-provider="onedrive" data-provider-url="https://onedrive.live.com/">OneDrive</button></div></div><input id="briefFileLink" type="url" placeholder="วาง Share link ที่นี่ เช่น https://..." hidden><div class="field-error" id="briefFileLinkError"></div></div>
+      <div class="field"><label class="label" for="graphicBriefDescription">คำอธิบายสำหรับกราฟิก (ถ้ามี)</label><textarea id="graphicBriefDescription" maxlength="1200" placeholder="ระบุรายละเอียดเพิ่มเติมเช่น อยากให้ช่วยตรวจข้อความก่อนผลิต หรือ แก้รายละเอียดเล็กน้อยบนไฟล์"></textarea></div>
+      <section class="reference-section"><div class="section-heading"><strong>ภาพงานอ้างอิง (ถ้ามี–สูงสุด 3 ภาพ)</strong></div><label class="reference-upload" for="referenceImages">+ เพิ่มภาพ Ref</label><div class="reference-list" id="referenceList"></div></section>
+      <div class="brief-deadline-grid"><div class="field"><label class="label" for="briefDeadline">วันส่งตรวจไฟล์</label><div class="date-input-shell"><input id="briefDeadline" type="text" inputmode="numeric" maxlength="10" placeholder="DD/MM/YYYY" autocomplete="off"><span class="date-picker-icon" aria-hidden="true">▣</span><input class="native-date-control" data-date-for="briefDeadline" type="date" lang="en-GB" aria-label="เลือกวันส่งตรวจไฟล์จากปฏิทิน"></div><div class="field-error" id="briefDeadlineError"></div></div><div class="field"><label class="label" for="deliveryDeadline">กำหนดวันส่งมอบสินค้า</label><div class="date-input-shell"><input id="deliveryDeadline" type="text" inputmode="numeric" maxlength="10" placeholder="DD/MM/YYYY" autocomplete="off"><span class="date-picker-icon" aria-hidden="true">▣</span><input class="native-date-control" data-date-for="deliveryDeadline" type="date" lang="en-GB" aria-label="เลือกวันส่งมอบจากปฏิทิน"></div><div class="field-error" id="deliveryDeadlineError"></div></div></div>
+      <div class="brief-form-status status" id="briefFormStatus" aria-live="polite"></div><div class="flow-actions"><button class="secondary-action" data-flow-back="cost" type="button">‹ กลับ</button><button class="primary-action" id="reviewBrief" type="button">ถัดไป →</button></div>
+    </section>
+
+    <section class="app-view" data-app-view="review">
+      <article class="brief-review-card" id="briefReviewContent"></article>
+      <div class="page-intro review-intro"><h1>ตัวอย่าง Brief ของชิ้นงาน</h1><p>ตรวจสอบความถูกต้องของข้อมูลทั้งหมดก่อนบันทึกและส่งต่อกราฟิก</p></div>
+      <div class="flow-actions"><button class="secondary-action" id="editBrief" type="button">‹ แก้บรีฟ</button><button class="primary-action" id="addToCart" type="button">+ เพิ่มลงตะกร้า</button></div>
+      <div class="brief-status status" id="cartStatus" aria-live="polite"></div>
+    </section>
+
+    <section class="app-view cart-view" id="cartModal" data-app-view="cart" aria-hidden="true">
+      <div class="page-intro cart-heading"><div><h1>ตะกร้าสิ่งพิมพ์ของคุณ</h1><p>ตรวจสอบออเดอร์ทั้งหมดเพื่อดำเนินขั้นตอนขอใบเสนอราคา</p></div><strong id="cartItemLabel">0 รายการ</strong></div>
+      <div class="cart-list" id="cartList" aria-live="polite"></div>
+      <button class="add-print-item" id="addAnotherItem" type="button">+ เพิ่มงานพิมพ์ใหม่ (Add Item)</button>
+      <section class="form-card order-price-summary"><h2>สรุปราคาออเดอร์รวมสุทธิ</h2><dl><div><dt>ยอดรวมสิ่งพิมพ์ (Subtotal)</dt><dd id="cartSubtotal">฿0.00</dd></div><div><dt>ส่วนลดพิเศษ (Discount)</dt><dd id="cartDiscount">-฿0.00</dd></div><div><dt>ภาษีมูลค่าเพิ่ม (VAT 7%)</dt><dd id="cartVat">฿0.00</dd></div><div class="summary-total"><dt>ราคาสุทธิรวมหลังภาษี</dt><dd id="cartGrandTotal">฿0.00</dd></div></dl><label class="price-review-request"><input id="priceReviewRequest" type="checkbox"><span><strong>ต้องการแนบคำขอพิจารณาแก้ไขราคา</strong><small>แอดมินจะทำการติดต่อกลับ</small></span></label></section>
+      <div id="cartTotal" hidden>฿0.00</div>
+      <button class="primary-action sticky-action" id="openQuote" type="button">ออกออเดอร์และส่ง Brief ทั้งหมด →</button>
+      <button id="closeCart" type="button" hidden></button><button id="cancelCart" type="button" hidden></button>
+    </section>
+
+    <section class="app-view workflow-view" id="workflowModal" data-app-view="workflow" aria-hidden="true">
+      <div class="workflow-customer" id="workflowCustomer"></div>
+      <div class="page-intro"><h1>ติดตามสถานะงาน</h1><p id="workflowOrderNumber"></p></div>
+      <div class="workflow-lookup"><div class="field"><label class="label" for="workflowTicketId">Order / Ticket ID</label><input id="workflowTicketId" autocomplete="off" placeholder="ใส่ Ticket ID"></div><button class="secondary-action" id="refreshWorkflow" type="button">โหลดสถานะ</button></div>
+      <div class="workflow-status status" id="workflowStatus" aria-live="polite"></div><section class="workflow-ticket" id="workflowTicketSummary" hidden></section><div class="workflow-list" id="workflowItemList"></div>
+      <button class="primary-action" id="workflowNewOrder" type="button">ออเดอร์งานพิมพ์เพิ่ม</button>
+      <button id="closeWorkflow" type="button" hidden></button>
+    </section>
+  </main>
 </div>
 
-<script src="js/core.js?v=20260830-order-cart"></script>
-<script src="js/api.js?v=20260830-order-cart"></script>
-<script src="js/presets.js?v=20260829-modern-brief"></script>
-<script src="js/materials.js?v=20260829-modern-brief"></script>
-<script src="js/services.js?v=20260829-modern-brief"></script>
-<script src="js/artwork.js?v=20260829-preview-image"></script>
-<script src="js/calculator.js?v=20260830-order-cart"></script>
-<script src="js/brief.js?v=20260830-ticket-cleanup"></script>
-<script src="js/cart.js?v=20260830-order-cart"></script>
-<script src="js/customer.js?v=20260829-modern-brief"></script>
-<script src="js/quote.js?v=20260830-order-cart"></script>
-<script src="js/app.js?v=20260830-order-cart"></script>
+<input id="artworkImage" type="file" accept="image/png,image/jpeg,image/webp" hidden>
+<input id="referenceImages" type="file" accept="image/png,image/jpeg,image/webp" multiple hidden>
+<div id="referencePickerMeta" hidden></div><div id="assetStatus" hidden></div><button id="openBriefAssets" type="button" hidden></button><button id="closeBriefAssets" type="button" hidden></button>
+<button id="openPaperPreviewSettings" type="button" hidden></button><button id="closePaperPreviewSettings" type="button" hidden></button><button id="closeMaterialsServices" type="button" hidden></button>
+<div id="pieceGapKnob" hidden></div><div id="bleedKnob" hidden></div>
+
+<div class="sheet-overlay" id="sheetOverlay"></div>
+<aside class="side-sheet" id="materialsServicesSheet" aria-hidden="true"><div class="sheet-head"><h2>วัสดุและบริการเพิ่มเติม</h2><button class="close-sheet" type="button" onclick="closeSide()">×</button></div><div class="sheet-body"><p>เลือกวัสดุและบริการได้ในขั้นตอนราคา</p></div></aside>
+<aside class="side-sheet" id="paperPreviewSheet" aria-hidden="true"><div class="sheet-head"><h2>จัดการ Preset กระดาษ</h2></div></aside><aside class="side-sheet" id="briefAssetsSheet" aria-hidden="true"><div class="sheet-head"><h2>ไฟล์บรีฟ</h2></div></aside>
+
+<div class="modal" id="presetModal" aria-hidden="true"><div class="modal-card"><div class="modal-head"><h2>เพิ่มขนาดกระดาษ</h2><button class="close-sheet" id="cancelPreset" type="button">×</button></div><div class="modal-body"><div class="field"><label class="label" for="pName">ชื่อ</label><input id="pName"></div><div class="row2"><div class="field"><label class="label" for="pW">กว้าง</label><input id="pW" type="number"></div><div class="field"><label class="label" for="pH">สูง</label><input id="pH" type="number"></div></div><div class="field"><select id="pMode"><option value="margin">เว้นขอบมาตรฐาน</option><option value="full">ใช้เต็มแผ่น</option><option value="custom">กำหนดเอง</option></select></div><div id="customArea" class="row2" hidden><input id="pUW" type="number"><input id="pUH" type="number"></div><div id="presetError" class="status"></div><button class="primary-action" id="savePreset" type="button">เพิ่ม</button><button id="deletePreset" type="button" hidden></button><button id="addPreset" type="button" hidden></button></div></div></div>
+
+<div class="modal customer-modal" id="quoteModal" aria-hidden="true"><div class="modal-card"><div class="modal-head"><h2>ข้อมูลลูกค้า (Customer Info)</h2><button class="close-sheet" id="closeQuote" type="button">×</button></div><div class="modal-body"><form id="quoteForm"><div class="field"><label class="label" for="quoteCustomer">ชื่อลูกค้า / บริษัท</label><input id="quoteCustomer" list="quoteCustomerList" autocomplete="off"><datalist id="quoteCustomerList"></datalist><input type="hidden" id="quoteCustomerPageId"><div id="customerStatus" class="status"></div></div><div class="field"><label class="label" for="quoteRecipient">ชื่อผู้รับสินค้า</label><input id="quoteRecipient" autocomplete="name"></div><div class="field"><label class="label" for="quoteAddress">ที่อยู่ในการจัดส่ง</label><textarea id="quoteAddress"></textarea></div><div class="field"><label class="label" for="quotePhone">เบอร์โทรศัพท์</label><input id="quotePhone" type="tel"></div><div class="field"><label class="label" for="quoteContact">อีเมล</label><input id="quoteContact" type="email"></div><div class="field"><label class="label" for="quoteLine">Line ID</label><input id="quoteLine"></div><div class="field"><label class="label" for="quoteTaxId">เลขประจำตัวผู้เสียภาษี (ถ้ามี)</label><input id="quoteTaxId" inputmode="numeric"></div></form><div id="quotePreview" class="quote-preview" hidden></div><div class="modal-actions"><button class="secondary-action" id="cancelQuote2" type="button">ยกเลิก</button><button class="primary-action" id="printQuote" type="button">ยืนยัน</button></div><div class="tiny-note" id="quoteSaveStatus"></div></div></div></div>
+
+<div class="modal success-modal" id="orderSuccessModal" aria-hidden="true"><div class="modal-card"><div class="success-copy"><h2>สร้างออเดอร์สำเร็จ</h2><strong id="successOrderId">Order: —</strong><p id="successOrderSummary">สร้างรายการและส่ง Brief ให้กราฟิกแล้ว</p></div><div class="modal-actions"><button class="secondary-action" id="startNewOrder" type="button">เริ่มออเดอร์ใหม่</button><button class="primary-action" id="viewOrderStatus" type="button">ดูสถานะออเดอร์</button></div></div></div>
+
+<button id="downloadBrief" type="button" hidden>ส่งบรีฟ</button><div id="briefStatus" hidden></div>
+
+<script src="js/core.js?v=20260831-material-preview"></script>
+<script src="js/api.js?v=20260831-material-preview"></script>
+<script src="js/presets.js?v=20260831-material-preview"></script>
+<script src="js/materials.js?v=20260831-material-preview"></script>
+<script src="js/services.js?v=20260831-material-preview"></script>
+<script src="js/artwork.js?v=20260831-material-preview"></script>
+<script src="js/material-preview.js?v=20260831-material-preview"></script>
+<script src="js/calculator.js?v=20260831-material-preview"></script>
+<script src="js/brief.js?v=20260831-material-preview"></script>
+<script src="js/cart.js?v=20260831-material-preview"></script>
+<script src="js/customer.js?v=20260831-material-preview"></script>
+<script src="js/workflow.js?v=20260831-material-preview"></script>
+<script src="js/quote.js?v=20260831-material-preview"></script>
+<script src="js/app.js?v=20260831-material-preview"></script>
+<script src="js/flow.js?v=20260831-material-preview"></script>
 </body>
 </html>

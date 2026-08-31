@@ -98,6 +98,7 @@ function bind() {
     bindVirtualKnobs();
     bindArtwork();
     bindCart();
+    bindWorkflow();
     $('addPreset').addEventListener('click',openPreset);
     $('cancelPreset').addEventListener('click',closePreset);
     $('savePreset').addEventListener('click',savePreset);
@@ -126,7 +127,7 @@ function bind() {
     $('cancelQuote2').addEventListener('click',closeQuote);
     $('quoteCustomer').addEventListener('input',selectQuoteCustomer);
     $('quoteCustomer').addEventListener('change',selectQuoteCustomer);
-    ['quoteContact','quoteTaxId','quoteAddress'].forEach(id=>$(id).addEventListener('input',buildQuote));
+    ['quoteRecipient','quotePhone','quoteContact','quoteLine','quoteTaxId','quoteAddress'].forEach(id=>$(id).addEventListener('input',buildQuote));
     $('printQuote').addEventListener('click',printQuote);
     window.addEventListener('resize',()=>setTimeout(calculate,60));
     calculate();
@@ -153,11 +154,17 @@ function init() {
     downloadBrief,
     clearArtworkImage,
     clearTemporaryImages,
+    setActiveArtworkSide,
+    getArtworkSideState,
+    syncMaterialPreviewEffect,
     addCurrentJobToCart,
     openCart,
     publicOrderItems,
     cartTotal,
-    clearCartAfterOrder
+    clearCartAfterOrder,
+    openWorkflow,
+    loadWorkflow,
+    rememberOrder
   };
 }
 

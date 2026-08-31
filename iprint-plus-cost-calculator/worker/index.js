@@ -2,7 +2,7 @@ export default {
   async fetch(request, env) {
     const CORS = {
       "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
+      "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type, X-API-Key"
     };
 
@@ -129,7 +129,9 @@ export default {
             "POST /quotes",
             "POST /quotes/:id/preview",
             "POST /tickets",
-            "POST /orders"
+            "POST /orders",
+            "GET /orders/:ticketId",
+            "PATCH /order-items/:itemId/status"
           ]
         });
       }
@@ -433,7 +435,15 @@ export default {
               active:
                 p.Active?.checkbox ?? false,
               sortOrder:
-                p["Sort Order"]?.number ?? 9999
+                p["Sort Order"]?.number ?? 9999,
+              previewRenderer:
+                p["Preview Renderer"]?.select?.name || "",
+              previewEffect:
+                p["Preview Effect"]?.select?.name || "",
+              shaderPreset:
+                p["Shader Preset"]?.select?.name || "",
+              textureUrl:
+                p["Texture URL"]?.url || p["Texture URL"]?.files?.[0]?.external?.url || p["Texture URL"]?.files?.[0]?.file?.url || ""
             };
           })
           .filter(m =>
@@ -498,7 +508,7 @@ export default {
               id: page.id,
               name,
               category:
-                p.Catagory?.select?.name || "",
+                p.Catagory?.select?.name || p.Category?.select?.name || "",
               material:
                 p.Material?.select?.name || "",
               cost:
@@ -510,7 +520,15 @@ export default {
               active:
                 p.Active?.checkbox ?? false,
               sortOrder:
-                p["Sort Order"]?.number ?? 9999
+                p["Sort Order"]?.number ?? 9999,
+              previewRenderer:
+                p["Preview Renderer"]?.select?.name || "",
+              previewEffect:
+                p["Preview Effect"]?.select?.name || "",
+              shaderPreset:
+                p["Shader Preset"]?.select?.name || "",
+              textureUrl:
+                p["Texture URL"]?.url || p["Texture URL"]?.files?.[0]?.external?.url || p["Texture URL"]?.files?.[0]?.file?.url || ""
             };
           })
           .filter(service =>
@@ -951,6 +969,13 @@ export default {
 
         const shortText = value => String(value ?? "").slice(0, 1900);
         const richText = value => [{ type: "text", text: { content: shortText(value) } }];
+        const richTextLong = value => {
+          const text = String(value ?? "");
+          return (text.match(/[\s\S]{1,1800}/g) || [""]).map(content => ({
+            type: "text",
+            text: { content }
+          }));
+        };
         const plainText = property => (property?.rich_text || property?.title || [])
           .map(item => item?.plain_text || item?.text?.content || "")
           .join("");
@@ -1015,6 +1040,17 @@ export default {
           const setTicket = (name, type, value) => {
             if (ticketSchema[name]?.type === type) ticketProperties[name] = value;
           };
+          const setTicketWorkflow = (names, value) => {
+            for (const name of names) {
+              const type = ticketSchema[name]?.type;
+              if (type === "status") ticketProperties[name] = { status: { name: value } };
+              else if (type === "select") ticketProperties[name] = { select: { name: value } };
+              else if (type === "rich_text") ticketProperties[name] = { rich_text: richText(value) };
+              else continue;
+              return true;
+            }
+            return false;
+          };
 
           setTicket("Order Key", "rich_text", { rich_text: richText(orderKey) });
           setTicket("Order Total", "number", { number: Number(order.total) || 0 });
@@ -1024,7 +1060,7 @@ export default {
             number: orderItems.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0)
           });
           setTicket("ขนาด", "rich_text", { rich_text: richText(`${orderItems.length} รายการ`) });
-          setTicket("สถานะ", "status", { status: { name: "NEW" } });
+          setTicketWorkflow(["สถานะ", "Status", "Workflow Status"], "NEW");
           setTicket("มอบหมาย", "select", { select: { name: "GRAPHIC" } });
           setTicket("งานประเภท", "select", { select: { name: "Design" } });
           setTicket("Presentation/Proof", "rich_text", { rich_text: richText("ORDER_CREATING") });
@@ -1070,6 +1106,24 @@ export default {
           const setItem = (name, type, value) => {
             if (itemSchema[name]?.type === type) properties[name] = value;
           };
+          const setItemWorkflow = (names, value) => {
+            for (const name of names) {
+              const type = itemSchema[name]?.type;
+              if (type === "status") properties[name] = { status: { name: value } };
+              else if (type === "select") properties[name] = { select: { name: value } };
+              else if (type === "rich_text") properties[name] = { rich_text: richText(value) };
+              else continue;
+              return true;
+            }
+            return false;
+          };
+          const setItemDate = (names, value) => {
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value || ""))) return false;
+            const name = names.find(candidate => itemSchema[candidate]?.type === "date");
+            if (!name) return false;
+            properties[name] = { date: { start: String(value) } };
+            return true;
+          };
           const serviceIds = (Array.isArray(item.services) ? item.services : [])
             .map(service => String(service?.id || "").trim())
             .filter(Boolean);
@@ -1085,13 +1139,18 @@ export default {
           setItem("Yield", "number", { number: Number(item.yield) || 0 });
           setItem("Price", "number", { number: Number(item.price) || 0 });
           setItem("Brief", "rich_text", { rich_text: richText(item.brief || "") });
-          setItem("Status", "select", { select: { name: "NEW" } });
+          setItemWorkflow(["Status", "สถานะ"], "NEW");
+          setItemWorkflow(["Workflow Phase", "Stage", "ขั้นตอน"], "GRAPHIC");
+          setItemWorkflow(["Proof Status", "สถานะ Proof"], "PENDING");
+          setItemWorkflow(["Production Status", "สถานะ Production"], "WAITING");
+          setItemDate(["Brief Deadline", "Graphic Deadline", "กำหนดส่งกราฟิก"], item.briefDeadline);
+          setItemDate(["Delivery Deadline", "Due Date", "กำหนดส่ง"], item.deliveryDeadline);
           setItem("Material", "relation", {
             relation: item.material?.id ? [{ id: String(item.material.id) }] : []
           });
           setItem("Services", "relation", { relation: serviceIds.map(id => ({ id })) });
           setItem("Snapshot", "rich_text", {
-            rich_text: richText(JSON.stringify({
+            rich_text: richTextLong(JSON.stringify({
               id: item.id,
               size: item.size,
               quantity: item.quantity,
@@ -1100,10 +1159,18 @@ export default {
               sheets: item.sheets,
               yield: item.yield,
               material: item.material,
-              services: item.services,
-              price: item.price,
-              brief: item.brief
-            }))
+               services: item.services,
+               variants: Array.isArray(item.variants) ? item.variants : [],
+               printSide: item.printSide || "unspecified",
+               productionService: item.productionService || "laser",
+               artworkSides: item.artworkSides || { hasFront: false, hasBack: false, useFrontForBack: false },
+               briefFileLink: item.briefFileLink || "",
+               price: item.price,
+               brief: item.brief,
+               briefDeadline: item.briefDeadline,
+               deliveryDeadline: item.deliveryDeadline,
+               status: "NEW"
+             }))
           });
 
           const response = await fetch("https://api.notion.com/v1/pages", {
@@ -1185,7 +1252,9 @@ export default {
         const children = [
           heading(`ออเดอร์ ${quoteNo}`, 1),
           paragraph(`ลูกค้า: ${shortText(order.customer || "-")} • ${orderItems.length} รายการ`),
-          paragraph(`ติดต่อ: ${shortText(order.contact || "-")} • ยอดรวม ฿${Number(order.grandTotal || order.total || 0).toLocaleString("th-TH", { maximumFractionDigits: 2 })}`)
+          paragraph(`ผู้รับ: ${shortText(order.recipient || "-")} • ติดต่อ: ${shortText(order.contact || "-")}`),
+          paragraph(`ที่อยู่จัดส่ง: ${shortText(order.address || "-")} • ยอดรวม ฿${Number(order.grandTotal || order.total || 0).toLocaleString("th-TH", { maximumFractionDigits: 2 })}`),
+          paragraph(`ขอพิจารณาแก้ไขราคา: ${order.priceReviewRequested ? "ใช่" : "ไม่"}`)
         ];
 
         try {
@@ -1201,8 +1270,17 @@ export default {
               paragraph(`ขนาด ${shortText(item.size || "-")} • จำนวน ${Number(item.quantity || 0).toLocaleString("th-TH")} ${shortText(item.unit || "ดวง")}`),
               paragraph(`Preset: ${shortText(item.paper?.name || "-")} • ${Number(item.yield || 0).toLocaleString("th-TH")} ดวง/แผ่น • ใช้ ${Number(item.sheets || 0).toLocaleString("th-TH")} แผ่น`),
               paragraph(`วัสดุ: ${shortText(item.material?.name || "-")} • บริการ: ${(item.services || []).map(service => shortText(service.name)).join(", ") || "-"}`),
+              paragraph(`Artwork: หน้า ${item.artworkSides?.hasFront ? "พร้อม" : "ไม่มี"} • หลัง ${item.artworkSides?.hasBack ? "พร้อม" : "ไม่มี"}${item.artworkSides?.useFrontForBack ? " • ใช้ภาพเดียวกัน" : ""}`),
+              paragraph(`Deadline กราฟิก: ${shortText(item.briefDeadline || "-")} • ส่งมอบ: ${shortText(item.deliveryDeadline || "-")}`),
               paragraph(`ราคาขาย ฿${Number(item.price || 0).toLocaleString("th-TH", { maximumFractionDigits: 2 })}`)
             );
+            const variants = Array.isArray(item.variants) ? item.variants : [];
+            if (variants.length) {
+              children.push(paragraph(`จำนวนแบบ: ${variants.map((variant, variantIndex) => `แบบที่ ${variantIndex + 1} ${shortText(variant.name || "-")} ${Number(variant.quantity || 0).toLocaleString("th-TH")} ชิ้น`).join(" • ")}`));
+            }
+            const printSideLabel = item.printSide === "double" ? "หน้า-หลัง" : item.printSide === "single" ? "หน้าเดียว" : "ไม่ระบุ";
+            children.push(paragraph(`บริการพิมพ์: ${shortText(item.productionService || "laser")} • รูปแบบ: ${printSideLabel}`));
+            if (item.briefFileLink) children.push(paragraph(`ไฟล์ต้นฉบับ: ${shortText(item.briefFileLink)}`));
             if (item.brief) children.push(paragraph(`บรีฟ: ${shortText(item.brief)}`));
             const briefUploadId = await uploadFile(form.get(`brief_${index}`), `${quoteNo}-item-${index + 1}.png`);
             if (briefUploadId) children.push(imageBlock(briefUploadId));
@@ -1260,6 +1338,417 @@ export default {
           id: ticketId,
           url: ticketPage.url || null,
           itemIds
+        });
+      }
+
+      // ================================
+      // ORDER WORKFLOW - READ AND ADVANCE ORDER ITEMS
+      // ================================
+
+      const workflowTransitions = {
+        NEW: ["GRAPHIC_ACCEPTED"],
+        GRAPHIC_ACCEPTED: ["FILE_CHECK"],
+        FILE_CHECK: ["NEEDS_INFO", "DESIGNING"],
+        NEEDS_INFO: ["FILE_CHECK"],
+        DESIGNING: ["PROOF_READY"],
+        PROOF_READY: ["REVISION_REQUESTED", "APPROVED"],
+        REVISION_REQUESTED: ["DESIGNING"],
+        APPROVED: ["PRODUCTION_QUEUED"],
+        PRODUCTION_QUEUED: ["IN_PRODUCTION"],
+        IN_PRODUCTION: ["QC"],
+        QC: ["REWORK", "READY"],
+        REWORK: ["IN_PRODUCTION"],
+        READY: ["DELIVERED"],
+        DELIVERED: []
+      };
+
+      const resolveWorkflowDataSource = async configuredId => {
+        let dataSourceId = String(configuredId || "").trim();
+        let response = await fetch(
+          `https://api.notion.com/v1/data_sources/${dataSourceId}`,
+          { method: "GET", headers: notionHeaders }
+        );
+        let text = await response.text();
+
+        if (!response.ok && response.status === 404) {
+          const databaseResponse = await fetch(
+            `https://api.notion.com/v1/databases/${dataSourceId}`,
+            { method: "GET", headers: notionHeaders }
+          );
+          const databaseText = await databaseResponse.text();
+
+          if (databaseResponse.ok) {
+            const database = JSON.parse(databaseText);
+            dataSourceId = String(database?.data_sources?.[0]?.id || "").trim();
+            if (dataSourceId) {
+              response = await fetch(
+                `https://api.notion.com/v1/data_sources/${dataSourceId}`,
+                { method: "GET", headers: notionHeaders }
+              );
+              text = await response.text();
+            }
+          }
+        }
+
+        if (!response.ok) {
+          throw Object.assign(new Error("Notion workflow data source not found"), {
+            status: response.status,
+            detail: text
+          });
+        }
+
+        return { id: dataSourceId, data: JSON.parse(text) };
+      };
+
+      const workflowRichText = value => [{
+        type: "text",
+        text: { content: String(value ?? "").slice(0, 1900) }
+      }];
+
+      const workflowPropertyText = property => {
+        if (!property) return "";
+        if (property.type === "status") return property.status?.name || "";
+        if (property.type === "select") return property.select?.name || "";
+        if (property.type === "date") return property.date?.start || "";
+        if (property.type === "number") return property.number ?? "";
+        if (property.type === "formula") {
+          return property.formula?.string ?? property.formula?.number ?? "";
+        }
+        return (property.rich_text || property.title || [])
+          .map(item => item?.plain_text || item?.text?.content || "")
+          .join("");
+      };
+
+      const workflowValue = (properties, names) => {
+        for (const name of names) {
+          if (properties?.[name]) return workflowPropertyText(properties[name]);
+        }
+        return "";
+      };
+
+      const workflowRelationIds = (properties, names) => {
+        for (const name of names) {
+          const relation = properties?.[name]?.relation;
+          if (Array.isArray(relation)) return relation.map(item => item.id).filter(Boolean);
+        }
+        return [];
+      };
+
+      const workflowTitle = properties => {
+        const title = Object.values(properties || {}).find(property => property?.type === "title");
+        return workflowPropertyText(title);
+      };
+
+      const findWorkflowSchema = (schema, names, types) => {
+        for (const name of names) {
+          const property = schema?.[name];
+          if (property && types.includes(property.type)) return { name, property };
+        }
+        return null;
+      };
+
+      const setWorkflowProperty = (target, schema, names, value) => {
+        const entry = findWorkflowSchema(schema, names, ["status", "select", "rich_text"]);
+        if (!entry) return null;
+        if (entry.property.type === "status") target[entry.name] = { status: { name: value } };
+        else if (entry.property.type === "select") target[entry.name] = { select: { name: value } };
+        else target[entry.name] = { rich_text: workflowRichText(value) };
+        return entry;
+      };
+
+      const setWorkflowDate = (target, schema, names, value) => {
+        const entry = findWorkflowSchema(schema, names, ["date"]);
+        if (!entry) return null;
+        target[entry.name] = { date: value ? { start: value } : null };
+        return entry;
+      };
+
+      const workflowPhase = status => {
+        if (["PRODUCTION_QUEUED", "IN_PRODUCTION", "QC", "REWORK"].includes(status)) return "PRODUCTION";
+        if (status === "READY") return "READY";
+        if (status === "DELIVERED") return "COMPLETED";
+        if (status === "APPROVED") return "APPROVED";
+        return "GRAPHIC";
+      };
+
+      const aggregateTicketStatus = statuses => {
+        if (statuses.length && statuses.every(status => status === "DELIVERED")) return "COMPLETED";
+        if (statuses.length && statuses.every(status => ["READY", "DELIVERED"].includes(status))) return "READY";
+        if (statuses.some(status => ["PRODUCTION_QUEUED", "IN_PRODUCTION", "QC", "REWORK"].includes(status))) return "PRODUCTION";
+        if (statuses.some(status => status !== "NEW")) return "IN_PROGRESS";
+        return "NEW";
+      };
+
+      const orderDetailMatch = url.pathname.match(/^\/orders\/([^/]+)$/);
+      if (orderDetailMatch && request.method === "GET") {
+        const authError = requireAuth(request);
+        if (authError) return authError;
+
+        const ticketId = decodeURIComponent(orderDetailMatch[1] || "").trim();
+        if (!ticketId || ticketId.length > 100) {
+          return json({ success: false, error: "Invalid ticket ID" }, 400);
+        }
+
+        let itemsSource;
+        try {
+          itemsSource = await resolveWorkflowDataSource(env.NOTION_ORDER_ITEMS_DATA_SOURCE_ID);
+        } catch (error) {
+          return json({ success: false, error: error.message, detail: error.detail }, error.status || 502);
+        }
+
+        const ticketResponse = await fetch(`https://api.notion.com/v1/pages/${ticketId}`, {
+          method: "GET",
+          headers: notionHeaders
+        });
+        const ticketText = await ticketResponse.text();
+        if (!ticketResponse.ok) {
+          return json({ success: false, error: "Notion Ticket not found", detail: ticketText }, ticketResponse.status);
+        }
+        const ticketPage = JSON.parse(ticketText);
+        const itemSchema = itemsSource.data.properties || {};
+        const relationEntry = findWorkflowSchema(itemSchema, ["Order Ticket", "Ticket", "Order"], ["relation"]);
+        if (!relationEntry) {
+          return json({ success: false, error: "Order Items relation to Ticket is missing" }, 502);
+        }
+
+        const itemsResponse = await fetch(`https://api.notion.com/v1/data_sources/${itemsSource.id}/query`, {
+          method: "POST",
+          headers: notionHeaders,
+          body: JSON.stringify({
+            page_size: 100,
+            filter: { property: relationEntry.name, relation: { contains: ticketId } }
+          })
+        });
+        const itemsText = await itemsResponse.text();
+        if (!itemsResponse.ok) {
+          return json({ success: false, error: "Notion GET Order Items error", detail: itemsText }, itemsResponse.status);
+        }
+
+        const itemsData = JSON.parse(itemsText);
+        const items = (itemsData.results || []).map(page => {
+          const properties = page.properties || {};
+          const status = String(workflowValue(properties, ["Status", "สถานะ"]) || "NEW");
+          let snapshot = {};
+          try {
+            snapshot = JSON.parse(String(workflowValue(properties, ["Snapshot"]) || "{}"));
+          } catch (error) {
+            snapshot = {};
+          }
+          return {
+            id: page.id,
+            url: page.url || null,
+            title: workflowTitle(properties),
+            lineNo: Number(workflowValue(properties, ["Line No", "ลำดับ"])) || 0,
+            status,
+            phase: String(workflowValue(properties, ["Workflow Phase", "Stage", "ขั้นตอน"]) || workflowPhase(status)),
+            proofStatus: String(workflowValue(properties, ["Proof Status", "สถานะ Proof"]) || ""),
+            productionStatus: String(workflowValue(properties, ["Production Status", "สถานะ Production"]) || ""),
+            size: String(workflowValue(properties, ["Size", "ขนาด"]) || ""),
+            quantity: Number(workflowValue(properties, ["Quantity", "จำนวน"])) || 0,
+            unit: String(workflowValue(properties, ["Unit", "หน่วย"]) || "ดวง"),
+            brief: String(workflowValue(properties, ["Brief", "บรีฟ"]) || ""),
+            briefDeadline: String(workflowValue(properties, ["Brief Deadline", "Graphic Deadline", "กำหนดส่งกราฟิก"]) || ""),
+            deliveryDeadline: String(workflowValue(properties, ["Delivery Deadline", "Due Date", "กำหนดส่ง"]) || ""),
+            paper: snapshot.paper || String(workflowValue(properties, ["Paper", "กระดาษ"]) || ""),
+            sheets: Number(snapshot.sheets) || Number(workflowValue(properties, ["Sheets", "จำนวนแผ่น"])) || 0,
+            yield: Number(snapshot.yield) || Number(workflowValue(properties, ["Yield", "ชิ้นต่อแผ่น"])) || 0,
+            variants: Array.isArray(snapshot.variants) ? snapshot.variants : [],
+            material: snapshot.material || null,
+            services: Array.isArray(snapshot.services) ? snapshot.services : [],
+            price: Number(snapshot.price) || Number(workflowValue(properties, ["Price", "ราคา"])) || 0,
+            briefFileLink: String(snapshot.briefFileLink || ""),
+            printSide: String(snapshot.printSide || "unspecified"),
+            productionService: String(snapshot.productionService || "laser"),
+            artworkSides: snapshot.artworkSides || { hasFront: false, hasBack: false, useFrontForBack: false },
+            updatedAt: page.last_edited_time || "",
+            allowedTransitions: workflowTransitions[status] || []
+          };
+        }).sort((a, b) => a.lineNo - b.lineNo || a.title.localeCompare(b.title));
+
+        const ticketProperties = ticketPage.properties || {};
+        return json({
+          success: true,
+          ticket: {
+            id: ticketPage.id,
+            url: ticketPage.url || null,
+            title: workflowTitle(ticketProperties),
+            status: String(workflowValue(ticketProperties, ["สถานะ", "Status", "Workflow Status"]) || aggregateTicketStatus(items.map(item => item.status))),
+            updatedAt: ticketPage.last_edited_time || ""
+          },
+          items
+        });
+      }
+
+      const itemStatusMatch = url.pathname.match(/^\/order-items\/([^/]+)\/status$/);
+      if (itemStatusMatch && request.method === "PATCH") {
+        const authError = requireAuth(request);
+        if (authError) return authError;
+
+        const itemId = decodeURIComponent(itemStatusMatch[1] || "").trim();
+        let body;
+        try {
+          body = await request.json();
+        } catch (error) {
+          return json({ success: false, error: "Invalid workflow JSON" }, 400);
+        }
+
+        const nextStatus = String(body?.status || "").trim().toUpperCase();
+        const note = String(body?.note || "").trim().slice(0, 500);
+        if (!itemId || !Object.hasOwn(workflowTransitions, nextStatus)) {
+          return json({ success: false, error: "Invalid item ID or workflow status" }, 400);
+        }
+
+        let itemsSource;
+        try {
+          itemsSource = await resolveWorkflowDataSource(env.NOTION_ORDER_ITEMS_DATA_SOURCE_ID);
+        } catch (error) {
+          return json({ success: false, error: error.message, detail: error.detail }, error.status || 502);
+        }
+
+        const itemResponse = await fetch(`https://api.notion.com/v1/pages/${itemId}`, {
+          method: "GET",
+          headers: notionHeaders
+        });
+        const itemText = await itemResponse.text();
+        if (!itemResponse.ok) {
+          return json({ success: false, error: "Notion Order Item not found", detail: itemText }, itemResponse.status);
+        }
+
+        const itemPage = JSON.parse(itemText);
+        const currentStatus = String(workflowValue(itemPage.properties, ["Status", "สถานะ"]) || "NEW");
+        const allowed = workflowTransitions[currentStatus] || [];
+        if (nextStatus !== currentStatus && !allowed.includes(nextStatus)) {
+          return json({
+            success: false,
+            error: `Cannot move Order Item from ${currentStatus} to ${nextStatus}`,
+            currentStatus,
+            allowedTransitions: allowed
+          }, 409);
+        }
+
+        const itemSchema = itemsSource.data.properties || {};
+        const statusEntry = findWorkflowSchema(itemSchema, ["Status", "สถานะ"], ["status", "select", "rich_text"]);
+        if (!statusEntry) {
+          return json({ success: false, error: "Order Items Status property is missing" }, 422);
+        }
+        if (statusEntry.property.type === "status") {
+          const options = statusEntry.property.status?.options || [];
+          if (options.length && !options.some(option => option.name === nextStatus)) {
+            return json({
+              success: false,
+              error: `Notion Status option ${nextStatus} is missing`,
+              requiredOption: nextStatus
+            }, 422);
+          }
+        }
+
+        const properties = {};
+        setWorkflowProperty(properties, itemSchema, ["Status", "สถานะ"], nextStatus);
+        setWorkflowProperty(properties, itemSchema, ["Workflow Phase", "Stage", "ขั้นตอน"], workflowPhase(nextStatus));
+
+        if (nextStatus === "PROOF_READY") {
+          setWorkflowProperty(properties, itemSchema, ["Proof Status", "สถานะ Proof"], "WAITING_APPROVAL");
+        } else if (nextStatus === "REVISION_REQUESTED") {
+          setWorkflowProperty(properties, itemSchema, ["Proof Status", "สถานะ Proof"], "REVISION");
+        } else if (["APPROVED", "PRODUCTION_QUEUED", "IN_PRODUCTION", "QC", "REWORK", "READY", "DELIVERED"].includes(nextStatus)) {
+          setWorkflowProperty(properties, itemSchema, ["Proof Status", "สถานะ Proof"], "APPROVED");
+        }
+
+        const productionMap = {
+          PRODUCTION_QUEUED: "QUEUED",
+          IN_PRODUCTION: "IN_PROGRESS",
+          QC: "QC",
+          REWORK: "REWORK",
+          READY: "READY",
+          DELIVERED: "DELIVERED"
+        };
+        if (productionMap[nextStatus]) {
+          setWorkflowProperty(properties, itemSchema, ["Production Status", "สถานะ Production"], productionMap[nextStatus]);
+        }
+        setWorkflowDate(properties, itemSchema, ["Updated At", "อัปเดตล่าสุด"], new Date().toISOString());
+
+        const updateResponse = await fetch(`https://api.notion.com/v1/pages/${itemId}`, {
+          method: "PATCH",
+          headers: notionHeaders,
+          body: JSON.stringify({ properties })
+        });
+        const updateText = await updateResponse.text();
+        if (!updateResponse.ok) {
+          return json({ success: false, error: "Notion update Order Item status error", detail: updateText }, updateResponse.status);
+        }
+
+        let auditLogged = true;
+        const auditText = `${new Date().toISOString()} • ${currentStatus} → ${nextStatus}${note ? ` • ${note}` : ""}`;
+        const auditResponse = await fetch(`https://api.notion.com/v1/blocks/${itemId}/children`, {
+          method: "PATCH",
+          headers: notionHeaders,
+          body: JSON.stringify({
+            children: [{
+              object: "block",
+              type: "paragraph",
+              paragraph: { rich_text: workflowRichText(auditText) }
+            }]
+          })
+        });
+        if (!auditResponse.ok) auditLogged = false;
+
+        const ticketIds = workflowRelationIds(itemPage.properties, ["Order Ticket", "Ticket", "Order"]);
+        const ticketId = ticketIds[0] || "";
+        let ticketStatus = null;
+
+        if (ticketId) {
+          const relationEntry = findWorkflowSchema(itemSchema, ["Order Ticket", "Ticket", "Order"], ["relation"]);
+          if (relationEntry) {
+            const siblingsResponse = await fetch(`https://api.notion.com/v1/data_sources/${itemsSource.id}/query`, {
+              method: "POST",
+              headers: notionHeaders,
+              body: JSON.stringify({
+                page_size: 100,
+                filter: { property: relationEntry.name, relation: { contains: ticketId } }
+              })
+            });
+            if (siblingsResponse.ok) {
+              const siblings = JSON.parse(await siblingsResponse.text()).results || [];
+              const statuses = siblings.map(page =>
+                page.id === itemId
+                  ? nextStatus
+                  : String(workflowValue(page.properties, ["Status", "สถานะ"]) || "NEW")
+              );
+              ticketStatus = aggregateTicketStatus(statuses);
+
+              try {
+                const ticketsSource = await resolveWorkflowDataSource(env.NOTION_TICKETS_DATA_SOURCE_ID);
+                const ticketSchema = ticketsSource.data.properties || {};
+                const ticketProperties = {};
+                const ticketStatusEntry = findWorkflowSchema(ticketSchema, ["สถานะ", "Status", "Workflow Status"], ["status", "select", "rich_text"]);
+                const statusOptions = ticketStatusEntry?.property?.status?.options || [];
+                const canSetTicketStatus = ticketStatusEntry?.property?.type !== "status" ||
+                  !statusOptions.length || statusOptions.some(option => option.name === ticketStatus);
+
+                if (ticketStatusEntry && canSetTicketStatus) {
+                  setWorkflowProperty(ticketProperties, ticketSchema, ["สถานะ", "Status", "Workflow Status"], ticketStatus);
+                  await fetch(`https://api.notion.com/v1/pages/${ticketId}`, {
+                    method: "PATCH",
+                    headers: notionHeaders,
+                    body: JSON.stringify({ properties: ticketProperties })
+                  });
+                }
+              } catch (error) {
+                // Item status is authoritative; ticket roll-up can be retried later.
+              }
+            }
+          }
+        }
+
+        return json({
+          success: true,
+          id: itemId,
+          status: nextStatus,
+          phase: workflowPhase(nextStatus),
+          ticketId: ticketId || null,
+          ticketStatus,
+          allowedTransitions: workflowTransitions[nextStatus] || [],
+          auditLogged
         });
       }
 
@@ -1601,6 +2090,7 @@ export default {
           paragraph(`Preset: ${shortText(ticket.paper || "-")}`),
           paragraph(`ขนาดชิ้นงาน: ${shortText(ticket.size || "-")} • จำนวน ${number(ticket.pieceCount)} ชิ้นงาน`),
           paragraph(`การผลิต: ${number(ticket.yield)} ดวง/แผ่น • ใช้ ${number(ticket.sheets)} แผ่น`),
+          paragraph(`Artwork: หน้า ${ticket.artworkSides?.hasFront ? "พร้อม" : "ไม่มี"} • หลัง ${ticket.artworkSides?.hasBack ? "พร้อม" : "ไม่มี"}${ticket.artworkSides?.useFrontForBack ? " • ใช้ภาพเดียวกัน" : ""}`),
           ...(graphicBriefDescription
             ? [heading("คำอธิบายสำหรับแผนกกราฟิก"), paragraph(graphicBriefDescription)]
             : []),

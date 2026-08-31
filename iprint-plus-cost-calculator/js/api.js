@@ -318,6 +318,68 @@ async function createOrderRemote(order, quotePreview, briefImages) {
   }
 }
 
+async function fetchOrderWorkflowRemote(ticketId) {
+  try {
+    const apiKey = getWriteApiKey();
+    if (!apiKey) throw new Error('กรุณาตั้ง API Key ก่อนติดตามงาน');
+
+    const response = await fetch(`${API.orders}/${encodeURIComponent(ticketId)}`, {
+      method: 'GET',
+      headers: { 'X-API-Key': apiKey }
+    });
+    const text = await response.text();
+    let data = {};
+
+    try {
+      data = JSON.parse(text);
+    } catch (error) {
+      // Preserve the raw response in the error below.
+    }
+
+    if (!response.ok || data.success !== true) {
+      throw new Error(data.detail || data.error || text || `GET /orders/:id HTTP ${response.status}`);
+    }
+
+    return data;
+  } catch (error) {
+    console.error('GET /orders/:id', error);
+    return { success: false, error: error.message || String(error) };
+  }
+}
+
+async function updateOrderItemStatusRemote(itemId, status, note = '') {
+  try {
+    const apiKey = getWriteApiKey();
+    if (!apiKey) throw new Error('กรุณาตั้ง API Key ก่อนอัปเดตงาน');
+
+    const response = await fetch(`${API.orderItems}/${encodeURIComponent(itemId)}/status`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': apiKey
+      },
+      body: JSON.stringify({ status, note })
+    });
+    const text = await response.text();
+    let data = {};
+
+    try {
+      data = JSON.parse(text);
+    } catch (error) {
+      // Preserve the raw response in the error below.
+    }
+
+    if (!response.ok || data.success !== true) {
+      throw new Error(data.detail || data.error || text || `PATCH /order-items/:id/status HTTP ${response.status}`);
+    }
+
+    return data;
+  } catch (error) {
+    console.error('PATCH /order-items/:id/status', error);
+    return { success: false, error: error.message || String(error) };
+  }
+}
+
 async function createCustomerRemote(customerData) {
     try {
       const response = await fetch(API.customers, {

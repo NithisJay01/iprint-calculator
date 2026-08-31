@@ -1,7 +1,7 @@
 'use strict';
   const API_ROOT='https://iprint-preset-api.iprint-garphic1.workers.dev';
   const API= {
-    presets:API_ROOT+'/presets',materials:API_ROOT+'/materials',services:API_ROOT+'/services',quotes:API_ROOT+'/quotes',tickets:API_ROOT+'/tickets',orders:API_ROOT+'/orders',customers: API_ROOT + '/customers',
+    presets:API_ROOT+'/presets',materials:API_ROOT+'/materials',services:API_ROOT+'/services',quotes:API_ROOT+'/quotes',tickets:API_ROOT+'/tickets',orders:API_ROOT+'/orders',orderItems:API_ROOT+'/order-items',customers: API_ROOT + '/customers',
   }
   ;
   const BLEED_MM=3;
@@ -27,9 +27,14 @@
   let currentQuoteMeta = null;
   let cartItems = [];
   let editingCartItemId = '';
+  let currentWorkflowOrder = null;
   // The preview image stays in memory only and is cleared after creating a brief.
   let artworkImage = null;
   let artworkImageUrl = '';
+  let artworkBackImage = null;
+  let artworkBackImageUrl = '';
+  let activeArtworkSide = 'front';
+  let useFrontArtworkForBack = false;
   let referenceImages = [];
 
   const $ = id => document.getElementById(id);
@@ -148,5 +153,7 @@ function loadState() {
 
 function setCachedStatus(id,label,age) {
     const days=Math.max(0,Math.floor((Date.now()-age)/86400000));
-    $(id).textContent=label+' • ข้อมูลอาจไม่ล่าสุด (ออฟไลน์)'+(days?' • '+days+' วัน':'')
+    const element=$(id);
+    if(!element)return;
+    element.textContent=label+' • ข้อมูลอาจไม่ล่าสุด (ออฟไลน์)'+(days?' • '+days+' วัน':'')
   }

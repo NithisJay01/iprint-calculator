@@ -40,6 +40,11 @@ const itemSchema = {
     Price: { type: 'number' },
     Brief: { type: 'rich_text' },
     Status: { type: 'select' },
+    'Workflow Phase': { type: 'select' },
+    'Proof Status': { type: 'select' },
+    'Production Status': { type: 'select' },
+    'Brief Deadline': { type: 'date' },
+    'Delivery Deadline': { type: 'date' },
     Material: { type: 'relation' },
     Services: { type: 'relation' },
     Snapshot: { type: 'rich_text' }
@@ -85,6 +90,8 @@ globalThis.fetch = async (url, options = {}) => {
     const snapshot = payload.properties.Snapshot.rich_text[0].text.content;
     assert.equal(snapshot.includes('costPerSheet'), false);
     assert.equal(snapshot.includes('profitPercent'), false);
+    assert.equal(payload.properties.Status.select.name, 'NEW');
+    assert.equal(payload.properties['Workflow Phase'].select.name, 'GRAPHIC');
     createdItems.push(payload);
     return Response.json({ id: `order-item-${createdItems.length}` });
   }
@@ -141,8 +148,12 @@ try {
         yield: 8,
         material: { id: 'material-1', name: 'Sticker PP' },
         services: [{ id: 'service-1', name: 'เคลือบด้าน' }],
+        printSide: 'double',
+        artworkSides: { hasFront: true, hasBack: true, useFrontForBack: false },
         price: 900,
         brief: 'เว้นพื้นที่โลโก้',
+        briefDeadline: '2026-09-01',
+        deliveryDeadline: '2026-09-03',
         gap: 3,
         bleed: 3,
         editor: { costPerSheet: 2.5, profitPercent: 30 }
@@ -196,6 +207,11 @@ try {
   assert.equal(createdItems.length, 2);
   assert.deepEqual(createdItems[0].properties.Material.relation, [{ id: 'material-1' }]);
   assert.deepEqual(createdItems[0].properties.Services.relation, [{ id: 'service-1' }]);
+  assert.equal(createdItems[0].properties['Brief Deadline'].date.start, '2026-09-01');
+  assert.equal(createdItems[0].properties['Delivery Deadline'].date.start, '2026-09-03');
+  const firstSnapshot = JSON.parse(createdItems[0].properties.Snapshot.rich_text.map(entry => entry.text.content).join(''));
+  assert.equal(firstSnapshot.printSide, 'double');
+  assert.deepEqual(firstSnapshot.artworkSides, { hasFront: true, hasBack: true, useFrontForBack: false });
   assert.equal(calls.length, 16);
   console.log('Order Worker smoke test passed');
 } finally {

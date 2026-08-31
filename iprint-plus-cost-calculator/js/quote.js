@@ -7,7 +7,7 @@ function formatCreatedAt(value) {
       return String(value);
     }
 
-    return date.toLocaleString('th-TH', {
+    return date.toLocaleString('th-TH-u-ca-gregory', {
       dateStyle: 'medium',
       timeStyle: 'short'
     });
@@ -29,7 +29,7 @@ function setPrintQuoteLoading(isLoading) {
       return;
     }
 
-    button.textContent = button.dataset.defaultLabel || 'สร้างออเดอร์ / พิมพ์ PDF';
+    button.textContent = button.dataset.defaultLabel || 'ยืนยัน';
     button.classList.remove('is-loading');
     button.disabled = false;
     button.removeAttribute('aria-busy');
@@ -65,14 +65,18 @@ function buildQuote() {
 
     const customer = selectedCustomer?.name || inputName || '-';
 
-    const contact = String($('quoteContact')?.value || '').trim() || '-';
+    const recipient = String($('quoteRecipient')?.value || '').trim();
+    const phone = String($('quotePhone')?.value || '').trim();
+    const email = String($('quoteContact')?.value || '').trim();
+    const lineId = String($('quoteLine')?.value || '').trim();
+    const contact = [phone && `โทร ${phone}`, email && `อีเมล ${email}`, lineId && `Line ${lineId}`].filter(Boolean).join(' • ') || '-';
     const taxId = String($('quoteTaxId')?.value || '').trim();
     const address = String($('quoteAddress')?.value || '').trim() || '-';
     if(!currentQuoteMeta) {
       const now = new Date();
       currentQuoteMeta= {
         quoteNo:quoteSeq(),
-        date:now.toLocaleDateString('th-TH', {
+        date:now.toLocaleDateString('th-TH-u-ca-gregory', {
           year:'numeric',month:'2-digit',day:'2-digit'
         }),
         notionDate:formatNotionDate(now),
@@ -95,9 +99,14 @@ function buildQuote() {
       createdAt:currentQuoteMeta.createdAt || new Date().toISOString(),
       customer,
       customerPageId,
+      recipient,
+      phone,
+      email,
+      lineId,
       contact,
       taxId,
       address,
+      priceReviewRequested: !!$('priceReviewRequest')?.checked,
       items,
       orderItems:publicOrderItems(),
       total:summary.subtotal,
@@ -243,10 +252,11 @@ function openQuote() {
     buildQuote()
   }
 
-function closeQuote() {
+function closeQuote(returnToCart = true) {
     $('quoteModal').classList.remove('open');
     $('quoteModal').setAttribute('aria-hidden','true');
-    currentQuoteMeta=null
+    currentQuoteMeta=null;
+    if (returnToCart && cartItems.length && typeof showAppView === 'function') showAppView('cart');
   }
 
 async function printQuote() {
@@ -260,6 +270,18 @@ async function printQuote() {
       let q = buildQuote();
 
       if (!q) return;
+
+      if (!String(q.customer || '').trim() || q.customer === '-') {
+        $('quoteCustomer')?.focus();
+        $('quoteSaveStatus').textContent = 'กรุณาระบุชื่อลูกค้าหรือบริษัท';
+        return;
+      }
+
+      if (!String(q.phone || q.email || q.lineId || '').trim()) {
+        $('quotePhone')?.focus();
+        $('quoteSaveStatus').textContent = 'กรุณาระบุช่องทางติดต่ออย่างน้อย 1 ช่องทาง';
+        return;
+      }
 
       q = await ensureQuoteCustomer(q);
 
@@ -283,9 +305,8 @@ async function printQuote() {
 
       const hasApiKey = !!getWriteApiKey();
       const quotePreviewImage = await captureQuotePreview(q);
-      const briefImages = await cartBriefImages();
       const remote = hasApiKey
-        ? await createOrderRemote(q, quotePreviewImage, briefImages)
+        ? await createOrderRemote(q, quotePreviewImage, [])
         : false;
 
       if (!remote?.success) {
@@ -294,14 +315,17 @@ async function printQuote() {
         $('quoteSaveStatus').textContent = hasApiKey
           ? `สร้างออเดอร์ใน Notion ไม่สำเร็จ: ${remote?.error || 'ไม่ทราบสาเหตุ'} • เก็บประวัติไว้ในเครื่องแล้ว`
           : 'ยังไม่ได้ตั้ง API Key • เก็บประวัติไว้ในเครื่องแล้ว';
+        return;
       } else {
+        if (typeof rememberOrder === 'function') rememberOrder(remote, q);
         await clearCartAfterOrder();
         $('quoteSaveStatus').textContent = remote.duplicate
           ? 'ออเดอร์นี้มีอยู่ใน Notion แล้ว • ไม่สร้างข้อมูลซ้ำ'
           : `สร้าง Ticket และ Order Items ${remote.itemIds?.length || q.orderItems.length} รายการใน Notion แล้ว`;
+        closeQuote(false);
+        if (typeof showAppView === 'function') showAppView('home');
+        if (typeof showOrderSuccess === 'function') showOrderSuccess(remote, q);
       }
-
-      setTimeout(() => window.print(), 80);
     } finally {
       const remaining = Math.max(0, 2500 - (Date.now() - startedAt));
 

@@ -62,7 +62,13 @@ function updateArtworkControls() {
   const name = $('artworkName');
   const meta = $('artworkMeta');
   const referencePickerMeta = $('referencePickerMeta');
-  const hasArtwork = Boolean(artworkImage && artworkImageUrl);
+  const activeFile = activeArtworkSide === 'back'
+    ? (useFrontArtworkForBack ? artworkImage : artworkBackImage)
+    : artworkImage;
+  const activeUrl = activeArtworkSide === 'back'
+    ? (useFrontArtworkForBack ? artworkImageUrl : artworkBackImageUrl)
+    : artworkImageUrl;
+  const hasArtwork = Boolean(activeFile && activeUrl);
   const referenceCount = referenceImages.length;
 
   if (referencePickerMeta) {
@@ -73,9 +79,9 @@ function updateArtworkControls() {
 
   if (hasArtwork) {
     current.hidden = false;
-    thumbnail.src = artworkImageUrl;
-    name.textContent = artworkImage.name;
-    meta.textContent = `${artworkFileSize(artworkImage.size)} • ใช้ชั่วคราวและล้างเมื่อส่งบรีฟ`;
+    thumbnail.src = activeUrl;
+    name.textContent = `${activeArtworkSide === 'back' ? 'ด้านหลัง' : 'ด้านหน้า'} • ${activeFile.name}`;
+    meta.textContent = `${artworkFileSize(activeFile.size)} • ใช้ชั่วคราวและล้างเมื่อส่งบรีฟ`;
   } else {
     current.hidden = true;
     thumbnail.removeAttribute('src');
@@ -89,17 +95,25 @@ function updateArtworkControls() {
   } else {
     setAssetStatus('ยังไม่ได้เลือกภาพงานหรือ Ref สำหรับบรีฟ');
   }
+  syncArtworkSideControls();
 }
 
-function setArtworkImage(file) {
+function setArtworkImage(file, side = activeArtworkSide) {
   const error = artworkFileMessage(file);
   if (error) {
     setAssetStatus(error, 'warn');
     return false;
   }
-  if (artworkImageUrl) URL.revokeObjectURL(artworkImageUrl);
-  artworkImage = file;
-  artworkImageUrl = URL.createObjectURL(file);
+  if (side === 'back') {
+    if (artworkBackImageUrl) URL.revokeObjectURL(artworkBackImageUrl);
+    artworkBackImage = file;
+    artworkBackImageUrl = URL.createObjectURL(file);
+    useFrontArtworkForBack = false;
+  } else {
+    if (artworkImageUrl) URL.revokeObjectURL(artworkImageUrl);
+    artworkImage = file;
+    artworkImageUrl = URL.createObjectURL(file);
+  }
   updateArtworkControls();
   calculate();
   return true;
@@ -146,7 +160,7 @@ function removeReferenceImage(id) {
 }
 
 function hasTemporaryArtwork() {
-  return Boolean(artworkImage);
+  return Boolean(artworkImage || artworkBackImage);
 }
 
 function hasTemporaryImages() {
@@ -154,9 +168,17 @@ function hasTemporaryImages() {
 }
 
 function clearArtworkImage() {
-  if (artworkImageUrl) URL.revokeObjectURL(artworkImageUrl);
-  artworkImage = null;
-  artworkImageUrl = '';
+  if (activeArtworkSide === 'back') {
+    if (artworkBackImageUrl) URL.revokeObjectURL(artworkBackImageUrl);
+    artworkBackImage = null;
+    artworkBackImageUrl = '';
+    useFrontArtworkForBack = false;
+  } else {
+    if (artworkImageUrl) URL.revokeObjectURL(artworkImageUrl);
+    artworkImage = null;
+    artworkImageUrl = '';
+    useFrontArtworkForBack = false;
+  }
   $('artworkImage').value = '';
   updateArtworkControls();
   calculate();
@@ -164,9 +186,14 @@ function clearArtworkImage() {
 
 function clearTemporaryImages() {
   if (artworkImageUrl) URL.revokeObjectURL(artworkImageUrl);
+  if (artworkBackImageUrl) URL.revokeObjectURL(artworkBackImageUrl);
   referenceImages.forEach(reference => URL.revokeObjectURL(reference.url));
   artworkImage = null;
   artworkImageUrl = '';
+  artworkBackImage = null;
+  artworkBackImageUrl = '';
+  activeArtworkSide = 'front';
+  useFrontArtworkForBack = false;
   referenceImages = [];
   $('artworkImage').value = '';
   $('referenceImages').value = '';
@@ -174,8 +201,61 @@ function clearTemporaryImages() {
   calculate();
 }
 
-function getArtworkPreviewUrl() {
+function getArtworkPreviewUrl(side = activeArtworkSide) {
+  if (side === 'back') return useFrontArtworkForBack ? artworkImageUrl : artworkBackImageUrl;
   return artworkImageUrl;
+}
+
+function getArtworkSideState() {
+  return {
+    activeSide: activeArtworkSide,
+    hasFront: Boolean(artworkImage && artworkImageUrl),
+    hasBack: Boolean((artworkBackImage && artworkBackImageUrl) || (useFrontArtworkForBack && artworkImageUrl)),
+    useFrontForBack: useFrontArtworkForBack
+  };
+}
+
+function setActiveArtworkSide(side) {
+  const nextSide = side === 'back' ? 'back' : 'front';
+  if (activeArtworkSide === nextSide) {
+    syncArtworkSideControls();
+    return;
+  }
+  activeArtworkSide = nextSide;
+  updateArtworkControls();
+  calculate();
+}
+
+function setUseFrontArtworkForBack(enabled) {
+  useFrontArtworkForBack = Boolean(enabled);
+  updateArtworkControls();
+  calculate();
+}
+
+function syncArtworkSideControls() {
+  const controls = $('artworkSideControls');
+  if (!controls) return;
+  const doubleSided = typeof getSelectedPrintSide === 'function' && getSelectedPrintSide() === 'double';
+  controls.hidden = !doubleSided;
+  if (!doubleSided && activeArtworkSide === 'back') {
+    activeArtworkSide = 'front';
+    updateArtworkControls();
+    return;
+  }
+  controls.querySelectorAll('[data-artwork-side]').forEach(button => {
+    const selected = button.dataset.artworkSide === activeArtworkSide;
+    button.classList.toggle('is-selected', selected);
+    button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+  });
+  const sameInput = $('useFrontArtworkForBack');
+  if (sameInput) sameInput.checked = useFrontArtworkForBack;
+  const uploadLabel = $('activeArtworkUploadLabel');
+  if (uploadLabel) uploadLabel.textContent = activeArtworkSide === 'back' ? 'อัปโหลดภาพด้านหลัง' : 'เปลี่ยนภาพด้านหน้า';
+  const sideStatus = $('artworkSideStatus');
+  if (sideStatus) {
+    const state = getArtworkSideState();
+    sideStatus.textContent = `หน้า ${state.hasFront ? 'พร้อม' : 'ยังไม่มีภาพ'} • หลัง ${state.hasBack ? 'พร้อม' : 'ยังไม่มีภาพ'}`;
+  }
 }
 
 function createBriefImageDataUrl(file, maximum = 520) {
@@ -207,6 +287,14 @@ function createBriefImageDataUrl(file, maximum = 520) {
 
 function getArtworkPreviewDataUrl() {
   return createBriefImageDataUrl(artworkImage, 520);
+}
+
+async function getArtworkPreviewDataUrls() {
+  const front = await createBriefImageDataUrl(artworkImage, 520);
+  const back = useFrontArtworkForBack
+    ? front
+    : await createBriefImageDataUrl(artworkBackImage, 520);
+  return { front, back };
 }
 
 function getBriefReferenceDataUrls() {
@@ -269,6 +357,11 @@ function bindArtwork() {
     event.target.value = '';
   });
   $('clearArtworkImage').addEventListener('click', clearArtworkImage);
+  $('artworkSideControls')?.addEventListener('click', event => {
+    const button = event.target.closest('[data-artwork-side]');
+    if (button) setActiveArtworkSide(button.dataset.artworkSide);
+  });
+  $('useFrontArtworkForBack')?.addEventListener('change', event => setUseFrontArtworkForBack(event.target.checked));
   bindPreviewArtworkDrop();
   updateArtworkControls();
 }

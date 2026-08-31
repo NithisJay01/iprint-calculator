@@ -64,6 +64,9 @@ function buildBriefTicket(calc=lastCalc) {
     String(now.getMinutes()).padStart(2,'0');
   const size=(Number(calc.W)||0).toFixed(2)+' × '+(Number(calc.H)||0).toFixed(2)+' cm';
   const paper=String(calc.paper?.name||'ไม่ระบุ Preset');
+  const artworkSides=typeof getArtworkSideState==='function'
+    ?getArtworkSideState()
+    :{hasFront:false,hasBack:false,useFrontForBack:false};
 
   return {
     title:'BRIEF-'+stamp+' • '+paper+' • '+size,
@@ -75,6 +78,8 @@ function buildBriefTicket(calc=lastCalc) {
     sheets:Number(calc.sheets)||0,
     totalCost:Number(calc.total)||0,
     sale:Number(calc.sale)||0,
+    printSide:typeof getSelectedPrintSide==='function'?getSelectedPrintSide():'unspecified',
+    artworkSides,
     graphicBriefDescription:graphicBriefDescription(),
     extras:briefExtras(calc)
   };
@@ -87,8 +92,8 @@ function briefCard(x,y,width,label,value,detail) {
     <text x="${x+22}" y="${y+94}" class="detail">${briefEscapeSvg(detail)}</text>`;
 }
 
-function briefArtworkPreview(calc, artworkUrl, top=574) {
-  const cardHeight=540;
+function briefArtworkPreview(calc, artworkUrl, top=574, sideLabel='ด้านหน้า') {
+  const cardHeight=680;
   const stageX=125;
   const stageY=top+54;
   const stageW=830;
@@ -149,7 +154,7 @@ function briefArtworkPreview(calc, artworkUrl, top=574) {
   const isPartial=previewNx*previewNy<nx*ny;
 
   return `<rect x="50" y="${top}" width="980" height="${cardHeight}" rx="20" fill="#ffffff" stroke="#dfe5eb"/>
-    <text x="76" y="${top+40}" class="section">Preview การวางชิ้นงาน</text>
+    <text x="76" y="${top+40}" class="section">Preview การวางชิ้นงาน • ${briefEscapeSvg(sideLabel)}</text>
     <text x="1004" y="${top+40}" text-anchor="end" class="detail">Preset: ${briefEscapeSvg(briefShorten(paper.name || 'ไม่ระบุชื่อ',40))}</text>
     <rect x="${stageX}" y="${stageY}" width="${stageW}" height="${stageH}" rx="16" fill="#eef3f6" stroke="#d8e1e7"/>
     <rect x="${paperX}" y="${paperY}" width="${paperW}" height="${paperH}" rx="5" fill="#ffffff" stroke="#75818b" stroke-width="1.5"/>
@@ -208,12 +213,13 @@ function briefDescriptionCard(description, y) {
   };
 }
 
-function briefImageSvg(calc, artworkUrl='', referenceUrls=[], description='') {
+function briefImageSvg(calc, artworkUrl='', referenceUrls=[], description='', backArtworkUrl='', includeBack=false) {
   const layoutWidth=1080;
   const renderScale=2;
   const extras=briefExtras(calc);
   const previewTop=530;
-  const previewHeight=560;
+  const previewBlockHeight=700;
+  const previewHeight=includeBack ? previewBlockHeight*2 : previewBlockHeight;
   const extraRowHeight=96;
   const extraCount=Math.max(1,extras.length);
   const references=(Array.isArray(referenceUrls)?referenceUrls:[]).filter(Boolean).slice(0,3);
@@ -273,7 +279,8 @@ function briefImageSvg(calc, artworkUrl='', referenceUrls=[], description='') {
     <text x="50" y="374" class="section">แผนการผลิต</text>
     ${briefCard(50,400,475,'จำนวนชิ้นงานต่อแผ่น',yieldValue,'Layout '+(calc.b?.nx||0)+' × '+(calc.b?.ny||0)+' • Gap '+Number(calc.gap||0).toLocaleString('th-TH',{maximumFractionDigits:1})+' mm • Bleed '+Number(calc.bleed||0).toLocaleString('th-TH',{maximumFractionDigits:1})+' mm/ด้าน')}
     ${briefCard(555,400,475,'จำนวนแผ่นที่ใช้',sheetValue,'Preset '+paperName)}
-    ${briefArtworkPreview(calc,artworkUrl,previewTop)}
+    ${briefArtworkPreview(calc,artworkUrl,previewTop,'ด้านหน้า')}
+    ${includeBack?briefArtworkPreview(calc,backArtworkUrl,previewTop+previewBlockHeight,'ด้านหลัง'):''}
     ${descriptionBlock.markup}
     <text x="50" y="${extrasTitleY}" class="section">วัสดุและบริการเพิ่มเติม</text>
     ${extrasMarkup}
@@ -284,14 +291,15 @@ function briefImageSvg(calc, artworkUrl='', referenceUrls=[], description='') {
 async function captureBriefImage(calc=lastCalc) {
   if(!calc)throw new Error('ไม่พบข้อมูลสำหรับสร้างภาพสรุป');
 
-  const artworkUrl=typeof getArtworkPreviewDataUrl==='function'
-    ? await getArtworkPreviewDataUrl()
-    : '';
+  const artworkUrls=typeof getArtworkPreviewDataUrls==='function'
+    ? await getArtworkPreviewDataUrls()
+    : {front:typeof getArtworkPreviewDataUrl==='function'?await getArtworkPreviewDataUrl():'',back:''};
   const referenceUrls=typeof getBriefReferenceDataUrls==='function'
     ? await getBriefReferenceDataUrls()
     : [];
   const description=graphicBriefDescription();
-  const svgBlob=new Blob([briefImageSvg(calc,artworkUrl,referenceUrls,description)],{type:'image/svg+xml;charset=utf-8'});
+  const includeBack=typeof getSelectedPrintSide==='function'&&getSelectedPrintSide()==='double';
+  const svgBlob=new Blob([briefImageSvg(calc,artworkUrls.front,referenceUrls,description,includeBack?artworkUrls.back:'',includeBack)],{type:'image/svg+xml;charset=utf-8'});
   const imageUrl=URL.createObjectURL(svgBlob);
 
   try {
