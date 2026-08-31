@@ -88,6 +88,7 @@ function bind() {
       const badge = $('testModeBadge');
       if (badge) badge.hidden = false;
     }
+    updateApiKeyStatus();
     renderPresets();
     $('sheet').addEventListener('change',e=> {
       selectedSheet=e.target.value;
@@ -121,6 +122,14 @@ function bind() {
     }
     );
     $('openPaperPreviewSettings').addEventListener('click',()=>openSide('paperPreviewSheet'));
+    $('openApiSettings').addEventListener('click',openApiSettings);
+    $('closeApiSettings').addEventListener('click',closeSide);
+    $('saveApiKey').addEventListener('click',saveWriteApiKey);
+    $('clearApiKey').addEventListener('click',clearWriteApiKey);
+    $('toggleApiKeyVisibility').addEventListener('click',toggleApiKeyVisibility);
+    $('apiKeyInput').addEventListener('keydown',event=> {
+      if(event.key==='Enter')saveWriteApiKey();
+    });
     $('openBriefAssets').addEventListener('click',()=>openSide('briefAssetsSheet'));
     $('openMaterialsServices').addEventListener('click',()=>openSide('materialsServicesSheet'));
     $('closePaperPreviewSettings').addEventListener('click',closeSide);
@@ -178,7 +187,8 @@ function init() {
     clearCartAfterOrder,
     openWorkflow,
     loadWorkflow,
-    rememberOrder
+    rememberOrder,
+    openApiSettings
   };
 }
 

@@ -3,7 +3,7 @@
   const IPRINT_RESET_TEST_DATA=IPRINT_TEST_MODE&&new URLSearchParams(window.location.search).get('resetTest')==='1';
   const API_ROOT='https://iprint-flow-api.iprint-garphic1.workers.dev';
   const API= {
-    presets:API_ROOT+'/presets',materials:API_ROOT+'/materials',services:API_ROOT+'/services',quotes:API_ROOT+'/quotes',tickets:API_ROOT+'/tickets',orders:API_ROOT+'/orders',orderItems:API_ROOT+'/order-items',customers: API_ROOT + '/customers',
+    presets:API_ROOT+'/presets',materials:API_ROOT+'/materials',services:API_ROOT+'/services',quotes:API_ROOT+'/quotes',tickets:API_ROOT+'/tickets',orders:API_ROOT+'/orders',orderItems:API_ROOT+'/order-items',customers: API_ROOT + '/customers',authCheck:API_ROOT+'/auth/check',
   }
   ;
   const BLEED_MM=3;
@@ -88,17 +88,25 @@ function quoteSeq() {
 function getWriteApiKey() {
   if (IPRINT_TEST_MODE) return 'IPRINT-LOCAL-TEST-MODE';
   const input = document.getElementById('apiKeyInput');
-  const fromInput = input ? input.value.trim() : '';
+  const fromInput = input ? normalizeWriteApiKey(input.value) : '';
 
   if (fromInput) {
     return fromInput;
   }
 
   try {
-    return localStorage.getItem(WRITE_API_KEY_STORAGE) || '';
+    return normalizeWriteApiKey(localStorage.getItem(WRITE_API_KEY_STORAGE) || '');
   } catch (error) {
-    return window.IPRINT_WRITE_API_KEY || '';
+    return normalizeWriteApiKey(window.IPRINT_WRITE_API_KEY || '');
   }
+}
+
+function normalizeWriteApiKey(value) {
+  return String(value || '')
+    .trim()
+    .replace(/^WRITE_API_KEY\s*=\s*/i, '')
+    .replace(/^(["'])(.*)\1$/, '$2')
+    .trim();
 }
 
 function updateApiKeyStatus() {
@@ -106,11 +114,108 @@ function updateApiKeyStatus() {
   if (!status) return;
 
   const key = getWriteApiKey();
+  status.className = 'api-key-state' + (key ? ' ok' : ' warn');
   status.textContent = IPRINT_TEST_MODE
     ? 'Test Mode • Mock data เท่านั้น'
     : key
-    ? `ตั้งค่าแล้ว (${key.length} ตัวอักษร)`
-    : 'ยังไม่ได้ตั้งค่า';
+    ? 'พร้อมใช้งาน • มีคีย์บันทึกอยู่ในเบราว์เซอร์นี้'
+    : 'ยังไม่ได้ตั้งค่า WRITE_API_KEY';
+}
+
+function setApiKeyStatus(message, kind = '') {
+  const status = document.getElementById('apiKeyStatus');
+  if (!status) return;
+  status.textContent = message;
+  status.className = 'api-key-state' + (kind ? ' ' + kind : '');
+}
+
+async function saveWriteApiKey() {
+  const input = $('apiKeyInput');
+  const button = $('saveApiKey');
+  const key = normalizeWriteApiKey(input?.value || '');
+
+  if (IPRINT_TEST_MODE) {
+    setApiKeyStatus('Test Mode ใช้ Mock key อัตโนมัติ ไม่ต้องบันทึกคีย์จริง', 'ok');
+    return;
+  }
+
+  if (!key) {
+    setApiKeyStatus('กรุณาวาง WRITE_API_KEY ก่อนบันทึก', 'warn');
+    input?.focus();
+    return;
+  }
+
+  button.disabled = true;
+  button.textContent = 'กำลังตรวจสอบ…';
+  setApiKeyStatus('กำลังตรวจสอบคีย์กับ iPrint Flow API…');
+
+  try {
+    const response = await fetch(API.authCheck, {
+      method: 'GET',
+      headers: { 'X-API-Key': key }
+    });
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok || !data.success) {
+      throw new Error(response.status === 401
+        ? 'คีย์ไม่ถูกต้อง กรุณาตรวจสอบแล้วลองใหม่'
+        : String(data.error || 'ไม่สามารถตรวจสอบคีย์ได้'));
+    }
+
+    try {
+      localStorage.setItem(WRITE_API_KEY_STORAGE, key);
+    } catch (error) {
+      window.IPRINT_WRITE_API_KEY = key;
+    }
+
+    input.value = '';
+    setApiKeyStatus('เชื่อมต่อสำเร็จ • บันทึกคีย์ในเบราว์เซอร์นี้แล้ว', 'ok');
+  } catch (error) {
+    setApiKeyStatus(error?.message || 'เชื่อมต่อ API ไม่สำเร็จ', 'warn');
+  } finally {
+    button.disabled = false;
+    button.textContent = 'ตรวจสอบและบันทึก';
+  }
+}
+
+function clearWriteApiKey() {
+  try {
+    localStorage.removeItem(WRITE_API_KEY_STORAGE);
+  } catch (error) {
+    // Fall through to the in-memory value for restricted browser contexts.
+  }
+  window.IPRINT_WRITE_API_KEY = '';
+  const input = $('apiKeyInput');
+  if (input) input.value = '';
+  setApiKeyStatus('ลบคีย์ออกจากเบราว์เซอร์นี้แล้ว', 'warn');
+}
+
+function openApiSettings() {
+  const input = $('apiKeyInput');
+  if (input) {
+    input.value = '';
+    input.type = 'password';
+  }
+  const toggle = $('toggleApiKeyVisibility');
+  if (toggle) {
+    toggle.textContent = 'แสดง';
+    toggle.setAttribute('aria-label', 'แสดงคีย์');
+    toggle.setAttribute('aria-pressed', 'false');
+  }
+  updateApiKeyStatus();
+  openSide('apiSettingsSheet');
+  setTimeout(() => input?.focus(), 260);
+}
+
+function toggleApiKeyVisibility() {
+  const input = $('apiKeyInput');
+  const button = $('toggleApiKeyVisibility');
+  if (!input || !button) return;
+  const show = input.type === 'password';
+  input.type = show ? 'text' : 'password';
+  button.textContent = show ? 'ซ่อน' : 'แสดง';
+  button.setAttribute('aria-label', show ? 'ซ่อนคีย์' : 'แสดงคีย์');
+  button.setAttribute('aria-pressed', String(show));
 }
 
 function dataSourceLabel() {

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#eef6ff">
   <title>iPrint</title>
-  <link rel="stylesheet" href="css/app.css?v=20260901-shader-toggle">
+  <link rel="stylesheet" href="css/app.css?v=20260901-api-settings">
 </head>
 <body>
 <div class="mobile-app" id="mobileApp">
@@ -13,9 +13,14 @@
     <button class="brand-button" id="goHome" type="button" aria-label="กลับหน้าหลัก">
       <img src="image/iprint-logo.svg" alt=""><strong>iPrint</strong>
     </button>
-    <button class="header-cart" id="openCart" type="button" aria-label="เปิดตะกร้า">
-      <img src="image/cart.svg" alt=""><span id="cartCount">0</span>
-    </button>
+    <div class="header-actions">
+      <button class="header-settings" id="openApiSettings" type="button" aria-label="ตั้งค่าการเชื่อมต่อ API" title="ตั้งค่าการเชื่อมต่อ API">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm8.2 4.8-1.7 1a7 7 0 0 1-.7 1.7l.5 1.9-2.4 2.4-1.9-.5a7 7 0 0 1-1.7.7l-1 1.7H8l-1-1.7a7 7 0 0 1-1.7-.7l-1.9.5L1 17.9l.5-1.9a7 7 0 0 1-.7-1.7l-1.7-1v-2.6l1.7-1a7 7 0 0 1 .7-1.7L1 6.1l2.4-2.4 1.9.5A7 7 0 0 1 7 3.5l1-1.7h2.6l1 1.7a7 7 0 0 1 1.7.7l1.9-.5 2.4 2.4-.5 1.9a7 7 0 0 1 .7 1.7l1.7 1v2.6Z" transform="translate(1.5 .5) scale(.87)"/></svg>
+      </button>
+      <button class="header-cart" id="openCart" type="button" aria-label="เปิดตะกร้า">
+        <img src="image/cart.svg" alt=""><span id="cartCount">0</span>
+      </button>
+    </div>
   </header>
   <div class="test-mode-badge" id="testModeBadge" hidden>TEST MODE • MOCK DATA • NO API</div>
 
@@ -148,6 +153,23 @@
 <div id="pieceGapKnob" hidden></div><div id="bleedKnob" hidden></div>
 
 <div class="sheet-overlay" id="sheetOverlay"></div>
+<aside class="side-sheet api-settings-sheet" id="apiSettingsSheet" aria-hidden="true">
+  <div class="sheet-head"><div><small>IPRINT FLOW</small><h2>ตั้งค่าการเชื่อมต่อ</h2></div><button class="close-sheet" id="closeApiSettings" type="button" aria-label="ปิดหน้าตั้งค่า">×</button></div>
+  <div class="sheet-body">
+    <section class="api-settings-card">
+      <div class="api-settings-icon" aria-hidden="true">API</div>
+      <div><strong>เชื่อมต่อระบบสร้างออเดอร์</strong><p>ใช้คีย์นี้สำหรับส่ง Brief สร้าง Ticket และอัปเดตสถานะงานใน Notion</p></div>
+    </section>
+    <div class="field api-key-field">
+      <label class="label" for="apiKeyInput">WRITE_API_KEY</label>
+      <div class="api-key-input-wrap"><input id="apiKeyInput" type="password" autocomplete="new-password" autocapitalize="off" spellcheck="false" placeholder="วาง WRITE_API_KEY ที่นี่"><button id="toggleApiKeyVisibility" type="button" aria-label="แสดงคีย์" aria-pressed="false">แสดง</button></div>
+      <p class="hint">ระบบจะตรวจสอบคีย์กับ API ก่อนบันทึก และเก็บไว้เฉพาะในเบราว์เซอร์เครื่องนี้</p>
+    </div>
+    <div class="api-key-state" id="apiKeyStatus" role="status" aria-live="polite">กำลังตรวจสอบสถานะ…</div>
+    <div class="api-settings-actions"><button class="primary-action" id="saveApiKey" type="button">ตรวจสอบและบันทึก</button><button class="secondary-action" id="clearApiKey" type="button">ลบคีย์จากเครื่องนี้</button></div>
+    <p class="api-security-note"><strong>ข้อควรระวัง</strong> ไม่ควรบันทึกคีย์บนเครื่องสาธารณะหรือเครื่องที่ใช้ร่วมกัน การจัดเก็บแบบนี้เหมาะกับ MVP ภายในทีมเท่านั้น</p>
+  </div>
+</aside>
 <aside class="side-sheet" id="materialsServicesSheet" aria-hidden="true"><div class="sheet-head"><h2>วัสดุและบริการเพิ่มเติม</h2><button class="close-sheet" type="button" onclick="closeSide()">×</button></div><div class="sheet-body"><p>เลือกวัสดุและบริการได้ในขั้นตอนราคา</p></div></aside>
 <aside class="side-sheet" id="paperPreviewSheet" aria-hidden="true"><div class="sheet-head"><h2>จัดการ Preset กระดาษ</h2></div></aside><aside class="side-sheet" id="briefAssetsSheet" aria-hidden="true"><div class="sheet-head"><h2>ไฟล์บรีฟ</h2></div></aside>
 
@@ -161,7 +183,7 @@
 
 <button id="downloadBrief" type="button" hidden>ส่งบรีฟ</button><div id="briefStatus" hidden></div>
 
-<script src="js/core.js?v=20260901-artwork-rotation"></script>
+<script src="js/core.js?v=20260901-api-key-normalize"></script>
 <script src="js/api.js?v=20260831-material-preview"></script>
 <script src="js/presets.js?v=20260831-material-preview"></script>
 <script src="js/materials.js?v=20260831-material-preview"></script>
@@ -175,7 +197,7 @@
 <script src="js/customer.js?v=20260831-material-preview"></script>
 <script src="js/workflow.js?v=20260831-material-preview"></script>
 <script src="js/quote.js?v=20260831-material-preview"></script>
-<script src="js/app.js?v=20260901-shader-toggle"></script>
+<script src="js/app.js?v=20260901-api-settings"></script>
 <script src="js/flow.js?v=20260901-shader-toggle"></script>
 </body>
 </html>

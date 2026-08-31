@@ -95,17 +95,25 @@ export default {
     // AUTH
     // ================================
 
+    const normalizeWriteKey = (value) => String(value || "")
+      .trim()
+      .replace(/^WRITE_API_KEY\s*=\s*/i, "")
+      .replace(/^(["'])(.*)\1$/, "$2")
+      .trim();
+
     const requireAuth = (request) => {
-      if (!env.WRITE_API_KEY) {
+      const expectedKey = normalizeWriteKey(env.WRITE_API_KEY);
+
+      if (!expectedKey) {
         return json({
           success: false,
           error: "WRITE_API_KEY is missing"
         }, 500);
       }
 
-      const key = request.headers.get("X-API-Key");
+      const key = normalizeWriteKey(request.headers.get("X-API-Key"));
 
-      if (!key || key !== env.WRITE_API_KEY) {
+      if (!key || key !== expectedKey) {
         return json({
           success: false,
           error: "Unauthorized: missing or invalid X-API-Key"
@@ -126,6 +134,7 @@ export default {
           success: true,
           message: "Iprint API is running",
           endpoints: [
+            "GET /auth/check",
             "GET /presets",
             "POST /presets",
             "DELETE /presets?id=",
@@ -873,6 +882,21 @@ export default {
           id: page.id,
           customerId,
           name: customerName
+        });
+      }
+
+
+      // ================================
+      // WRITE KEY - VALIDATE WITHOUT MUTATION
+      // ================================
+
+      if (url.pathname === "/auth/check" && request.method === "GET") {
+        const authError = requireAuth(request);
+        if (authError) return authError;
+
+        return json({
+          success: true,
+          message: "WRITE_API_KEY is valid"
         });
       }
 
@@ -2509,6 +2533,7 @@ export default {
         success: false,
         error: "Endpoint not found",
         endpoints: [
+          "GET /auth/check",
           "GET /presets",
           "POST /presets",
           "DELETE /presets?id=",
