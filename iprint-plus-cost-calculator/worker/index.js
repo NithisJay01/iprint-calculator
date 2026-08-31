@@ -78,8 +78,15 @@ export default {
       }, 500);
     }
 
+    const notionToken = String(env.NOTION_TOKEN || "")
+      .trim()
+      .replace(/^NOTION_TOKEN\s*=\s*/i, "")
+      .replace(/^Bearer\s+/i, "")
+      .replace(/^(["'])(.*)\1$/, "$2")
+      .trim();
+
     const notionHeaders = {
-      "Authorization": `Bearer ${env.NOTION_TOKEN}`,
+      "Authorization": `Bearer ${notionToken}`,
       "Notion-Version": "2026-03-11",
       "Content-Type": "application/json"
     };
@@ -1060,7 +1067,7 @@ export default {
             number: orderItems.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0)
           });
           setTicket("ขนาด", "rich_text", { rich_text: richText(`${orderItems.length} รายการ`) });
-          setTicketWorkflow(["สถานะ", "Status", "Workflow Status"], "NEW");
+          setTicketWorkflow(["Workflow Status", "สถานะ", "Status"], "NEW");
           setTicket("มอบหมาย", "select", { select: { name: "GRAPHIC" } });
           setTicket("งานประเภท", "select", { select: { name: "Design" } });
           setTicket("Presentation/Proof", "rich_text", { rich_text: richText("ORDER_CREATING") });
@@ -1139,7 +1146,7 @@ export default {
           setItem("Yield", "number", { number: Number(item.yield) || 0 });
           setItem("Price", "number", { number: Number(item.price) || 0 });
           setItem("Brief", "rich_text", { rich_text: richText(item.brief || "") });
-          setItemWorkflow(["Status", "สถานะ"], "NEW");
+          setItemWorkflow(["Workflow Status", "Status", "สถานะ"], "NEW");
           setItemWorkflow(["Workflow Phase", "Stage", "ขั้นตอน"], "GRAPHIC");
           setItemWorkflow(["Proof Status", "สถานะ Proof"], "PENDING");
           setItemWorkflow(["Production Status", "สถานะ Production"], "WAITING");
@@ -1219,7 +1226,7 @@ export default {
           const send = await fetch(`https://api.notion.com/v1/file_uploads/${uploadId}/send`, {
             method: "POST",
             headers: {
-              "Authorization": `Bearer ${env.NOTION_TOKEN}`,
+              "Authorization": `Bearer ${notionToken}`,
               "Notion-Version": "2026-03-11"
             },
             body: uploadForm
@@ -1527,7 +1534,7 @@ export default {
         const itemsData = JSON.parse(itemsText);
         const items = (itemsData.results || []).map(page => {
           const properties = page.properties || {};
-          const status = String(workflowValue(properties, ["Status", "สถานะ"]) || "NEW");
+          const status = String(workflowValue(properties, ["Workflow Status", "Status", "สถานะ"]) || "NEW");
           let snapshot = {};
           try {
             snapshot = JSON.parse(String(workflowValue(properties, ["Snapshot"]) || "{}"));
@@ -1572,7 +1579,7 @@ export default {
             id: ticketPage.id,
             url: ticketPage.url || null,
             title: workflowTitle(ticketProperties),
-            status: String(workflowValue(ticketProperties, ["สถานะ", "Status", "Workflow Status"]) || aggregateTicketStatus(items.map(item => item.status))),
+            status: String(workflowValue(ticketProperties, ["Workflow Status", "สถานะ", "Status"]) || aggregateTicketStatus(items.map(item => item.status))),
             updatedAt: ticketPage.last_edited_time || ""
           },
           items
@@ -1615,7 +1622,7 @@ export default {
         }
 
         const itemPage = JSON.parse(itemText);
-        const currentStatus = String(workflowValue(itemPage.properties, ["Status", "สถานะ"]) || "NEW");
+        const currentStatus = String(workflowValue(itemPage.properties, ["Workflow Status", "Status", "สถานะ"]) || "NEW");
         const allowed = workflowTransitions[currentStatus] || [];
         if (nextStatus !== currentStatus && !allowed.includes(nextStatus)) {
           return json({
@@ -1627,7 +1634,7 @@ export default {
         }
 
         const itemSchema = itemsSource.data.properties || {};
-        const statusEntry = findWorkflowSchema(itemSchema, ["Status", "สถานะ"], ["status", "select", "rich_text"]);
+        const statusEntry = findWorkflowSchema(itemSchema, ["Workflow Status", "Status", "สถานะ"], ["status", "select", "rich_text"]);
         if (!statusEntry) {
           return json({ success: false, error: "Order Items Status property is missing" }, 422);
         }
@@ -1643,7 +1650,7 @@ export default {
         }
 
         const properties = {};
-        setWorkflowProperty(properties, itemSchema, ["Status", "สถานะ"], nextStatus);
+        setWorkflowProperty(properties, itemSchema, ["Workflow Status", "Status", "สถานะ"], nextStatus);
         setWorkflowProperty(properties, itemSchema, ["Workflow Phase", "Stage", "ขั้นตอน"], workflowPhase(nextStatus));
 
         if (nextStatus === "PROOF_READY") {
@@ -1712,7 +1719,7 @@ export default {
               const statuses = siblings.map(page =>
                 page.id === itemId
                   ? nextStatus
-                  : String(workflowValue(page.properties, ["Status", "สถานะ"]) || "NEW")
+                  : String(workflowValue(page.properties, ["Workflow Status", "Status", "สถานะ"]) || "NEW")
               );
               ticketStatus = aggregateTicketStatus(statuses);
 
@@ -1720,13 +1727,13 @@ export default {
                 const ticketsSource = await resolveWorkflowDataSource(env.NOTION_TICKETS_DATA_SOURCE_ID);
                 const ticketSchema = ticketsSource.data.properties || {};
                 const ticketProperties = {};
-                const ticketStatusEntry = findWorkflowSchema(ticketSchema, ["สถานะ", "Status", "Workflow Status"], ["status", "select", "rich_text"]);
+                const ticketStatusEntry = findWorkflowSchema(ticketSchema, ["Workflow Status", "สถานะ", "Status"], ["status", "select", "rich_text"]);
                 const statusOptions = ticketStatusEntry?.property?.status?.options || [];
                 const canSetTicketStatus = ticketStatusEntry?.property?.type !== "status" ||
                   !statusOptions.length || statusOptions.some(option => option.name === ticketStatus);
 
                 if (ticketStatusEntry && canSetTicketStatus) {
-                  setWorkflowProperty(ticketProperties, ticketSchema, ["สถานะ", "Status", "Workflow Status"], ticketStatus);
+                  setWorkflowProperty(ticketProperties, ticketSchema, ["Workflow Status", "สถานะ", "Status"], ticketStatus);
                   await fetch(`https://api.notion.com/v1/pages/${ticketId}`, {
                     method: "PATCH",
                     headers: notionHeaders,
@@ -1925,6 +1932,17 @@ export default {
             ticketProperties[name] = value;
           }
         };
+        const setTicketWorkflow = (names, value) => {
+          for (const name of names) {
+            const type = sourceProperties[name]?.type;
+            if (type === "status") ticketProperties[name] = { status: { name: value } };
+            else if (type === "select") ticketProperties[name] = { select: { name: value } };
+            else if (type === "rich_text") ticketProperties[name] = { rich_text: richText(value) };
+            else continue;
+            return true;
+          }
+          return false;
+        };
         const materialPageIds = [...new Set(extras
           .filter(item => item.kind === "วัสดุ" && item.pageId)
           .map(item => String(item.pageId))
@@ -1943,9 +1961,7 @@ export default {
         setTicketProperty("อธิบายเพิ่ม", "rich_text", {
           rich_text: richText(ticket.graphicBriefDescription || "")
         });
-        setTicketProperty("สถานะ", "status", {
-          status: { name: "NEW" }
-        });
+        setTicketWorkflow(["Workflow Status", "สถานะ", "Status"], "NEW");
         setTicketProperty("มอบหมาย", "select", {
           select: { name: "GRAPHIC" }
         });
@@ -2030,7 +2046,7 @@ export default {
             {
               method: "POST",
               headers: {
-                "Authorization": `Bearer ${env.NOTION_TOKEN}`,
+                "Authorization": `Bearer ${notionToken}`,
                 "Notion-Version": "2026-03-11"
               },
               body: uploadForm
@@ -2236,7 +2252,7 @@ export default {
           {
             method: "POST",
             headers: {
-              "Authorization": `Bearer ${env.NOTION_TOKEN}`,
+              "Authorization": `Bearer ${notionToken}`,
               "Notion-Version": "2026-03-11"
             },
             body: uploadForm

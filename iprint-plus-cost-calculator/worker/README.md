@@ -16,19 +16,21 @@ NOTION_TICKETS_DATA_SOURCE_ID=<Data source ID หรือ Database ID ของ
 NOTION_ORDER_ITEMS_DATA_SOURCE_ID=<Data source ID หรือ Database ID ของฐานข้อมูล Iprint Order Items>
 ```
 
+ค่าของฐานข้อมูลปัจจุบัน, ขั้นตอนสร้าง Internal Integration และคำสั่งตั้ง Secret อยู่ใน [NOTION_SETUP.md](./NOTION_SETUP.md) ส่วนค่าที่ไม่ลับถูกเตรียมไว้ใน `wrangler.toml` แล้ว
+
 ข้อกำหนด:
 
 - แชร์ฐานข้อมูล Ticket ให้ Integration เดียวกับ `NOTION_TOKEN`
 - แชร์ฐานข้อมูล `Iprint Order Items`, `Iprint Materials` และ `Iprint Service` ให้ Integration เดียวกัน
 - `Iprint Order Items` ต้องมี Relation ชื่อ `Order Ticket`, `Material` และ `Services`
-- `Iprint Order Items` ต้องมี `Status` (Select, Status หรือ Rich text) และควรเพิ่ม `Workflow Phase`, `Proof Status`, `Production Status`, `Brief Deadline`, `Delivery Deadline`, `Updated At`
+- `Iprint Order Items` ใช้ `Workflow Status` เป็นสถานะหลักของ API และมี `Workflow Phase`, `Proof Status`, `Production Status`, `Brief Deadline`, `Delivery Deadline`, `Updated At`
 - `Iprint Jobs` ต้องมี `Order Key`, `Order Total`, `Item Count` และ Relation ย้อนกลับชื่อ `Order Items`
 - ฐาน `Iprint Service` ใช้ `Category` หรือชื่อเดิม `Catagory`; ระบบจะแยกบริการการเคลือบและการตัดเป็น Radio group ให้อัตโนมัติ
 - Preview วัสดุพิเศษรองรับ property แบบ Select ชื่อ `Preview Renderer` (`css`/`webgl`), `Preview Effect`, `Shader Preset` และ property URL ชื่อ `Texture URL` ใน `Iprint Materials` หรือ `Iprint Service` โดยทุกช่องเป็น optional
 - ฐาน `Iprint Jobs` ใช้ Relation ชื่อ `วัสดุที่ใช้` ไปยัง `Iprint Materials`
   และ `บริการที่ใช้` ไปยัง `Iprint Service`
 - Worker จะบันทึก Relation จาก Page ID ของรายการที่ผู้ใช้เลือก พร้อมตั้งค่าเริ่มต้น
-  `สถานะ = NEW`, `มอบหมาย = GRAPHIC` และ `งานประเภท = Design`
+  `Workflow Status = NEW`, `มอบหมาย = GRAPHIC` และ `งานประเภท = Design`
 - Worker รองรับทั้ง Data Source ID และ Database ID โดยจะเลือก Data Source แรกในฐานข้อมูลให้อัตโนมัติ
 - ฐานข้อมูลต้องมี property ประเภท **Title** อย่างน้อยหนึ่งช่อง (ชื่อ property ใดก็ได้)
 - คงค่า `NOTION_TOKEN` และ `WRITE_API_KEY` เดิมไว้

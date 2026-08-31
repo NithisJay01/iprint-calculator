@@ -1,0 +1,9 @@
+.dev.vars
+.env
+.env.*
+!.env.example
+worker/.dev.vars
+worker/.env
+worker/.env.*
+!worker/.dev.vars.example
+

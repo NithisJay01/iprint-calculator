@@ -1,0 +1,14 @@
+# คัดลอกไฟล์นี้เป็น worker/.dev.vars สำหรับทดสอบในเครื่องเท่านั้น
+# ห้าม commit ค่าจริงของ NOTION_TOKEN และ WRITE_API_KEY
+NOTION_TOKEN=secret_replace_with_notion_internal_integration_token
+WRITE_API_KEY=replace_with_a_long_random_value
+
+# Data Source IDs ไม่ใช่ข้อมูลลับ และตรงกับฐานข้อมูลปัจจุบันใน Notion
+NOTION_DATA_SOURCE_ID=3c81a0ce-e8bd-800d-b31f-000b0deb3ee3
+NOTION_MATERIALS_DATA_SOURCE_ID=d251a0ce-e8bd-8314-bc43-074b0f9cedb7
+NOTION_SERVICES_DATA_SOURCE_ID=3d71a0ce-e8bd-8342-b818-078d7bf8818e
+NOTION_CUSTOMERS_DATA_SOURCE_ID=3ca1a0ce-e8bd-805d-a279-000b9b7152c1
+NOTION_QUOTES_DATA_SOURCE_ID=3ca1a0ce-e8bd-80c5-8f5b-000bfb368895
+NOTION_TICKETS_DATA_SOURCE_ID=4001a0ce-e8bd-8312-a136-07db4162080f
+NOTION_ORDER_ITEMS_DATA_SOURCE_ID=3cc1a0ce-e8bd-8068-acd1-000bcaea0f4a
+
