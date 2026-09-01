@@ -145,6 +145,7 @@ function drawPreview(p,b,bleedMm,gapMm) {
     const selectedServiceNames=services.filter(service=>selectedServiceIds[String(service.id)]).map(service=>String(service.name||'').toLowerCase());
     const selectedMaterialName=String(materials.find(material=>String(material.id)===String(selectedMaterialId))?.name||'').toLowerCase();
     const hasDiecut=selectedServiceNames.some(name=>/ไดคัท|die.?cut/.test(name));
+    const hasRoundedCorner=selectedServiceNames.some(name=>/ตัดมุม|rounded.?corner/.test(name));
     const materialEffect=/kraft|คราฟท์/.test(selectedMaterialName)?'is-kraft':/pvc|pp|sticker|สติกเกอร์/.test(selectedMaterialName)?'is-sticker':/art|อาร์ท/.test(selectedMaterialName)?'is-art-paper':'';
     for(let i=0;
     i<b.yield;
@@ -173,6 +174,7 @@ function drawPreview(p,b,bleedMm,gapMm) {
         piece.appendChild(materialOverlay)
       }
       if(hasDiecut)piece.classList.add('has-diecut-effect');
+      if(hasRoundedCorner)piece.classList.add('has-rounded-corner');
       const number=document.createElement('span');
       number.className='piece-number';
       number.textContent=i+1;

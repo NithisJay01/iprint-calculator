@@ -304,9 +304,11 @@ async function printQuote() {
       }
 
       const hasApiKey = !!getWriteApiKey();
-      const quotePreviewImage = await captureQuotePreview(q);
+      const briefImages = typeof cartBriefImages === 'function'
+        ? await cartBriefImages()
+        : [];
       const remote = hasApiKey
-        ? await createOrderRemote(q, quotePreviewImage, [])
+        ? await createOrderRemote(q, null, briefImages)
         : false;
 
       if (!remote?.success) {

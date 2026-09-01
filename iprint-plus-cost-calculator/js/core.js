@@ -17,6 +17,7 @@
   /* Static HTML cannot keep a write key secret. Leave blank unless you accept that the key is visible to browser users.
   Preferred production setup: secure POST/DELETE at the Worker using Cloudflare Access or another authenticated backend. */
   const WRITE_API_KEY_STORAGE = 'iprint_write_api_key';
+  const WRITE_API_KEY_SESSION_STORAGE = 'iprint_write_api_key_session';
 
   // Shared application state. These values intentionally remain mutable because
   // the existing feature modules communicate through the global script scope.
@@ -42,6 +43,8 @@
   let artworkRotationFront = 0;
   let artworkRotationBack = 0;
   let referenceImages = [];
+  let diecutShapeFile = null;
+  let diecutShapeUrl = '';
 
   const $ = id => document.getElementById(id);
   const money = value => Number(value || 0).toLocaleString('th-TH', {
@@ -95,10 +98,48 @@ function getWriteApiKey() {
   }
 
   try {
-    return normalizeWriteApiKey(localStorage.getItem(WRITE_API_KEY_STORAGE) || '');
+    return normalizeWriteApiKey(
+      sessionStorage.getItem(WRITE_API_KEY_SESSION_STORAGE) ||
+      localStorage.getItem(WRITE_API_KEY_STORAGE) || ''
+    );
   } catch (error) {
     return normalizeWriteApiKey(window.IPRINT_WRITE_API_KEY || '');
   }
+}
+
+function storeWriteApiKey(key, remember = true) {
+  const normalized = normalizeWriteApiKey(key);
+  if (!normalized) return;
+
+  if (remember) {
+    localStorage.setItem(WRITE_API_KEY_STORAGE, normalized);
+    sessionStorage.removeItem(WRITE_API_KEY_SESSION_STORAGE);
+  } else {
+    sessionStorage.setItem(WRITE_API_KEY_SESSION_STORAGE, normalized);
+    localStorage.removeItem(WRITE_API_KEY_STORAGE);
+  }
+}
+
+function removeWriteApiKey() {
+  try { localStorage.removeItem(WRITE_API_KEY_STORAGE); } catch (error) {}
+  try { sessionStorage.removeItem(WRITE_API_KEY_SESSION_STORAGE); } catch (error) {}
+  window.IPRINT_WRITE_API_KEY = '';
+}
+
+async function verifyWriteApiKey(key) {
+  const response = await fetch(API.authCheck, {
+    method: 'GET',
+    headers: { 'X-API-Key': normalizeWriteApiKey(key) }
+  });
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok || !data.success) {
+    throw new Error(response.status === 401
+      ? 'รหัสเข้าใช้งานไม่ถูกต้อง'
+      : String(data.error || 'ไม่สามารถเชื่อมต่อระบบได้'));
+  }
+
+  return true;
 }
 
 function normalizeWriteApiKey(value) {
@@ -150,23 +191,8 @@ async function saveWriteApiKey() {
   setApiKeyStatus('กำลังตรวจสอบคีย์กับ iPrint Flow API…');
 
   try {
-    const response = await fetch(API.authCheck, {
-      method: 'GET',
-      headers: { 'X-API-Key': key }
-    });
-    const data = await response.json().catch(() => ({}));
-
-    if (!response.ok || !data.success) {
-      throw new Error(response.status === 401
-        ? 'คีย์ไม่ถูกต้อง กรุณาตรวจสอบแล้วลองใหม่'
-        : String(data.error || 'ไม่สามารถตรวจสอบคีย์ได้'));
-    }
-
-    try {
-      localStorage.setItem(WRITE_API_KEY_STORAGE, key);
-    } catch (error) {
-      window.IPRINT_WRITE_API_KEY = key;
-    }
+    await verifyWriteApiKey(key);
+    storeWriteApiKey(key, true);
 
     input.value = '';
     setApiKeyStatus('เชื่อมต่อสำเร็จ • บันทึกคีย์ในเบราว์เซอร์นี้แล้ว', 'ok');
@@ -179,12 +205,7 @@ async function saveWriteApiKey() {
 }
 
 function clearWriteApiKey() {
-  try {
-    localStorage.removeItem(WRITE_API_KEY_STORAGE);
-  } catch (error) {
-    // Fall through to the in-memory value for restricted browser contexts.
-  }
-  window.IPRINT_WRITE_API_KEY = '';
+  removeWriteApiKey();
   const input = $('apiKeyInput');
   if (input) input.value = '';
   setApiKeyStatus('ลบคีย์ออกจากเบราว์เซอร์นี้แล้ว', 'warn');

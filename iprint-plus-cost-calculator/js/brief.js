@@ -304,7 +304,7 @@ function briefReviewMaterialTint(calc) {
   return '';
 }
 
-function briefReviewSheetSvg(calc,artworkUrl,side,x,y,width,height) {
+function briefReviewSheetSvg(calc,artworkUrl,side,x,y,width,height,shapeUrl='') {
   const paper=calc.paper||{};
   const fullW=Math.max(1,Number(paper.fullW)||1),fullH=Math.max(1,Number(paper.fullH)||1);
   const usableW=Math.max(1,Math.min(fullW,Number(paper.usableW)||fullW)),usableH=Math.max(1,Math.min(fullH,Number(paper.usableH)||fullH));
@@ -317,31 +317,39 @@ function briefReviewSheetSvg(calc,artworkUrl,side,x,y,width,height) {
   const startX=usableX+(usableWidth-gridW)/2,startY=usableY+(usableHeight-gridH)/2;
   const maximum=Math.min(96,Math.max(1,Number(calc.b?.yield)||nx*ny));
   const diecut=(calc.services||[]).some(service=>/ไดคัท|die.?cut/.test(String(service?.name||'').toLowerCase()));
+  const rounded=(calc.services||[]).some(service=>/ตัดมุม|rounded.?corner/.test(String(service?.name||'').toLowerCase()));
   const cells=[];
   for(let index=0;index<maximum;index++) {
     const row=Math.floor(index/nx),column=index%nx;
     if(row>=ny)break;
     const cellX=startX+column*(pieceW+gap)*scale,cellY=startY+row*(pieceH+gap)*scale,cellW=pieceW*scale,cellH=pieceH*scale;
     const clipId=`review-${side}-${index}`;
-    const image=artworkUrl?`<image href="${briefEscapeSvg(artworkUrl)}" x="${cellX+1}" y="${cellY+1}" width="${Math.max(1,cellW-2)}" height="${Math.max(1,cellH-2)}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${clipId})"/>`:'';
+    const maskId=`review-shape-${side}-${index}`;
+    const mask=shapeUrl?`<mask id="${maskId}" maskUnits="userSpaceOnUse" style="mask-type:alpha"><image href="${briefEscapeSvg(shapeUrl)}" x="${cellX+1}" y="${cellY+1}" width="${Math.max(1,cellW-2)}" height="${Math.max(1,cellH-2)}" preserveAspectRatio="none"/></mask>`:'';
+    const image=artworkUrl?`<image href="${briefEscapeSvg(artworkUrl)}" x="${cellX+1}" y="${cellY+1}" width="${Math.max(1,cellW-2)}" height="${Math.max(1,cellH-2)}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${clipId})"${shapeUrl?` mask="url(#${maskId})"`:''}/>`:'';
     const tint=briefReviewMaterialTint(calc).replace('class="piece-tint"',`x="${cellX+1}" y="${cellY+1}" width="${Math.max(1,cellW-2)}" height="${Math.max(1,cellH-2)}"`);
-    cells.push(`<defs><clipPath id="${clipId}"><rect x="${cellX+1}" y="${cellY+1}" width="${Math.max(1,cellW-2)}" height="${Math.max(1,cellH-2)}"/></clipPath></defs><rect x="${cellX}" y="${cellY}" width="${cellW}" height="${cellH}" fill="#fff" stroke="${diecut?'#ff8b00':'#8a949e'}" ${diecut?'stroke-dasharray="3 2"':''}/>${image}${tint}`);
+    const radius=rounded?Math.max(2,Math.min(cellW,cellH)*.12):0;
+    cells.push(`<defs><clipPath id="${clipId}"><rect x="${cellX+1}" y="${cellY+1}" width="${Math.max(1,cellW-2)}" height="${Math.max(1,cellH-2)}" rx="${radius}"/></clipPath>${mask}</defs><rect x="${cellX}" y="${cellY}" width="${cellW}" height="${cellH}" rx="${radius}" fill="#fff" stroke="${diecut?'#ff8b00':'#8a949e'}" ${diecut?'stroke-dasharray="3 2"':''}/>${image}${tint}`);
   }
   return `<rect x="${x}" y="${y}" width="${width}" height="${height}" rx="14" fill="#edf4f8"/><rect x="${paperX}" y="${paperY}" width="${paperW}" height="${paperH}" rx="4" fill="#fff" stroke="#75818b"/><rect x="${usableX}" y="${usableY}" width="${usableWidth}" height="${usableHeight}" fill="none" stroke="#a1adb6" stroke-dasharray="5 4"/>${cells.join('')}${briefReviewSurfaceOverlay(paperX,paperY,paperW,paperH,calc)}`;
 }
 
-function briefReviewPieceSvg(calc,artworkUrl,x,y,width,height) {
+function briefReviewPieceSvg(calc,artworkUrl,x,y,width,height,shapeUrl='') {
   const workW=Math.max(.1,Number(calc.b?.pieceW)||Number(calc.W)*10||1),workH=Math.max(.1,Number(calc.b?.pieceH)||Number(calc.H)*10||1);
   const scale=Math.min((width-80)/workW,(height-50)/workH);
   const pieceW=workW*scale,pieceH=workH*scale,pieceX=x+(width-pieceW)/2,pieceY=y+(height-pieceH)/2;
   const clipId='review-piece-'+Math.random().toString(36).slice(2);
   const diecut=(calc.services||[]).some(service=>/ไดคัท|die.?cut/.test(String(service?.name||'').toLowerCase()));
-  const image=artworkUrl?`<image href="${briefEscapeSvg(artworkUrl)}" x="${pieceX+1}" y="${pieceY+1}" width="${Math.max(1,pieceW-2)}" height="${Math.max(1,pieceH-2)}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${clipId})"/>`:'';
+  const rounded=(calc.services||[]).some(service=>/ตัดมุม|rounded.?corner/.test(String(service?.name||'').toLowerCase()));
+  const radius=rounded?Math.max(5,Math.min(pieceW,pieceH)*.12):0;
+  const maskId=`${clipId}-shape`;
+  const mask=shapeUrl?`<mask id="${maskId}" maskUnits="userSpaceOnUse" style="mask-type:alpha"><image href="${briefEscapeSvg(shapeUrl)}" x="${pieceX+1}" y="${pieceY+1}" width="${Math.max(1,pieceW-2)}" height="${Math.max(1,pieceH-2)}" preserveAspectRatio="none"/></mask>`:'';
+  const image=artworkUrl?`<image href="${briefEscapeSvg(artworkUrl)}" x="${pieceX+1}" y="${pieceY+1}" width="${Math.max(1,pieceW-2)}" height="${Math.max(1,pieceH-2)}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${clipId})"${shapeUrl?` mask="url(#${maskId})"`:''}/>`:'';
   const tint=briefReviewMaterialTint(calc).replace('class="piece-tint"',`x="${pieceX+1}" y="${pieceY+1}" width="${Math.max(1,pieceW-2)}" height="${Math.max(1,pieceH-2)}"`);
-  return `<rect x="${x}" y="${y}" width="${width}" height="${height}" rx="14" fill="#edf4f8"/><defs><clipPath id="${clipId}"><rect x="${pieceX+1}" y="${pieceY+1}" width="${Math.max(1,pieceW-2)}" height="${Math.max(1,pieceH-2)}" rx="5"/></clipPath></defs><rect x="${pieceX}" y="${pieceY}" width="${pieceW}" height="${pieceH}" rx="7" fill="#fff" stroke="${diecut?'#ff8b00':'#8a949e'}" ${diecut?'stroke-dasharray="5 3"':''}/>${image}${tint}${briefReviewSurfaceOverlay(pieceX,pieceY,pieceW,pieceH,calc)}`;
+  return `<rect x="${x}" y="${y}" width="${width}" height="${height}" rx="14" fill="#edf4f8"/><defs><clipPath id="${clipId}"><rect x="${pieceX+1}" y="${pieceY+1}" width="${Math.max(1,pieceW-2)}" height="${Math.max(1,pieceH-2)}" rx="${radius}"/></clipPath>${mask}</defs><rect x="${pieceX}" y="${pieceY}" width="${pieceW}" height="${pieceH}" rx="${radius}" fill="#fff" stroke="${diecut?'#ff8b00':'#8a949e'}" ${diecut?'stroke-dasharray="5 3"':''}/>${image}${tint}${briefReviewSurfaceOverlay(pieceX,pieceY,pieceW,pieceH,calc)}`;
 }
 
-function briefReviewImageSvg(calc,artworkUrls) {
+function briefReviewImageSvg(calc,artworkUrls,shapeUrl='') {
   const variants=typeof getJobVariants==='function'?getJobVariants():[];
   const doubleSided=typeof getSelectedPrintSide==='function'&&getSelectedPrintSide()==='double';
   const sides=doubleSided&&artworkUrls.back?['front','back']:['front'];
@@ -364,9 +372,9 @@ function briefReviewImageSvg(calc,artworkUrls) {
   content.push(`<rect x="50" y="${y}" width="980" height="92" rx="14" fill="#f8fbff" stroke="#b8d6ee"/><text x="72" y="${y+34}" class="body">${briefEscapeSvg(briefShorten(note,95))}</text><text x="72" y="${y+66}" class="small">${briefEscapeSvg(briefShorten(services,105))}</text>`);
   y+=126;
   content.push(`<text x="50" y="${y}" class="section">Preview รายแผ่น</text>`); y+=20;
-  sides.forEach(side=>{content.push(`<rect x="50" y="${y}" width="980" height="510" rx="18" fill="#f8fbff" stroke="#b8d6ee"/><text x="76" y="${y+35}" class="card-title">ตัวอย่าง • ${side==='back'?'ด้านหลัง':'ด้านหน้า'}</text>${briefReviewSheetSvg(calc,artworkUrls[side]||'',side,76,y+52,928,432)}`);y+=528;});
+  sides.forEach(side=>{content.push(`<rect x="50" y="${y}" width="980" height="510" rx="18" fill="#f8fbff" stroke="#b8d6ee"/><text x="76" y="${y+35}" class="card-title">ตัวอย่าง • ${side==='back'?'ด้านหลัง':'ด้านหน้า'}</text>${briefReviewSheetSvg(calc,artworkUrls[side]||'',side,76,y+52,928,432,shapeUrl)}`);y+=528;});
   y+=16; content.push(`<text x="50" y="${y}" class="section">Preview รายชิ้น</text>`); y+=20;
-  sides.forEach(side=>{content.push(`<rect x="50" y="${y}" width="980" height="350" rx="18" fill="#f8fbff" stroke="#b8d6ee"/><text x="76" y="${y+35}" class="card-title">ตัวอย่าง • ${side==='back'?'ด้านหลัง':'ด้านหน้า'}</text>${briefReviewPieceSvg(calc,artworkUrls[side]||'',76,y+52,928,272)}`);y+=368;});
+  sides.forEach(side=>{content.push(`<rect x="50" y="${y}" width="980" height="350" rx="18" fill="#f8fbff" stroke="#b8d6ee"/><text x="76" y="${y+35}" class="card-title">ตัวอย่าง • ${side==='back'?'ด้านหลัง':'ด้านหน้า'}</text>${briefReviewPieceSvg(calc,artworkUrls[side]||'',76,y+52,928,272,shapeUrl)}`);y+=368;});
   if(link){content.push(`<rect x="50" y="${y+12}" width="980" height="82" rx="14" fill="#f8fbff" stroke="#b8d6ee"/><text x="72" y="${y+43}" class="small">ลิงก์ไฟล์ต้นฉบับ</text><text x="72" y="${y+70}" class="body">${briefEscapeSvg(briefShorten(link,100))}</text>`);y+=106;}
   const height=y+56;
   return `<svg xmlns="http://www.w3.org/2000/svg" width="2160" height="${height*2}" viewBox="0 0 1080 ${height}"><defs><linearGradient id="reviewShine" x1="0" y1="0" x2="1" y2="1"><stop offset="18%" stop-color="#fff" stop-opacity="0"/><stop offset="50%" stop-color="#fff" stop-opacity=".9"/><stop offset="82%" stop-color="#fff" stop-opacity="0"/></linearGradient><linearGradient id="reviewHolo" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#45dcff" stop-opacity=".2"/><stop offset=".45" stop-color="#ff58dd" stop-opacity=".55"/><stop offset=".72" stop-color="#ffe85c" stop-opacity=".38"/><stop offset="1" stop-color="#45dcff" stop-opacity=".18"/></linearGradient></defs><style>text{font-family:Arial,Tahoma,sans-serif;fill:#111315}.title{font-size:25px;font-weight:700}.section{font-size:21px;font-weight:700}.body{font-size:17px}.small,.muted{font-size:15px;fill:#61788d}.metric{font-size:18px;font-weight:700}.card-title{font-size:17px;font-weight:700;fill:#063b70}</style><rect width="1080" height="${height}" fill="#eef6ff"/><rect x="36" y="36" width="1008" height="${height-72}" rx="28" fill="#fff" stroke="#063b70" stroke-width="2"/>${content.join('')}</svg>`;
@@ -376,7 +384,8 @@ async function captureBriefImage(calc=lastCalc) {
   if(!calc)throw new Error('ไม่พบข้อมูลสำหรับสร้างภาพสรุป');
   if(typeof renderBriefReview==='function')renderBriefReview({skipValidation:true});
   const artworkUrls=typeof getArtworkPreviewDataUrls==='function'?await getArtworkPreviewDataUrls():{front:'',back:''};
-  const imageUrl=URL.createObjectURL(new Blob([briefReviewImageSvg(calc,artworkUrls)],{type:'image/svg+xml;charset=utf-8'}));
+  const shapeUrl=typeof getDiecutShapeDataUrl==='function'?await getDiecutShapeDataUrl():'';
+  const imageUrl=URL.createObjectURL(new Blob([briefReviewImageSvg(calc,artworkUrls,shapeUrl)],{type:'image/svg+xml;charset=utf-8'}));
   try {
     const image=await new Promise((resolve,reject)=>{const preview=new Image();preview.onload=()=>resolve(preview);preview.onerror=()=>reject(new Error('สร้างภาพจากการ์ด Review ไม่สำเร็จ'));preview.src=imageUrl;});
     const canvas=document.createElement('canvas');

@@ -119,6 +119,7 @@ function snapshotCartItem(calc, id) {
     previewEffect: String(service.previewEffect || ''),
     shaderPreset: String(service.shaderPreset || ''),
     textureUrl: String(service.textureUrl || '')
+    ,virtual: Boolean(service.virtual)
   }));
 
   return {
@@ -152,6 +153,7 @@ function snapshotCartItem(calc, id) {
       backRotation: Number(artworkSides.backRotation) || 0
     },
     briefFileLink: String($('briefFileLink')?.value || '').trim(),
+    diecutShape: typeof getDiecutShapeState === 'function' ? getDiecutShapeState() : { active: false },
     brief: String($('graphicBriefDescription')?.value || '').trim(),
     briefDeadline: typeof normalizeFlowDateValue === 'function' ? normalizeFlowDateValue($('briefDeadline')?.value) : String($('briefDeadline')?.value || '').trim(),
     deliveryDeadline: typeof normalizeFlowDateValue === 'function' ? normalizeFlowDateValue($('deliveryDeadline')?.value) : String($('deliveryDeadline')?.value || '').trim(),
@@ -377,6 +379,7 @@ function publicOrderItems() {
     ,productionService: item.productionService || 'laser'
     ,artworkSides: item.artworkSides || { hasFront: false, hasBack: false, useFrontForBack: false }
     ,briefFileLink: item.briefFileLink || ''
+    ,diecutShape: item.diecutShape || { active: false }
   }));
 }
 

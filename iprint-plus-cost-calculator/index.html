@@ -5,10 +5,25 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#eef6ff">
   <title>iPrint</title>
-  <link rel="stylesheet" href="css/app.css?v=20260901-api-settings">
+  <link rel="stylesheet" href="css/app.css?v=20260901-ticket-brief-shape">
 </head>
 <body>
-<div class="mobile-app" id="mobileApp">
+<section class="login-gate" id="loginGate" aria-labelledby="loginTitle">
+  <div class="login-panel">
+    <div class="login-brand"><img src="image/iprint-logo.svg" alt=""><div><strong>iPrint</strong><small>FLOW</small></div></div>
+    <div class="login-copy"><span>INTERNAL WORKSPACE</span><h1 id="loginTitle">เข้าสู่ระบบ</h1><p>กรอกรหัสเข้าใช้งานเพื่อเปิดระบบคำนวณราคา สร้างออเดอร์ และติดตามสถานะงาน</p></div>
+    <form class="login-form" id="loginForm" novalidate>
+      <label for="loginApiKey">รหัสเข้าใช้งาน</label>
+      <div class="login-key-wrap"><input id="loginApiKey" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="กรอก WRITE_API_KEY" required><button id="toggleLoginKey" type="button" aria-label="แสดงรหัส" aria-pressed="false">แสดง</button></div>
+      <label class="login-remember"><input id="rememberLogin" type="checkbox" checked><span><strong>จดจำการเข้าสู่ระบบบนเครื่องนี้</strong><small>ไม่แนะนำสำหรับเครื่องสาธารณะหรือเครื่องที่ใช้ร่วมกัน</small></span></label>
+      <div class="login-status" id="loginStatus" role="status" aria-live="polite"></div>
+      <button class="login-submit" id="loginSubmit" type="submit">เข้าสู่ระบบ</button>
+    </form>
+    <p class="login-help">ใช้ค่าเดียวกับ Secret ชื่อ <code>WRITE_API_KEY</code> บน Cloudflare Worker</p>
+  </div>
+</section>
+
+<div class="mobile-app" id="mobileApp" hidden>
   <header class="app-header">
     <button class="brand-button" id="goHome" type="button" aria-label="กลับหน้าหลัก">
       <img src="image/iprint-logo.svg" alt=""><strong>iPrint</strong>
@@ -84,6 +99,7 @@
         <div class="cost-preview-mode-toggle" id="costPreviewModeToggle" role="group" aria-label="เลือกรูปแบบ Preview"><button class="is-selected" type="button" data-cost-preview-mode="sheet" aria-pressed="true">Preview รายแผ่น</button><button type="button" data-cost-preview-mode="piece" aria-pressed="false">Preview รายชิ้น</button></div>
         <div class="material-effect-toggle"><span><strong>Shader Preview</strong><small>แสงสะท้อนและเอฟเฟกต์วัสดุ</small></span><label class="switch-control" for="materialShaderToggle"><input id="materialShaderToggle" type="checkbox" checked><i aria-hidden="true"></i><b id="materialShaderToggleStatus">เปิด</b></label></div>
         <div class="cost-piece-tools" id="costPieceTools" hidden><button id="rotateCostPiecePaper" type="button">↻ หมุนหน้ากระดาษ 90°</button><output id="costPiecePaperRotation">มุมหน้ากระดาษ 0°</output></div>
+        <section class="diecut-shape-control" aria-labelledby="diecutShapeTitle"><div><strong id="diecutShapeTitle">Shape ไดคัท</strong><small>PNG โปร่งใส หรือ SVG สีทึบ • ใช้เป็น Clipping mask บน Artwork</small></div><div class="diecut-shape-actions"><label for="diecutShapeFile">อัปโหลด Shape</label><button id="clearDiecutShape" type="button" hidden>ล้าง Shape</button></div><output id="diecutShapeStatus">ยังไม่ได้เลือก Shape • มุมฉาก 0°</output></section>
         <div class="cost-preview-wrap" id="materialPreviewInteraction"><div class="material-preview-stage" id="materialPreviewStage"><div class="sheet-preview cost-sheet-preview" id="costSheetPreview"></div><div class="material-css-reflection" aria-hidden="true"></div><canvas id="materialShaderCanvas" class="material-shader-canvas" aria-hidden="true" hidden></canvas></div></div>
         <div class="preview-interaction-hint" id="materialPreviewHint" hidden>ลากซ้าย–ขวาเพื่อดูแสงสะท้อน</div>
         <div class="artwork-summary-slot" data-artwork-summary></div>
@@ -106,13 +122,19 @@
 
     <section class="app-view" data-app-view="brief">
       <div class="page-intro"><h1>สร้าง Brief สำหรับกราฟิก</h1><p>ส่งข้อมูลความต้องการ ดีไซน์ และภาพตัวอย่างเพื่อให้ทีมกราฟิกเริ่มออกแบบ</p></div>
-      <h2 class="section-title">ภาพงานหลัก (Main Layout/Artwork)</h2>
-      <section class="brief-main-preview"><div id="briefArtworkPreview" class="preview-gallery"></div><div class="artwork-summary-slot" data-artwork-summary></div><label class="brief-preview-upload" for="artworkImage">เปลี่ยนภาพงานหลัก</label></section>
-      <div class="field"><label class="label" for="jobName">ชื่องาน</label><input id="jobName" maxlength="120" placeholder="ใส่ชื่องาน ตัวอย่าง “แผ่นพับโปรโมชั่นปีใหม่ 2026”"></div>
-      <div class="brief-calc-summary" id="briefCalcSummary">—</div>
-      <section class="variants-section"><div class="section-heading"><strong>จำนวนแบบ</strong><small>เฉพาะขนาดและวัสดุเดียวกัน</small></div><div id="jobVariants"></div><button class="add-variant-button" id="addJobVariant" type="button">+ เพิ่ม</button><div class="status" id="variantStatus"></div></section>
-      <div class="field file-provider-field"><div class="file-link-box"><strong>เลือกไฟล์ต้นฉบับจาก Cloud</strong><small>เลือกผู้ให้บริการ แล้ววาง Share link ของไฟล์</small><div class="file-provider-options"><button type="button" data-file-provider="gdrive" data-provider-url="https://drive.google.com/drive/my-drive">Google Drive</button><button type="button" data-file-provider="dropbox" data-provider-url="https://www.dropbox.com/home">Dropbox</button><button type="button" data-file-provider="onedrive" data-provider-url="https://onedrive.live.com/">OneDrive</button></div></div><input id="briefFileLink" type="url" placeholder="วาง Share link ที่นี่ เช่น https://..." hidden><div class="field-error" id="briefFileLinkError"></div></div>
-      <div class="field"><label class="label" for="graphicBriefDescription">คำอธิบายสำหรับกราฟิก (ถ้ามี)</label><textarea id="graphicBriefDescription" maxlength="1200" placeholder="ระบุรายละเอียดเพิ่มเติมเช่น อยากให้ช่วยตรวจข้อความก่อนผลิต หรือ แก้รายละเอียดเล็กน้อยบนไฟล์"></textarea></div>
+      <div class="brief-responsive-columns">
+        <div class="brief-preview-column">
+          <h2 class="section-title">ภาพงานหลัก (Main Layout/Artwork)</h2>
+          <section class="brief-main-preview"><div id="briefArtworkPreview" class="preview-gallery"></div><div class="artwork-summary-slot" data-artwork-summary></div><label class="brief-preview-upload" for="artworkImage">เปลี่ยนภาพงานหลัก</label></section>
+        </div>
+        <div class="brief-form-column">
+          <div class="field job-name-field"><label class="label" for="jobName">ชื่องาน</label><input id="jobName" maxlength="120" placeholder="ใส่ชื่องาน ตัวอย่าง “แผ่นพับโปรโมชั่นปีใหม่ 2026”"></div>
+          <div class="brief-calc-summary" id="briefCalcSummary">—</div>
+          <section class="variants-section"><div class="section-heading"><strong>จำนวนแบบ</strong><small>เฉพาะขนาดและวัสดุเดียวกัน</small></div><div id="jobVariants"></div><button class="add-variant-button" id="addJobVariant" type="button">+ เพิ่ม</button><div class="status" id="variantStatus"></div></section>
+          <div class="field file-provider-field"><div class="file-link-box"><strong>เลือกไฟล์ต้นฉบับจาก Cloud</strong><small>เลือกผู้ให้บริการ แล้ววาง Share link ของไฟล์</small><div class="file-provider-options"><button type="button" data-file-provider="gdrive" data-provider-url="https://drive.google.com/drive/my-drive">Google Drive</button><button type="button" data-file-provider="dropbox" data-provider-url="https://www.dropbox.com/home">Dropbox</button><button type="button" data-file-provider="onedrive" data-provider-url="https://onedrive.live.com/">OneDrive</button></div></div><input id="briefFileLink" type="url" placeholder="วาง Share link ที่นี่ เช่น https://..." hidden><div class="field-error" id="briefFileLinkError"></div></div>
+          <div class="field graphic-description-field"><label class="label" for="graphicBriefDescription">คำอธิบายสำหรับกราฟิก (ถ้ามี)</label><textarea id="graphicBriefDescription" maxlength="1200" placeholder="ระบุรายละเอียดเพิ่มเติมเช่น อยากให้ช่วยตรวจข้อความก่อนผลิต หรือ แก้รายละเอียดเล็กน้อยบนไฟล์"></textarea></div>
+        </div>
+      </div>
       <section class="reference-section"><div class="section-heading"><strong>ภาพงานอ้างอิง (ถ้ามี–สูงสุด 3 ภาพ)</strong></div><label class="reference-upload" for="referenceImages">+ เพิ่มภาพ Ref</label><div class="reference-list" id="referenceList"></div></section>
       <div class="brief-deadline-grid"><div class="field"><label class="label" for="briefDeadline">วันส่งตรวจไฟล์</label><div class="date-input-shell"><input id="briefDeadline" type="text" inputmode="numeric" maxlength="10" placeholder="DD/MM/YYYY" autocomplete="off"><span class="date-picker-icon" aria-hidden="true">▣</span><input class="native-date-control" data-date-for="briefDeadline" type="date" lang="en-GB" aria-label="เลือกวันส่งตรวจไฟล์จากปฏิทิน"></div><div class="field-error" id="briefDeadlineError"></div></div><div class="field"><label class="label" for="deliveryDeadline">กำหนดวันส่งมอบสินค้า</label><div class="date-input-shell"><input id="deliveryDeadline" type="text" inputmode="numeric" maxlength="10" placeholder="DD/MM/YYYY" autocomplete="off"><span class="date-picker-icon" aria-hidden="true">▣</span><input class="native-date-control" data-date-for="deliveryDeadline" type="date" lang="en-GB" aria-label="เลือกวันส่งมอบจากปฏิทิน"></div><div class="field-error" id="deliveryDeadlineError"></div></div></div>
       <div class="brief-form-status status" id="briefFormStatus" aria-live="polite"></div><div class="flow-actions"><button class="secondary-action" data-flow-back="cost" type="button">‹ กลับ</button><button class="primary-action" id="reviewBrief" type="button">ถัดไป →</button></div>
@@ -147,9 +169,10 @@
 </div>
 
 <input id="artworkImage" type="file" accept="image/png,image/jpeg,image/webp" hidden>
+<input id="diecutShapeFile" type="file" accept="image/png,image/svg+xml,.png,.svg" hidden>
 <input id="referenceImages" type="file" accept="image/png,image/jpeg,image/webp" multiple hidden>
 <div id="referencePickerMeta" hidden></div><div id="assetStatus" hidden></div><button id="openBriefAssets" type="button" hidden></button><button id="closeBriefAssets" type="button" hidden></button>
-<button id="openPaperPreviewSettings" type="button" hidden></button><button id="closePaperPreviewSettings" type="button" hidden></button><button id="closeMaterialsServices" type="button" hidden></button>
+<button id="openPaperPreviewSettings" type="button" hidden></button><button id="closePaperPreviewSettings" type="button" hidden></button>
 <div id="pieceGapKnob" hidden></div><div id="bleedKnob" hidden></div>
 
 <div class="sheet-overlay" id="sheetOverlay"></div>
@@ -166,11 +189,10 @@
       <p class="hint">ระบบจะตรวจสอบคีย์กับ API ก่อนบันทึก และเก็บไว้เฉพาะในเบราว์เซอร์เครื่องนี้</p>
     </div>
     <div class="api-key-state" id="apiKeyStatus" role="status" aria-live="polite">กำลังตรวจสอบสถานะ…</div>
-    <div class="api-settings-actions"><button class="primary-action" id="saveApiKey" type="button">ตรวจสอบและบันทึก</button><button class="secondary-action" id="clearApiKey" type="button">ลบคีย์จากเครื่องนี้</button></div>
+    <div class="api-settings-actions"><button class="primary-action" id="saveApiKey" type="button">ตรวจสอบและบันทึก</button><button class="secondary-action" id="clearApiKey" type="button">ออกจากระบบและลบคีย์</button></div>
     <p class="api-security-note"><strong>ข้อควรระวัง</strong> ไม่ควรบันทึกคีย์บนเครื่องสาธารณะหรือเครื่องที่ใช้ร่วมกัน การจัดเก็บแบบนี้เหมาะกับ MVP ภายในทีมเท่านั้น</p>
   </div>
 </aside>
-<aside class="side-sheet" id="materialsServicesSheet" aria-hidden="true"><div class="sheet-head"><h2>วัสดุและบริการเพิ่มเติม</h2><button class="close-sheet" type="button" onclick="closeSide()">×</button></div><div class="sheet-body"><p>เลือกวัสดุและบริการได้ในขั้นตอนราคา</p></div></aside>
 <aside class="side-sheet" id="paperPreviewSheet" aria-hidden="true"><div class="sheet-head"><h2>จัดการ Preset กระดาษ</h2></div></aside><aside class="side-sheet" id="briefAssetsSheet" aria-hidden="true"><div class="sheet-head"><h2>ไฟล์บรีฟ</h2></div></aside>
 
 <div class="modal" id="presetModal" aria-hidden="true"><div class="modal-card"><div class="modal-head"><h2>เพิ่มขนาดกระดาษ</h2><button class="close-sheet" id="cancelPreset" type="button">×</button></div><div class="modal-body"><div class="field"><label class="label" for="pName">ชื่อ</label><input id="pName"></div><div class="row2"><div class="field"><label class="label" for="pW">กว้าง</label><input id="pW" type="number"></div><div class="field"><label class="label" for="pH">สูง</label><input id="pH" type="number"></div></div><div class="field"><select id="pMode"><option value="margin">เว้นขอบมาตรฐาน</option><option value="full">ใช้เต็มแผ่น</option><option value="custom">กำหนดเอง</option></select></div><div id="customArea" class="row2" hidden><input id="pUW" type="number"><input id="pUH" type="number"></div><div id="presetError" class="status"></div><button class="primary-action" id="savePreset" type="button">เพิ่ม</button><button id="deletePreset" type="button" hidden></button><button id="addPreset" type="button" hidden></button></div></div></div>
@@ -183,21 +205,22 @@
 
 <button id="downloadBrief" type="button" hidden>ส่งบรีฟ</button><div id="briefStatus" hidden></div>
 
-<script src="js/core.js?v=20260901-api-key-normalize"></script>
-<script src="js/api.js?v=20260831-material-preview"></script>
+<script src="js/core.js?v=20260901-ticket-brief-shape"></script>
+<script src="js/api.js?v=20260901-ticket-brief-shape"></script>
 <script src="js/presets.js?v=20260831-material-preview"></script>
 <script src="js/materials.js?v=20260831-material-preview"></script>
-<script src="js/services.js?v=20260831-material-preview"></script>
-<script src="js/artwork.js?v=20260901-preview-carousel"></script>
+<script src="js/services.js?v=20260901-ticket-brief-shape"></script>
+<script src="js/artwork.js?v=20260901-ticket-brief-shape"></script>
+<script src="js/shape-mask.js?v=20260901-shape-mask"></script>
 <script src="js/material-preview.js?v=20260901-shader-toggle"></script>
 <script src="js/piece-preview.js?v=20260901-preview-modes"></script>
-<script src="js/calculator.js?v=20260901-artwork-rotation"></script>
-<script src="js/brief.js?v=20260901-shader-toggle"></script>
-<script src="js/cart.js?v=20260901-artwork-rotation"></script>
+<script src="js/calculator.js?v=20260901-ticket-brief-shape"></script>
+<script src="js/brief.js?v=20260901-ticket-brief-shape"></script>
+<script src="js/cart.js?v=20260901-ticket-brief-shape"></script>
 <script src="js/customer.js?v=20260831-material-preview"></script>
 <script src="js/workflow.js?v=20260831-material-preview"></script>
-<script src="js/quote.js?v=20260831-material-preview"></script>
-<script src="js/app.js?v=20260901-api-settings"></script>
-<script src="js/flow.js?v=20260901-shader-toggle"></script>
+<script src="js/quote.js?v=20260901-ticket-brief-shape"></script>
+<script src="js/app.js?v=20260901-ticket-brief-shape"></script>
+<script src="js/flow.js?v=20260901-ticket-brief-shape"></script>
 </body>
 </html>

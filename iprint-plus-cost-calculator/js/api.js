@@ -20,7 +20,8 @@ const IPRINT_TEST_FIXTURES = {
       { id: 'test-cut-sticker', category: 'การตัด', name: 'ไดคัท', material: 'All Sticker', price: 1, unit: 'piece', sortOrder: 60, active: true },
       { id: 'test-cut-acrylic', category: 'การตัด', name: 'ติดแผ่นอคลีลิก Die-cut', material: 'Acrylic', price: 50, unit: 'piece', sortOrder: 70, active: true },
       { id: 'test-cut-plastwood', category: 'การตัด', name: 'ติดแผ่นพลาสวูด Die-cut', material: 'Plastwood', price: 20, unit: 'sheet', sortOrder: 80, active: true },
-      { id: 'test-diy', category: 'DIY Solution', name: 'DIY ส่วนเสริม', material: 'Plastwood', price: 0.5, unit: 'piece', sortOrder: 90, active: true }
+      { id: 'test-diy', category: 'DIY Solution', name: 'DIY ส่วนเสริม', material: 'Plastwood', price: 0.5, unit: 'piece', sortOrder: 90, active: true },
+      { id: 'test-rounded-corner', category: 'DIY Solution', name: 'ไดคัทตัดมุม', material: 'มุมมน • ค่าเริ่มต้นไม่เลือก = มุมฉาก 0°', price: 0, unit: 'piece', sortOrder: 95, active: true }
     ]
   },
   customers: {

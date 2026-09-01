@@ -15,6 +15,7 @@ function isCuttingService(service) {
 function serviceGroupDefinition(service) {
   if (isPrintSideService(service)) return { key: 'print', title: 'รูปแบบการพิมพ์', exclusive: true, noneLabel: '' };
   if (isLaminationService(service)) return { key: 'lamination', title: 'การเคลือบ', exclusive: true, noneLabel: 'ไม่เคลือบ' };
+  if (/DIY Solution/i.test(String(service?.category || ''))) return { key: 'other-DIY-Solution', title: 'DIY Solution', exclusive: false, noneLabel: '' };
   if (isCuttingService(service)) return { key: 'cutting', title: 'การตัด', exclusive: true, noneLabel: 'ไม่ตัด' };
   const title = String(service?.category || 'บริการเพิ่มเติม');
   return { key: `other-${title}`, title, exclusive: false, noneLabel: '' };
@@ -156,6 +157,19 @@ async function syncServices() {
     const data = await getJSON(API.services);
     services = (data.services || []).filter(service => service && service.name && service.active !== false)
       .sort((a, b) => (Number(a.sortOrder) || 9999) - (Number(b.sortOrder) || 9999));
+    if (!services.some(service => /ไดคัทตัดมุม|rounded.?corner/i.test(String(service.name || '')))) {
+      services.push({
+        id: 'ui-diy-rounded-corner',
+        category: 'DIY Solution',
+        name: 'ไดคัทตัดมุม',
+        material: 'มุมมน • ค่าเริ่มต้นไม่เลือก = มุมฉาก 0°',
+        price: 0,
+        unit: 'piece',
+        sortOrder: 95,
+        active: true,
+        virtual: true
+      });
+    }
     cachePut(CACHE.services, services);
     renderServices();
   } catch (error) {

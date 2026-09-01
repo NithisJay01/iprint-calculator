@@ -74,6 +74,10 @@ function flowPreviewHasDiecut() {
   return (lastCalc?.services || []).some(service => /ไดคัท|die.?cut/.test(String(service?.name || '').toLowerCase()));
 }
 
+function flowPreviewHasRoundedCorner() {
+  return (lastCalc?.services || []).some(service => /ตัดมุม|rounded.?corner/.test(String(service?.name || '').toLowerCase()));
+}
+
 function previewArtworkMarkup(side, width, height) {
   const artwork = typeof getArtworkPreviewUrl === 'function' ? getArtworkPreviewUrl(side) : '';
   if (!artwork) return '<span class="preview-gallery-empty">ยังไม่มีภาพ</span>';
@@ -85,7 +89,8 @@ function previewArtworkMarkup(side, width, height) {
 function previewGalleryPieceMarkup(side, width, height) {
   const materialClass = flowPreviewMaterialClass();
   const diecutClass = flowPreviewHasDiecut() ? ' has-diecut-effect' : '';
-  return `<span class="preview-gallery-piece${diecutClass}">${previewArtworkMarkup(side, width, height)}${materialClass ? `<i class="piece-material-effect ${materialClass}" aria-hidden="true"></i>` : ''}</span>`;
+  const cornerClass = flowPreviewHasRoundedCorner() ? ' has-rounded-corner' : '';
+  return `<span class="preview-gallery-piece${diecutClass}${cornerClass}">${previewArtworkMarkup(side, width, height)}${materialClass ? `<i class="piece-material-effect ${materialClass}" aria-hidden="true"></i>` : ''}</span>`;
 }
 
 function imposedPieceDimensions() {

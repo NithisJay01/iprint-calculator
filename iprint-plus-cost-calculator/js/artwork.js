@@ -283,6 +283,7 @@ function clearTemporaryImages() {
   referenceImages = [];
   $('artworkImage').value = '';
   $('referenceImages').value = '';
+  if (typeof clearDiecutShape === 'function') clearDiecutShape();
   updateArtworkControls();
   calculate();
 }

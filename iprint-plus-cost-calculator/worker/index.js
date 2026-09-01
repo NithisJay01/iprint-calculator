@@ -1156,6 +1156,7 @@ export default {
             return true;
           };
           const serviceIds = (Array.isArray(item.services) ? item.services : [])
+            .filter(service => !service?.virtual)
             .map(service => String(service?.id || "").trim())
             .filter(Boolean);
 
@@ -1196,6 +1197,7 @@ export default {
                productionService: item.productionService || "laser",
                artworkSides: item.artworkSides || { hasFront: false, hasBack: false, useFrontForBack: false },
                briefFileLink: item.briefFileLink || "",
+               diecutShape: item.diecutShape || { active: false },
                price: item.price,
                brief: item.brief,
                briefDeadline: item.briefDeadline,
@@ -1281,20 +1283,14 @@ export default {
           image: { type: "file_upload", file_upload: { id: uploadId } }
         });
         const children = [
-          heading(`ออเดอร์ ${quoteNo}`, 1),
+          heading(`Brief งานพิมพ์ ${quoteNo}`, 1),
           paragraph(`ลูกค้า: ${shortText(order.customer || "-")} • ${orderItems.length} รายการ`),
           paragraph(`ผู้รับ: ${shortText(order.recipient || "-")} • ติดต่อ: ${shortText(order.contact || "-")}`),
-          paragraph(`ที่อยู่จัดส่ง: ${shortText(order.address || "-")} • ยอดรวม ฿${Number(order.grandTotal || order.total || 0).toLocaleString("th-TH", { maximumFractionDigits: 2 })}`),
-          paragraph(`ขอพิจารณาแก้ไขราคา: ${order.priceReviewRequested ? "ใช่" : "ไม่"}`)
+          paragraph(`ที่อยู่จัดส่ง: ${shortText(order.address || "-")}`)
         ];
 
         try {
-          const quoteUploadId = await uploadFile(form.get("quotePreview"), `${quoteNo}-quote.png`);
-          if (quoteUploadId) {
-            children.push(heading("ใบเสนอราคา"), imageBlock(quoteUploadId));
-          }
-
-          children.push(heading("รายการชิ้นงาน"));
+          children.push(heading("Brief รายการชิ้นงาน"));
           for (const [index, item] of orderItems.entries()) {
             children.push(
               heading(`#${index + 1} ${item.name}`),
@@ -1302,8 +1298,7 @@ export default {
               paragraph(`Preset: ${shortText(item.paper?.name || "-")} • ${Number(item.yield || 0).toLocaleString("th-TH")} ดวง/แผ่น • ใช้ ${Number(item.sheets || 0).toLocaleString("th-TH")} แผ่น`),
               paragraph(`วัสดุ: ${shortText(item.material?.name || "-")} • บริการ: ${(item.services || []).map(service => shortText(service.name)).join(", ") || "-"}`),
               paragraph(`Artwork: หน้า ${item.artworkSides?.hasFront ? "พร้อม" : "ไม่มี"} • หลัง ${item.artworkSides?.hasBack ? "พร้อม" : "ไม่มี"}${item.artworkSides?.useFrontForBack ? " • ใช้ภาพเดียวกัน" : ""}`),
-              paragraph(`Deadline กราฟิก: ${shortText(item.briefDeadline || "-")} • ส่งมอบ: ${shortText(item.deliveryDeadline || "-")}`),
-              paragraph(`ราคาขาย ฿${Number(item.price || 0).toLocaleString("th-TH", { maximumFractionDigits: 2 })}`)
+              paragraph(`Deadline กราฟิก: ${shortText(item.briefDeadline || "-")} • ส่งมอบ: ${shortText(item.deliveryDeadline || "-")}`)
             );
             const variants = Array.isArray(item.variants) ? item.variants : [];
             if (variants.length) {
