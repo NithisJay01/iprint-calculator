@@ -495,8 +495,9 @@ function bindFlow() {
     const art = button.querySelector('.service-art');
     $('serviceHero').dataset.selectedService = selectedHomeService;
     $('serviceHero').setAttribute('aria-label', `กำลังเลือกบริการ ${button.dataset.title || ''}`);
-    $('serviceHero').querySelector('.hero-service-art').className = art?.className + ' hero-service-art';
-    $('serviceHero').querySelector('.hero-service-art').textContent = art?.textContent || '';
+    const heroArt = $('serviceHero').querySelector('.hero-service-art');
+    heroArt.className = art?.className + ' hero-service-art';
+    heroArt.replaceChildren(...[...art?.children || []].map(child => child.cloneNode(true)));
     $('serviceHeroTitle').textContent = button.dataset.title || '';
     $('serviceHeroDescription').textContent = button.dataset.description || '';
   }));

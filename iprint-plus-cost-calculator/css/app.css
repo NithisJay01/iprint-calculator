@@ -222,4 +222,7 @@ html{background:#dce9f5}body{padding:0;background:#dce9f5;color:#080808}.mobile-
 
 #workflowNewOrder{position:sticky;z-index:8;bottom:12px;box-shadow:0 10px 28px rgba(6,59,112,.24)}
 
+/* Replaceable UI artwork lives in /image. */
+.header-settings>img{display:block;width:21px;height:21px}.service-art>img{display:block;width:46%;height:46%;object-fit:contain}.hero-service-art>img{width:52%;height:52%}.preview-drop-hint span img{display:block;width:20px;height:20px}.button-icon{display:inline-block;width:17px;height:17px;flex:0 0 17px;object-fit:contain}.primary-action,.secondary-action,.artwork-upload-button span,.cost-piece-tools button,.artwork-current-actions button{gap:7px}.api-settings-icon{background:transparent}.api-settings-icon>img{display:block;width:44px;height:44px}.close-sheet{font-size:0;background:#fff url('../image/close.svg') center/18px 18px no-repeat}.close-sheet>img{display:block;width:18px;height:18px;margin:auto}.preview-carousel-controls>[data-preview-carousel-action="prev"]{font-size:0;background:#fff url('../image/arrow-left.svg') center/18px 18px no-repeat}.preview-carousel-controls>[data-preview-carousel-action="next"]{font-size:0;background:#fff url('../image/arrow-right.svg') center/18px 18px no-repeat}.cart-item-remove,[data-remove-variant]{font-size:0;background-image:url('../image/close.svg');background-position:center;background-repeat:no-repeat;background-size:16px 16px}
+
 @media (min-width:1440px){.mobile-app{width:min(calc(100% - 64px),1280px)}.app-view{padding-inline:40px}}

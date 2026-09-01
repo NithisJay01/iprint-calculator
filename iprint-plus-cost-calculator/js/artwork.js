@@ -112,7 +112,7 @@ function renderArtworkSummaries() {
     const rotate = document.createElement('button');
     rotate.type = 'button';
     rotate.className = 'artwork-summary-rotate';
-    rotate.textContent = '↻ หมุน 90°';
+    rotate.innerHTML = '<img class="button-icon" src="image/rotate.svg" alt="">หมุน 90°';
     rotate.addEventListener('click', () => rotateArtworkImage(activeArtworkSide));
     const clear = document.createElement('button');
     clear.type = 'button';

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#eef6ff">
   <title>iPrint</title>
-  <link rel="stylesheet" href="css/app.css?v=20260901-ticket-brief-shape">
+  <link rel="stylesheet" href="css/app.css?v=20260901-image-assets">
 </head>
 <body>
 <section class="login-gate" id="loginGate" aria-labelledby="loginTitle">
@@ -30,7 +30,7 @@
     </button>
     <div class="header-actions">
       <button class="header-settings" id="openApiSettings" type="button" aria-label="ตั้งค่าการเชื่อมต่อ API" title="ตั้งค่าการเชื่อมต่อ API">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm8.2 4.8-1.7 1a7 7 0 0 1-.7 1.7l.5 1.9-2.4 2.4-1.9-.5a7 7 0 0 1-1.7.7l-1 1.7H8l-1-1.7a7 7 0 0 1-1.7-.7l-1.9.5L1 17.9l.5-1.9a7 7 0 0 1-.7-1.7l-1.7-1v-2.6l1.7-1a7 7 0 0 1 .7-1.7L1 6.1l2.4-2.4 1.9.5A7 7 0 0 1 7 3.5l1-1.7h2.6l1 1.7a7 7 0 0 1 1.7.7l1.9-.5 2.4 2.4-.5 1.9a7 7 0 0 1 .7 1.7l1.7 1v2.6Z" transform="translate(1.5 .5) scale(.87)"/></svg>
+        <img src="image/settings.svg" alt="">
       </button>
       <button class="header-cart" id="openCart" type="button" aria-label="เปิดตะกร้า">
         <img src="image/cart.svg" alt=""><span id="cartCount">0</span>
@@ -49,13 +49,13 @@
   <main class="app-views">
     <section class="app-view is-active home-view" data-app-view="home">
       <div class="page-intro"><h1>พิมพ์ กับ iPrint+</h1><p>พิมพ์กับทีมงานหลังบ้านที่เข้าใจคุณ</p></div>
-      <div class="home-hero" id="serviceHero" data-selected-service="laser" aria-label="กำลังเลือกบริการพิมพ์ Laser"><div class="service-art laser hero-service-art">✦</div><div><small>บริการที่เลือก</small><strong id="serviceHeroTitle">พิมพ์ Laser เครื่อง Konica</strong><span id="serviceHeroDescription">งานสีคมชัด เหมาะกับงานจำนวนน้อยถึงกลาง</span></div></div>
+      <div class="home-hero" id="serviceHero" data-selected-service="laser" aria-label="กำลังเลือกบริการพิมพ์ Laser"><div class="service-art laser hero-service-art"><img src="image/service-laser.svg" alt=""></div><div><small>บริการที่เลือก</small><strong id="serviceHeroTitle">พิมพ์ Laser เครื่อง Konica</strong><span id="serviceHeroDescription">งานสีคมชัด เหมาะกับงานจำนวนน้อยถึงกลาง</span></div></div>
       <button class="primary-action" id="startPrintOrder" type="button">สั่งพิมพ์</button>
       <section class="service-showcase">
         <div class="section-heading"><strong>เลือกบริการ</strong><span>บริการอื่นๆ</span></div>
         <div class="service-showcase-grid">
-          <button class="service-card is-selected" type="button" data-service-option="laser" data-title="พิมพ์ Laser เครื่อง Konica" data-description="งานสีคมชัด เหมาะกับงานจำนวนน้อยถึงกลาง" aria-pressed="true"><span class="service-state">Selected</span><div class="service-art laser">✦</div><strong>บริการพิมพ์ Laser เครื่อง Konica</strong><p>งานสีคมชัด เหมาะกับงานจำนวนน้อยถึงกลาง</p></button>
-          <button class="service-card is-coming-soon" type="button" data-service-option="inkjet" data-title="พิมพ์ Inkjet ระบบ HP Latex" data-description="งานป้าย สติกเกอร์ และงานขนาดใหญ่" aria-disabled="true"><span class="service-state">Coming soon</span><div class="service-art inkjet">▦</div><strong>บริการพิมพ์ Inkjet ระบบ HP Latex</strong><p>งานป้าย สติกเกอร์ และงานขนาดใหญ่</p></button>
+          <button class="service-card is-selected" type="button" data-service-option="laser" data-title="พิมพ์ Laser เครื่อง Konica" data-description="งานสีคมชัด เหมาะกับงานจำนวนน้อยถึงกลาง" aria-pressed="true"><span class="service-state">Selected</span><div class="service-art laser"><img src="image/service-laser.svg" alt=""></div><strong>บริการพิมพ์ Laser เครื่อง Konica</strong><p>งานสีคมชัด เหมาะกับงานจำนวนน้อยถึงกลาง</p></button>
+          <button class="service-card is-coming-soon" type="button" data-service-option="inkjet" data-title="พิมพ์ Inkjet ระบบ HP Latex" data-description="งานป้าย สติกเกอร์ และงานขนาดใหญ่" aria-disabled="true"><span class="service-state">Coming soon</span><div class="service-art inkjet"><img src="image/service-inkjet.svg" alt=""></div><strong>บริการพิมพ์ Inkjet ระบบ HP Latex</strong><p>งานป้าย สติกเกอร์ และงานขนาดใหญ่</p></button>
         </div>
       </section>
     </section>
@@ -67,10 +67,10 @@
         <div class="layout-preview-card" id="previewDropZone">
           <div class="preview-scroll"><div class="sheet-preview" id="sheetPreview"></div></div>
           <div class="sheet-dimensions"><span id="sheetWidthLabel">— mm</span><span id="sheetHeightLabel">— mm</span></div>
-          <div class="preview-drop-hint" aria-hidden="true"><span>⇩</span> วางภาพงานใน Preview</div>
+          <div class="preview-drop-hint" aria-hidden="true"><span><img src="image/upload.svg" alt=""></span> วางภาพงานใน Preview</div>
         </div>
-        <label class="artwork-upload-button" for="artworkImage"><span>อัพโหลดตัวอย่าง Artwork</span></label>
-        <div class="artwork-current layout-artwork-current" id="artworkCurrent" hidden><img id="artworkThumbnail" alt="ภาพงานหลักที่เลือก"><div><strong id="artworkName">—</strong><span id="artworkMeta">—</span></div><div class="artwork-current-actions"><button id="rotateArtworkImage" type="button">↻ หมุน 90°</button><button id="clearArtworkImage" type="button">ล้างภาพ</button></div></div>
+        <label class="artwork-upload-button" for="artworkImage"><span><img class="button-icon" src="image/upload.svg" alt="">อัพโหลดตัวอย่าง Artwork</span></label>
+        <div class="artwork-current layout-artwork-current" id="artworkCurrent" hidden><img id="artworkThumbnail" alt="ภาพงานหลักที่เลือก"><div><strong id="artworkName">—</strong><span id="artworkMeta">—</span></div><div class="artwork-current-actions"><button id="rotateArtworkImage" type="button"><img class="button-icon" src="image/rotate.svg" alt="">หมุน 90°</button><button id="clearArtworkImage" type="button">ล้างภาพ</button></div></div>
       </section>
 
       <section class="form-card">
@@ -90,7 +90,7 @@
         <h2>ผลลัพธ์การคำนวณ Layout</h2>
         <dl><div><dt>จำนวนต่อแผ่น</dt><dd><span id="yield">—</span> ชิ้น / แผ่น</dd></div><div><dt>การจัดเรียง (Layout)</dt><dd id="layoutDirection">—</dd></div><div class="summary-total"><dt>จำนวนแผ่นที่ต้องใช้</dt><dd><span id="sheets">—</span> แผ่น</dd></div></dl>
       </section>
-      <div class="flow-actions"><button class="secondary-action" data-flow-back="home" type="button">‹ กลับ</button><button class="primary-action" id="openMaterialsServices" type="button">เลือกดูวัสดุ</button></div>
+      <div class="flow-actions"><button class="secondary-action" data-flow-back="home" type="button"><img class="button-icon" src="image/arrow-left.svg" alt="">กลับ</button><button class="primary-action" id="openMaterialsServices" type="button">เลือกดูวัสดุ</button></div>
     </section>
 
     <section class="app-view" data-app-view="cost">
@@ -98,7 +98,7 @@
         <div class="card-summary-line"><strong>สรุปการวางชิ้นงาน</strong><b id="costLayoutSummary">—</b></div>
         <div class="cost-preview-mode-toggle" id="costPreviewModeToggle" role="group" aria-label="เลือกรูปแบบ Preview"><button class="is-selected" type="button" data-cost-preview-mode="sheet" aria-pressed="true">Preview รายแผ่น</button><button type="button" data-cost-preview-mode="piece" aria-pressed="false">Preview รายชิ้น</button></div>
         <div class="material-effect-toggle"><span><strong>Shader Preview</strong><small>แสงสะท้อนและเอฟเฟกต์วัสดุ</small></span><label class="switch-control" for="materialShaderToggle"><input id="materialShaderToggle" type="checkbox" checked><i aria-hidden="true"></i><b id="materialShaderToggleStatus">เปิด</b></label></div>
-        <div class="cost-piece-tools" id="costPieceTools" hidden><button id="rotateCostPiecePaper" type="button">↻ หมุนหน้ากระดาษ 90°</button><output id="costPiecePaperRotation">มุมหน้ากระดาษ 0°</output></div>
+        <div class="cost-piece-tools" id="costPieceTools" hidden><button id="rotateCostPiecePaper" type="button"><img class="button-icon" src="image/rotate.svg" alt="">หมุนหน้ากระดาษ 90°</button><output id="costPiecePaperRotation">มุมหน้ากระดาษ 0°</output></div>
         <section class="diecut-shape-control" aria-labelledby="diecutShapeTitle"><div><strong id="diecutShapeTitle">Shape ไดคัท</strong><small>PNG โปร่งใส หรือ SVG สีทึบ • ใช้เป็น Clipping mask บน Artwork</small></div><div class="diecut-shape-actions"><label for="diecutShapeFile">อัปโหลด Shape</label><button id="clearDiecutShape" type="button" hidden>ล้าง Shape</button></div><output id="diecutShapeStatus">ยังไม่ได้เลือก Shape • มุมฉาก 0°</output></section>
         <div class="cost-preview-wrap" id="materialPreviewInteraction"><div class="material-preview-stage" id="materialPreviewStage"><div class="sheet-preview cost-sheet-preview" id="costSheetPreview"></div><div class="material-css-reflection" aria-hidden="true"></div><canvas id="materialShaderCanvas" class="material-shader-canvas" aria-hidden="true" hidden></canvas></div></div>
         <div class="preview-interaction-hint" id="materialPreviewHint" hidden>ลากซ้าย–ขวาเพื่อดูแสงสะท้อน</div>
@@ -111,7 +111,7 @@
         <div class="field"><select id="materialSelect"><option value="">กำลังโหลดวัสดุจาก Notion…</option></select><div class="ms-status" id="materialStatus">—</div><div id="selectedMaterialSummary" class="material-selected" hidden></div></div>
         <div id="servicesContainer"><div class="ms-status">กำลังโหลดบริการจาก Notion…</div></div><div class="ms-status" id="serviceStatus">—</div>
       </section>
-      <div class="flow-actions cost-cta-actions"><button class="secondary-action" data-flow-back="layout" type="button">‹ กลับ</button><button class="primary-action" data-flow-next="brief" type="button">ขั้นตอนถัดไป</button></div>
+      <div class="flow-actions cost-cta-actions"><button class="secondary-action" data-flow-back="layout" type="button"><img class="button-icon" src="image/arrow-left.svg" alt="">กลับ</button><button class="primary-action" data-flow-next="brief" type="button">ขั้นตอนถัดไป<img class="button-icon" src="image/arrow-right-light.svg" alt=""></button></div>
       <section class="outline-summary cost-analysis">
         <h2>คำนวณต้นทุนและราคา</h2><p class="internal-note">“ข้อมูลภายในสำหรับคำนวนดูเท่านั้นระบบจะไม่ส่งข้อมูล”</p>
         <div class="summary-settings row2"><div class="field"><label class="label" for="cost">ต้นทุนต่อแผ่น</label><input id="cost" type="number" min="0" step="0.01" value="2.5"></div><div class="field"><label class="label" for="profitPercent">กำไรที่ต้องการ (%)</label><input id="profitPercent" type="number" min="0" step="1" value="30"></div></div>
@@ -137,13 +137,13 @@
       </div>
       <section class="reference-section"><div class="section-heading"><strong>ภาพงานอ้างอิง (ถ้ามี–สูงสุด 3 ภาพ)</strong></div><label class="reference-upload" for="referenceImages">+ เพิ่มภาพ Ref</label><div class="reference-list" id="referenceList"></div></section>
       <div class="brief-deadline-grid"><div class="field"><label class="label" for="briefDeadline">วันส่งตรวจไฟล์</label><div class="date-input-shell"><input id="briefDeadline" type="text" inputmode="numeric" maxlength="10" placeholder="DD/MM/YYYY" autocomplete="off"><span class="date-picker-icon" aria-hidden="true">▣</span><input class="native-date-control" data-date-for="briefDeadline" type="date" lang="en-GB" aria-label="เลือกวันส่งตรวจไฟล์จากปฏิทิน"></div><div class="field-error" id="briefDeadlineError"></div></div><div class="field"><label class="label" for="deliveryDeadline">กำหนดวันส่งมอบสินค้า</label><div class="date-input-shell"><input id="deliveryDeadline" type="text" inputmode="numeric" maxlength="10" placeholder="DD/MM/YYYY" autocomplete="off"><span class="date-picker-icon" aria-hidden="true">▣</span><input class="native-date-control" data-date-for="deliveryDeadline" type="date" lang="en-GB" aria-label="เลือกวันส่งมอบจากปฏิทิน"></div><div class="field-error" id="deliveryDeadlineError"></div></div></div>
-      <div class="brief-form-status status" id="briefFormStatus" aria-live="polite"></div><div class="flow-actions"><button class="secondary-action" data-flow-back="cost" type="button">‹ กลับ</button><button class="primary-action" id="reviewBrief" type="button">ถัดไป →</button></div>
+      <div class="brief-form-status status" id="briefFormStatus" aria-live="polite"></div><div class="flow-actions"><button class="secondary-action" data-flow-back="cost" type="button"><img class="button-icon" src="image/arrow-left.svg" alt="">กลับ</button><button class="primary-action" id="reviewBrief" type="button">ถัดไป<img class="button-icon" src="image/arrow-right-light.svg" alt=""></button></div>
     </section>
 
     <section class="app-view" data-app-view="review">
       <article class="brief-review-card" id="briefReviewContent"></article>
       <div class="page-intro review-intro"><h1>ตัวอย่าง Brief ของชิ้นงาน</h1><p>ตรวจสอบความถูกต้องของข้อมูลทั้งหมดก่อนบันทึกและส่งต่อกราฟิก</p></div>
-      <div class="flow-actions"><button class="secondary-action" id="editBrief" type="button">‹ แก้บรีฟ</button><button class="primary-action" id="addToCart" type="button">+ เพิ่มลงตะกร้า</button></div>
+      <div class="flow-actions"><button class="secondary-action" id="editBrief" type="button"><img class="button-icon" src="image/arrow-left.svg" alt="">แก้บรีฟ</button><button class="primary-action" id="addToCart" type="button"><img class="button-icon" src="image/plus.svg" alt="">เพิ่มลงตะกร้า</button></div>
       <div class="brief-status status" id="cartStatus" aria-live="polite"></div>
     </section>
 
@@ -177,10 +177,10 @@
 
 <div class="sheet-overlay" id="sheetOverlay"></div>
 <aside class="side-sheet api-settings-sheet" id="apiSettingsSheet" aria-hidden="true">
-  <div class="sheet-head"><div><small>IPRINT FLOW</small><h2>ตั้งค่าการเชื่อมต่อ</h2></div><button class="close-sheet" id="closeApiSettings" type="button" aria-label="ปิดหน้าตั้งค่า">×</button></div>
+  <div class="sheet-head"><div><small>IPRINT FLOW</small><h2>ตั้งค่าการเชื่อมต่อ</h2></div><button class="close-sheet" id="closeApiSettings" type="button" aria-label="ปิดหน้าตั้งค่า"><img src="image/close.svg" alt=""></button></div>
   <div class="sheet-body">
     <section class="api-settings-card">
-      <div class="api-settings-icon" aria-hidden="true">API</div>
+      <div class="api-settings-icon" aria-hidden="true"><img src="image/api.svg" alt=""></div>
       <div><strong>เชื่อมต่อระบบสร้างออเดอร์</strong><p>ใช้คีย์นี้สำหรับส่ง Brief สร้าง Ticket และอัปเดตสถานะงานใน Notion</p></div>
     </section>
     <div class="field api-key-field">
@@ -210,7 +210,7 @@
 <script src="js/presets.js?v=20260831-material-preview"></script>
 <script src="js/materials.js?v=20260831-material-preview"></script>
 <script src="js/services.js?v=20260901-ticket-brief-shape"></script>
-<script src="js/artwork.js?v=20260901-ticket-brief-shape"></script>
+<script src="js/artwork.js?v=20260901-image-assets"></script>
 <script src="js/shape-mask.js?v=20260901-shape-mask"></script>
 <script src="js/material-preview.js?v=20260901-shader-toggle"></script>
 <script src="js/piece-preview.js?v=20260901-preview-modes"></script>
@@ -221,6 +221,6 @@
 <script src="js/workflow.js?v=20260831-material-preview"></script>
 <script src="js/quote.js?v=20260901-ticket-brief-shape"></script>
 <script src="js/app.js?v=20260901-ticket-brief-shape"></script>
-<script src="js/flow.js?v=20260901-ticket-brief-shape"></script>
+<script src="js/flow.js?v=20260901-image-assets"></script>
 </body>
 </html>
