@@ -164,6 +164,42 @@ function createServiceGroup(groupData, scope = 'main') {
   return group;
 }
 
+function createCuttingDropdown(groupData) {
+  const field = document.createElement('div');
+  field.className = 'layout-cutting-dropdown';
+  const label = document.createElement('label');
+  label.htmlFor = 'layoutCuttingSelect';
+  label.textContent = groupData.definition.title;
+  const select = document.createElement('select');
+  select.id = 'layoutCuttingSelect';
+  const none = document.createElement('option');
+  none.value = '';
+  none.textContent = `${groupData.definition.noneLabel || 'ไม่ตัด'} • ไม่คิดค่าบริการเพิ่มเติม`;
+  select.appendChild(none);
+  groupData.services.forEach(service => {
+    const option = document.createElement('option');
+    option.value = String(service.id);
+    option.textContent = [service.name, service.material, `฿${money(service.price)} /ต่อ${unit(service.unit)}`].filter(Boolean).join(' • ');
+    select.appendChild(option);
+  });
+  const selected = groupData.services.find(service => selectedServiceIds[String(service.id)]);
+  select.value = selected ? String(selected.id) : '';
+  select.addEventListener('change', () => {
+    const hadDiecut = hasSelectedDiecutService();
+    groupData.services.forEach(service => delete selectedServiceIds[String(service.id)]);
+    if (select.value) selectedServiceIds[select.value] = true;
+    saveState();
+    renderServices();
+    calculate();
+    syncDiecutShapeAvailability();
+    const hasDiecut = hasSelectedDiecutService();
+    if (!hadDiecut && hasDiecut) announceUiChange('เลือกบริการไดคัทแล้ว', $('diecutShapeControl'));
+    else if (hadDiecut && !hasDiecut) announceUiChange('ซ่อนส่วนอัปโหลด Shape ไดคัทแล้ว');
+  });
+  field.append(label, select);
+  return field;
+}
+
 function renderServices() {
   const box = $('servicesContainer');
   const printBox = $('layoutPrintServices');
@@ -211,7 +247,9 @@ function renderServices() {
       : groupData.definition.key === 'cutting' && cuttingBox
         ? cuttingBox
         : box;
-    target.appendChild(createServiceGroup(groupData, 'main'));
+    target.appendChild(groupData.definition.key === 'cutting' && target === cuttingBox
+      ? createCuttingDropdown(groupData)
+      : createServiceGroup(groupData, 'main'));
     if (quickBox) quickBox.appendChild(createServiceGroup(groupData, 'quick'));
   });
   $('serviceStatus').textContent = `${dataSourceLabel()} • ${services.length} บริการ`;

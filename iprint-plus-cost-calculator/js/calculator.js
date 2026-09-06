@@ -178,7 +178,7 @@ function drawPreview(p,b,bleedMm,gapMm) {
         artwork.className='piece-artwork';
         artwork.src=artworkUrl;
         artwork.alt='';
-        if(typeof applyArtworkRotation==='function')applyArtworkRotation(artwork,artworkSide,b.pieceW,b.pieceH);
+        if(typeof applyArtworkRotation==='function')applyArtworkRotation(artwork,artworkSide,b.pieceW,b.pieceH,Boolean(b.rotate));
         piece.appendChild(artwork)
       }
       if(materialEffect) {

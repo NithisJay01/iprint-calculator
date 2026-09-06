@@ -177,12 +177,14 @@ function updateFlowStepper(view) {
 function miniLayoutMarkup(maximum = 9, side = 'front') {
   const count = Math.max(1, Math.min(maximum, Number(lastCalc?.b?.yield) || 9));
   const artwork = typeof getArtworkPreviewUrl === 'function' ? getArtworkPreviewUrl(side) : '';
-  const rotation = typeof getArtworkRotation === 'function' ? getArtworkRotation(side) : 0;
-  const scale = typeof artworkRotationScale === 'function'
-    ? artworkRotationScale(rotation, lastCalc?.b?.pieceW, lastCalc?.b?.pieceH)
-    : 1;
+  const rotation = typeof getArtworkPlacementRotation === 'function'
+    ? getArtworkPlacementRotation(side, Boolean(lastCalc?.b?.rotate))
+    : (typeof getArtworkRotation === 'function' ? getArtworkRotation(side) : 0);
+  const box = typeof artworkRotationBox === 'function'
+    ? artworkRotationBox(rotation, lastCalc?.b?.pieceW, lastCalc?.b?.pieceH)
+    : { width: 100, height: 100 };
   return Array.from({ length: count }, () =>
-    `<span>${artwork ? `<i class="mini-artwork" style="background-image:url('${flowEscape(artwork)}');--artwork-rotation:${rotation}deg;--artwork-rotation-scale:${scale}"></i>` : ''}</span>`
+    `<span>${artwork ? `<i class="mini-artwork" style="background-image:url('${flowEscape(artwork)}');--artwork-rotation:${rotation}deg;--artwork-box-width:${box.width}%;--artwork-box-height:${box.height}%"></i>` : ''}</span>`
   ).join('');
 }
 
@@ -205,9 +207,11 @@ function flowPreviewHasRoundedCorner() {
 function previewArtworkMarkup(side, width, height) {
   const artwork = typeof getArtworkPreviewUrl === 'function' ? getArtworkPreviewUrl(side) : '';
   if (!artwork) return '<span class="preview-gallery-empty">ยังไม่มีภาพ</span>';
-  const rotation = typeof getArtworkRotation === 'function' ? getArtworkRotation(side) : 0;
-  const scale = typeof artworkRotationScale === 'function' ? artworkRotationScale(rotation, width, height) : 1;
-  return `<img class="preview-gallery-artwork" data-preview-side="${side}" src="${flowEscape(artwork)}" alt="ภาพงาน${side === 'back' ? 'ด้านหลัง' : 'ด้านหน้า'}" style="--artwork-rotation:${rotation}deg;--artwork-rotation-scale:${scale}">`;
+  const rotation = typeof getArtworkPlacementRotation === 'function'
+    ? getArtworkPlacementRotation(side, Boolean(lastCalc?.b?.rotate))
+    : (typeof getArtworkRotation === 'function' ? getArtworkRotation(side) : 0);
+  const box = typeof artworkRotationBox === 'function' ? artworkRotationBox(rotation, width, height) : { width: 100, height: 100 };
+  return `<img class="preview-gallery-artwork" data-preview-side="${side}" src="${flowEscape(artwork)}" alt="ภาพงาน${side === 'back' ? 'ด้านหลัง' : 'ด้านหน้า'}" style="--artwork-rotation:${rotation}deg;--artwork-box-width:${box.width}%;--artwork-box-height:${box.height}%">`;
 }
 
 function previewGalleryPieceMarkup(side, width, height) {

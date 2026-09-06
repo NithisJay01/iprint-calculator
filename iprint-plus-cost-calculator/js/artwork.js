@@ -37,6 +37,10 @@ function getArtworkRotation(side = activeArtworkSide) {
   return normalizeArtworkRotation(side === 'back' ? artworkRotationBack : artworkRotationFront);
 }
 
+function getArtworkPlacementRotation(side = activeArtworkSide, rotateWithLayout = false) {
+  return normalizeArtworkRotation(getArtworkRotation(side) + (rotateWithLayout ? 90 : 0));
+}
+
 function artworkRotationScale(rotation, width, height) {
   const angle = normalizeArtworkRotation(rotation);
   const safeWidth = Math.max(1, Number(width) || 1);
@@ -44,12 +48,22 @@ function artworkRotationScale(rotation, width, height) {
   return angle % 180 === 0 ? 1 : Math.max(safeWidth / safeHeight, safeHeight / safeWidth);
 }
 
-function applyArtworkRotation(element, side = activeArtworkSide, width = 1, height = 1) {
+function artworkRotationBox(rotation, width, height) {
+  const angle = normalizeArtworkRotation(rotation);
+  const safeWidth = Math.max(1, Number(width) || 1);
+  const safeHeight = Math.max(1, Number(height) || 1);
+  if (angle % 180 === 0) return { width: 100, height: 100 };
+  return { width: safeHeight / safeWidth * 100, height: safeWidth / safeHeight * 100 };
+}
+
+function applyArtworkRotation(element, side = activeArtworkSide, width = 1, height = 1, rotateWithLayout = false) {
   if (!element) return;
-  const rotation = getArtworkRotation(side);
-  const scale = artworkRotationScale(rotation, width, height);
+  const rotation = getArtworkPlacementRotation(side, rotateWithLayout);
+  const box = artworkRotationBox(rotation, width, height);
   element.style.setProperty('--artwork-rotation', `${rotation}deg`);
-  element.style.setProperty('--artwork-rotation-scale', String(scale));
+  element.style.setProperty('--artwork-rotation-scale', '1');
+  element.style.setProperty('--artwork-box-width', `${box.width}%`);
+  element.style.setProperty('--artwork-box-height', `${box.height}%`);
   element.dataset.rotation = String(rotation);
 }
 
@@ -524,3 +538,5 @@ function bindArtwork() {
 window.renderArtworkSummaries = renderArtworkSummaries;
 window.exportArtworkBundle = exportArtworkBundle;
 window.importArtworkBundle = importArtworkBundle;
+window.getArtworkPlacementRotation = getArtworkPlacementRotation;
+window.artworkRotationBox = artworkRotationBox;

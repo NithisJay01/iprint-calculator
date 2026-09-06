@@ -304,6 +304,15 @@ function briefReviewMaterialTint(calc) {
   return '';
 }
 
+function briefReviewArtworkSvg(artworkUrl,x,y,width,height,clipId,maskId='',rotateWithLayout=false) {
+  if(!artworkUrl)return '';
+  const centerX=x+width/2,centerY=y+height/2;
+  const imageWidth=rotateWithLayout?height:width,imageHeight=rotateWithLayout?width:height;
+  const imageX=centerX-imageWidth/2,imageY=centerY-imageHeight/2;
+  const transform=rotateWithLayout?` transform="rotate(90 ${centerX} ${centerY})"`:'';
+  return `<g clip-path="url(#${clipId})"${maskId?` mask="url(#${maskId})"`:''}><image href="${briefEscapeSvg(artworkUrl)}" x="${imageX}" y="${imageY}" width="${Math.max(1,imageWidth)}" height="${Math.max(1,imageHeight)}" preserveAspectRatio="xMidYMid slice"${transform}/></g>`;
+}
+
 function briefReviewSheetSvg(calc,artworkUrl,side,x,y,width,height,shapeUrl='') {
   const paper=calc.paper||{};
   const fullW=Math.max(1,Number(paper.fullW)||1),fullH=Math.max(1,Number(paper.fullH)||1);
@@ -326,7 +335,7 @@ function briefReviewSheetSvg(calc,artworkUrl,side,x,y,width,height,shapeUrl='') 
     const clipId=`review-${side}-${index}`;
     const maskId=`review-shape-${side}-${index}`;
     const mask=shapeUrl?`<mask id="${maskId}" maskUnits="userSpaceOnUse" style="mask-type:alpha"><image href="${briefEscapeSvg(shapeUrl)}" x="${cellX+1}" y="${cellY+1}" width="${Math.max(1,cellW-2)}" height="${Math.max(1,cellH-2)}" preserveAspectRatio="none"/></mask>`:'';
-    const image=artworkUrl?`<image href="${briefEscapeSvg(artworkUrl)}" x="${cellX+1}" y="${cellY+1}" width="${Math.max(1,cellW-2)}" height="${Math.max(1,cellH-2)}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${clipId})"${shapeUrl?` mask="url(#${maskId})"`:''}/>`:'';
+    const image=briefReviewArtworkSvg(artworkUrl,cellX+1,cellY+1,Math.max(1,cellW-2),Math.max(1,cellH-2),clipId,shapeUrl?maskId:'',Boolean(calc.b?.rotate));
     const tint=briefReviewMaterialTint(calc).replace('class="piece-tint"',`x="${cellX+1}" y="${cellY+1}" width="${Math.max(1,cellW-2)}" height="${Math.max(1,cellH-2)}"`);
     const radius=rounded?Math.max(2,Math.min(cellW,cellH)*.12):0;
     cells.push(`<defs><clipPath id="${clipId}"><rect x="${cellX+1}" y="${cellY+1}" width="${Math.max(1,cellW-2)}" height="${Math.max(1,cellH-2)}" rx="${radius}"/></clipPath>${mask}</defs><rect x="${cellX}" y="${cellY}" width="${cellW}" height="${cellH}" rx="${radius}" fill="#fff" stroke="${diecut?'#ff8b00':'#8a949e'}" ${diecut?'stroke-dasharray="3 2"':''}/>${image}${tint}`);
@@ -344,7 +353,7 @@ function briefReviewPieceSvg(calc,artworkUrl,x,y,width,height,shapeUrl='') {
   const radius=rounded?Math.max(5,Math.min(pieceW,pieceH)*.12):0;
   const maskId=`${clipId}-shape`;
   const mask=shapeUrl?`<mask id="${maskId}" maskUnits="userSpaceOnUse" style="mask-type:alpha"><image href="${briefEscapeSvg(shapeUrl)}" x="${pieceX+1}" y="${pieceY+1}" width="${Math.max(1,pieceW-2)}" height="${Math.max(1,pieceH-2)}" preserveAspectRatio="none"/></mask>`:'';
-  const image=artworkUrl?`<image href="${briefEscapeSvg(artworkUrl)}" x="${pieceX+1}" y="${pieceY+1}" width="${Math.max(1,pieceW-2)}" height="${Math.max(1,pieceH-2)}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${clipId})"${shapeUrl?` mask="url(#${maskId})"`:''}/>`:'';
+  const image=briefReviewArtworkSvg(artworkUrl,pieceX+1,pieceY+1,Math.max(1,pieceW-2),Math.max(1,pieceH-2),clipId,shapeUrl?maskId:'',Boolean(calc.b?.rotate));
   const tint=briefReviewMaterialTint(calc).replace('class="piece-tint"',`x="${pieceX+1}" y="${pieceY+1}" width="${Math.max(1,pieceW-2)}" height="${Math.max(1,pieceH-2)}"`);
   return `<rect x="${x}" y="${y}" width="${width}" height="${height}" rx="14" fill="#edf4f8"/><defs><clipPath id="${clipId}"><rect x="${pieceX+1}" y="${pieceY+1}" width="${Math.max(1,pieceW-2)}" height="${Math.max(1,pieceH-2)}" rx="${radius}"/></clipPath>${mask}</defs><rect x="${pieceX}" y="${pieceY}" width="${pieceW}" height="${pieceH}" rx="${radius}" fill="#fff" stroke="${diecut?'#ff8b00':'#8a949e'}" ${diecut?'stroke-dasharray="5 3"':''}/>${image}${tint}${briefReviewSurfaceOverlay(pieceX,pieceY,pieceW,pieceH,calc)}`;
 }
