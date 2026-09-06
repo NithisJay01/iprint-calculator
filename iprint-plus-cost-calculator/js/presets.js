@@ -4,6 +4,7 @@ function renderPresets() {
     const ids=Object.keys(presets);
     if(!ids.length) {
       sel.innerHTML='<option value="">ไม่พบ Preset</option>';
+      if($('quickSheet'))$('quickSheet').innerHTML=sel.innerHTML;
       return
     }
     ids.forEach(id=> {
@@ -14,7 +15,12 @@ function renderPresets() {
     }
     );
     if(!presets[selectedSheet])selectedSheet=ids[0];
-    sel.value=selectedSheet
+    sel.value=selectedSheet;
+    const quickSel=$('quickSheet');
+    if(quickSel) {
+      quickSel.innerHTML=sel.innerHTML;
+      quickSel.value=selectedSheet
+    }
   }
 
 async function syncPresets() {

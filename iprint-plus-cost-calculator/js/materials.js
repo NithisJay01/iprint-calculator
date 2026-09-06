@@ -14,6 +14,11 @@ function renderMaterials() {
     }
     );
     if(selectedMaterialId)sel.value=selectedMaterialId;
+    const quickSel=$('quickMaterialSelect');
+    if(quickSel) {
+      quickSel.innerHTML=sel.innerHTML;
+      quickSel.value=selectedMaterialId
+    }
     setStatus('materialStatus',dataSourceLabel()+' • '+materials.length+' วัสดุ','ok');
     const m=materials.find(x=>String(x.id)===String(selectedMaterialId));
     const s=$('selectedMaterialSummary');

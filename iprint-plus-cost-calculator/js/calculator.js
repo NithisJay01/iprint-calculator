@@ -32,7 +32,8 @@ function resetPreview() {
     $('total').textContent='—';
     $('sale').textContent='—';
     lastCalc=null;
-    if(typeof syncMaterialPreviewEffect==='function')syncMaterialPreviewEffect(null)
+    if(typeof syncMaterialPreviewEffect==='function')syncMaterialPreviewEffect(null);
+    if(typeof syncQuickBriefSummary==='function')syncQuickBriefSummary()
   }
 
 function previewBleed() {
@@ -232,6 +233,7 @@ function calculate() {
         $('bleedSummary').textContent=formatMillimeters(B);
         lastCalc=null;
         if(typeof syncMaterialPreviewEffect==='function')syncMaterialPreviewEffect(null);
+        if(typeof syncQuickBriefSummary==='function')syncQuickBriefSummary();
         return
       }
       const sheets=Math.ceil(Q/b.yield),matCost=selectedMaterialCost(sheets,Q),svcCost=serviceCost(sheets,Q),tc=sheets*C+matCost+svcCost,profit=tc*P/100,sale=tc+profit;

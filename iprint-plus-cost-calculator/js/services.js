@@ -57,12 +57,12 @@ function normalizeExclusiveSelections(grouped) {
   });
 }
 
-function renderServiceRow(service, group) {
+function renderServiceRow(service, group, scope = 'main') {
   const row = document.createElement('label');
   row.className = 'service-row';
   const control = document.createElement('input');
   control.type = group.definition.exclusive ? 'radio' : 'checkbox';
-  if (group.definition.exclusive) control.name = `service-${group.definition.key}`;
+  if (group.definition.exclusive) control.name = `service-${scope}-${group.definition.key}`;
   control.checked = Boolean(selectedServiceIds[String(service.id)]);
   row.classList.toggle('is-selected', control.checked);
   control.addEventListener('change', () => {
@@ -77,15 +77,15 @@ function renderServiceRow(service, group) {
       delete selectedServiceIds[String(service.id)];
     }
     saveState();
-    if (group.definition.exclusive) renderServices();
-    else row.classList.toggle('is-selected', control.checked);
+    renderServices();
     calculate();
     syncDiecutShapeAvailability();
     const hasDiecut = hasSelectedDiecutService();
     const hasDoubleSided = typeof getSelectedPrintSide === 'function' && getSelectedPrintSide() === 'double';
-    if (!hadDiecut && hasDiecut) announceUiChange('เพิ่มส่วนอัปโหลด Shape ไดคัทแล้ว', $('diecutShapeControl'));
+    const quickTarget = document.querySelector('[data-app-view="quickBrief"].is-active') ? $('quickServicesContainer') : null;
+    if (!hadDiecut && hasDiecut) announceUiChange('เลือกบริการไดคัทแล้ว', quickTarget || $('diecutShapeControl'), { scroll: !quickTarget });
     else if (hadDiecut && !hasDiecut) announceUiChange('ซ่อนส่วนอัปโหลด Shape ไดคัทแล้ว');
-    if (!hadDoubleSided && hasDoubleSided) announceUiChange('เพิ่มตัวควบคุม Artwork ด้านหน้าและด้านหลังแล้ว', $('artworkSideControls'));
+    if (!hadDoubleSided && hasDoubleSided) announceUiChange('เลือกรูปแบบพิมพ์หน้า–หลังแล้ว', quickTarget || $('artworkSideControls'), { scroll: !quickTarget });
     else if (hadDoubleSided && !hasDoubleSided) announceUiChange('เปลี่ยนกลับเป็น Artwork ด้านเดียวแล้ว');
   });
 
@@ -112,12 +112,12 @@ function renderServiceRow(service, group) {
   return row;
 }
 
-function renderNoneServiceRow(group) {
+function renderNoneServiceRow(group, scope = 'main') {
   const row = document.createElement('label');
   row.className = 'service-row service-row-none';
   const control = document.createElement('input');
   control.type = 'radio';
-  control.name = `service-${group.definition.key}`;
+  control.name = `service-${scope}-${group.definition.key}`;
   control.checked = !group.services.some(service => selectedServiceIds[String(service.id)]);
   row.classList.toggle('is-selected', control.checked);
   control.addEventListener('change', () => {
@@ -151,15 +151,31 @@ function renderNoneServiceRow(group) {
   return row;
 }
 
+function createServiceGroup(groupData, scope = 'main') {
+  const group = document.createElement('div');
+  group.className = `service-group service-group-${groupData.definition.key.replace(/[^a-z0-9-]/gi, '-')}`;
+  group.dataset.serviceGroup = groupData.definition.key;
+  const title = document.createElement('div');
+  title.className = 'service-group-title';
+  title.textContent = groupData.definition.title;
+  group.appendChild(title);
+  if (groupData.definition.noneLabel) group.appendChild(renderNoneServiceRow(groupData, scope));
+  groupData.services.forEach(service => group.appendChild(renderServiceRow(service, groupData, scope)));
+  return group;
+}
+
 function renderServices() {
   const box = $('servicesContainer');
   const printBox = $('layoutPrintServices');
   const cuttingBox = $('layoutCuttingServices');
+  const quickBox = $('quickServicesContainer');
   box.innerHTML = '';
   if (printBox) printBox.innerHTML = '';
   if (cuttingBox) cuttingBox.innerHTML = '';
+  if (quickBox) quickBox.innerHTML = '';
   if (!services.length) {
     box.innerHTML = '<div class="ms-status">ไม่พบบริการที่ Active</div>';
+    if (quickBox) quickBox.innerHTML = '<div class="ms-status">ไม่พบบริการที่ Active</div>';
     return;
   }
 
@@ -190,21 +206,13 @@ function renderServices() {
   }
 
   groups.forEach(groupData => {
-    const group = document.createElement('div');
-    group.className = `service-group service-group-${groupData.definition.key.replace(/[^a-z0-9-]/gi, '-')}`;
-    group.dataset.serviceGroup = groupData.definition.key;
-    const title = document.createElement('div');
-    title.className = 'service-group-title';
-    title.textContent = groupData.definition.title;
-    group.appendChild(title);
-    if (groupData.definition.noneLabel) group.appendChild(renderNoneServiceRow(groupData));
-    groupData.services.forEach(service => group.appendChild(renderServiceRow(service, groupData)));
     const target = groupData.definition.key === 'print' && printBox
       ? printBox
       : groupData.definition.key === 'cutting' && cuttingBox
         ? cuttingBox
         : box;
-    target.appendChild(group);
+    target.appendChild(createServiceGroup(groupData, 'main'));
+    if (quickBox) quickBox.appendChild(createServiceGroup(groupData, 'quick'));
   });
   $('serviceStatus').textContent = `${dataSourceLabel()} • ${services.length} บริการ`;
   if (typeof syncArtworkSideControls === 'function') syncArtworkSideControls();
