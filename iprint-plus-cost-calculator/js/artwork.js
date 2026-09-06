@@ -475,7 +475,13 @@ function bindPreviewArtworkDrop() {
   let leaveTimer = null;
 
   const filesFrom = event => Array.from(event.dataTransfer?.files || []);
-  const hasFiles = event => filesFrom(event).length > 0;
+  const hasFiles = event => {
+    const transfer = event.dataTransfer;
+    if (!transfer) return false;
+    if (filesFrom(event).length > 0) return true;
+    if (Array.from(transfer.items || []).some(item => item.kind === 'file')) return true;
+    return Array.from(transfer.types || []).includes('Files');
+  };
   const clearDragState = () => {
     clearTimeout(leaveTimer);
     zone.classList.remove('is-drag-over');
@@ -504,6 +510,10 @@ function bindPreviewArtworkDrop() {
     clearDragState();
     const files = filesFrom(event);
     const image = files.find(file => SUPPORTED_IMAGE_TYPES.has(file.type)) || files[0];
+    if (!image) {
+      setAssetStatus('ไม่พบไฟล์ภาพ กรุณาลากไฟล์ PNG, JPG หรือ WebP', 'warn');
+      return;
+    }
     if (!setArtworkImage(image)) return;
     setAssetStatus('วางภาพงานใน Preview แล้ว • ใช้ชั่วคราวและล้างเมื่อส่งบรีฟ');
   });
