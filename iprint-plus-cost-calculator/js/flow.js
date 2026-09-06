@@ -811,7 +811,9 @@ function bindFlow() {
   });
   $('editVariantQuantity')?.addEventListener('click', () => closeVariantQuantityConfirmation(false));
   $('confirmVariantPrice')?.addEventListener('click', () => closeVariantQuantityConfirmation(true));
-  $('editBrief').addEventListener('click', () => showAppView(quickBriefMode ? 'quickBrief' : 'brief'));
+  const returnFromReview = () => showAppView(quickBriefMode ? 'quickBrief' : 'brief');
+  $('editBrief').addEventListener('click', returnFromReview);
+  $('reviewViewBack')?.addEventListener('click', returnFromReview);
   $('editMainArtwork')?.addEventListener('click', () => { showAppView('layout'); requestAnimationFrame(() => $('artworkImage')?.click()); });
   $('editPrintAtLayout')?.addEventListener('click', () => showAppView('layout'));
   $('addAnotherItem').addEventListener('click', () => { prepareNewPrintItem(); showJobSetupQuestion(1); showAppView('jobSetup'); });
