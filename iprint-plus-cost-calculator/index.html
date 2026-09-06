@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#eef6ff">
   <title>iPrint</title>
-  <link rel="stylesheet" href="css/app.css?v=20260906-catalog-table">
+  <link rel="stylesheet" href="css/app.css?v=20260906-ticket-previews">
 </head>
 <body>
 <section class="login-gate" id="loginGate" aria-labelledby="loginTitle">
@@ -77,8 +77,8 @@
           <section class="form-card">
             <h2 class="section-title">ข้อมูลงาน</h2>
             <div class="field"><label class="label" for="quickJobName">ชื่อเรียกงาน</label><input id="quickJobName" maxlength="120" placeholder="เช่น นามบัตรคุณเมย์"></div>
-            <div class="field"><label class="label" for="quickDeliveryDeadline">วันที่ต้องการรับงาน</label><input id="quickDeliveryDeadline" type="date" lang="en-GB"></div>
-            <div class="field"><label class="label" for="quickBriefFileLink">ลิงก์ไฟล์ต้นฉบับ <span class="optional-label">(ถ้ามี)</span></label><input id="quickBriefFileLink" type="url" placeholder="https://..."></div>
+            <div class="field"><label class="label" for="quickDeliveryDeadline">วันที่ต้องการรับงาน</label><div class="date-input-shell"><input id="quickDeliveryDeadline" type="text" inputmode="none" placeholder="DD/MM/YYYY" autocomplete="off" readonly required aria-haspopup="dialog"><span class="date-picker-icon" aria-hidden="true">▣</span><input class="native-date-control" data-date-for="quickDeliveryDeadline" type="date" lang="en-GB" aria-label="เลือกวันที่ต้องการรับงานจากปฏิทิน"></div></div>
+            <div class="field"><label class="label" for="quickBriefFileLink">ลิงก์ไฟล์ต้นฉบับ <span class="optional-label">(จำเป็น)</span></label><input id="quickBriefFileLink" type="url" placeholder="https://..." required aria-required="true"></div>
             <div class="field"><label class="label" for="quickBriefDescription">รายละเอียดเพิ่มเติม <span class="optional-label">(ถ้ามี)</span></label><textarea id="quickBriefDescription" maxlength="1200" placeholder="ระบุคำขอหรือรายละเอียดสำหรับทีมกราฟิก"></textarea></div>
           </section>
           <section class="form-card">
@@ -319,7 +319,7 @@
 
 <script src="js/config.js?v=20260904-public-order"></script>
 <script src="js/core.js?v=20260905-piece-margin"></script>
-<script src="js/api.js?v=20260904-capacity-catalog"></script>
+<script src="js/api.js?v=20260906-ticket-previews"></script>
 <script src="js/presets.js?v=20260906-quick-brief"></script>
 <script src="js/materials.js?v=20260906-quick-brief"></script>
 <script src="js/services.js?v=20260906-quick-brief"></script>
@@ -328,14 +328,14 @@
 <script src="js/material-preview.js?v=20260906-flow-refresh"></script>
 <script src="js/piece-preview.js?v=20260906-annotation-refresh"></script>
 <script src="js/calculator.js?v=20260906-quick-brief"></script>
-<script src="js/brief.js?v=20260906-flow-refresh"></script>
-<script src="js/cart.js?v=20260906-flow-refresh"></script>
+<script src="js/brief.js?v=20260906-ticket-previews"></script>
+<script src="js/cart.js?v=20260906-ticket-previews"></script>
 <script src="js/customer.js?v=20260831-material-preview"></script>
 <script src="js/workflow.js?v=20260831-material-preview"></script>
 <script src="js/quote.js?v=20260904-public-order"></script>
 <script src="js/staff-catalog.js?v=20260906-catalog-table"></script>
 <script src="js/staff-capacity.js?v=20260904-calendar-drag-task"></script>
 <script src="js/app.js?v=20260905-role-layout-controls"></script>
-<script src="js/flow.js?v=20260906-quick-brief"></script>
+<script src="js/flow.js?v=20260906-ticket-previews"></script>
 </body>
 </html>

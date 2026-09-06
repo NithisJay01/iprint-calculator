@@ -1300,6 +1300,7 @@ export default {
                printSide: item.printSide || "unspecified",
                productionService: item.productionService || "laser",
                artworkSides: item.artworkSides || { hasFront: false, hasBack: false, useFrontForBack: false },
+               previewImages: Array.isArray(item.previewImages) ? item.previewImages.slice(0, 3) : [],
                briefFileLink: item.briefFileLink || "",
                diecutShape: item.diecutShape || { active: false },
                price: item.price,
@@ -1412,8 +1413,27 @@ export default {
             children.push(paragraph(`บริการพิมพ์: ${shortText(item.productionService || "laser")} • รูปแบบ: ${printSideLabel}`));
             if (item.briefFileLink) children.push(paragraph(`ไฟล์ต้นฉบับ: ${shortText(item.briefFileLink)}`));
             if (item.brief) children.push(paragraph(`บรีฟ: ${shortText(item.brief)}`));
-            const briefUploadId = await uploadFile(form.get(`brief_${index}`), `${quoteNo}-item-${index + 1}.png`);
-            if (briefUploadId) children.push(imageBlock(briefUploadId));
+            const previewMetadata = Array.isArray(item.previewImages) ? item.previewImages.slice(0, 3) : [];
+            let attachedPreviewCount = 0;
+            for (const [previewIndex, preview] of previewMetadata.entries()) {
+              const fallbackName = `${quoteNo}-item-${index + 1}-preview-${previewIndex + 1}.png`;
+              const previewUploadId = await uploadFile(form.get(`brief_${index}_${previewIndex}`), preview.filename || fallbackName);
+              if (!previewUploadId) continue;
+              children.push(heading(shortText(preview.label || `Preview ${previewIndex + 1}`)), imageBlock(previewUploadId));
+              attachedPreviewCount += 1;
+            }
+            if (!previewMetadata.length) {
+              const legacyUploadId = await uploadFile(form.get(`brief_${index}`), `${quoteNo}-item-${index + 1}.png`);
+              if (legacyUploadId) {
+                children.push(heading("Preview งานพิมพ์"), imageBlock(legacyUploadId));
+                attachedPreviewCount += 1;
+              }
+            }
+            if (!attachedPreviewCount) {
+              children.push(paragraph(item.briefFileLink
+                ? "ไม่มีภาพ Preview • กรุณาตรวจรายละเอียดจากลิงก์ไฟล์ต้นฉบับใน Drive"
+                : "ไม่มีภาพ Preview • กรุณาติดต่อขอลิงก์ Drive เพื่อตรวจรายละเอียดก่อนผลิต"));
+            }
           }
 
           for (let index = 0; index < children.length; index += 80) {

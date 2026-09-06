@@ -206,13 +206,21 @@ async function addCurrentJobToCart() {
 
   try {
     const itemId = editingCartItemId || cartId();
-    const briefImage = await captureBriefImage(lastCalc);
+    const ticketPreviews = typeof captureTicketPreviewImages === 'function'
+      ? await captureTicketPreviewImages(lastCalc)
+      : [];
     const item = snapshotCartItem(lastCalc, itemId);
+    item.previewImages = ticketPreviews.map((preview, index) => ({
+      kind: preview.kind,
+      side: preview.side,
+      label: preview.label,
+      filename: `${itemId}-${preview.kind}-${preview.side || index + 1}.png`
+    }));
     const existingIndex = cartItems.findIndex(entry => entry.id === itemId);
 
     const artworkBundle = typeof exportArtworkBundle === 'function' ? exportArtworkBundle() : null;
     const shapeFile = typeof getDiecutShapeFile === 'function' ? getDiecutShapeFile() : null;
-    await cartAsset('put', itemId, { briefImage, artworkBundle, shapeFile });
+    await cartAsset('put', itemId, { briefImages: ticketPreviews.map(preview => preview.blob), artworkBundle, shapeFile });
 
     if (existingIndex >= 0) {
       cartItems.splice(existingIndex, 1, item);
@@ -381,7 +389,12 @@ async function handleCartAction(event) {
 
 async function cartBriefImages() {
   const stored = await Promise.all(cartItems.map(item => cartAsset('get', item.id)));
-  return stored.map(asset => asset?.briefImage || asset || null);
+  return stored.map(asset => {
+    if (Array.isArray(asset?.briefImages)) return asset.briefImages.filter(image => image instanceof Blob).slice(0, 3);
+    if (asset?.briefImage instanceof Blob) return [asset.briefImage];
+    if (asset instanceof Blob) return [asset];
+    return [];
+  });
 }
 
 function publicOrderItems() {
@@ -405,6 +418,7 @@ function publicOrderItems() {
     ,printSide: item.printSide || 'unspecified'
     ,productionService: item.productionService || 'laser'
     ,artworkSides: item.artworkSides || { hasFront: false, hasBack: false, useFrontForBack: false }
+    ,previewImages: Array.isArray(item.previewImages) ? item.previewImages.slice(0, 3) : []
     ,briefFileLink: item.briefFileLink || ''
     ,diecutShape: item.diecutShape || { active: false }
   }));

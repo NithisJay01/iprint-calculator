@@ -380,23 +380,69 @@ function briefReviewImageSvg(calc,artworkUrls,shapeUrl='') {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="2160" height="${height*2}" viewBox="0 0 1080 ${height}"><defs><linearGradient id="reviewShine" x1="0" y1="0" x2="1" y2="1"><stop offset="18%" stop-color="#fff" stop-opacity="0"/><stop offset="50%" stop-color="#fff" stop-opacity=".9"/><stop offset="82%" stop-color="#fff" stop-opacity="0"/></linearGradient><linearGradient id="reviewHolo" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#45dcff" stop-opacity=".2"/><stop offset=".45" stop-color="#ff58dd" stop-opacity=".55"/><stop offset=".72" stop-color="#ffe85c" stop-opacity=".38"/><stop offset="1" stop-color="#45dcff" stop-opacity=".18"/></linearGradient></defs><style>text{font-family:Arial,Tahoma,sans-serif;fill:#111315}.title{font-size:25px;font-weight:700}.section{font-size:21px;font-weight:700}.body{font-size:17px}.small,.muted{font-size:15px;fill:#61788d}.metric{font-size:18px;font-weight:700}.card-title{font-size:17px;font-weight:700;fill:#063b70}</style><rect width="1080" height="${height}" fill="#eef6ff"/><rect x="36" y="36" width="1008" height="${height-72}" rx="28" fill="#fff" stroke="#063b70" stroke-width="2"/>${content.join('')}</svg>`;
 }
 
+function ticketPreviewDocumentSvg(title, body, height) {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="2160" height="${height*2}" viewBox="0 0 1080 ${height}"><defs><linearGradient id="reviewShine" x1="0" y1="0" x2="1" y2="1"><stop offset="18%" stop-color="#fff" stop-opacity="0"/><stop offset="50%" stop-color="#fff" stop-opacity=".9"/><stop offset="82%" stop-color="#fff" stop-opacity="0"/></linearGradient><linearGradient id="reviewHolo" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#45dcff" stop-opacity=".2"/><stop offset=".45" stop-color="#ff58dd" stop-opacity=".55"/><stop offset=".72" stop-color="#ffe85c" stop-opacity=".38"/><stop offset="1" stop-color="#45dcff" stop-opacity=".18"/></linearGradient></defs><style>text{font-family:Arial,Tahoma,sans-serif;fill:#111315}.title{font-size:26px;font-weight:700}.small{font-size:15px;fill:#61788d}.card-title{font-size:18px;font-weight:700;fill:#063b70}</style><rect width="1080" height="${height}" fill="#eef6ff"/><rect x="32" y="32" width="1016" height="${height-64}" rx="28" fill="#fff" stroke="#063b70" stroke-width="2"/><text x="60" y="78" class="title">${briefEscapeSvg(title)}</text>${body}</svg>`;
+}
+
+function ticketSheetPreviewSvg(calc, artworkUrls, sides, shapeUrl='') {
+  const panelHeight=500;
+  const body=sides.map((side,index)=>{
+    const top=104+index*panelHeight;
+    return `<text x="60" y="${top+24}" class="card-title">${side==='back'?'ด้านหลัง':'ด้านหน้า'}</text>${briefReviewSheetSvg(calc,artworkUrls[side]||'',side,60,top+40,960,430,shapeUrl)}`;
+  }).join('');
+  return ticketPreviewDocumentSvg(`Preview รายแผ่น${sides.length>1?' • หน้า–หลัง':''}`,body,144+sides.length*panelHeight);
+}
+
+function ticketPiecePreviewSvg(calc, artworkUrl, side, shapeUrl='') {
+  const label=side==='back'?'ด้านหลัง':'ด้านหน้า';
+  const body=`<text x="60" y="128" class="card-title">Preview รายชิ้น • ${label}</text>${briefReviewPieceSvg(calc,artworkUrl,60,150,960,410,shapeUrl)}`;
+  return ticketPreviewDocumentSvg(`Preview รายชิ้น • ${label}`,body,620);
+}
+
+async function briefSvgToPngBlob(svg, fallbackHeight=1440) {
+  const imageUrl=URL.createObjectURL(new Blob([svg],{type:'image/svg+xml;charset=utf-8'}));
+  try {
+    const image=await new Promise((resolve,reject)=>{const preview=new Image();preview.onload=()=>resolve(preview);preview.onerror=()=>reject(new Error('สร้างภาพ Preview ไม่สำเร็จ'));preview.src=imageUrl;});
+    const canvas=document.createElement('canvas');
+    canvas.width=image.naturalWidth||2160;
+    canvas.height=image.naturalHeight||fallbackHeight;
+    const context=canvas.getContext('2d');
+    context.fillStyle='#eef6ff';
+    context.fillRect(0,0,canvas.width,canvas.height);
+    context.drawImage(image,0,0);
+    return await new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('แปลงภาพ Preview เป็น PNG ไม่สำเร็จ')),'image/png'));
+  } finally {
+    URL.revokeObjectURL(imageUrl);
+  }
+}
+
+async function captureTicketPreviewImages(calc=lastCalc) {
+  if(!calc)throw new Error('ไม่พบข้อมูลสำหรับสร้างภาพ Preview');
+  const artworkUrls=typeof getArtworkPreviewDataUrls==='function'?await getArtworkPreviewDataUrls():{front:'',back:''};
+  const doubleSided=typeof getSelectedPrintSide==='function'&&getSelectedPrintSide()==='double';
+  const sides=[];
+  if(artworkUrls.front)sides.push('front');
+  if(doubleSided&&artworkUrls.back)sides.push('back');
+  if(!sides.length&&artworkUrls.back)sides.push('back');
+  if(!sides.length)return [];
+  const shapeUrl=typeof getDiecutShapeDataUrl==='function'?await getDiecutShapeDataUrl():'';
+  const previews=[{
+    kind:'sheet',
+    side:sides.length>1?'front-back':sides[0],
+    label:`Preview รายแผ่น${sides.length>1?' • หน้า–หลัง':''}`,
+    blob:await briefSvgToPngBlob(ticketSheetPreviewSvg(calc,artworkUrls,sides,shapeUrl))
+  }];
+  for(const side of sides) {
+    const sideLabel=side==='back'?'ด้านหลัง':'ด้านหน้า';
+    previews.push({kind:'piece',side,label:`Preview รายชิ้น • ${sideLabel}`,blob:await briefSvgToPngBlob(ticketPiecePreviewSvg(calc,artworkUrls[side],side,shapeUrl),1240)});
+  }
+  return previews;
+}
+
 async function captureBriefImage(calc=lastCalc) {
   if(!calc)throw new Error('ไม่พบข้อมูลสำหรับสร้างภาพสรุป');
   if(typeof renderBriefReview==='function')renderBriefReview({skipValidation:true});
   const artworkUrls=typeof getArtworkPreviewDataUrls==='function'?await getArtworkPreviewDataUrls():{front:'',back:''};
   const shapeUrl=typeof getDiecutShapeDataUrl==='function'?await getDiecutShapeDataUrl():'';
-  const imageUrl=URL.createObjectURL(new Blob([briefReviewImageSvg(calc,artworkUrls,shapeUrl)],{type:'image/svg+xml;charset=utf-8'}));
-  try {
-    const image=await new Promise((resolve,reject)=>{const preview=new Image();preview.onload=()=>resolve(preview);preview.onerror=()=>reject(new Error('สร้างภาพจากการ์ด Review ไม่สำเร็จ'));preview.src=imageUrl;});
-    const canvas=document.createElement('canvas');
-    canvas.width=image.naturalWidth||2160;
-    canvas.height=image.naturalHeight||1440;
-    const context=canvas.getContext('2d');
-    context.fillStyle='#eef6ff';
-    context.fillRect(0,0,canvas.width,canvas.height);
-    context.drawImage(image,0,0);
-    return await new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('แปลงภาพ Review เป็น PNG ไม่สำเร็จ')),'image/png'));
-  } finally {
-    URL.revokeObjectURL(imageUrl);
-  }
+  return briefSvgToPngBlob(briefReviewImageSvg(calc,artworkUrls,shapeUrl));
 }

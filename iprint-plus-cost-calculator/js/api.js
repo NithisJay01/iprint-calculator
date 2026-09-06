@@ -441,10 +441,19 @@ async function createOrderRemote(order, quotePreview, briefImages) {
     if (quotePreview) {
       form.append('quotePreview', quotePreview, `${order.quoteNo || 'order'}-quote.png`);
     }
-    (Array.isArray(briefImages) ? briefImages : []).forEach((image, index) => {
-      if (image instanceof Blob) {
-        form.append(`brief_${index}`, image, `${order.quoteNo || 'order'}-item-${index + 1}.png`);
+    (Array.isArray(briefImages) ? briefImages : []).forEach((group, itemIndex) => {
+      const images = Array.isArray(group) ? group : group instanceof Blob ? [group] : [];
+      const previewMetadata = order.orderItems?.[itemIndex]?.previewImages;
+      if (!Array.isArray(previewMetadata) || !previewMetadata.length) {
+        if (images[0] instanceof Blob) form.append(`brief_${itemIndex}`, images[0], `${order.quoteNo || 'order'}-item-${itemIndex + 1}.png`);
+        return;
       }
+      images.slice(0, 3).forEach((image, previewIndex) => {
+        if (!(image instanceof Blob)) return;
+        const metadata = previewMetadata[previewIndex] || {};
+        const filename = String(metadata.filename || `${order.quoteNo || 'order'}-item-${itemIndex + 1}-preview-${previewIndex + 1}.png`).replace(/[^a-zA-Z0-9._-]/g, '-');
+        form.append(`brief_${itemIndex}_${previewIndex}`, image, filename);
+      });
     });
 
     const response = await fetch(isPublicOrder ? API.publicOrders : API.orders, {
