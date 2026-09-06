@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#eef6ff">
   <title>iPrint</title>
-  <link rel="stylesheet" href="css/app.css?v=20260906-ios-safe-zone-frame">
+  <link rel="stylesheet" href="css/app.css?v=20260906-quick-cloud-links">
 </head>
 <body>
 <section class="login-gate" id="loginGate" aria-labelledby="loginTitle">
@@ -78,7 +78,7 @@
             <h2 class="section-title">ข้อมูลงาน</h2>
             <div class="field"><label class="label" for="quickJobName">ชื่อเรียกงาน</label><input id="quickJobName" maxlength="120" placeholder="เช่น นามบัตรคุณเมย์"></div>
             <div class="field"><label class="label" for="quickDeliveryDeadline">วันที่ต้องการรับงาน</label><div class="date-input-shell"><input id="quickDeliveryDeadline" type="text" inputmode="none" placeholder="DD/MM/YYYY" autocomplete="off" readonly required aria-haspopup="dialog"><span class="date-picker-icon" aria-hidden="true">▣</span><input class="native-date-control" data-date-for="quickDeliveryDeadline" type="date" lang="en-GB" aria-label="เลือกวันที่ต้องการรับงานจากปฏิทิน"></div></div>
-            <div class="field"><label class="label" for="quickBriefFileLink">ลิงก์ไฟล์ต้นฉบับ <span class="optional-label">(จำเป็น)</span></label><input id="quickBriefFileLink" type="url" placeholder="https://..." required aria-required="true"></div>
+            <div class="field"><label class="label" for="quickBriefFileLink">ลิงก์ไฟล์ต้นฉบับ <span class="optional-label">(จำเป็น)</span></label><div class="file-provider-options quick-file-provider-options" aria-label="เปิดบริการ Cloud เพื่อคัดลอกลิงก์ไฟล์"><a href="https://drive.google.com/drive/my-drive" target="_blank" rel="noopener noreferrer">Google Drive <span aria-hidden="true">↗</span></a><a href="https://onedrive.live.com/" target="_blank" rel="noopener noreferrer">OneDrive <span aria-hidden="true">↗</span></a><a href="https://www.dropbox.com/home" target="_blank" rel="noopener noreferrer">Dropbox <span aria-hidden="true">↗</span></a></div><input id="quickBriefFileLink" type="url" placeholder="https://..." required aria-required="true"></div>
             <div class="field"><label class="label" for="quickBriefDescription">รายละเอียดเพิ่มเติม <span class="optional-label">(ถ้ามี)</span></label><textarea id="quickBriefDescription" maxlength="1200" placeholder="ระบุคำขอหรือรายละเอียดสำหรับทีมกราฟิก"></textarea></div>
           </section>
           <section class="form-card">
