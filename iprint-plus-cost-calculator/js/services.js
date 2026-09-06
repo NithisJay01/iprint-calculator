@@ -1,3 +1,5 @@
+let cuttingDefaultSelectionPending = true;
+
 function isPrintSideService(service) {
   const text = `${service?.category || ''} ${service?.name || ''}`;
   return /รูปแบบการพิมพ์/i.test(text) || (/พิม|พิพม์|print/i.test(text) && /หน้า|side/i.test(text));
@@ -152,8 +154,10 @@ function renderNoneServiceRow(group) {
 function renderServices() {
   const box = $('servicesContainer');
   const printBox = $('layoutPrintServices');
+  const cuttingBox = $('layoutCuttingServices');
   box.innerHTML = '';
   if (printBox) printBox.innerHTML = '';
+  if (cuttingBox) cuttingBox.innerHTML = '';
   if (!services.length) {
     box.innerHTML = '<div class="ms-status">ไม่พบบริการที่ Active</div>';
     return;
@@ -172,7 +176,7 @@ function renderServices() {
   });
   normalizeExclusiveSelections(groups);
   const lockedMode = typeof getLockedCuttingMode === 'function' ? getLockedCuttingMode() : '';
-  if (lockedMode) {
+  if (lockedMode && cuttingDefaultSelectionPending) {
     const cutting = groups.find(group => group.definition.key === 'cutting');
     if (cutting) {
       cutting.services.forEach(service => delete selectedServiceIds[String(service.id)]);
@@ -182,10 +186,10 @@ function renderServices() {
       const selected = exact || cutting.services.find(isDiecutService);
       if (selected) selectedServiceIds[String(selected.id)] = true;
     }
+    cuttingDefaultSelectionPending = false;
   }
 
   groups.forEach(groupData => {
-    if (lockedMode && groupData.definition.key === 'cutting') return;
     const group = document.createElement('div');
     group.className = `service-group service-group-${groupData.definition.key.replace(/[^a-z0-9-]/gi, '-')}`;
     group.dataset.serviceGroup = groupData.definition.key;
@@ -195,7 +199,12 @@ function renderServices() {
     group.appendChild(title);
     if (groupData.definition.noneLabel) group.appendChild(renderNoneServiceRow(groupData));
     groupData.services.forEach(service => group.appendChild(renderServiceRow(service, groupData)));
-    (groupData.definition.key === 'print' && printBox ? printBox : box).appendChild(group);
+    const target = groupData.definition.key === 'print' && printBox
+      ? printBox
+      : groupData.definition.key === 'cutting' && cuttingBox
+        ? cuttingBox
+        : box;
+    target.appendChild(group);
   });
   $('serviceStatus').textContent = `${dataSourceLabel()} • ${services.length} บริการ`;
   if (typeof syncArtworkSideControls === 'function') syncArtworkSideControls();
@@ -250,3 +259,4 @@ function serviceCost(sheetCount, pieceCount) {
 window.serviceGroupDefinition = serviceGroupDefinition;
 window.hasSelectedDiecutService = hasSelectedDiecutService;
 window.syncDiecutShapeAvailability = syncDiecutShapeAvailability;
+window.resetCuttingDefaultSelection = () => { cuttingDefaultSelectionPending = true; };

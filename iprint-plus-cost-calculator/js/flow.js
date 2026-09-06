@@ -37,8 +37,10 @@ function generatedJobName(type, nickname = jobNickname) {
 }
 
 function setJobType(type, options = {}) {
+  const previousJobType = selectedJobType;
   selectedJobType = String(type || '').trim();
   lockedCuttingMode = JOB_TYPE_DEFAULTS[selectedJobType]?.cutting || '';
+  if (previousJobType !== selectedJobType && typeof resetCuttingDefaultSelection === 'function') resetCuttingDefaultSelection();
   document.querySelectorAll('[data-job-type]').forEach(button => {
     const selected = button.dataset.jobType === selectedJobType;
     button.classList.toggle('is-selected', selected);
@@ -400,6 +402,17 @@ function syncFlowSummary() {
       ? `Preview: ${finishNames.join(' • ')}${rendererLabel}`
       : 'Preview วัสดุและ Option เสริม';
   }
+  if ($('costPrintSummary')) {
+    const printService = (lastCalc.services || []).find(service => typeof isPrintSideService === 'function' && isPrintSideService(service));
+    const side = typeof getSelectedPrintSide === 'function' ? getSelectedPrintSide() : 'unspecified';
+    $('costPrintSummary').textContent = printService?.name || (side === 'double' ? 'พิมพ์หน้า–หลัง' : side === 'single' ? 'พิมพ์หน้าเดียว' : 'ยังไม่ได้เลือกรูปแบบการพิมพ์');
+  }
+  if ($('costSelectedServices')) {
+    const selectedServices = Array.isArray(lastCalc.services) ? lastCalc.services : [];
+    $('costSelectedServices').innerHTML = selectedServices.length
+      ? selectedServices.map(service => `<span><b>${flowEscape(service.name || 'บริการเพิ่มเติม')}</b><strong>฿${money(quantityServicePrice(service, lastCalc))}</strong></span>`).join('')
+      : '<span><b>ไม่มีบริการเพิ่มเติม</b><strong>฿0.00</strong></span>';
+  }
 
   if (source && costPreview) renderCostPreviewMode();
   if (typeof syncArtworkSideControls === 'function') syncArtworkSideControls();
@@ -667,6 +680,7 @@ function bindFlow() {
   $('confirmVariantPrice')?.addEventListener('click', () => closeVariantQuantityConfirmation(true));
   $('editBrief').addEventListener('click', () => showAppView('brief'));
   $('editMainArtwork')?.addEventListener('click', () => { showAppView('layout'); requestAnimationFrame(() => $('artworkImage')?.click()); });
+  $('editPrintAtLayout')?.addEventListener('click', () => showAppView('layout'));
   $('addAnotherItem').addEventListener('click', () => { prepareNewPrintItem(); showJobSetupQuestion(1); showAppView('jobSetup'); });
   $('workflowNewOrder').addEventListener('click', () => showAppView('home'));
   $('addJobVariant').addEventListener('click', () => {
