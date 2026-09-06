@@ -419,7 +419,7 @@ function syncFlowSummary() {
   if ($('costSelectedServices')) {
     const selectedServices = Array.isArray(lastCalc.services) ? lastCalc.services : [];
     $('costSelectedServices').innerHTML = selectedServices.length
-      ? selectedServices.map(service => `<span><b>${flowEscape(service.name || 'บริการเพิ่มเติม')}</b><strong>฿${money(quantityServicePrice(service, lastCalc))}</strong></span>`).join('')
+      ? selectedServices.map(service => `<span><b>${flowEscape(service.name || 'บริการเพิ่มเติม')}</b><strong>${servicePriceLabel(service, lastCalc)}</strong></span>`).join('')
       : '<span><b>ไม่มีบริการเพิ่มเติม</b><strong>฿0.00</strong></span>';
   }
   syncQuickBriefSummary();
@@ -457,7 +457,7 @@ function syncQuickBriefSummary() {
   $('quickSale').textContent = money(lastCalc.sale);
   const selectedServices = Array.isArray(lastCalc.services) ? lastCalc.services : [];
   $('quickSelectedServices').innerHTML = selectedServices.length
-    ? selectedServices.map(service => `<span><b>${flowEscape(service.name || 'บริการเพิ่มเติม')}</b><strong>฿${money(quantityServicePrice(service, lastCalc))}</strong></span>`).join('')
+    ? selectedServices.map(service => `<span><b>${flowEscape(service.name || 'บริการเพิ่มเติม')}</b><strong>${servicePriceLabel(service, lastCalc)}</strong></span>`).join('')
     : '<span><b>ไม่มีบริการเพิ่มเติม</b><strong>฿0.00</strong></span>';
 }
 
@@ -466,6 +466,7 @@ function startQuickBrief() {
   quickBriefMode = true;
   selectedMaterialId = '';
   selectedServiceIds = {};
+  customServiceRequest = '';
   setJobType('ตั้งค่า Manual', { preserveName: true });
   saveState();
   if (typeof renderMaterials === 'function') renderMaterials();
@@ -498,6 +499,7 @@ function continueQuickBrief() {
     focusQuickBriefField($('quickSheet'), 'กรุณาตรวจสอบขนาด จำนวน และ Preset กระดาษ');
     return;
   }
+  if (!validateCustomServiceRequest('quick')) return;
   if (!deliveryDate || deliveryDate < today) {
     focusQuickBriefField($('quickDeliveryDeadline'), 'กรุณาเลือกวันที่ต้องการรับงานตั้งแต่วันนี้เป็นต้นไป');
     return;
@@ -677,13 +679,29 @@ function quantityServicePrice(service, calc) {
   return price;
 }
 
+function validateCustomServiceRequest(scope = 'main') {
+  if (!selectedServiceIds['ui-custom-request'] || customServiceRequest.trim()) return true;
+  const input = document.querySelector(`[data-custom-service-request="${scope}"]`) || document.querySelector('[data-custom-service-request]');
+  if (input) {
+    input.setCustomValidity('กรุณาระบุรายละเอียดที่ต้องการรีเควส');
+    input.scrollIntoView({ behavior:'smooth', block:'center' });
+    input.reportValidity();
+    input.focus({ preventScroll:true });
+  }
+  return false;
+}
+
+function servicePriceLabel(service, calc) {
+  return service?.pricePending ? '?' : `฿${money(quantityServicePrice(service, calc))}`;
+}
+
 function renderQuantityPriceBreakdown(calc) {
   if (!calc) return;
   $('newSheetSummary').textContent = `${Number(calc.sheets || 0).toLocaleString('th-TH')} แผ่น`;
   $('newPieceSummary').textContent = `${Number(calc.Q || 0).toLocaleString('th-TH')} ชิ้น`;
   const selectedServices = Array.isArray(calc.services) ? calc.services : [];
   $('newServicePriceList').innerHTML = selectedServices.length
-    ? selectedServices.map(service => `<div><span>${flowEscape(service.name || 'บริการเพิ่มเติม')}</span><strong>฿${money(quantityServicePrice(service, calc))}</strong></div>`).join('')
+    ? selectedServices.map(service => `<div><span>${flowEscape(service.name || 'บริการเพิ่มเติม')}</span><strong>${servicePriceLabel(service, calc)}</strong></div>`).join('')
     : '<div><span>ไม่มีบริการเพิ่มเติม</span><strong>฿0.00</strong></div>';
   $('newTotalPriceSummary').textContent = `฿${money(Number(calc.sale) || 0)}`;
 }
@@ -759,6 +777,8 @@ function closeOrderSuccess() {
 
 function prepareNewPrintItem() {
   editingCartItemId = '';
+  customServiceRequest = '';
+  delete selectedServiceIds['ui-custom-request'];
   quickBriefMode = false;
   setJobType('', { preserveName: true });
   setJobNickname('', { preserveName: true });
@@ -804,7 +824,10 @@ function bindFlow() {
   $('goHome').addEventListener('click', () => showAppView('home'));
   $('headerHome')?.addEventListener('click', () => showAppView('home'));
   $('headerWorkflow')?.addEventListener('click', () => openWorkflow());
-  document.querySelectorAll('[data-flow-next]').forEach(button => button.addEventListener('click', () => showAppView(button.dataset.flowNext)));
+  document.querySelectorAll('[data-flow-next]').forEach(button => button.addEventListener('click', () => {
+    if (button.dataset.flowNext === 'brief' && !validateCustomServiceRequest('main')) return;
+    showAppView(button.dataset.flowNext);
+  }));
   document.querySelectorAll('[data-flow-back]').forEach(button => button.addEventListener('click', () => showAppView(button.dataset.flowBack)));
   $('reviewBrief').addEventListener('click', () => {
     if (requestVariantQuantityConfirmation()) return;

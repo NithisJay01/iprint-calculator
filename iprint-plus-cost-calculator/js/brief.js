@@ -40,7 +40,9 @@ function briefExtras(calc) {
       quantity,
       unit:briefUnit(item.unit),
       price,
-      total:price*quantity
+      total:price*quantity,
+      pricePending:Boolean(item.pricePending),
+      virtual:Boolean(item.virtual)
     });
   };
 
@@ -240,7 +242,7 @@ function briefImageSvg(calc, artworkUrl='', referenceUrls=[], description='', ba
   const extrasMarkup=extras.length
     ? extras.map((item,index)=> {
       const y=extrasTop+58+index*extraRowHeight;
-      const details='฿'+money(item.price)+' / '+item.unit+' • '+item.quantity.toLocaleString('th-TH')+' '+item.unit+' • รวม ฿'+money(item.total);
+      const details=item.pricePending?'ราคา ? • รอประเมิน':('฿'+money(item.price)+' / '+item.unit+' • '+item.quantity.toLocaleString('th-TH')+' '+item.unit+' • รวม ฿'+money(item.total));
       return `<rect x="50" y="${y}" width="980" height="78" rx="16" fill="#ffffff" stroke="#dfe5eb"/>
         <rect x="70" y="${y+18}" width="118" height="30" rx="15" fill="#eaf5ff"/>
         <text x="129" y="${y+39}" text-anchor="middle" class="pill">${briefEscapeSvg(item.kind)}</text>

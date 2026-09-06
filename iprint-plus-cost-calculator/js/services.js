@@ -67,10 +67,12 @@ function normalizeExclusiveSelections(grouped) {
 }
 
 function renderServiceRow(service, group, scope = 'main') {
-  const row = document.createElement('label');
+  const row = document.createElement(service.pricePending ? 'div' : 'label');
   row.className = 'service-row';
+  if (service.pricePending) row.classList.add('service-row-pending-price');
   const control = document.createElement('input');
   control.type = group.definition.exclusive ? 'radio' : 'checkbox';
+  if (service.pricePending) control.setAttribute('aria-label', service.baseName || service.name);
   if (group.definition.exclusive) control.name = `service-${scope}-${group.definition.key}`;
   control.checked = Boolean(selectedServiceIds[String(service.id)]);
   row.classList.toggle('is-selected', control.checked);
@@ -88,6 +90,7 @@ function renderServiceRow(service, group, scope = 'main') {
     saveState();
     renderServices();
     calculate();
+    if (service.pricePending && control.checked) requestAnimationFrame(() => document.querySelector(`[data-custom-service-request="${scope}"]`)?.focus());
     syncDiecutShapeAvailability();
     const hasDiecut = hasSelectedDiecutService();
     const hasDoubleSided = typeof getSelectedPrintSide === 'function' && getSelectedPrintSide() === 'double';
@@ -102,20 +105,44 @@ function renderServiceRow(service, group, scope = 'main') {
   main.className = 'service-main';
   const name = document.createElement('div');
   name.className = 'service-name';
-  name.textContent = service.name;
+  name.textContent = service.baseName || service.name;
   const meta = document.createElement('div');
   meta.className = 'service-meta';
   meta.textContent = service.material || '';
   meta.hidden = !meta.textContent;
   main.append(name, meta);
+  if (service.pricePending) {
+    const requestInput = document.createElement('input');
+    requestInput.type = 'text';
+    requestInput.className = 'service-request-input';
+    requestInput.dataset.customServiceRequest = scope;
+    requestInput.placeholder = 'กรุณาระบุรายละเอียด';
+    requestInput.value = customServiceRequest;
+    requestInput.disabled = !control.checked;
+    requestInput.maxLength = 300;
+    requestInput.addEventListener('click', event => event.stopPropagation());
+    requestInput.addEventListener('keydown', event => event.stopPropagation());
+    requestInput.addEventListener('input', () => {
+      requestInput.setCustomValidity('');
+      customServiceRequest = requestInput.value;
+      service.requestText = customServiceRequest;
+      service.name = customServiceRequest.trim() ? `${service.baseName}: ${customServiceRequest.trim()}` : service.baseName;
+      document.querySelectorAll('[data-custom-service-request]').forEach(input => {
+        if (input !== requestInput) input.value = customServiceRequest;
+      });
+      saveState();
+      calculate();
+    });
+    main.appendChild(requestInput);
+  }
   const priceBlock = document.createElement('div');
   priceBlock.className = 'service-price-block';
   const price = document.createElement('div');
   price.className = 'service-price';
-  price.textContent = `฿${money(service.price)}`;
+  price.textContent = service.pricePending ? '?' : `฿${money(service.price)}`;
   const priceUnit = document.createElement('small');
   priceUnit.className = 'service-price-unit';
-  priceUnit.textContent = `/ต่อ${unit(service.unit)}`;
+  priceUnit.textContent = service.pricePending ? 'รอประเมิน' : `/ต่อ${unit(service.unit)}`;
   priceBlock.append(price, priceUnit);
   row.append(control, main, priceBlock);
   return row;
@@ -186,10 +213,10 @@ function createCuttingDropdown(groupData) {
   const field = document.createElement('div');
   field.className = 'layout-cutting-dropdown';
   const label = document.createElement('label');
-  label.htmlFor = 'layoutCuttingSelect';
+  label.htmlFor = 'costCuttingSelect';
   label.textContent = 'การตัดและติดเสริมวัสดุ';
   const select = document.createElement('select');
-  select.id = 'layoutCuttingSelect';
+  select.id = 'costCuttingSelect';
   const none = document.createElement('option');
   none.value = '';
   none.textContent = `${groupData.definition.noneLabel || 'ไม่ตัด'} • ไม่คิดค่าบริการเพิ่มเติม`;
@@ -221,12 +248,20 @@ function createCuttingDropdown(groupData) {
 function renderServices() {
   const box = $('servicesContainer');
   const printBox = $('layoutPrintServices');
-  const cuttingBox = $('layoutCuttingServices');
+  const cuttingBox = $('costCuttingServices');
   const quickBox = $('quickServicesContainer');
   box.innerHTML = '';
   if (printBox) printBox.innerHTML = '';
   if (cuttingBox) cuttingBox.innerHTML = '';
   if (quickBox) quickBox.innerHTML = '';
+  if (!services.some(service => String(service.id) === 'ui-custom-request')) {
+    services.push({ id:'ui-custom-request', category:'DIY Solution', baseName:'ต้องการรีเควส', name:'ต้องการรีเควส', material:'(กรุณาระบุ)', price:0, pricePending:true, unit:'job', sortOrder:99, active:true, virtual:true });
+  }
+  const customRequestService = services.find(service => String(service.id) === 'ui-custom-request');
+  if (customRequestService) {
+    customRequestService.requestText = customServiceRequest;
+    customRequestService.name = customServiceRequest.trim() ? `${customRequestService.baseName}: ${customServiceRequest.trim()}` : customRequestService.baseName;
+  }
   if (!services.length) {
     box.innerHTML = '<div class="ms-status">ไม่พบบริการที่ Active</div>';
     if (quickBox) quickBox.innerHTML = '<div class="ms-status">ไม่พบบริการที่ Active</div>';
@@ -334,3 +369,4 @@ window.serviceGroupDefinition = serviceGroupDefinition;
 window.hasSelectedDiecutService = hasSelectedDiecutService;
 window.syncDiecutShapeAvailability = syncDiecutShapeAvailability;
 window.resetCuttingDefaultSelection = () => { cuttingDefaultSelectionPending = true; };
+window.isPendingPriceService = service => Boolean(service?.pricePending);

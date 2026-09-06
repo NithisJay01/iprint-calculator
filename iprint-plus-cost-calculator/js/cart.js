@@ -131,6 +131,8 @@ function snapshotCartItem(calc, id) {
     textureUrl: String(service.textureUrl || '')
     ,updatedAt: String(service.updatedAt || '')
     ,virtual: Boolean(service.virtual)
+    ,pricePending: Boolean(service.pricePending)
+    ,requestText: String(service.requestText || '')
   }));
 
   return {
@@ -320,8 +322,10 @@ async function restoreCartItem(item) {
   $('bleed').value = canTuneLayout ? (item.bleed || 3) : 3;
   selectedMaterialId = String(item.material?.id || '');
   selectedServiceIds = {};
+  customServiceRequest = '';
   (item.services || []).forEach(service => {
     if (service.id) selectedServiceIds[String(service.id)] = true;
+    if (String(service.id) === 'ui-custom-request') customServiceRequest = String(service.requestText || service.name?.split(':').slice(1).join(':') || '').trim();
   });
   $('graphicBriefDescription').value = item.brief || '';
   $('briefDeadline').value = typeof formatFlowDateInput === 'function' ? formatFlowDateInput(item.briefDeadline) : (item.briefDeadline || '');

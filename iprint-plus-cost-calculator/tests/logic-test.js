@@ -129,6 +129,7 @@
         assert(window.Iprint && typeof window.Iprint.calculate === 'function', 'เริ่มต้นแอปและโหลด Preset', 'ไม่พบ API ของแอป');
         assert(document.getElementById('sheet').options.length > 0, 'เริ่มต้นแอปและโหลด Preset', 'ไม่พบ Preset');
         assert(document.querySelector('[data-app-view="layout"]').contains(document.getElementById('sheet')), 'เริ่มต้นแอปและโหลด Preset', 'Preset และขนาดงานต้องอยู่ในขั้นจัดวาง');
+        assert(document.querySelector('[data-app-view="cost"]').contains(document.getElementById('costCuttingServices')) && !document.getElementById('layoutCuttingServices'), 'เริ่มต้นแอปและโหลด Preset', 'การตัดและติดเสริมวัสดุต้องอยู่ใน Step 2');
         assert(Number(cost.value) === 2.5, 'เริ่มต้นแอปและโหลด Preset', 'ต้นทุนต่อแผ่นเริ่มต้นต้องเป็น 2.5 บาท');
         assert(Number(pieceGap.value) === 3, 'เริ่มต้นแอปและโหลด Preset', 'Gap เริ่มต้นต้องเป็น 3 mm');
         assert(pieceGap.type === 'range' && pieceGap.min === '1' && pieceGap.max === '15' && pieceGap.step === '0.5', 'เริ่มต้นแอปและโหลด Preset', 'Gap Slider ต้องปรับได้ 1–15 mm ทีละ 0.5 mm');
@@ -155,6 +156,8 @@
         assert(document.querySelector('[data-variant-name]')?.placeholder === 'คำตัวอย่าง แบบเวอร์ชั่นภาษาไทย', 'เริ่มต้นแอปและโหลด Preset', 'คำตัวอย่างชื่อแบบไม่ตรงตาม Brief');
         assert(window.getComputedStyle(document.getElementById('materialPreviewInteraction')).scrollbarWidth === 'none', 'เริ่มต้นแอปและโหลด Preset', 'กรอบ Preview ต้องซ่อน scrollbar');
         assert(document.querySelector('.service-price-unit')?.textContent.startsWith('/ต่อ'), 'เริ่มต้นแอปและโหลด Preset', 'หน่วยบริการต้องอยู่ใต้ราคาในรูปแบบ /ต่อชิ้น หรือ /ต่อแผ่น');
+        const requestRow = [...document.querySelectorAll('#servicesContainer .service-row')].find(row => row.querySelector('.service-name')?.textContent === 'ต้องการรีเควส');
+        assert(requestRow?.querySelector('input[type="checkbox"]') && requestRow.querySelector('.service-request-input') && requestRow.querySelector('.service-price')?.textContent === '?', 'เริ่มต้นแอปและโหลด Preset', 'บริการรีเควสต้องติ๊ก กรอกรายละเอียด และแสดงราคา ? ได้');
       });
 
       await check('Preview แสดง Preset และจัดชิ้นงานกึ่งกลาง', () => {

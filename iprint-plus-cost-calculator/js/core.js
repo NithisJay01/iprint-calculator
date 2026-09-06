@@ -29,6 +29,7 @@
   let selectedSheet = '';
   let selectedMaterialId = '';
   let selectedServiceIds = {};
+  let customServiceRequest = '';
   let lastCalc = null;
   let currentQuoteMeta = null;
   let cartItems = [];
@@ -327,7 +328,7 @@ function cacheGet(key) {
 function saveState() {
     try {
       localStorage.setItem(KEY,JSON.stringify( {
-        selectedSheet,selectedMaterialId,selectedServiceIds
+        selectedSheet,selectedMaterialId,selectedServiceIds,customServiceRequest
       }
       ))
     } catch(e) {
@@ -341,6 +342,7 @@ function loadState() {
       selectedMaterialId=s.selectedMaterialId||'';
       selectedServiceIds=s.selectedServiceIds|| {
       }
+      customServiceRequest=String(s.customServiceRequest||'');
     } catch(e) {
     }
   }

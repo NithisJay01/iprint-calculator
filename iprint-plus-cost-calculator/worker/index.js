@@ -2100,9 +2100,17 @@ export default {
           .map(item => String(item.pageId))
         )];
         const servicePageIds = [...new Set(extras
-          .filter(item => item.kind === "บริการเพิ่มเติม" && item.pageId)
+          .filter(item => item.kind === "บริการเพิ่มเติม" && item.pageId && !item.virtual)
           .map(item => String(item.pageId))
         )];
+        const customServiceRequests = extras
+          .filter(item => item.kind === "บริการเพิ่มเติม" && item.pricePending)
+          .map(item => String(item.name || "").trim())
+          .filter(Boolean);
+        const ticketDescription = [
+          String(ticket.graphicBriefDescription || "").trim(),
+          customServiceRequests.length ? `รีเควสบริการ: ${customServiceRequests.join(" • ")}` : ""
+        ].filter(Boolean).join("\n");
 
         setTicketProperty("ขนาด", "rich_text", {
           rich_text: richText(ticket.size || "-")
@@ -2111,7 +2119,7 @@ export default {
           number: Number(ticket.pieceCount) || 0
         });
         setTicketProperty("อธิบายเพิ่ม", "rich_text", {
-          rich_text: richText(ticket.graphicBriefDescription || "")
+          rich_text: richText(ticketDescription)
         });
         setTicketWorkflow(["Workflow Status", "สถานะ", "Status"], "NEW");
         setTicketProperty("มอบหมาย", "select", {
