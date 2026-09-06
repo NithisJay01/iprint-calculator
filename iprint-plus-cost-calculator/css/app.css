@@ -369,3 +369,5 @@ html{background:#dce9f5}body{padding:0;background:#dce9f5;color:#080808}.mobile-
 /* Keep Artwork orientation and aspect ratio aligned with the imposed piece frame. */
 .piece>.piece-artwork,.preview-gallery-piece>.preview-gallery-artwork{width:var(--artwork-box-width,100%);height:var(--artwork-box-height,100%);transform:rotate(var(--artwork-rotation,0deg));transform-origin:center}
 .mini-layout-preview .mini-artwork{inset:auto;top:50%;left:50%;width:var(--artwork-box-width,100%);height:var(--artwork-box-height,100%);transform:translate(-50%,-50%) rotate(var(--artwork-rotation,0deg));transform-origin:center}
+[data-app-view="layout"]>.layout-preview-card{margin-top:12px}
+@media(min-width:900px){.app-view[data-app-view="layout"].is-active{grid-template-areas:"intro intro" "title form" "preview form" "controls summary" "controls actions"}[data-app-view="layout"]>.layout-preview-card{grid-area:preview;margin-top:0}[data-app-view="layout"]>.preview-artwork-section{grid-area:controls}}

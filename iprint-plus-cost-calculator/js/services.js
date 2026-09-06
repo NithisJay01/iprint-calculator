@@ -169,7 +169,7 @@ function createCuttingDropdown(groupData) {
   field.className = 'layout-cutting-dropdown';
   const label = document.createElement('label');
   label.htmlFor = 'layoutCuttingSelect';
-  label.textContent = groupData.definition.title;
+  label.textContent = 'การตัดและติดเสริมวัสดุ';
   const select = document.createElement('select');
   select.id = 'layoutCuttingSelect';
   const none = document.createElement('option');
