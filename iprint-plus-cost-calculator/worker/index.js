@@ -1,9 +1,24 @@
+import { compareCatalogSnapshot, validateCatalogMutation } from './domain/catalog.js';
+import { validateOrderFoundation } from './domain/order.js';
+import { createCatalogRepository } from './repositories/notion-catalog-repository.js';
+import { createCapacityRepository } from './repositories/notion-capacity-repository.js';
+
 export default {
   async fetch(request, env) {
+    const requestOrigin = String(request.headers.get("Origin") || "").trim();
+    const allowedOrigins = new Set(
+      String(env.CORS_ALLOWED_ORIGINS || "https://iprint.tchl.online")
+        .split(",")
+        .map(origin => origin.trim().replace(/\/$/, ""))
+        .filter(Boolean)
+    );
+    const corsOrigin = allowedOrigins.has(requestOrigin) ? requestOrigin : "";
     const CORS = {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, X-API-Key"
+      "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, X-API-Key",
+      "Access-Control-Max-Age": "86400",
+      "Vary": "Origin",
+      ...(corsOrigin ? { "Access-Control-Allow-Origin": corsOrigin } : {})
     };
 
     const json = (data, status = 200) => {
@@ -17,6 +32,12 @@ export default {
     };
 
     if (request.method === "OPTIONS") {
+      if (requestOrigin && !corsOrigin) {
+        return new Response(null, {
+          status: 403,
+          headers: CORS
+        });
+      }
       return new Response(null, {
         status: 204,
         headers: CORS
@@ -146,6 +167,9 @@ export default {
             "POST /quotes/:id/preview",
             "POST /tickets",
             "POST /orders",
+            "POST /public/orders",
+            "GET /staff/capacity",
+            "PUT /staff/capacity/:date",
             "GET /orders/:ticketId",
             "PATCH /order-items/:itemId/status"
           ]
@@ -402,78 +426,12 @@ export default {
         url.pathname === "/materials" &&
         request.method === "GET"
       ) {
-
-        const response = await fetch(
-          `https://api.notion.com/v1/data_sources/${env.NOTION_MATERIALS_DATA_SOURCE_ID}/query`,
-          {
-            method: "POST",
-            headers: notionHeaders,
-            body: JSON.stringify({
-              page_size: 100
-            })
-          }
-        );
-
-        const text = await response.text();
-
-        if (!response.ok) {
-          return json({
-            success: false,
-            error: "Notion GET Materials Error",
-            status: response.status,
-            detail: text
-          }, response.status);
+        try {
+          const repository = createCatalogRepository(env, { headers: notionHeaders });
+          return json({ success: true, materials: await repository.list("material") });
+        } catch (error) {
+          return json({ success: false, error: error.message, detail: error.detail || null }, error.status || 502);
         }
-
-        const data = JSON.parse(text);
-
-        const materials = (data.results || [])
-          .map(page => {
-
-            const p = page.properties || {};
-
-            const name =
-              p.Name?.title?.[0]?.plain_text ||
-              p.Name?.title?.[0]?.text?.content ||
-              "";
-
-            return {
-              id: page.id,
-              name,
-              material:
-                p.Material?.select?.name || "",
-              cost:
-                p.Cost?.number ?? 0,
-              price:
-                p.Price?.number ?? 0,
-              unit:
-                p.Unit?.select?.name || "",
-              active:
-                p.Active?.checkbox ?? false,
-              sortOrder:
-                p["Sort Order"]?.number ?? 9999,
-              previewRenderer:
-                p["Preview Renderer"]?.select?.name || "",
-              previewEffect:
-                p["Preview Effect"]?.select?.name || "",
-              shaderPreset:
-                p["Shader Preset"]?.select?.name || "",
-              textureUrl:
-                p["Texture URL"]?.url || p["Texture URL"]?.files?.[0]?.external?.url || p["Texture URL"]?.files?.[0]?.file?.url || ""
-            };
-          })
-          .filter(m =>
-            m.name &&
-            m.active === true
-          )
-          .sort((a, b) =>
-            a.sortOrder - b.sortOrder
-          );
-
-        return json({
-          success: true,
-          materials
-        });
       }
 
 
@@ -485,80 +443,89 @@ export default {
         url.pathname === "/services" &&
         request.method === "GET"
       ) {
-
-        const response = await fetch(
-          `https://api.notion.com/v1/data_sources/${env.NOTION_SERVICES_DATA_SOURCE_ID}/query`,
-          {
-            method: "POST",
-            headers: notionHeaders,
-            body: JSON.stringify({
-              page_size: 100
-            })
-          }
-        );
-
-        const text = await response.text();
-
-        if (!response.ok) {
-          return json({
-            success: false,
-            error: "Notion GET Services Error",
-            status: response.status,
-            detail: text
-          }, response.status);
+        try {
+          const repository = createCatalogRepository(env, { headers: notionHeaders });
+          return json({ success: true, services: await repository.list("service") });
+        } catch (error) {
+          return json({ success: false, error: error.message, detail: error.detail || null }, error.status || 502);
         }
+      }
 
-        const data = JSON.parse(text);
+      // ================================
+      // STAFF CATALOG
+      // ================================
 
-        const services = (data.results || [])
-          .map(page => {
+      const staffCatalogCollectionMatch = url.pathname.match(/^\/staff\/(materials|services)$/);
+      if (staffCatalogCollectionMatch && ["GET", "POST"].includes(request.method)) {
+        const authError = requireAuth(request);
+        if (authError) return authError;
+        const collection = staffCatalogCollectionMatch[1];
+        const type = collection === "materials" ? "material" : "service";
+        const repository = createCatalogRepository(env, { headers: notionHeaders });
+        try {
+          if (request.method === "GET") {
+            return json({ success: true, [collection]: await repository.list(type, { includeInactive: true }) });
+          }
+          const body = await request.json().catch(() => null);
+          const validation = validateCatalogMutation({ ...(body || {}), type });
+          if (!validation.success) return json({ success: false, error: "Invalid catalog item", errors: validation.errors }, 400);
+          return json({ success: true, item: await repository.create(type, validation.value) }, 201);
+        } catch (error) {
+          return json({ success: false, code: error.code || "", error: error.message, errors: error.errors || [], detail: error.detail || null }, error.status || 502);
+        }
+      }
 
-            const p = page.properties || {};
+      const staffCatalogItemMatch = url.pathname.match(/^\/staff\/(materials|services)\/([^/]+)$/);
+      if (staffCatalogItemMatch && request.method === "PATCH") {
+        const authError = requireAuth(request);
+        if (authError) return authError;
+        const collection = staffCatalogItemMatch[1];
+        const type = collection === "materials" ? "material" : "service";
+        const id = decodeURIComponent(staffCatalogItemMatch[2] || "").trim();
+        if (!id) return json({ success: false, error: "Catalog item id is required" }, 400);
+        const body = await request.json().catch(() => null);
+        if (!body) return json({ success: false, error: "Invalid JSON body" }, 400);
+        const repository = createCatalogRepository(env, { headers: notionHeaders });
+        try {
+          const item = await repository.update(type, id, body, String(body.expectedUpdatedAt || ""));
+          return json({ success: true, item });
+        } catch (error) {
+          return json({ success: false, code: error.code || "", error: error.message, current: error.current || null, errors: error.errors || [], detail: error.detail || null }, error.status || 502);
+        }
+      }
 
-            const name =
-              p.Name?.title?.[0]?.plain_text ||
-              p.Name?.title?.[0]?.text?.content ||
-              "";
+      // ================================
+      // STAFF DAILY CAPACITY
+      // ================================
 
-            return {
-              id: page.id,
-              name,
-              category:
-                p.Catagory?.select?.name || p.Category?.select?.name || "",
-              material:
-                p.Material?.select?.name || "",
-              cost:
-                p.Cost?.number ?? 0,
-              price:
-                p.Price?.number ?? 0,
-              unit:
-                p.Unit?.select?.name || "",
-              active:
-                p.Active?.checkbox ?? false,
-              sortOrder:
-                p["Sort Order"]?.number ?? 9999,
-              previewRenderer:
-                p["Preview Renderer"]?.select?.name || "",
-              previewEffect:
-                p["Preview Effect"]?.select?.name || "",
-              shaderPreset:
-                p["Shader Preset"]?.select?.name || "",
-              textureUrl:
-                p["Texture URL"]?.url || p["Texture URL"]?.files?.[0]?.external?.url || p["Texture URL"]?.files?.[0]?.file?.url || ""
-            };
-          })
-          .filter(service =>
-            service.name &&
-            service.active === true
-          )
-          .sort((a, b) =>
-            a.sortOrder - b.sortOrder
-          );
+      if (url.pathname === '/staff/capacity' && request.method === 'GET') {
+        const authError = requireAuth(request);
+        if (authError) return authError;
+        if (!env.NOTION_CAPACITY_DATA_SOURCE_ID) return json({ success: false, error: 'NOTION_CAPACITY_DATA_SOURCE_ID is missing' }, 500);
+        const repository = createCapacityRepository(env, { headers: notionHeaders });
+        try {
+          const from = String(url.searchParams.get('from') || '');
+          const to = String(url.searchParams.get('to') || '');
+          return json({ success: true, days: await repository.list({ from, to }) });
+        } catch (error) {
+          return json({ success: false, error: error.message, detail: error.detail || null }, error.status || 502);
+        }
+      }
 
-        return json({
-          success: true,
-          services
-        });
+      const staffCapacityMatch = url.pathname.match(/^\/staff\/capacity\/(\d{4}-\d{2}-\d{2})$/);
+      if (staffCapacityMatch && request.method === 'PUT') {
+        const authError = requireAuth(request);
+        if (authError) return authError;
+        if (!env.NOTION_CAPACITY_DATA_SOURCE_ID) return json({ success: false, error: 'NOTION_CAPACITY_DATA_SOURCE_ID is missing' }, 500);
+        const body = await request.json().catch(() => null);
+        if (!body) return json({ success: false, error: 'Invalid capacity JSON' }, 400);
+        const repository = createCapacityRepository(env, { headers: notionHeaders });
+        try {
+          const day = await repository.upsert(staffCapacityMatch[1], body, String(body.expectedUpdatedAt || ''));
+          return json({ success: true, day });
+        } catch (error) {
+          return json({ success: false, code: error.code || '', error: error.message, errors: error.errors || [], current: error.current || null, detail: error.detail || null }, error.status || 502);
+        }
       }
 
 
@@ -905,9 +872,20 @@ export default {
       // ORDERS - ONE TICKET WITH MANY ORDER ITEMS
       // ================================
 
-      if (url.pathname === "/orders" && request.method === "POST") {
-        const authError = requireAuth(request);
-        if (authError) return authError;
+      if (["/orders", "/public/orders"].includes(url.pathname) && request.method === "POST") {
+        const isPublicOrder = url.pathname === "/public/orders";
+        if (isPublicOrder) {
+          if (String(env.PUBLIC_ORDER_ENABLED || "").toLowerCase() !== "true") {
+            return json({
+              success: false,
+              code: "PUBLIC_ORDER_DISABLED",
+              error: "Public ordering is not enabled"
+            }, 503);
+          }
+        } else {
+          const authError = requireAuth(request);
+          if (authError) return authError;
+        }
         if (!env.NOTION_TICKETS_DATA_SOURCE_ID) {
           return json({
             success: false,
@@ -922,6 +900,60 @@ export default {
           return json({ success: false, error: "Invalid order upload" }, 400);
         }
 
+        if (isPublicOrder) {
+          const turnstileSecret = String(env.TURNSTILE_SECRET_KEY || "").trim();
+          const turnstileToken = String(form.get("turnstileToken") || "").trim();
+          if (!turnstileSecret) {
+            return json({
+              success: false,
+              code: "TURNSTILE_NOT_CONFIGURED",
+              error: "Public order verification is not configured"
+            }, 503);
+          }
+          if (!turnstileToken || turnstileToken.length > 2048) {
+            return json({
+              success: false,
+              code: "TURNSTILE_REQUIRED",
+              error: "Please complete the security verification"
+            }, 400);
+          }
+
+          const verificationBody = new FormData();
+          verificationBody.append("secret", turnstileSecret);
+          verificationBody.append("response", turnstileToken);
+          verificationBody.append("idempotency_key", crypto.randomUUID());
+          const remoteIp = String(request.headers.get("CF-Connecting-IP") || "").trim();
+          if (remoteIp) verificationBody.append("remoteip", remoteIp);
+
+          let verification;
+          try {
+            const verificationResponse = await fetch(
+              "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+              { method: "POST", body: verificationBody }
+            );
+            verification = await verificationResponse.json();
+            if (!verificationResponse.ok) throw new Error("Turnstile service rejected the request");
+          } catch (error) {
+            return json({
+              success: false,
+              code: "TURNSTILE_UNAVAILABLE",
+              error: "Security verification is temporarily unavailable"
+            }, 502);
+          }
+
+          const expectedHostname = String(env.TURNSTILE_EXPECTED_HOSTNAME || "iprint.tchl.online").trim().toLowerCase();
+          const hostnameMatches = !expectedHostname ||
+            String(verification.hostname || "").trim().toLowerCase() === expectedHostname;
+          const actionMatches = verification.action === "create_order";
+          if (verification.success !== true || !hostnameMatches || !actionMatches) {
+            return json({
+              success: false,
+              code: "TURNSTILE_FAILED",
+              error: "Security verification failed"
+            }, 403);
+          }
+        }
+
         const rawOrder = form.get("order");
         if (!rawOrder || typeof rawOrder !== "string") {
           return json({ success: false, error: "Missing order data" }, 400);
@@ -934,17 +966,80 @@ export default {
           return json({ success: false, error: "Invalid order JSON" }, 400);
         }
 
+        const orderValidation = validateOrderFoundation(order);
+        if (!orderValidation.success) {
+          return json({
+            success: false,
+            code: "INVALID_ORDER",
+            error: "Order data is invalid",
+            errors: orderValidation.errors
+          }, 400);
+        }
+        const orderFoundation = orderValidation.value;
+
         const orderItems = Array.isArray(order?.orderItems)
           ? order.orderItems.filter(item => item && item.id && item.name)
           : [];
-        const orderKey = String(order?.orderKey || "").trim();
-        const quoteNo = String(order?.quoteNo || "").trim();
+        const orderKey = orderFoundation.orderKey;
+        const quoteNo = orderFoundation.quoteNo;
 
         if (!orderKey || !quoteNo) {
           return json({ success: false, error: "Missing orderKey or quoteNo" }, 400);
         }
         if (!orderItems.length || orderItems.length > 20) {
           return json({ success: false, error: "Order must contain 1-20 items" }, 400);
+        }
+
+        const catalogReferences = [];
+        orderItems.forEach((item, lineIndex) => {
+          if (item.material?.id) {
+            catalogReferences.push({ type: "material", lineIndex, snapshot: item.material });
+          }
+          (Array.isArray(item.services) ? item.services : [])
+            .filter(service => service?.id && !service.virtual)
+            .forEach(service => catalogReferences.push({ type: "service", lineIndex, snapshot: service }));
+        });
+        const uniqueCatalogReferences = [...new Map(catalogReferences.map(reference => [
+          `${reference.type}:${reference.snapshot.id}`,
+          reference
+        ])).values()];
+        const catalogChanges = [];
+
+        try {
+          const catalogRepository = createCatalogRepository(env, { headers: notionHeaders });
+          await Promise.all(uniqueCatalogReferences.map(async reference => {
+            const pageId = String(reference.snapshot.id || "").trim();
+            const current = await catalogRepository.getById(reference.type, pageId);
+            if (!current) {
+              catalogChanges.push({
+                type: reference.type,
+                id: pageId,
+                name: String(reference.snapshot.name || ""),
+                reasons: ["unavailable"]
+              });
+              return;
+            }
+            const comparison = compareCatalogSnapshot(reference.snapshot, current);
+            if (comparison.changed) {
+              catalogChanges.push({
+                type: reference.type,
+                id: pageId,
+                name: String(reference.snapshot.name || ""),
+                ...comparison
+              });
+            }
+          }));
+        } catch (error) {
+          return json({ success: false, error: "Catalog validation failed", detail: error.message || String(error) }, 502);
+        }
+
+        if (catalogChanges.length) {
+          return json({
+            success: false,
+            code: "CATALOG_CHANGED",
+            error: "Catalog changed. Review the latest price and availability before ordering.",
+            changes: catalogChanges
+          }, 409);
         }
 
         const resolveDataSource = async configuredId => {
@@ -1085,13 +1180,22 @@ export default {
 
           setTicket("Order Key", "rich_text", { rich_text: richText(orderKey) });
           setTicket("Order Total", "number", { number: Number(order.total) || 0 });
+          setTicket("VAT", "number", { number: orderFoundation.vat });
+          setTicket("Grand Total", "number", { number: orderFoundation.grandTotal });
           setTicket("Item Count", "number", { number: orderItems.length });
           setTicket("ชื่อลูกค้า", "rich_text", { rich_text: richText(order.customer || "-") });
+          setTicket("Customer Phone", "phone_number", { phone_number: orderFoundation.phone || null });
+          setTicket("Customer Email", "email", { email: orderFoundation.email || null });
+          setTicket("Currency", "select", { select: { name: orderFoundation.currency } });
+          setTicket("Order Created At", "date", { date: { start: orderFoundation.createdAt } });
           setTicket("จำนวนรวม", "number", {
             number: orderItems.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0)
           });
           setTicket("ขนาด", "rich_text", { rich_text: richText(`${orderItems.length} รายการ`) });
-          setTicketWorkflow(["Workflow Status", "สถานะ", "Status"], "NEW");
+          setTicketWorkflow(["Workflow Status", "สถานะ", "Status"], orderFoundation.orderStatus);
+          setTicketWorkflow(["Payment Status", "สถานะชำระเงิน"], orderFoundation.paymentStatus);
+          setTicketWorkflow(["Production Status", "สถานะ Production"], orderFoundation.productionStatus);
+          setTicketWorkflow(["Customer Status", "สถานะลูกค้า"], orderFoundation.customerStatus);
           setTicket("มอบหมาย", "select", { select: { name: "GRAPHIC" } });
           setTicket("งานประเภท", "select", { select: { name: "Design" } });
           setTicket("Presentation/Proof", "rich_text", { rich_text: richText("ORDER_CREATING") });
@@ -1363,7 +1467,8 @@ export default {
           duplicate: false,
           id: ticketId,
           url: ticketPage.url || null,
-          itemIds
+          itemIds,
+          order: orderFoundation
         });
       }
 
@@ -1599,6 +1704,14 @@ export default {
             url: ticketPage.url || null,
             title: workflowTitle(ticketProperties),
             status: String(workflowValue(ticketProperties, ["Workflow Status", "สถานะ", "Status"]) || aggregateTicketStatus(items.map(item => item.status))),
+            paymentStatus: String(workflowValue(ticketProperties, ["Payment Status", "สถานะชำระเงิน"]) || "WAITING_PAYMENT"),
+            productionStatus: String(workflowValue(ticketProperties, ["Production Status", "สถานะ Production"]) || "WAITING"),
+            customerStatus: String(workflowValue(ticketProperties, ["Customer Status", "สถานะลูกค้า"]) || "ORDER_RECEIVED"),
+            total: Number(workflowValue(ticketProperties, ["Order Total"])) || 0,
+            vat: Number(workflowValue(ticketProperties, ["VAT"])) || 0,
+            grandTotal: Number(workflowValue(ticketProperties, ["Grand Total"])) || 0,
+            currency: String(workflowValue(ticketProperties, ["Currency"]) || "THB"),
+            createdAt: String(workflowValue(ticketProperties, ["Order Created At"]) || ticketPage.created_time || ""),
             updatedAt: ticketPage.last_edited_time || ""
           },
           items
@@ -2539,6 +2652,9 @@ export default {
           "POST /quotes",
           "POST /quotes/:id/preview",
           "POST /orders",
+          "POST /public/orders",
+          "GET /staff/capacity",
+          "PUT /staff/capacity/:date",
           "POST /tickets"
         ]
       }, 404);

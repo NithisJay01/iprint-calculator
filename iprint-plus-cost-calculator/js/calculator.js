@@ -36,13 +36,26 @@ function resetPreview() {
   }
 
 function previewBleed() {
+    if(typeof activeAccessRole==='undefined'||activeAccessRole!=='staff')return 3;
     const value=Number($('bleed')?.value);
     return Number.isFinite(value)&&value>=0?value:0
   }
 
 function previewGap() {
+    if(typeof activeAccessRole==='undefined'||activeAccessRole!=='staff')return 3;
     const value=Number($('pieceGap')?.value);
     return Number.isFinite(value)&&value>=0?value:0
+  }
+
+function applyLayoutControlAccess() {
+    const isStaff=typeof activeAccessRole!=='undefined'&&activeAccessRole==='staff';
+    ['pieceGap','bleed'].forEach(id=> {
+      const input=$(id);
+      if(!input)return;
+      input.disabled=!isStaff;
+      if(!isStaff)input.value='3';
+    });
+    if(typeof syncPreviewSliderValues==='function')syncPreviewSliderValues()
   }
 
 function formatMillimeters(value) {

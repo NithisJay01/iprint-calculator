@@ -1,10 +1,6 @@
 import assert from 'node:assert/strict';
-import fs from 'node:fs/promises';
-
-const workerSource = await fs.readFile(new URL('./index.js', import.meta.url), 'utf8');
-const workerModule = await import(
-  'data:text/javascript;base64,' + Buffer.from(workerSource).toString('base64')
-);
+import worker from './index.js';
+const workerModule = { default: worker };
 const originalFetch = globalThis.fetch;
 
 const itemSchema = {

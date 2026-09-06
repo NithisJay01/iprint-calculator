@@ -1,10 +1,6 @@
 import assert from 'node:assert/strict';
-import fs from 'node:fs/promises';
-
-const workerSource = await fs.readFile(new URL('./index.js', import.meta.url), 'utf8');
-const workerModule = await import(
-  'data:text/javascript;base64,' + Buffer.from(workerSource).toString('base64')
-);
+import worker from './index.js';
+const workerModule = { default: worker };
 const originalFetch = globalThis.fetch;
 const calls = [];
 const createdItems = [];
@@ -15,8 +11,17 @@ const ticketSchema = {
     'ชื่องาน': { type: 'title' },
     'Order Key': { type: 'rich_text' },
     'Order Total': { type: 'number' },
+    VAT: { type: 'number' },
+    'Grand Total': { type: 'number' },
     'Item Count': { type: 'number' },
     'ชื่อลูกค้า': { type: 'rich_text' },
+    'Customer Phone': { type: 'phone_number' },
+    'Customer Email': { type: 'email' },
+    Currency: { type: 'select' },
+    'Order Created At': { type: 'date' },
+    'Payment Status': { type: 'select' },
+    'Production Status': { type: 'select' },
+    'Customer Status': { type: 'select' },
     'จำนวนรวม': { type: 'number' },
     'ขนาด': { type: 'rich_text' },
     'สถานะ': { type: 'status' },
@@ -71,6 +76,17 @@ globalThis.fetch = async (url, options = {}) => {
   if (requestUrl.endsWith('/v1/data_sources/items-id/query')) {
     return Response.json({ results: [] });
   }
+  if (/\/v1\/pages\/(material-1|material-2|service-1)$/.test(requestUrl) && method === 'GET') {
+    return Response.json({
+      id: requestUrl.split('/').pop(),
+      last_edited_time: '2026-09-04T00:00:00.000Z',
+      properties: {
+        Price: { number: 0 },
+        Unit: { select: { name: '' } },
+        Active: { checkbox: true }
+      }
+    });
+  }
   if (requestUrl === 'https://api.notion.com/v1/pages' && method === 'POST') {
     const payload = JSON.parse(options.body);
 
@@ -78,6 +94,13 @@ globalThis.fetch = async (url, options = {}) => {
       assert.equal(payload.properties['Order Key'].rich_text[0].text.content, 'order-test-1');
       assert.equal(payload.properties['Item Count'].number, 2);
       assert.equal(payload.properties['Order Total'].number, 1500);
+      assert.equal(payload.properties.VAT.number, 105);
+      assert.equal(payload.properties['Grand Total'].number, 1605);
+      assert.equal(payload.properties['Customer Phone'].phone_number, '0800000000');
+      assert.equal(payload.properties.Currency.select.name, 'THB');
+      assert.equal(payload.properties['Payment Status'].select.name, 'WAITING_PAYMENT');
+      assert.equal(payload.properties['Production Status'].select.name, 'WAITING');
+      assert.equal(payload.properties['Customer Status'].select.name, 'ORDER_RECEIVED');
       assert.equal(payload.properties['Presentation/Proof'].rich_text[0].text.content, 'ORDER_CREATING');
       return Response.json({ id: 'ticket-page-id', url: 'https://notion.test/ticket-page-id' });
     }
@@ -107,7 +130,7 @@ globalThis.fetch = async (url, options = {}) => {
     const text = payload.children
       .map(block => block[block.type]?.rich_text?.[0]?.text?.content || '')
       .join('\n');
-    assert.ok(text.includes('ออเดอร์ QT-TEST'));
+    assert.ok(text.includes('Brief งานพิมพ์ QT-TEST'));
     assert.ok(text.includes('#1 Sticker PP'));
     assert.ok(text.includes('#2 Art Card'));
     assert.equal(text.includes('Gap'), false);
@@ -133,8 +156,10 @@ try {
     orderKey: 'order-test-1',
     quoteNo: 'QT-TEST',
     customer: 'ลูกค้าทดสอบ',
+    phone: '0800000000',
     contact: '0800000000',
     total: 1500,
+    vat: 105,
     grandTotal: 1605,
     orderItems: [
       {
@@ -200,9 +225,12 @@ try {
   );
   const result = await response.json();
 
-  assert.equal(response.status, 200);
+  assert.equal(response.status, 200, JSON.stringify(result));
   assert.equal(result.success, true);
   assert.equal(result.id, 'ticket-page-id');
+  assert.equal(result.order.paymentStatus, 'WAITING_PAYMENT');
+  assert.equal(result.order.productionStatus, 'WAITING');
+  assert.equal(result.order.customerStatus, 'ORDER_RECEIVED');
   assert.deepEqual(result.itemIds, ['order-item-1', 'order-item-2']);
   assert.equal(createdItems.length, 2);
   assert.deepEqual(createdItems[0].properties.Material.relation, [{ id: 'material-1' }]);
@@ -212,7 +240,35 @@ try {
   const firstSnapshot = JSON.parse(createdItems[0].properties.Snapshot.rich_text.map(entry => entry.text.content).join(''));
   assert.equal(firstSnapshot.printSide, 'double');
   assert.deepEqual(firstSnapshot.artworkSides, { hasFront: true, hasBack: true, useFrontForBack: false });
-  assert.equal(calls.length, 16);
+  assert.equal(calls.length, 17);
+
+  const changedOrder = structuredClone(order);
+  changedOrder.orderKey = 'order-test-catalog-changed';
+  changedOrder.orderItems[0].material.price = 999;
+  const changedForm = new FormData();
+  changedForm.append('order', JSON.stringify(changedOrder));
+  const changedResponse = await workerModule.default.fetch(
+    new Request('https://worker.test/orders', {
+      method: 'POST',
+      headers: { 'X-API-Key': 'test-key' },
+      body: changedForm
+    }),
+    {
+      NOTION_TOKEN: 'notion-token',
+      WRITE_API_KEY: 'test-key',
+      NOTION_DATA_SOURCE_ID: 'presets-id',
+      NOTION_MATERIALS_DATA_SOURCE_ID: 'materials-id',
+      NOTION_SERVICES_DATA_SOURCE_ID: 'services-id',
+      NOTION_CUSTOMERS_DATA_SOURCE_ID: 'customers-id',
+      NOTION_QUOTES_DATA_SOURCE_ID: 'quotes-id',
+      NOTION_TICKETS_DATA_SOURCE_ID: 'tickets-id',
+      NOTION_ORDER_ITEMS_DATA_SOURCE_ID: 'items-id'
+    }
+  );
+  const changedResult = await changedResponse.json();
+  assert.equal(changedResponse.status, 409);
+  assert.equal(changedResult.code, 'CATALOG_CHANGED');
+  assert.equal(changedResult.changes[0].reasons.includes('price_changed'), true);
   console.log('Order Worker smoke test passed');
 } finally {
   globalThis.fetch = originalFetch;

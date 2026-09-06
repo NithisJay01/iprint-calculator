@@ -1,5 +1,6 @@
 function isPrintSideService(service) {
-  return /พิม|พิพม์|print/i.test(String(service?.name || '')) && /หน้า|side/i.test(String(service?.name || ''));
+  const text = `${service?.category || ''} ${service?.name || ''}`;
+  return /รูปแบบการพิมพ์/i.test(text) || (/พิม|พิพม์|print/i.test(text) && /หน้า|side/i.test(text));
 }
 
 function isLaminationService(service) {
@@ -9,13 +10,31 @@ function isLaminationService(service) {
 
 function isCuttingService(service) {
   const text = `${service?.category || ''} ${service?.name || ''}`;
-  return /ไดคัท|ไดคัต|ตัด\s*(?:50|100|ครึ่ง|เต็ม)|die.?cut|kiss.?cut|cutting/i.test(text);
+  return /การตัด|ไดคัท|ไดคัต|ตัด\s*(?:50|100|ครึ่ง|เต็ม)|die.?cut|kiss.?cut|cutting/i.test(text);
+}
+
+function isDiecutService(service) {
+  const text = `${service?.category || ''} ${service?.name || ''}`;
+  return /ไดคัท|ไดคัต|die.?cut/i.test(text);
+}
+
+function hasSelectedDiecutService() {
+  return services.some(service => selectedServiceIds[String(service.id)] && isDiecutService(service));
+}
+
+function syncDiecutShapeAvailability() {
+  const control = $('diecutShapeControl');
+  if (!control) return;
+  const enabled = hasSelectedDiecutService();
+  control.hidden = !enabled;
+  control.setAttribute('aria-hidden', enabled ? 'false' : 'true');
+  if (typeof syncDiecutShapePreview === 'function') syncDiecutShapePreview();
 }
 
 function serviceGroupDefinition(service) {
   if (isPrintSideService(service)) return { key: 'print', title: 'รูปแบบการพิมพ์', exclusive: true, noneLabel: '' };
   if (isLaminationService(service)) return { key: 'lamination', title: 'การเคลือบ', exclusive: true, noneLabel: 'ไม่เคลือบ' };
-  if (/DIY Solution/i.test(String(service?.category || ''))) return { key: 'other-DIY-Solution', title: 'DIY Solution', exclusive: false, noneLabel: '' };
+  if (/DIY Solution/i.test(String(service?.category || ''))) return { key: 'other-DIY-Solution', title: 'บริการอื่นๆ', exclusive: false, noneLabel: '' };
   if (isCuttingService(service)) return { key: 'cutting', title: 'การตัด', exclusive: true, noneLabel: 'ไม่ตัด' };
   const title = String(service?.category || 'บริการเพิ่มเติม');
   return { key: `other-${title}`, title, exclusive: false, noneLabel: '' };
@@ -45,6 +64,8 @@ function renderServiceRow(service, group) {
   control.checked = Boolean(selectedServiceIds[String(service.id)]);
   row.classList.toggle('is-selected', control.checked);
   control.addEventListener('change', () => {
+    const hadDiecut = hasSelectedDiecutService();
+    const hadDoubleSided = typeof getSelectedPrintSide === 'function' && getSelectedPrintSide() === 'double';
     if (group.definition.exclusive && control.checked) {
       group.services.forEach(candidate => delete selectedServiceIds[String(candidate.id)]);
       selectedServiceIds[String(service.id)] = true;
@@ -57,6 +78,13 @@ function renderServiceRow(service, group) {
     if (group.definition.exclusive) renderServices();
     else row.classList.toggle('is-selected', control.checked);
     calculate();
+    syncDiecutShapeAvailability();
+    const hasDiecut = hasSelectedDiecutService();
+    const hasDoubleSided = typeof getSelectedPrintSide === 'function' && getSelectedPrintSide() === 'double';
+    if (!hadDiecut && hasDiecut) announceUiChange('เพิ่มส่วนอัปโหลด Shape ไดคัทแล้ว', $('diecutShapeControl'));
+    else if (hadDiecut && !hasDiecut) announceUiChange('ซ่อนส่วนอัปโหลด Shape ไดคัทแล้ว');
+    if (!hadDoubleSided && hasDoubleSided) announceUiChange('เพิ่มตัวควบคุม Artwork ด้านหน้าและด้านหลังแล้ว', $('artworkSideControls'));
+    else if (hadDoubleSided && !hasDoubleSided) announceUiChange('เปลี่ยนกลับเป็น Artwork ด้านเดียวแล้ว');
   });
 
   const main = document.createElement('div');
@@ -92,10 +120,15 @@ function renderNoneServiceRow(group) {
   row.classList.toggle('is-selected', control.checked);
   control.addEventListener('change', () => {
     if (!control.checked) return;
+    const hadDiecut = hasSelectedDiecutService();
+    const hadDoubleSided = typeof getSelectedPrintSide === 'function' && getSelectedPrintSide() === 'double';
     group.services.forEach(service => delete selectedServiceIds[String(service.id)]);
     saveState();
     renderServices();
     calculate();
+    syncDiecutShapeAvailability();
+    if (hadDiecut) announceUiChange('ซ่อนส่วนอัปโหลด Shape ไดคัทแล้ว');
+    if (hadDoubleSided) announceUiChange('เปลี่ยนกลับเป็น Artwork ด้านเดียวแล้ว');
   });
   const main = document.createElement('div');
   main.className = 'service-main';
@@ -118,14 +151,17 @@ function renderNoneServiceRow(group) {
 
 function renderServices() {
   const box = $('servicesContainer');
+  const printBox = $('layoutPrintServices');
   box.innerHTML = '';
+  if (printBox) printBox.innerHTML = '';
   if (!services.length) {
     box.innerHTML = '<div class="ms-status">ไม่พบบริการที่ Active</div>';
     return;
   }
 
   const groupMap = new Map();
-  services.forEach(service => {
+  const visibleServices = services.filter(service => !/^custom$/i.test(String(service.name || '').trim()) && !/DIY\s*ส่วนเสริม/i.test(String(service.name || '')));
+  visibleServices.forEach(service => {
     const definition = serviceGroupDefinition(service);
     if (!groupMap.has(definition.key)) groupMap.set(definition.key, { definition, services: [] });
     groupMap.get(definition.key).services.push(service);
@@ -135,8 +171,21 @@ function renderServices() {
     return priority || a.definition.title.localeCompare(b.definition.title, 'th');
   });
   normalizeExclusiveSelections(groups);
+  const lockedMode = typeof getLockedCuttingMode === 'function' ? getLockedCuttingMode() : '';
+  if (lockedMode) {
+    const cutting = groups.find(group => group.definition.key === 'cutting');
+    if (cutting) {
+      cutting.services.forEach(service => delete selectedServiceIds[String(service.id)]);
+      const exact = cutting.services.find(service => lockedMode === '50'
+        ? /50|ครึ่ง|kiss|mimaki/i.test(`${service.name || ''} ${service.material || ''}`)
+        : /100|เต็ม|flatblade/i.test(`${service.name || ''} ${service.material || ''}`));
+      const selected = exact || cutting.services.find(isDiecutService);
+      if (selected) selectedServiceIds[String(selected.id)] = true;
+    }
+  }
 
   groups.forEach(groupData => {
+    if (lockedMode && groupData.definition.key === 'cutting') return;
     const group = document.createElement('div');
     group.className = `service-group service-group-${groupData.definition.key.replace(/[^a-z0-9-]/gi, '-')}`;
     group.dataset.serviceGroup = groupData.definition.key;
@@ -146,10 +195,11 @@ function renderServices() {
     group.appendChild(title);
     if (groupData.definition.noneLabel) group.appendChild(renderNoneServiceRow(groupData));
     groupData.services.forEach(service => group.appendChild(renderServiceRow(service, groupData)));
-    box.appendChild(group);
+    (groupData.definition.key === 'print' && printBox ? printBox : box).appendChild(group);
   });
   $('serviceStatus').textContent = `${dataSourceLabel()} • ${services.length} บริการ`;
   if (typeof syncArtworkSideControls === 'function') syncArtworkSideControls();
+  syncDiecutShapeAvailability();
 }
 
 async function syncServices() {
@@ -198,3 +248,5 @@ function serviceCost(sheetCount, pieceCount) {
 }
 
 window.serviceGroupDefinition = serviceGroupDefinition;
+window.hasSelectedDiecutService = hasSelectedDiecutService;
+window.syncDiecutShapeAvailability = syncDiecutShapeAvailability;

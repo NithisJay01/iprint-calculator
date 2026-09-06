@@ -83,6 +83,15 @@ function cartTotal() {
   return cartItems.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
 }
 
+function cartProductionLabel(value) {
+  return value === 'inkjet' ? 'Inkjet ระบบ HP Latex' : 'Laser เครื่อง Konica';
+}
+
+function cartDeliveryLabel(value) {
+  if (!value) return 'ยังไม่ระบุวันที่';
+  return typeof formatGregorianDate === 'function' ? formatGregorianDate(value) : String(value);
+}
+
 function cartItemName(calc, index = cartItems.length + 1) {
   const jobName = String($('jobName')?.value || '').trim();
   if (jobName) return jobName;
@@ -108,6 +117,7 @@ function snapshotCartItem(calc, id) {
         previewEffect: String(calc.material.previewEffect || ''),
         shaderPreset: String(calc.material.shaderPreset || ''),
         textureUrl: String(calc.material.textureUrl || '')
+        ,updatedAt: String(calc.material.updatedAt || '')
       }
     : null;
   const selectedServices = (Array.isArray(calc.services) ? calc.services : []).map(service => ({
@@ -119,6 +129,7 @@ function snapshotCartItem(calc, id) {
     previewEffect: String(service.previewEffect || ''),
     shaderPreset: String(service.shaderPreset || ''),
     textureUrl: String(service.textureUrl || '')
+    ,updatedAt: String(service.updatedAt || '')
     ,virtual: Boolean(service.virtual)
   }));
 
@@ -143,6 +154,8 @@ function snapshotCartItem(calc, id) {
     services: selectedServices,
     price: Number(calc.sale) || 0,
     variants: typeof getJobVariants === 'function' ? getJobVariants() : [],
+    jobType: typeof getSelectedJobType === 'function' ? getSelectedJobType() : '',
+    jobNickname: String($('jobNickname')?.value || '').trim(),
     printSide: typeof getSelectedPrintSide === 'function' ? getSelectedPrintSide() : 'unspecified',
     productionService: typeof getSelectedHomeService === 'function' ? getSelectedHomeService() : 'laser',
     artworkSides: {
@@ -197,7 +210,9 @@ async function addCurrentJobToCart() {
     const item = snapshotCartItem(lastCalc, itemId);
     const existingIndex = cartItems.findIndex(entry => entry.id === itemId);
 
-    await cartAsset('put', itemId, briefImage);
+    const artworkBundle = typeof exportArtworkBundle === 'function' ? exportArtworkBundle() : null;
+    const shapeFile = typeof getDiecutShapeFile === 'function' ? getDiecutShapeFile() : null;
+    await cartAsset('put', itemId, { briefImage, artworkBundle, shapeFile });
 
     if (existingIndex >= 0) {
       cartItems.splice(existingIndex, 1, item);
@@ -211,6 +226,7 @@ async function addCurrentJobToCart() {
     if ($('graphicBriefDescription')) $('graphicBriefDescription').value = '';
     if ($('briefDeadline')) $('briefDeadline').value = '';
     if ($('deliveryDeadline')) $('deliveryDeadline').value = '';
+    document.querySelectorAll('[data-date-for]').forEach(input => { input.value = ''; });
     status.textContent = existingIndex >= 0
       ? 'อัปเดตรายการในตะกร้าแล้ว'
       : `เพิ่มลงตะกร้าแล้ว • ${cartItems.length} รายการ`;
@@ -255,16 +271,16 @@ function renderCart() {
 
   list.innerHTML = cartItems.map((item, index) => {
     const services = (item.services || []).map(service => service.name).filter(Boolean).join(', ');
-    const detail = [item.paper?.name, item.material?.name, services].filter(Boolean).join(' • ');
     const variants = Array.isArray(item.variants) && item.variants.length
       ? item.variants
       : [{ name: '', quantity: item.quantity }];
+    const detailsId = `cart-details-${cartEscape(item.id)}`;
 
     return `<article class="cart-item" data-cart-id="${cartEscape(item.id)}">
-      <div class="cart-item-head"><div><small>รายการที่ ${index + 1}</small><strong>${cartEscape(item.name)}</strong><span>${cartEscape(item.size)} • ${cartEscape(detail || 'ยังไม่ได้เลือกวัสดุหรือบริการ')}</span></div><button class="cart-item-remove" type="button" data-cart-action="remove" aria-label="ลบรายการ">×</button></div>
+      <div class="cart-item-head"><div><small>รายการที่ ${index + 1}</small><strong>${cartEscape(item.name)}</strong><div class="cart-item-details" id="${detailsId}"><div><b>พิมพ์</b><span>${cartEscape(cartProductionLabel(item.productionService))}</span></div><div><b>ขนาด</b><span>${cartEscape(item.size)}</span></div><div><b>กระดาษ</b><span>${cartEscape(item.paper?.name || 'ยังไม่ระบุ')}</span></div><div><b>วัสดุ</b><span>${cartEscape(item.material?.name || 'ยังไม่ระบุ')}</span></div><div><b>บริการ</b><span>${cartEscape(services || 'ไม่มีบริการเพิ่มเติม')}</span></div><div><b>รายละเอียด</b><span>${cartEscape(item.brief || 'ไม่มีรายละเอียดเพิ่มเติม')}</span></div></div><button class="cart-details-toggle" type="button" data-cart-action="details" aria-expanded="false" aria-controls="${detailsId}">อ่านเพิ่ม</button><div class="cart-item-deadline"><b>วันที่ต้องการรับงาน</b><span>${cartEscape(cartDeliveryLabel(item.deliveryDeadline))}</span></div></div><button class="cart-item-remove" type="button" data-cart-action="remove" aria-label="ลบรายการ" title="ลบรายการ">&#128465;</button></div>
       <div class="cart-variant-list">${variants.map((variant, variantIndex) => `<div class="cart-variant-row"><b>แบบที่ ${variantIndex + 1}</b><span>${cartEscape(variant.name || '-')}</span><strong>${Number(variant.quantity || 0).toLocaleString('th-TH')} ชิ้น</strong></div>`).join('')}</div>
       <div class="cart-production-row"><span>จัดวาง ${Number(item.yield || 0).toLocaleString('th-TH')} ชิ้น/แผ่น</span><span>ใช้ ${Number(item.sheets || 0).toLocaleString('th-TH')} แผ่น</span><span>รวม ${Number(item.quantity || 0).toLocaleString('th-TH')} ชิ้น</span><strong>฿${money(item.price)}</strong></div>
-      <div class="cart-item-actions"><button type="button" data-cart-action="edit">แก้ไขรายการ</button><button type="button" data-cart-action="duplicate">+ สร้างก็อปปี้ลิสต์</button></div>
+      <div class="cart-item-actions"><button type="button" data-cart-action="edit">แก้ไขรายการ</button></div>
     </article>`;
   }).join('');
 }
@@ -278,7 +294,7 @@ function closeCart() {
   if (typeof showAppView === 'function') showAppView('home');
 }
 
-function restoreCartItem(item) {
+async function restoreCartItem(item) {
   if (!item) return;
 
   editingCartItemId = item.id;
@@ -291,8 +307,9 @@ function restoreCartItem(item) {
   $('qty').value = item.quantity;
   $('cost').value = item.editor?.costPerSheet ?? 2.5;
   $('profitPercent').value = item.editor?.profitPercent ?? 30;
-  $('pieceGap').value = item.gap || 3;
-  $('bleed').value = item.bleed || 3;
+  const canTuneLayout = typeof activeAccessRole !== 'undefined' && activeAccessRole === 'staff';
+  $('pieceGap').value = canTuneLayout ? (item.gap || 3) : 3;
+  $('bleed').value = canTuneLayout ? (item.bleed || 3) : 3;
   selectedMaterialId = String(item.material?.id || '');
   selectedServiceIds = {};
   (item.services || []).forEach(service => {
@@ -301,12 +318,24 @@ function restoreCartItem(item) {
   $('graphicBriefDescription').value = item.brief || '';
   $('briefDeadline').value = typeof formatFlowDateInput === 'function' ? formatFlowDateInput(item.briefDeadline) : (item.briefDeadline || '');
   $('deliveryDeadline').value = typeof formatFlowDateInput === 'function' ? formatFlowDateInput(item.deliveryDeadline) : (item.deliveryDeadline || '');
+  const briefDatePicker = document.querySelector('[data-date-for="briefDeadline"]');
+  const deliveryDatePicker = document.querySelector('[data-date-for="deliveryDeadline"]');
+  if (briefDatePicker) briefDatePicker.value = item.briefDeadline || '';
+  if (deliveryDatePicker) deliveryDatePicker.value = item.deliveryDeadline || '';
   if ($('jobName')) $('jobName').value = item.name || '';
+  if (typeof setJobType === 'function') setJobType(item.jobType || '', { preserveName: true });
+  if (typeof setJobNickname === 'function') setJobNickname(item.jobNickname || '', { preserveName: true });
+  if (typeof setQuizDateValue === 'function') {
+    setQuizDateValue('quizDeliveryDeadline', item.deliveryDeadline || '');
+  }
   if ($('briefFileLink')) {
     $('briefFileLink').value = item.briefFileLink || '';
-    $('briefFileLink').hidden = !item.briefFileLink;
   }
   if (typeof setJobVariants === 'function') setJobVariants(item.variants || [{ name: '', quantity: item.quantity }]);
+  const storedAsset = await cartAsset('get', item.id).catch(() => null);
+  const artworkBundle = storedAsset?.artworkBundle || null;
+  if (typeof importArtworkBundle === 'function') importArtworkBundle(artworkBundle);
+  if (storedAsset?.shapeFile && typeof setDiecutShape === 'function') setDiecutShape(storedAsset.shapeFile);
   renderMaterials();
   renderServices();
   saveState();
@@ -327,25 +356,22 @@ async function handleCartAction(event) {
   if (!item) return;
 
   const action = actionButton.dataset.cartAction;
-  if (action === 'edit') {
-    restoreCartItem(item);
+  if (action === 'details') {
+    const details = itemElement.querySelector('.cart-item-details');
+    const expanded = !details?.classList.contains('is-expanded');
+    details?.classList.toggle('is-expanded', expanded);
+    actionButton.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+    actionButton.textContent = expanded ? 'ย่อรายละเอียด' : 'อ่านเพิ่ม';
+    announceUiChange(expanded ? 'แสดงรายละเอียดรายการทั้งหมดแล้ว' : 'ย่อรายละเอียดรายการแล้ว', expanded ? details : null);
     return;
   }
-
-  if (action === 'duplicate') {
-    if (cartItems.length >= CART_MAX_ITEMS) return;
-    const copy = JSON.parse(JSON.stringify(item));
-    copy.id = cartId();
-    copy.name = item.name + ' (สำเนา)';
-    copy.createdAt = new Date().toISOString();
-    const brief = await cartAsset('get', item.id);
-    if (brief) await cartAsset('put', copy.id, brief);
-    cartItems.push(copy);
-    saveCart();
+  if (action === 'edit') {
+    await restoreCartItem(item);
     return;
   }
 
   if (action === 'remove') {
+    if (!window.confirm(`ยืนยันลบ “${item.name || 'รายการนี้'}” ออกจากตะกร้า?`)) return;
     cartItems = cartItems.filter(entry => entry.id !== item.id);
     if (editingCartItemId === item.id) editingCartItemId = '';
     await cartAsset('delete', item.id);
@@ -354,7 +380,8 @@ async function handleCartAction(event) {
 }
 
 async function cartBriefImages() {
-  return Promise.all(cartItems.map(item => cartAsset('get', item.id)));
+  const stored = await Promise.all(cartItems.map(item => cartAsset('get', item.id)));
+  return stored.map(asset => asset?.briefImage || asset || null);
 }
 
 function publicOrderItems() {

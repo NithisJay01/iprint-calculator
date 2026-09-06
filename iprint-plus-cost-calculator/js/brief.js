@@ -355,7 +355,7 @@ function briefReviewImageSvg(calc,artworkUrls,shapeUrl='') {
   const sides=doubleSided&&artworkUrls.back?['front','back']:['front'];
   const services=(calc.services||[]).map(service=>service.name).filter(Boolean).join(' • ')||'ไม่มีบริการเพิ่มเติม';
   const jobName=String($('jobName')?.value||'').trim()||'-';
-  const note=graphicBriefDescription()||'ไม่มีคำขอเทคนิคพิเศษ';
+  const note=graphicBriefDescription()||'ไม่มีคำอธิบายเพิ่ม';
   const link=String($('briefFileLink')?.value||'').trim();
   let y=56;
   const content=[];

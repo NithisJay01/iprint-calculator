@@ -260,6 +260,7 @@ function bindMaterialPreviewInteraction() {
   materialPreviewState.bound = true;
   $('materialShaderToggle')?.addEventListener('change', event => setMaterialPreviewEnabled(event.target.checked));
   interaction.addEventListener('pointerdown', event => {
+    if (event.target.closest('summary,button,a,input,label,select,textarea,details')) return;
     if (materialPreviewState.mode === 'none' || (event.pointerType === 'mouse' && event.button !== 0)) return;
     materialPreviewState.pointerId = event.pointerId;
     interaction.setPointerCapture?.(event.pointerId);

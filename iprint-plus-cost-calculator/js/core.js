@@ -1,9 +1,10 @@
 'use strict';
   const IPRINT_TEST_MODE=new URLSearchParams(window.location.search).get('testMode')==='1';
   const IPRINT_RESET_TEST_DATA=IPRINT_TEST_MODE&&new URLSearchParams(window.location.search).get('resetTest')==='1';
-  const API_ROOT='https://iprint-flow-api.iprint-garphic1.workers.dev';
+  const IPRINT_CONFIG=window.IPRINT_CONFIG||{};
+  const API_ROOT=String(IPRINT_CONFIG.apiRoot||'https://iprint-flow-api.iprint-garphic1.workers.dev').replace(/\/$/,'');
   const API= {
-    presets:API_ROOT+'/presets',materials:API_ROOT+'/materials',services:API_ROOT+'/services',quotes:API_ROOT+'/quotes',tickets:API_ROOT+'/tickets',orders:API_ROOT+'/orders',orderItems:API_ROOT+'/order-items',customers: API_ROOT + '/customers',authCheck:API_ROOT+'/auth/check',
+    presets:API_ROOT+'/presets',materials:API_ROOT+'/materials',services:API_ROOT+'/services',quotes:API_ROOT+'/quotes',tickets:API_ROOT+'/tickets',orders:API_ROOT+'/orders',publicOrders:API_ROOT+'/public/orders',orderItems:API_ROOT+'/order-items',customers: API_ROOT + '/customers',authCheck:API_ROOT+'/auth/check',staffMaterials:API_ROOT+'/staff/materials',staffServices:API_ROOT+'/staff/services',staffCapacity:API_ROOT+'/staff/capacity',
   }
   ;
   const BLEED_MM=3;
@@ -249,6 +250,60 @@ function setStatus(id,text,kind) {
     el.textContent=text;
     el.className='status'+(kind?' '+kind:'')
   }
+
+let uiChangeToastTimer = 0;
+
+function announceUiChange(message, target, options = {}) {
+  const toast = $('uiChangeToast');
+  if (toast && message) {
+    clearTimeout(uiChangeToastTimer);
+    toast.textContent = message;
+    toast.hidden = false;
+    requestAnimationFrame(() => toast.classList.add('is-visible'));
+    uiChangeToastTimer = window.setTimeout(() => {
+      toast.classList.remove('is-visible');
+      window.setTimeout(() => { toast.hidden = true; }, 180);
+    }, 2800);
+  }
+  if (!target || options.scroll === false) return;
+  const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  if (!target.hasAttribute('tabindex')) target.setAttribute('tabindex', '-1');
+  requestAnimationFrame(() => {
+    target.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'center' });
+    window.setTimeout(() => {
+      target.focus({ preventScroll: true });
+      target.classList.add('is-ui-change-focus');
+      window.setTimeout(() => target.classList.remove('is-ui-change-focus'), 1400);
+    }, reducedMotion ? 0 : 320);
+  });
+}
+
+window.announceUiChange = announceUiChange;
+
+function syncPieceMarginLine(piece, widthMm, heightMm) {
+  if (!piece) return null;
+  let line = piece.querySelector('.bleed');
+  if (!line) {
+    line = document.createElement('div');
+    line.className = 'bleed';
+    piece.appendChild(line);
+  }
+  const calculatedMargin = Number(lastCalc?.bleed);
+  const marginMm = Math.max(0, Number.isFinite(calculatedMargin) ? calculatedMargin : (typeof previewBleed === 'function' ? previewBleed() : 3));
+  const safeWidth = Math.max(.01, Number(widthMm) || 1);
+  const safeHeight = Math.max(.01, Number(heightMm) || 1);
+  const horizontalInset = Math.min(49, marginMm / safeWidth * 100);
+  const verticalInset = Math.min(49, marginMm / safeHeight * 100);
+  line.style.left = `${horizontalInset}%`;
+  line.style.right = `${horizontalInset}%`;
+  line.style.top = `${verticalInset}%`;
+  line.style.bottom = `${verticalInset}%`;
+  line.setAttribute('aria-hidden', 'true');
+  line.title = `Margin ${marginMm.toLocaleString('th-TH', { maximumFractionDigits: 1 })} mm`;
+  return line;
+}
+
+window.syncPieceMarginLine = syncPieceMarginLine;
 
 function cachePut(key,data) {
     try {

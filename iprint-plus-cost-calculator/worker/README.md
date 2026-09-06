@@ -1,5 +1,20 @@
 # iPrint Worker: Order, Ticket และ Brief
 
+## Data access architecture
+
+Catalog domain rules are isolated in `domain/catalog.js`. Storage access is defined by
+`repositories/catalog-repository.js` and the current Notion implementation lives in
+`repositories/notion-catalog-repository.js`. Routes and checkout validation must depend
+on the repository contract rather than reading Notion properties directly. A future D1
+or PostgreSQL implementation should implement the same contract and pass
+`catalog-contract-test.mjs` before it is selected in production.
+
+Run the adapter contract test with:
+
+```bash
+node worker/catalog-contract-test.mjs
+```
+
 ระบบรองรับ 2 flow:
 
 - ส่งบรีฟชิ้นงานเดียวผ่าน `POST /tickets`
@@ -14,6 +29,7 @@
 ```
 NOTION_TICKETS_DATA_SOURCE_ID=<Data source ID หรือ Database ID ของฐานข้อมูล Ticket>
 NOTION_ORDER_ITEMS_DATA_SOURCE_ID=<Data source ID หรือ Database ID ของฐานข้อมูล Iprint Order Items>
+NOTION_CAPACITY_DATA_SOURCE_ID=<Data source ID หรือ Database ID ของฐานข้อมูล Iprint Daily Capacity>
 ```
 
 ค่าของฐานข้อมูลปัจจุบัน, ขั้นตอนสร้าง Internal Integration และคำสั่งตั้ง Secret อยู่ใน [NOTION_SETUP.md](./NOTION_SETUP.md) ส่วนค่าที่ไม่ลับถูกเตรียมไว้ใน `wrangler.toml` แล้ว
@@ -60,5 +76,31 @@ QC → READY → DELIVERED
 ```
 node worker/ticket-smoke-test.mjs
 node worker/order-smoke-test.mjs
+node worker/order-domain-test.mjs
+node worker/public-order-security-test.mjs
+node worker/capacity-domain-test.mjs
+node worker/capacity-repository-test.mjs
+node worker/capacity-worker-test.mjs
 node worker/workflow-smoke-test.mjs
 ```
+
+## Capacity Point และคิวรายวัน
+
+Domain ใน `worker/domain/capacity.js` คำนวณแต้มงานจากแต้มพื้นฐาน วัสดุ และบริการ โดยบริการเลือกฐานการคิดได้เป็น `job`, `sheet` หรือ `piece` พร้อม `capacityStep` สำหรับคิดเป็นช่วง เช่น ไดคัท 1 แต้มต่อทุก 100 ชิ้น
+
+ตัวจัดสรรคิวรองรับเวลาตัดรอบ วันทำงาน วันหยุด วันปิดเฉพาะกิจ Capacity รายวันที่ปรับเพิ่ม/ลดได้ แต้มที่ถูกจองแล้ว และการกระจายงานใหญ่ต่อเนื่องหลายวัน
+
+หน้า Staff Catalog รองรับ `Capacity Points`, `Capacity Basis` และ `Capacity Step` ของบริการแล้ว ใน Test Mode ค่าจะอยู่เฉพาะ Mock data ส่วน Production จะเขียนเฉพาะคอลัมน์ Capacity ที่มีอยู่จริงใน `Iprint Service`
+
+หน้า Staff Daily Capacity ใช้ `GET /staff/capacity` และ `PUT /staff/capacity/:date` เพื่ออ่านและบันทึกกำลังผลิตลง `Iprint Daily Capacity` โดยต้องยืนยันตัวตนด้วย Staff API key เช่นเดียวกับหน้า Catalog การบันทึกใช้ค่า `Updated At` ตรวจการแก้ไขชนกัน เพื่อไม่ให้พนักงานสองคนเขียนทับข้อมูลล่าสุดโดยไม่รู้ตัว ส่วน Test Mode ใช้ Mock data ในเบราว์เซอร์และไม่แก้ Notion
+
+## เปิดรับออเดอร์จากลูกค้าโดยไม่ Login
+
+หน้าเว็บลูกค้าใช้ `POST /public/orders` ซึ่งไม่รับ `WRITE_API_KEY` จากเบราว์เซอร์ แต่บังคับตรวจ Cloudflare Turnstile ที่ Worker ทุกครั้ง ระบบปิดไว้โดยค่าเริ่มต้น
+
+1. สร้าง Turnstile widget สำหรับ hostname `iprint.tchl.online`
+2. ใส่ Site Key (เป็นข้อมูลสาธารณะ) ใน `js/config.js` ที่ `turnstileSiteKey` และตั้ง `publicOrdersEnabled: true`
+3. เก็บ Secret Key เฉพาะใน Worker ด้วย `npx wrangler secret put TURNSTILE_SECRET_KEY --config worker/wrangler.toml`
+4. เปลี่ยน `PUBLIC_ORDER_ENABLED` ใน `worker/wrangler.toml` เป็น `"true"` แล้ว deploy Worker
+
+อย่าใส่ Turnstile Secret หรือ `WRITE_API_KEY` ใน `config.js` หรือไฟล์หน้าเว็บ

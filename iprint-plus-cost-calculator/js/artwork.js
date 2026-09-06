@@ -120,7 +120,8 @@ function renderArtworkSummaries() {
     clear.textContent = 'ล้างภาพ';
     clear.addEventListener('click', clearArtworkImage);
     actions.append(rotate, clear);
-    card.append(image, details, actions);
+    if (slot.hasAttribute('data-artwork-summary-readonly')) card.append(image, details);
+    else card.append(image, details, actions);
     slot.appendChild(card);
     slot.hidden = false;
   });
@@ -191,8 +192,21 @@ function setArtworkImage(file, side = activeArtworkSide) {
     if (useFrontArtworkForBack) artworkRotationBack = 0;
   }
   updateArtworkControls();
+  syncQuizArtworkStatus(file, side);
   calculate();
   return true;
+}
+
+function syncQuizArtworkStatus(file = null, side = activeArtworkSide) {
+  const status = $('quizArtworkStatus');
+  if (!status || side === 'back') return;
+  if (file) {
+    status.textContent = `เลือกแล้ว: ${file.name}`;
+    status.classList.add('is-ready');
+    return;
+  }
+  status.textContent = 'รองรับ PNG, JPG และ WebP ไม่เกิน 8 MB ต่อไฟล์';
+  status.classList.remove('is-ready');
 }
 
 function addReferenceImages(files) {
@@ -263,6 +277,7 @@ function clearArtworkImage() {
     useFrontArtworkForBack = false;
   }
   $('artworkImage').value = '';
+  if (activeArtworkSide === 'front') syncQuizArtworkStatus();
   updateArtworkControls();
   calculate();
   refreshActiveArtworkReview();
@@ -283,6 +298,7 @@ function clearTemporaryImages() {
   referenceImages = [];
   $('artworkImage').value = '';
   $('referenceImages').value = '';
+  syncQuizArtworkStatus();
   if (typeof clearDiecutShape === 'function') clearDiecutShape();
   updateArtworkControls();
   calculate();
@@ -302,6 +318,34 @@ function getArtworkSideState() {
     frontRotation: getArtworkRotation('front'),
     backRotation: getArtworkRotation('back')
   };
+}
+
+function exportArtworkBundle() {
+  return {
+    front: artworkImage || null,
+    back: artworkBackImage || null,
+    references: referenceImages.map(reference => reference.file).filter(Boolean),
+    activeSide: activeArtworkSide,
+    useFrontForBack: useFrontArtworkForBack,
+    frontRotation: artworkRotationFront,
+    backRotation: artworkRotationBack
+  };
+}
+
+function importArtworkBundle(bundle) {
+  clearTemporaryImages();
+  if (!bundle) return;
+  artworkImage = bundle.front || null;
+  artworkBackImage = bundle.back || null;
+  artworkImageUrl = artworkImage ? URL.createObjectURL(artworkImage) : '';
+  artworkBackImageUrl = artworkBackImage ? URL.createObjectURL(artworkBackImage) : '';
+  referenceImages = (bundle.references || []).map((file, index) => ({ id: `restored-${Date.now()}-${index}`, file, url: URL.createObjectURL(file) }));
+  activeArtworkSide = bundle.activeSide === 'back' ? 'back' : 'front';
+  useFrontArtworkForBack = Boolean(bundle.useFrontForBack && artworkImage);
+  artworkRotationFront = normalizeArtworkRotation(bundle.frontRotation);
+  artworkRotationBack = normalizeArtworkRotation(bundle.backRotation);
+  updateArtworkControls();
+  calculate();
 }
 
 function rotateArtworkImage(side = activeArtworkSide) {
@@ -458,7 +502,7 @@ function bindPreviewArtworkDrop() {
 function bindArtwork() {
   $('artworkImage').addEventListener('change', event => {
     const [file] = Array.from(event.target.files || []);
-    setArtworkImage(file);
+    if (setArtworkImage(file)) announceUiChange('อัปโหลดตัวอย่าง Artwork แล้ว พร้อมดูใน Preview');
     event.target.value = '';
   });
   $('referenceImages').addEventListener('change', event => {
@@ -477,3 +521,5 @@ function bindArtwork() {
 }
 
 window.renderArtworkSummaries = renderArtworkSummaries;
+window.exportArtworkBundle = exportArtworkBundle;
+window.importArtworkBundle = importArtworkBundle;

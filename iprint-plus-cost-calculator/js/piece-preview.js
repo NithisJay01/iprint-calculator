@@ -32,7 +32,6 @@ function renderPiecePreviewSide(side = 'front') {
   clone.classList.add('piece-preview-large');
   clone.style.width = '';
   clone.style.height = '';
-  clone.querySelector('.bleed')?.remove();
   clone.querySelector('.piece-number')?.remove();
 
   const artworkUrl = typeof getArtworkPreviewUrl === 'function'
@@ -58,6 +57,7 @@ function renderPiecePreviewSide(side = 'front') {
 
   const width = Math.max(1, Number(lastCalc?.W) || 1);
   const height = Math.max(1, Number(lastCalc?.H) || 1);
+  syncPieceMarginLine(clone, width * 10, height * 10);
   clone.style.aspectRatio = `${width} / ${height}`;
   frame.replaceChildren(clone);
 
@@ -67,7 +67,9 @@ function renderPiecePreviewSide(side = 'front') {
     button.setAttribute('aria-pressed', selected ? 'true' : 'false');
   });
   const rotation = typeof getArtworkRotation === 'function' ? getArtworkRotation(nextSide) : 0;
-  $('piecePreviewStatus').textContent = `ชิ้นที่ ${piecePreviewState.index.toLocaleString('th-TH')} • ${nextSide === 'back' ? 'ด้านหลัง' : 'ด้านหน้า'} • หมุน ${rotation}°`;
+  const calculatedMargin = Number(lastCalc?.bleed);
+  const margin = Math.max(0, Number.isFinite(calculatedMargin) ? calculatedMargin : 3);
+  $('piecePreviewStatus').textContent = `ชิ้นที่ ${piecePreviewState.index.toLocaleString('th-TH')} • ${nextSide === 'back' ? 'ด้านหลัง' : 'ด้านหน้า'} • Margin ${margin.toLocaleString('th-TH', { maximumFractionDigits: 1 })} mm • หมุน ${rotation}°`;
 }
 
 function openPiecePreview(piece) {

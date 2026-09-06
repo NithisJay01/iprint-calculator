@@ -12,12 +12,12 @@ const IPRINT_TEST_FIXTURES = {
   },
   services: {
     services: [
-      { id: 'test-print-single', category: 'รูปแบบการพิมพ์', name: 'พิมพ์หน้าเดียว', material: 'All Paper', price: 0.5, unit: 'sheet', sortOrder: 10, active: true },
-      { id: 'test-print-double', category: 'รูปแบบการพิมพ์', name: 'พิมพ์ 2 หน้า', material: 'All Paper', price: 0.5, unit: 'sheet', sortOrder: 20, active: true },
+      { id: 'test-print-single', category: 'รูปแบบการพิมพ์', name: 'พิมพ์หน้าเดียว', material: 'All Paper', price: 0.5, unit: 'sheet', sortOrder: 10, active: true, capacityPoints: 1, capacityBasis: 'sheet', capacityStep: 100 },
+      { id: 'test-print-double', category: 'รูปแบบการพิมพ์', name: 'พิมพ์ 2 หน้า', material: 'All Paper', price: 0.5, unit: 'sheet', sortOrder: 20, active: true, capacityPoints: 2, capacityBasis: 'sheet', capacityStep: 100 },
       { id: 'test-lam-matte', category: 'การเคลือบ', name: 'เคลือบด้าน', material: 'Matt Film', price: 0.25, unit: 'piece', sortOrder: 30, active: true, previewRenderer: 'css', previewEffect: 'matte' },
       { id: 'test-lam-gloss', category: 'การเคลือบ', name: 'เคลือบเงา', material: 'Glossy Film', price: 0.25, unit: 'piece', sortOrder: 40, active: true, previewRenderer: 'css', previewEffect: 'gloss' },
       { id: 'test-lam-hologram', category: 'การเคลือบ', name: 'เคลือบโฮโลแกรม', material: 'Hologram Film', price: 0.75, unit: 'piece', sortOrder: 50, active: true, previewRenderer: 'webgl', previewEffect: 'hologram' },
-      { id: 'test-cut-sticker', category: 'การตัด', name: 'ไดคัท', material: 'All Sticker', price: 1, unit: 'piece', sortOrder: 60, active: true },
+      { id: 'test-cut-sticker', category: 'การตัด', name: 'ไดคัท', material: 'All Sticker', price: 1, unit: 'piece', sortOrder: 60, active: true, capacityPoints: 1, capacityBasis: 'piece', capacityStep: 100 },
       { id: 'test-cut-acrylic', category: 'การตัด', name: 'ติดแผ่นอคลีลิก Die-cut', material: 'Acrylic', price: 50, unit: 'piece', sortOrder: 70, active: true },
       { id: 'test-cut-plastwood', category: 'การตัด', name: 'ติดแผ่นพลาสวูด Die-cut', material: 'Plastwood', price: 20, unit: 'sheet', sortOrder: 80, active: true },
       { id: 'test-diy', category: 'DIY Solution', name: 'DIY ส่วนเสริม', material: 'Plastwood', price: 0.5, unit: 'piece', sortOrder: 90, active: true },
@@ -328,6 +328,78 @@ async function createTicketRemote(ticket, image, filename) {
     }
   }
 
+let publicOrderTurnstileWidgetId = null;
+let publicOrderTurnstileToken = '';
+let publicOrderTurnstileLoader = null;
+
+function isPublicOrderClientEnabled() {
+  return activeAccessRole === 'customer' &&
+    IPRINT_CONFIG.publicOrdersEnabled === true &&
+    !!String(IPRINT_CONFIG.turnstileSiteKey || '').trim();
+}
+
+function loadTurnstileClient() {
+  if (window.turnstile) return Promise.resolve(window.turnstile);
+  if (publicOrderTurnstileLoader) return publicOrderTurnstileLoader;
+
+  publicOrderTurnstileLoader = new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+    script.async = true;
+    script.defer = true;
+    script.onload = () => window.turnstile ? resolve(window.turnstile) : reject(new Error('Turnstile unavailable'));
+    script.onerror = () => reject(new Error('โหลดระบบตรวจสอบความปลอดภัยไม่สำเร็จ'));
+    document.head.appendChild(script);
+  });
+
+  return publicOrderTurnstileLoader;
+}
+
+async function preparePublicOrderTurnstile() {
+  const wrapper = $('publicOrderVerification');
+  const status = $('publicOrderVerificationStatus');
+  if (!wrapper || activeAccessRole !== 'customer' || IPRINT_TEST_MODE) return;
+
+  wrapper.hidden = false;
+  if (!isPublicOrderClientEnabled()) {
+    status.textContent = 'ระบบรับออเดอร์ออนไลน์ยังไม่เปิดใช้งาน';
+    return;
+  }
+  if (publicOrderTurnstileWidgetId !== null) return;
+
+  status.textContent = 'กำลังโหลดการตรวจสอบความปลอดภัย…';
+  try {
+    const turnstile = await loadTurnstileClient();
+    publicOrderTurnstileWidgetId = turnstile.render('#publicOrderTurnstile', {
+      sitekey: String(IPRINT_CONFIG.turnstileSiteKey),
+      action: 'create_order',
+      appearance: 'interaction-only',
+      callback(token) {
+        publicOrderTurnstileToken = String(token || '');
+        status.textContent = 'ตรวจสอบความปลอดภัยแล้ว';
+      },
+      'expired-callback'() {
+        publicOrderTurnstileToken = '';
+        status.textContent = 'การตรวจสอบหมดอายุ กรุณาตรวจสอบใหม่';
+      },
+      'error-callback'() {
+        publicOrderTurnstileToken = '';
+        status.textContent = 'ตรวจสอบความปลอดภัยไม่สำเร็จ กรุณาลองใหม่';
+      }
+    });
+    status.textContent = 'กรุณาผ่านการตรวจสอบก่อนส่งออเดอร์';
+  } catch (error) {
+    status.textContent = error.message || 'โหลดระบบตรวจสอบไม่สำเร็จ';
+  }
+}
+
+function resetPublicOrderTurnstile() {
+  publicOrderTurnstileToken = '';
+  if (window.turnstile && publicOrderTurnstileWidgetId !== null) {
+    window.turnstile.reset(publicOrderTurnstileWidgetId);
+  }
+}
+
 async function createOrderRemote(order, quotePreview, briefImages) {
   try {
     if (IPRINT_TEST_MODE) {
@@ -349,15 +421,23 @@ async function createOrderRemote(order, quotePreview, briefImages) {
       sessionStorage.setItem(IPRINT_TEST_ORDER_KEY, JSON.stringify(workflow));
       return { success: true, id, url: '#test-mode', itemIds: items.map(item => item.id), testMode: true };
     }
+    const isPublicOrder = activeAccessRole === 'customer';
     const apiKey = getWriteApiKey();
 
-    if (!apiKey) throw new Error('ยังไม่ได้ตั้งค่า API Key');
+    if (isPublicOrder && !isPublicOrderClientEnabled()) {
+      throw new Error('ระบบรับออเดอร์ออนไลน์ยังไม่เปิดใช้งาน');
+    }
+    if (!isPublicOrder && !apiKey) throw new Error('ยังไม่ได้ตั้งค่า API Key');
+    if (isPublicOrder && !publicOrderTurnstileToken) {
+      throw new Error('กรุณาผ่านการตรวจสอบความปลอดภัยก่อนส่งออเดอร์');
+    }
     if (!order || !Array.isArray(order.orderItems) || !order.orderItems.length) {
       throw new Error('ไม่พบรายการชิ้นงานในออเดอร์');
     }
 
     const form = new FormData();
     form.append('order', JSON.stringify(order));
+    if (isPublicOrder) form.append('turnstileToken', publicOrderTurnstileToken);
     if (quotePreview) {
       form.append('quotePreview', quotePreview, `${order.quoteNo || 'order'}-quote.png`);
     }
@@ -367,9 +447,9 @@ async function createOrderRemote(order, quotePreview, briefImages) {
       }
     });
 
-    const response = await fetch(API.orders, {
+    const response = await fetch(isPublicOrder ? API.publicOrders : API.orders, {
       method: 'POST',
-      headers: { 'X-API-Key': apiKey },
+      headers: isPublicOrder ? undefined : { 'X-API-Key': apiKey },
       body: form
     });
     const text = await response.text();
@@ -379,6 +459,15 @@ async function createOrderRemote(order, quotePreview, briefImages) {
       data = JSON.parse(text);
     } catch (error) {
       // Preserve the raw response in the error below.
+    }
+
+    if (response.status === 409 && data.code === 'CATALOG_CHANGED') {
+      return {
+        success: false,
+        code: data.code,
+        changes: Array.isArray(data.changes) ? data.changes : [],
+        error: 'ราคา หรือสถานะบางรายการมีการเปลี่ยนแปลง กรุณาตรวจสอบตะกร้าอีกครั้ง'
+      };
     }
 
     if (!response.ok || data.success !== true) {
@@ -394,6 +483,8 @@ async function createOrderRemote(order, quotePreview, briefImages) {
       success: false,
       error: error.message || String(error)
     };
+  } finally {
+    if (!IPRINT_TEST_MODE && activeAccessRole === 'customer') resetPublicOrderTurnstile();
   }
 }
 
@@ -513,3 +604,44 @@ async function createCustomerRemote(customerData) {
       return null;
     }
   }
+
+async function fetchStaffCatalogRemote(type) {
+  const endpoint = type === 'services' ? API.staffServices : API.staffMaterials;
+  const response = await fetch(endpoint, { method: 'GET', cache: 'no-store', headers: { 'X-API-Key': getWriteApiKey() } });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || !data.success) throw new Error(data.error || `โหลด Staff Catalog ไม่สำเร็จ (${response.status})`);
+  return type === 'services' ? data.services || [] : data.materials || [];
+}
+
+async function saveStaffCatalogRemote(type, item) {
+  const base = type === 'services' ? API.staffServices : API.staffMaterials;
+  const id = String(item.id || '');
+  const response = await fetch(id ? `${base}/${encodeURIComponent(id)}` : base, {
+    method: id ? 'PATCH' : 'POST',
+    headers: writeHeaders(),
+    body: JSON.stringify({ ...item, expectedUpdatedAt: item.updatedAt || '' })
+  });
+  const data = await response.json().catch(() => ({}));
+  if (response.status === 409) return { success: false, code: data.code || 'CATALOG_WRITE_CONFLICT', current: data.current || null, error: 'รายการนี้ถูกแก้ไขจากอีกหน้าต่าง กรุณาโหลดข้อมูลล่าสุด' };
+  if (!response.ok || !data.success) return { success: false, error: data.error || `บันทึก Staff Catalog ไม่สำเร็จ (${response.status})` };
+  return data;
+}
+
+async function fetchStaffCapacityRemote(from, to) {
+  const query = new URLSearchParams({ from, to });
+  const response = await fetch(`${API.staffCapacity}?${query}`, { method: 'GET', cache: 'no-store', headers: { 'X-API-Key': getWriteApiKey() } });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || !data.success) throw new Error(data.error || `โหลดกำลังผลิตไม่สำเร็จ (${response.status})`);
+  return Array.isArray(data.days) ? data.days : [];
+}
+
+async function saveStaffCapacityRemote(day) {
+  const response = await fetch(`${API.staffCapacity}/${encodeURIComponent(day.date)}`, {
+    method: 'PUT', headers: writeHeaders(),
+    body: JSON.stringify({ ...day, expectedUpdatedAt: day.updatedAt || '' })
+  });
+  const data = await response.json().catch(() => ({}));
+  if (response.status === 409) return { success: false, code: 'CAPACITY_WRITE_CONFLICT', current: data.current || null, error: 'วันนี้ถูกแก้ไขจากอีกหน้าต่าง กรุณาโหลดข้อมูลล่าสุด' };
+  if (!response.ok || !data.success) return { success: false, error: data.error || `บันทึกกำลังผลิตไม่สำเร็จ (${response.status})` };
+  return data;
+}

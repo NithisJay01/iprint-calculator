@@ -1,8 +1,9 @@
 'use strict';
 
 function getDiecutShapeState() {
+  const serviceEnabled = typeof hasSelectedDiecutService !== 'function' || hasSelectedDiecutService();
   return {
-    active: Boolean(diecutShapeFile && diecutShapeUrl),
+    active: Boolean(serviceEnabled && diecutShapeFile && diecutShapeUrl),
     name: diecutShapeFile?.name || '',
     type: diecutShapeFile?.type || '',
     size: Number(diecutShapeFile?.size) || 0
@@ -20,7 +21,8 @@ function getDiecutShapeDataUrl() {
 }
 
 function syncDiecutShapePreview() {
-  const active = Boolean(diecutShapeFile && diecutShapeUrl);
+  const serviceEnabled = typeof hasSelectedDiecutService !== 'function' || hasSelectedDiecutService();
+  const active = Boolean(serviceEnabled && diecutShapeFile && diecutShapeUrl);
   document.body.classList.toggle('has-diecut-shape', active);
   if (active) document.body.style.setProperty('--diecut-shape-url', `url("${diecutShapeUrl}")`);
   else document.body.style.removeProperty('--diecut-shape-url');
@@ -59,11 +61,18 @@ function setDiecutShape(file) {
   if (typeof calculate === 'function') calculate();
 }
 
+function getDiecutShapeFile() {
+  return diecutShapeFile || null;
+}
+
 function bindDiecutShape() {
   $('diecutShapeFile')?.addEventListener('change', event => setDiecutShape(event.target.files?.[0]));
   $('clearDiecutShape')?.addEventListener('click', clearDiecutShape);
   syncDiecutShapePreview();
+  if (typeof syncDiecutShapeAvailability === 'function') syncDiecutShapeAvailability();
 }
 
 window.getDiecutShapeState = getDiecutShapeState;
 window.getDiecutShapeDataUrl = getDiecutShapeDataUrl;
+window.getDiecutShapeFile = getDiecutShapeFile;
+window.setDiecutShape = setDiecutShape;

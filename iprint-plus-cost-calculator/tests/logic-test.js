@@ -135,7 +135,7 @@
         assert(bleed.type === 'range' && bleed.min === '1' && bleed.max === '15' && bleed.step === '0.5', 'เริ่มต้นแอปและโหลด Preset', 'Bleed Slider ต้องปรับได้ 1–15 mm ทีละ 0.5 mm');
         assert(document.getElementById('flowStepper') && document.getElementById('cartModal'), 'เริ่มต้นแอปและโหลด Preset', 'ไม่พบ Stepper หรือตะกร้าของ Flow ใหม่');
         assert(document.getElementById('workflowModal'), 'เริ่มต้นแอปและโหลด Preset', 'ไม่พบหน้าติดตาม Workflow');
-        assert(briefDeadline?.placeholder === 'DD/MM/YYYY' && deliveryDeadline?.placeholder === 'DD/MM/YYYY', 'เริ่มต้นแอปและโหลด Preset', 'Deadline ต้องแสดงรูปแบบ DD/MM/YYYY');
+        assert(briefDeadline?.readOnly && deliveryDeadline?.readOnly && briefDeadline?.placeholder === 'เลือกวันที่' && deliveryDeadline?.placeholder === 'เลือกวันที่', 'เริ่มต้นแอปและโหลด Preset', 'Deadline ต้องเปิดปฏิทินแทนการรับข้อความจากคีย์บอร์ด');
         assert(document.querySelectorAll('.native-date-control[type="date"]').length === 2, 'เริ่มต้นแอปและโหลด Preset', 'Deadline ต้องเลือกผ่านปฏิทินได้');
         assert(document.querySelector('label[for="pieceGap"]')?.textContent === 'Gap Between' && document.querySelector('label[for="bleed"]')?.textContent === 'Margin', 'เริ่มต้นแอปและโหลด Preset', 'ชื่อ Slider ไม่ตรงกับ UX ล่าสุด');
         assert(!document.querySelector('.print-side-toggle'), 'เริ่มต้นแอปและโหลด Preset', 'ต้องเลือกพิมพ์หน้าเดียว/สองหน้าจากรายการบริการเท่านั้น');

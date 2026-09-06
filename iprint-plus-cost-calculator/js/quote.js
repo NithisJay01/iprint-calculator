@@ -249,7 +249,8 @@ function openQuote() {
     currentQuoteMeta=null;
     $('quoteModal').classList.add('open');
     $('quoteModal').setAttribute('aria-hidden','false');
-    buildQuote()
+    buildQuote();
+    if (typeof preparePublicOrderTurnstile === 'function') preparePublicOrderTurnstile();
   }
 
 function closeQuote(returnToCart = true) {
@@ -283,12 +284,17 @@ async function printQuote() {
         return;
       }
 
-      q = await ensureQuoteCustomer(q);
+      const hasApiKey = !!getWriteApiKey();
+      const isStaffOrder = activeAccessRole === 'staff' && hasApiKey;
+      const isPublicOrder = activeAccessRole === 'customer' &&
+        typeof isPublicOrderClientEnabled === 'function' &&
+        isPublicOrderClientEnabled();
+      if (isStaffOrder) q = await ensureQuoteCustomer(q);
 
       const customerName =
         String($('quoteCustomer')?.value || '').trim();
 
-      if (customerName && !q.customerPageId) {
+      if (isStaffOrder && customerName && !q.customerPageId) {
         setStatus(
           'customerStatus',
           'ไม่สามารถสร้าง/เชื่อม Customer ได้ • ตรวจ API Key และ Notion Database',
@@ -303,20 +309,29 @@ async function printQuote() {
         return;
       }
 
-      const hasApiKey = !!getWriteApiKey();
       const briefImages = typeof cartBriefImages === 'function'
         ? await cartBriefImages()
         : [];
-      const remote = hasApiKey
+      const remote = (isStaffOrder || isPublicOrder || IPRINT_TEST_MODE)
         ? await createOrderRemote(q, null, briefImages)
         : false;
 
       if (!remote?.success) {
         await saveQuoteLocal(q);
 
-        $('quoteSaveStatus').textContent = hasApiKey
-          ? `สร้างออเดอร์ใน Notion ไม่สำเร็จ: ${remote?.error || 'ไม่ทราบสาเหตุ'} • เก็บประวัติไว้ในเครื่องแล้ว`
-          : 'ยังไม่ได้ตั้ง API Key • เก็บประวัติไว้ในเครื่องแล้ว';
+        if (remote?.code === 'CATALOG_CHANGED') {
+          const changedNames = (remote.changes || []).map(change => {
+            const price = change.reasons?.includes('price_changed')
+              ? ` ฿${money(change.previousPrice)} → ฿${money(change.currentPrice)}`
+              : '';
+            return `${change.name || 'รายการ'}${price}`;
+          }).join(', ');
+          $('quoteSaveStatus').textContent = `รายการมีการเปลี่ยนแปลง: ${changedNames || 'ราคา หรือสถานะบริการ'} • ยังไม่สร้างออเดอร์ กรุณาปิดหน้าต่างและตรวจสอบตะกร้าใหม่`;
+        } else {
+          $('quoteSaveStatus').textContent = (isStaffOrder || isPublicOrder)
+            ? `สร้างออเดอร์ใน Notion ไม่สำเร็จ: ${remote?.error || 'ไม่ทราบสาเหตุ'} • เก็บประวัติไว้ในเครื่องแล้ว`
+            : 'บันทึกรายการในเครื่องแล้ว • ระบบรับออเดอร์ออนไลน์ยังไม่เปิดใช้งาน';
+        }
         return;
       } else {
         if (typeof rememberOrder === 'function') rememberOrder(remote, q);

@@ -81,6 +81,15 @@ async function downloadBrief() {
   }
 
 let applicationBound = false;
+let activeAccessRole = 'none';
+const activePortal = /^\/staff(?:\/|$)/i.test(window.location.pathname) ? 'staff' : 'customer';
+document.body.dataset.portal = activePortal;
+
+function setAccessRole(role) {
+  activeAccessRole = role === 'staff' ? 'staff' : role === 'customer' ? 'customer' : 'none';
+  document.body.dataset.accessRole = activeAccessRole;
+  if (typeof applyLayoutControlAccess === 'function') applyLayoutControlAccess();
+}
 
 function setLoginStatus(message, kind = '') {
   const status = $('loginStatus');
@@ -89,18 +98,31 @@ function setLoginStatus(message, kind = '') {
 }
 
 function showLoginGate(message = '') {
+  setAccessRole('none');
   $('mobileApp').hidden = true;
   $('loginGate').hidden = false;
   $('loginSubmit').disabled = false;
   $('loginSubmit').textContent = 'เข้าสู่ระบบ';
   $('loginApiKey').value = '';
+  $('loginForm').hidden = activePortal !== 'staff';
+  if (activePortal === 'staff') {
+    $('loginTitle').textContent = 'เข้าสู่ระบบพนักงาน';
+    document.querySelector('.login-copy p').textContent = 'เข้าสู่พื้นที่จัดการราคา สินค้า บริการ ออเดอร์ และสถานะการผลิต';
+  }
   setLoginStatus(message, message ? 'warn' : '');
   setTimeout(()=>$('loginApiKey').focus(), 60);
 }
 
-function showAuthenticatedApp() {
+function showAuthenticatedApp(role = 'staff') {
+  setAccessRole(role);
   $('loginGate').hidden = true;
   $('mobileApp').hidden = false;
+}
+
+function continueAsGuest() {
+  if (activePortal !== 'customer') return;
+  showAuthenticatedApp('customer');
+  startApplication();
 }
 
 function toggleLoginKeyVisibility() {
@@ -132,7 +154,7 @@ async function submitLogin(event) {
     await verifyWriteApiKey(key);
     storeWriteApiKey(key, $('rememberLogin').checked);
     $('loginApiKey').value = '';
-    showAuthenticatedApp();
+    showAuthenticatedApp('staff');
     startApplication();
   } catch (error) {
     button.disabled = false;
@@ -149,8 +171,13 @@ function logoutApplication() {
 
 async function restoreLogin() {
   if (IPRINT_TEST_MODE) {
-    showAuthenticatedApp();
+    showAuthenticatedApp(activePortal === 'staff' ? 'staff' : 'customer');
     return true;
+  }
+
+  if (activePortal === 'customer') {
+    showLoginGate();
+    return false;
   }
 
   const key = getWriteApiKey();
@@ -177,6 +204,7 @@ async function restoreLogin() {
 function bindLogin() {
   $('loginForm').addEventListener('submit',submitLogin);
   $('toggleLoginKey').addEventListener('click',toggleLoginKeyVisibility);
+  $('continueAsGuest').addEventListener('click',continueAsGuest);
 }
 
 function bind() {
@@ -206,6 +234,8 @@ function bind() {
     bindDiecutShape();
     bindCart();
     bindWorkflow();
+    if(typeof bindStaffCatalog==='function') bindStaffCatalog();
+    if(typeof bindStaffCapacity==='function') bindStaffCapacity();
     $('addPreset').addEventListener('click',openPreset);
     $('cancelPreset').addEventListener('click',closePreset);
     $('savePreset').addEventListener('click',savePreset);
@@ -247,7 +277,11 @@ function bind() {
     syncPresets();
     syncMaterials();
     syncServices();
-    syncCustomers()
+    if(activeAccessRole==='staff') syncCustomers();
+    else {
+      customers=[];
+      renderCustomerOptions();
+    }
   }
 
 function startApplication() {
