@@ -699,6 +699,26 @@ function bindFlow() {
   });
   $('jobSetupToHome')?.addEventListener('click', () => showAppView('home'));
   $('jobSetupBack')?.addEventListener('click', () => showJobSetupQuestion(1));
+  $('jobNicknameForm')?.addEventListener('click', event => {
+    const suggestion = event.target.closest('[data-job-name-suggestion]');
+    if (!suggestion) return;
+    const value = suggestion.dataset.jobNameSuggestion || '';
+    setJobNickname(value);
+    document.querySelectorAll('[data-job-name-suggestion]').forEach(button => {
+      const selected = button === suggestion;
+      button.classList.toggle('is-selected', selected);
+      button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+    });
+    $('jobNickname')?.focus();
+    announceUiChange(`เติมชื่องาน “${value}” แล้ว`, $('jobNickname'), { scroll: false });
+  });
+  $('jobNickname')?.addEventListener('input', event => {
+    document.querySelectorAll('[data-job-name-suggestion]').forEach(button => {
+      const selected = button.dataset.jobNameSuggestion === event.target.value.trim();
+      button.classList.toggle('is-selected', selected);
+      button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+    });
+  });
   $('jobNicknameForm')?.addEventListener('submit', event => { event.preventDefault(); setJobNickname($('jobNickname')?.value || ''); showJobSetupQuestion(3); });
   $('jobDatesBack')?.addEventListener('click', () => showJobSetupQuestion(2));
   $('jobDatesForm')?.addEventListener('submit', event => {
