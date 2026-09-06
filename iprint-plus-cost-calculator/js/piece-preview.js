@@ -89,8 +89,21 @@ function openPiecePreview(piece) {
 
 function bindPiecePreview() {
   const preview = $('costSheetPreview');
+  const layoutPreview = $('sheetPreview');
   const modal = $('piecePreviewModal');
-  if (!preview || !modal) return;
+  if (!preview || !layoutPreview || !modal) return;
+
+  layoutPreview.addEventListener('click', event => {
+    const piece = event.target.closest('.piece');
+    if (piece) openPiecePreview(piece);
+  });
+  layoutPreview.addEventListener('keydown', event => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    const piece = event.target.closest('.piece');
+    if (!piece) return;
+    event.preventDefault();
+    openPiecePreview(piece);
+  });
 
   preview.addEventListener('click', event => {
     const piece = event.target.closest('.piece');

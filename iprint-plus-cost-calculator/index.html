@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#eef6ff">
   <title>iPrint</title>
-  <link rel="stylesheet" href="css/app.css?v=20260906-flow-refresh">
+  <link rel="stylesheet" href="css/app.css?v=20260906-annotation-refresh">
 </head>
 <body>
 <section class="login-gate" id="loginGate" aria-labelledby="loginTitle">
@@ -99,12 +99,12 @@
 
       <section class="preview-artwork-section">
         <label class="artwork-upload-button" for="artworkImage"><span><img class="button-icon" src="image/upload.svg" alt="">อัพโหลด / เปลี่ยนภาพตัวอย่าง Artwork</span></label>
-        <div class="artwork-current layout-artwork-current" id="artworkCurrent" hidden><img id="artworkThumbnail" alt="ภาพงานหลักที่เลือก"><div><strong id="artworkName">—</strong><span id="artworkMeta">—</span></div><div class="artwork-current-actions"><button id="rotateArtworkImage" type="button"><img class="button-icon" src="image/rotate.svg" alt="">หมุน 90°</button><button id="clearArtworkImage" type="button">ล้างภาพ</button></div></div>
-        <div class="artwork-side-controls" id="artworkSideControls" hidden><div class="artwork-side-toggle" role="group" aria-label="เลือกด้านของ Artwork"><button type="button" data-artwork-side="front" class="is-selected" aria-pressed="true">ด้านหน้า</button><button type="button" data-artwork-side="back" aria-pressed="false">ด้านหลัง</button></div><label class="same-artwork-option"><input id="useFrontArtworkForBack" type="checkbox"> ใช้ภาพด้านหน้าเป็นด้านหลัง</label><div class="artwork-side-action-row"><label class="active-artwork-upload" for="artworkImage" id="activeArtworkUploadLabel">เปลี่ยนภาพด้านหน้า</label></div><small id="artworkSideStatus">หน้า ยังไม่มีภาพ • หลัง ยังไม่มีภาพ</small></div>
         <section class="layout-print-services" id="layoutPrintServices" aria-label="รูปแบบการพิมพ์"></section>
+        <div class="artwork-side-controls" id="artworkSideControls" hidden><div class="artwork-side-toggle" role="group" aria-label="เลือกด้านของ Artwork"><button type="button" data-artwork-side="front" class="is-selected" aria-pressed="true">ด้านหน้า</button><button type="button" data-artwork-side="back" aria-pressed="false">ด้านหลัง</button></div><label class="same-artwork-option"><input id="useFrontArtworkForBack" type="checkbox"> ใช้ภาพด้านหน้าเป็นด้านหลัง</label><div class="artwork-side-action-row"><label class="active-artwork-upload" for="artworkImage" id="activeArtworkUploadLabel">เปลี่ยนภาพด้านหน้า</label></div><small id="artworkSideStatus">หน้า ยังไม่มีภาพ • หลัง ยังไม่มีภาพ</small></div>
         <div class="layout-preview-card" id="previewDropZone">
           <div class="preview-scroll"><div class="sheet-preview" id="sheetPreview"></div></div>
-          <details class="preview-read-more" open><summary>ข้อมูลสำคัญ</summary><div><img class="preview-info-mascot" src="image/iprint-mascot.png" alt="น้อง iPrint ผู้ช่วยอธิบาย Preview"><span>ค่าเริ่มต้น: ระยะห่างระหว่างชิ้นงาน 3 mm</span><span><b>ภาพบน Preview:</b> มีไว้สำหรับส่งบรีฟและสร้างความเข้าใจที่ตรงกันกับทีมเท่านั้น <b>ไม่ใช่ไฟล์ที่ใช้สำหรับพิมพ์</b></span><span><b>เส้นประคือระยะ Safe zone เข้ามาจากขอบงาน 3 mm</b> กรุณาตรวจสอบ หากมีกราฟิกที่สำคัญหรือข้อความอยู่นอกพื้นที่ มีโอกาสถูกตัดออกได้</span></div></details>
+          <div class="artwork-current layout-artwork-current" id="artworkCurrent" hidden><img id="artworkThumbnail" alt="ภาพงานหลักที่เลือก"><div><strong id="artworkName">—</strong><span id="artworkMeta">—</span></div><div class="artwork-current-actions"><button id="rotateArtworkImage" type="button"><img class="button-icon" src="image/rotate.svg" alt="">หมุน 90°</button><button id="clearArtworkImage" type="button">ล้างภาพ</button></div></div>
+          <details class="preview-read-more" open><summary>ข้อมูลสำคัญ</summary><div><img class="preview-info-mascot" src="image/iprint-mascot.png" alt="น้อง iPrint ผู้ช่วยอธิบาย Preview"><span>ค่าเริ่มต้น: ระยะห่างระหว่างชิ้นงาน 3 mm</span><span><b>ภาพบน Preview:</b> มีไว้สำหรับส่งบรีฟและสร้างความเข้าใจที่ตรงกันกับทีมเท่านั้น <b>ไม่ใช่ไฟล์ที่ใช้สำหรับพิมพ์</b></span><span class="safe-zone-warning"><b>เส้นประคือระยะ Safe zone เข้ามาจากขอบงาน 3 mm</b> กรุณาตรวจสอบ หากมีกราฟิกที่สำคัญหรือข้อความอยู่นอกพื้นที่ มีโอกาสถูกตัดออกได้</span></div></details>
           <div class="sheet-dimensions"><span id="sheetWidthLabel">— mm</span><span id="sheetHeightLabel">— mm</span></div>
           <div class="preview-drop-hint" aria-hidden="true"><span><img src="image/upload.svg" alt=""></span> วางภาพงานใน Preview</div>
         </div>
@@ -126,7 +126,6 @@
         <section class="diecut-shape-control" id="diecutShapeControl" aria-labelledby="diecutShapeTitle" aria-hidden="true" hidden><div><strong id="diecutShapeTitle">Shape ไดคัท</strong><small>PNG โปร่งใส หรือ SVG สีทึบ • ใช้เป็น Clipping mask บน Artwork</small></div><div class="diecut-shape-actions"><label for="diecutShapeFile">อัปโหลด Shape</label><button id="clearDiecutShape" type="button" hidden>ล้าง Shape</button></div><output id="diecutShapeStatus">ยังไม่ได้เลือก Shape • มุมฉาก 0°</output></section>
         <div class="cost-preview-wrap" id="materialPreviewInteraction"><div class="material-preview-stage" id="materialPreviewStage"><div class="sheet-preview cost-sheet-preview" id="costSheetPreview"></div><div class="material-css-reflection" aria-hidden="true"></div><canvas id="materialShaderCanvas" class="material-shader-canvas" aria-hidden="true" hidden></canvas></div><details class="preview-read-more is-unread"><summary>อ่านข้อมูลเพิ่มเติม</summary><div><img class="preview-info-mascot" src="image/iprint-mascot.png" alt="น้อง iPrint ผู้ช่วยอธิบาย Preview"><strong>น้อง iPrint แนะนำ</strong><span>ค่าเริ่มต้น: ระยะห่างระหว่างชิ้นงาน 3 mm</span><span><b>ไฟล์ตัวอย่างภาพ:</b> รองรับ PNG, JPG และ WebP ขนาดไม่เกิน 8 MB ต่อไฟล์</span><span><b>เส้นประคือระยะ Safe zone 3 mm</b> กรุณาตรวจสอบ หากมีกราฟิกที่สำคัญหรือตัวอักษรอยู่นอกบริเวณเส้นประ พื้นที่ดังกล่าวมีโอกาสที่จะถูกตัดออก</span></div></details></div>
         <div class="preview-interaction-hint" id="materialPreviewHint" hidden>ลากซ้าย–ขวาเพื่อดูแสงสะท้อน</div>
-        <div class="artwork-summary-slot" data-artwork-summary></div>
         <div class="preview-finish-status" id="previewFinishStatus">Preview วัสดุและ Option เสริม</div>
       </section>
       <section class="form-card">
@@ -136,7 +135,7 @@
       </section>
       <div class="flow-actions cost-cta-actions"><button class="secondary-action" data-flow-back="layout" type="button"><img class="button-icon" src="image/arrow-left.svg" alt="">กลับ</button><button class="primary-action" data-flow-next="brief" type="button">ขั้นตอนถัดไป<img class="button-icon" src="image/arrow-right-light.svg" alt=""></button></div>
       <section class="outline-summary cost-analysis">
-        <h2>คำนวณต้นทุนและราคา</h2><p class="internal-note">“คำนวนราคาอาจคลาดเคลื่อนได้หากมีการอัพเดทราคา กรุณาตรวจสอบอีกครั้งหลังได้รับใบเสนอราคาฉบับเต็ม”</p>
+        <h2>คำนวณราคา</h2><p class="internal-note">“คำนวนราคาอาจคลาดเคลื่อนได้หากมีการอัพเดทราคา กรุณาตรวจสอบอีกครั้งหลังได้รับใบเสนอราคาฉบับเต็ม”</p>
         <div class="summary-settings row2" data-staff-only><div class="field"><label class="label" for="cost">ต้นทุนแผงเพิ่มต่อแผ่น</label><input id="cost" type="number" min="0" step="0.01" value="2.5"></div><div class="field"><label class="label" for="profitPercent">กำไรที่ต้องการ (%)</label><input id="profitPercent" type="number" min="0" step="1" value="30"></div></div>
         <dl><div><dt>ขนาดชิ้นงาน</dt><dd id="resultSize">—</dd></div><div><dt>จำนวนกระดาษพิมพ์</dt><dd><span id="previewSheets">—</span> แผ่น</dd></div><div data-staff-only><dt>ต้นทุนรวมสุทธิ</dt><dd>฿<span id="total">—</span></dd></div><div class="summary-total"><dt>ราคาขายโดยประมาณ</dt><dd>฿<span id="sale">—</span></dd></div></dl>
         <div class="calculation-meta" hidden><span id="previewPaperName">Preset: —</span><span id="previewInfo">—</span><span id="gap">3</span><span id="bleedSummary">3</span></div>
@@ -148,7 +147,7 @@
       <div class="brief-responsive-columns">
         <div class="brief-preview-column">
           <h2 class="section-title">ภาพงานหลัก (Main Layout/Artwork)</h2>
-          <section class="brief-main-preview"><div id="briefArtworkPreview" class="preview-gallery"></div><div class="artwork-summary-slot" data-artwork-summary></div><button class="brief-preview-upload" id="editMainArtwork" type="button">เปลี่ยนภาพงานหลัก</button></section>
+          <section class="brief-main-preview"><div id="briefArtworkPreview" class="preview-gallery"></div><button class="brief-preview-upload" id="editMainArtwork" type="button">กลับไปแก้ภาพที่ Step 1</button></section>
         </div>
         <div class="brief-form-column">
           <div class="field job-name-field"><label class="label" for="jobName">ชื่อเรียกงาน <span>(แก้ไขได้)</span></label><input id="jobName" maxlength="120" placeholder="ใส่ชื่อเรียกงาน"><small class="job-name-hint">สร้างจากคำตอบก่อนเริ่ม Step 1 และแก้ไขได้เสมอ</small></div>
@@ -269,7 +268,7 @@
 
 <div class="modal success-modal" id="orderSuccessModal" aria-hidden="true"><div class="modal-card"><div class="success-copy"><h2>สร้างออเดอร์สำเร็จ</h2><strong id="successOrderId">Order: —</strong><p id="successOrderSummary">สร้างรายการและส่ง Brief ให้กราฟิกแล้ว</p></div><div class="modal-actions"><button class="secondary-action" id="startNewOrder" type="button">เริ่มออเดอร์ใหม่</button><button class="primary-action" id="viewOrderStatus" type="button">ดูสถานะออเดอร์</button></div></div></div>
 
-<div class="modal quantity-change-modal" id="quantityChangeModal" aria-hidden="true"><div class="modal-card"><div class="modal-head"><h2>จำนวนแบบเปลี่ยนจาก Step 1</h2></div><div class="modal-body"><p>จำนวนรวมของทุกแบบไม่ตรงกับจำนวนที่ใช้คำนวณราคา</p><dl class="quantity-change-comparison"><div><dt>เดิม</dt><dd><strong id="oldQuantitySummary">—</strong><span id="oldPriceSummary">—</span></dd></div><div><dt>ใหม่</dt><dd><strong id="newQuantitySummary">—</strong><span id="newPriceSummary">—</span></dd></div></dl><div class="modal-actions"><button class="secondary-action" id="editVariantQuantity" type="button">แก้ไขจำนวน</button><button class="primary-action" id="confirmVariantPrice" type="button">ยืนยันราคาใหม่</button></div></div></div></div>
+<div class="modal quantity-change-modal" id="quantityChangeModal" aria-hidden="true"><div class="modal-card"><div class="modal-head"><h2>จำนวนชิ้นงานมีการเปลี่ยนแปลง</h2></div><div class="modal-body"><p>จำนวนรวมของทุกแบบไม่ตรงกับจำนวนที่ใช้คำนวณราคา กรุณาตรวจสอบราคาใหม่ก่อนยืนยัน</p><dl class="quantity-change-comparison"><div><dt>เดิม</dt><dd><strong id="oldQuantitySummary">—</strong><span id="oldPriceSummary">—</span></dd></div><div><dt>ใหม่</dt><dd><strong id="newQuantitySummary">—</strong><span id="newPriceSummary">—</span></dd></div></dl><section class="quantity-price-breakdown" aria-label="รายละเอียดราคาใหม่"><dl><div><dt>จำนวนแผ่น</dt><dd id="newSheetSummary">—</dd></div><div><dt>จำนวนชิ้นงาน</dt><dd id="newPieceSummary">—</dd></div></dl><div class="quantity-service-prices"><strong>บริการที่เลือก</strong><div id="newServicePriceList">—</div></div><div class="quantity-price-total"><span>ราคารวมทั้งหมด</span><strong id="newTotalPriceSummary">—</strong></div></section><div class="modal-actions"><button class="secondary-action" id="editVariantQuantity" type="button">แก้ไขจำนวน</button><button class="primary-action" id="confirmVariantPrice" type="button">ยืนยันราคาใหม่</button></div></div></div></div>
 
 <div class="modal piece-preview-modal" id="piecePreviewModal" aria-hidden="true"><div class="modal-card"><div class="modal-head"><div><small>PREVIEW รายชิ้น</small><h2 id="piecePreviewTitle">ตัวอย่างชิ้นงาน</h2></div><button class="close-sheet" id="closePiecePreview" type="button" aria-label="ปิด Preview รายชิ้น">×</button></div><div class="piece-preview-body"><div class="piece-preview-frame" id="piecePreviewFrame"></div><div class="piece-preview-side-toggle" id="piecePreviewSideToggle" role="group" aria-label="เลือกด้านของ Preview รายชิ้น"><button class="is-selected" id="piecePreviewFront" type="button" data-piece-preview-side="front" aria-pressed="true">ด้านหน้า</button><button id="piecePreviewBack" type="button" data-piece-preview-side="back" aria-pressed="false">ด้านหลัง</button></div><p id="piecePreviewStatus">กำลังแสดงด้านหน้า</p></div></div></div>
 
@@ -282,10 +281,10 @@
 <script src="js/presets.js?v=20260831-material-preview"></script>
 <script src="js/materials.js?v=20260831-material-preview"></script>
 <script src="js/services.js?v=20260906-flow-refresh"></script>
-<script src="js/artwork.js?v=20260906-flow-refresh"></script>
+<script src="js/artwork.js?v=20260906-annotation-refresh"></script>
 <script src="js/shape-mask.js?v=20260906-flow-refresh"></script>
 <script src="js/material-preview.js?v=20260906-flow-refresh"></script>
-<script src="js/piece-preview.js?v=20260905-piece-margin"></script>
+<script src="js/piece-preview.js?v=20260906-annotation-refresh"></script>
 <script src="js/calculator.js?v=20260905-role-layout-controls"></script>
 <script src="js/brief.js?v=20260906-flow-refresh"></script>
 <script src="js/cart.js?v=20260906-flow-refresh"></script>
@@ -295,6 +294,6 @@
 <script src="js/staff-catalog.js?v=20260905-edit-icon"></script>
 <script src="js/staff-capacity.js?v=20260904-calendar-drag-task"></script>
 <script src="js/app.js?v=20260905-role-layout-controls"></script>
-<script src="js/flow.js?v=20260906-flow-refresh"></script>
+<script src="js/flow.js?v=20260906-annotation-refresh"></script>
 </body>
 </html>

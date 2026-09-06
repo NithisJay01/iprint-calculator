@@ -546,6 +546,25 @@ function validateBriefForm() {
   return true;
 }
 
+function quantityServicePrice(service, calc) {
+  const price = Number(service?.price) || 0;
+  const serviceUnit = typeof normalizeUnit === 'function' ? normalizeUnit(service?.unit) : String(service?.unit || 'job');
+  if (serviceUnit === 'sheet') return price * (Number(calc?.sheets) || 0);
+  if (serviceUnit === 'piece') return price * (Number(calc?.Q) || 0);
+  return price;
+}
+
+function renderQuantityPriceBreakdown(calc) {
+  if (!calc) return;
+  $('newSheetSummary').textContent = `${Number(calc.sheets || 0).toLocaleString('th-TH')} แผ่น`;
+  $('newPieceSummary').textContent = `${Number(calc.Q || 0).toLocaleString('th-TH')} ชิ้น`;
+  const selectedServices = Array.isArray(calc.services) ? calc.services : [];
+  $('newServicePriceList').innerHTML = selectedServices.length
+    ? selectedServices.map(service => `<div><span>${flowEscape(service.name || 'บริการเพิ่มเติม')}</span><strong>฿${money(quantityServicePrice(service, calc))}</strong></div>`).join('')
+    : '<div><span>ไม่มีบริการเพิ่มเติม</span><strong>฿0.00</strong></div>';
+  $('newTotalPriceSummary').textContent = `฿${money(Number(calc.sale) || 0)}`;
+}
+
 function requestVariantQuantityConfirmation() {
   const variants = readVariantInputs();
   const newQuantity = variants.reduce((sum, variant) => sum + variant.quantity, 0);
@@ -560,6 +579,7 @@ function requestVariantQuantityConfirmation() {
   $('oldPriceSummary').textContent = `฿${money(oldPrice)}`;
   $('newQuantitySummary').textContent = `${newQuantity.toLocaleString('th-TH')} ชิ้น`;
   $('newPriceSummary').textContent = `฿${money(pendingVariantQuantityChange.newPrice)}`;
+  renderQuantityPriceBreakdown(lastCalc);
   $('quantityChangeModal').classList.add('open');
   $('quantityChangeModal').setAttribute('aria-hidden', 'false');
   return true;

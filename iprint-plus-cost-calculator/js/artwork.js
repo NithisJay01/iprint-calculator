@@ -494,7 +494,8 @@ function bindPreviewArtworkDrop() {
     setAssetStatus('วางภาพงานใน Preview แล้ว • ใช้ชั่วคราวและล้างเมื่อส่งบรีฟ');
   });
 
-  zone.addEventListener('dblclick', () => {
+  zone.addEventListener('dblclick', event => {
+    if (event.target.closest('.piece,details,button,input,label,a,.artwork-current')) return;
     $('artworkImage')?.click();
   });
 }
