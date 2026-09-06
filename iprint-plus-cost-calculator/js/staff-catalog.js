@@ -1,6 +1,7 @@
 'use strict';
 
 let staffCatalogType = 'materials';
+let staffCatalogView = 'cards';
 const staffCatalogCollections = { materials: [], services: [] };
 const staffCatalogItems = () => IPRINT_TEST_MODE
   ? (staffCatalogType === 'services' ? services : materials)
@@ -73,19 +74,52 @@ function formatStaffCatalogUpdatedAt(value) {
   return `แก้ไขล่าสุด ${date.toLocaleDateString('th-TH-u-ca-gregory', { day: '2-digit', month: 'short', year: 'numeric' })} • ${date.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.`;
 }
 
+function staffCatalogUnitOptions(selectedUnit) {
+  return [['sheet', 'ต่อแผ่น'], ['piece', 'ต่อชิ้น'], ['job', 'ต่องาน']]
+    .map(([value, label]) => `<option value="${value}"${normalizeUnit(selectedUnit) === value ? ' selected' : ''}>${label}</option>`).join('');
+}
+
+function renderStaffCatalogTable(items) {
+  const isService = staffCatalogType === 'services';
+  return `<div class="staff-catalog-table-wrap"><table class="staff-catalog-table">
+    <thead><tr><th>ชื่อที่แสดงบนเว็บ</th>${isService ? '<th>หมวดหมู่</th>' : ''}<th>ราคา</th><th>หน่วย</th><th>ลำดับ</th><th>แสดง</th><th>จัดการ</th></tr></thead>
+    <tbody>${items.map(item => `<tr data-catalog-id="${staffCatalogEscape(item.id)}">
+      <td><input data-table-field="name" maxlength="120" value="${staffCatalogEscape(item.name || '')}" aria-label="ชื่อรายการ"></td>
+      ${isService ? `<td><input data-table-field="category" list="staffCatalogCategoryList" maxlength="80" value="${staffCatalogEscape(item.category || 'บริการเพิ่มเติม')}" aria-label="หมวดหมู่"></td>` : ''}
+      <td><input data-table-field="price" type="number" min="0" step="0.01" value="${Number(item.price) || 0}" aria-label="ราคา"></td>
+      <td><select data-table-field="unit" aria-label="หน่วย">${staffCatalogUnitOptions(item.unit)}</select></td>
+      <td><input data-table-field="sortOrder" type="number" min="0" step="1" value="${Number(item.sortOrder) || 0}" aria-label="ลำดับการแสดง"></td>
+      <td><label class="staff-table-active"><input data-table-field="active" type="checkbox"${item.active === false ? '' : ' checked'}><span>${item.active === false ? 'ปิด' : 'เปิด'}</span></label></td>
+      <td><div class="staff-table-actions"><button type="button" data-catalog-action="save-row">บันทึก</button><button type="button" data-catalog-action="edit">รายละเอียด</button></div></td>
+    </tr>`).join('')}</tbody>
+  </table></div>`;
+}
+
 function renderStaffCatalog() {
   const list = $('staffCatalogList');
   if (!list) return;
   const items = [...staffCatalogItems()].sort((a, b) => {
+    const aOrder = Number.isFinite(Number(a.sortOrder)) ? Number(a.sortOrder) : 9999;
+    const bOrder = Number.isFinite(Number(b.sortOrder)) ? Number(b.sortOrder) : 9999;
+    const orderDifference = aOrder - bOrder;
+    if (orderDifference) return orderDifference;
     const updatedDifference = (Date.parse(b.updatedAt || '') || 0) - (Date.parse(a.updatedAt || '') || 0);
-    return updatedDifference || (Number(a.sortOrder) || 9999) - (Number(b.sortOrder) || 9999);
+    return updatedDifference;
   });
-  list.innerHTML = items.length ? items.map(item => `
+  if (!items.length) {
+    list.innerHTML = '<div class="staff-catalog-empty">ยังไม่มีรายการในหมวดนี้</div>';
+    return;
+  }
+  if (staffCatalogView === 'table') {
+    list.innerHTML = renderStaffCatalogTable(items);
+    return;
+  }
+  list.innerHTML = items.map(item => `
     <article class="staff-catalog-item ${item.active === false ? 'is-inactive' : 'is-active'}" data-catalog-id="${staffCatalogEscape(item.id)}">
       <div><strong>${staffCatalogEscape(item.name || 'ไม่ระบุชื่อ')}</strong><span>${staffCatalogType === 'services' ? `${staffCatalogEscape(item.category || 'บริการเพิ่มเติม')} • ` : ''}฿${money(item.price)} / ${staffCatalogEscape(unit(item.unit))}</span>${staffCatalogType === 'services' ? `<small class="staff-catalog-capacity">กำลังผลิต ${Number(item.capacityPoints || 0).toLocaleString('th-TH')} แต้ม / ${Number(item.capacityStep || 1).toLocaleString('th-TH')} ${staffCatalogEscape(staffCapacityBasisLabel(item.capacityBasis || 'job'))}</small>` : ''}<small class="staff-catalog-updated">${staffCatalogEscape(formatStaffCatalogUpdatedAt(item.updatedAt))}</small></div>
       <div class="staff-catalog-item-side"><span class="staff-catalog-state ${item.active === false ? 'is-off' : ''}">${item.active === false ? 'ปิด' : 'เปิด'}</span><b aria-hidden="true">›</b></div>
       <div class="staff-catalog-quick-actions"><button class="staff-catalog-quick-edit" type="button" data-catalog-action="edit"><img class="button-icon" src="image/edit.svg" alt="">แก้ไขรายละเอียด</button><button class="staff-catalog-quick-toggle ${item.active === false ? 'will-enable' : 'will-disable'}" type="button" data-catalog-action="toggle">${item.active === false ? 'เปิดใช้งาน' : 'ปิดใช้งาน'}</button></div>
-    </article>`).join('') : '<div class="staff-catalog-empty">ยังไม่มีรายการในหมวดนี้</div>';
+    </article>`).join('');
 }
 
 function showStaffCatalogList() {
@@ -125,8 +159,11 @@ function persistTestCatalog() {
   return true;
 }
 
-function syncCatalogDependents() {
-  if (staffCatalogType === 'materials') renderMaterials();
+async function syncCatalogDependents() {
+  if (!IPRINT_TEST_MODE) {
+    if (staffCatalogType === 'materials') await syncMaterials();
+    else await syncServices();
+  } else if (staffCatalogType === 'materials') renderMaterials();
   else renderServices();
   calculate();
 }
@@ -167,6 +204,7 @@ async function submitStaffCatalog(event) {
     }
     if (existing) Object.assign(existing, result.item);
     else collection.push(result.item);
+    await syncCatalogDependents();
     setStaffCatalogNotice('บันทึกข้อมูลใน Notion แล้ว', 'ok');
     showStaffCatalogList();
     return;
@@ -181,17 +219,50 @@ async function submitStaffCatalog(event) {
   showStaffCatalogList();
 }
 
+async function saveStaffCatalogTableRow(row, item) {
+  const name = row.querySelector('[data-table-field="name"]')?.value.trim() || '';
+  const category = row.querySelector('[data-table-field="category"]')?.value.trim() || '';
+  const price = Number(row.querySelector('[data-table-field="price"]')?.value);
+  const unitValue = row.querySelector('[data-table-field="unit"]')?.value || '';
+  const sortOrder = Number(row.querySelector('[data-table-field="sortOrder"]')?.value);
+  const active = row.querySelector('[data-table-field="active"]')?.checked === true;
+  if (!name || !Number.isFinite(price) || price < 0 || !['sheet', 'piece', 'job'].includes(unitValue) || !Number.isFinite(sortOrder) || (staffCatalogType === 'services' && !category)) {
+    setStaffCatalogNotice('กรุณาตรวจสอบชื่อ หมวดหมู่ ราคา หน่วย และลำดับให้ถูกต้อง', 'warn');
+    return;
+  }
+  const next = { ...item, name, price, unit: unitValue, sortOrder, active };
+  if (staffCatalogType === 'services') next.category = category;
+  if (!IPRINT_TEST_MODE) {
+    const result = await saveStaffCatalogRemote(staffCatalogType, next);
+    if (!result.success) return setStaffCatalogNotice(result.error || 'บันทึกแถวไม่สำเร็จ', 'warn');
+    Object.assign(item, result.item);
+    await syncCatalogDependents();
+    setStaffCatalogNotice(`บันทึก “${item.name}” ใน Notion แล้ว`, 'ok');
+  } else {
+    Object.assign(item, next, { updatedAt: new Date().toISOString() });
+    persistTestCatalog();
+    await syncCatalogDependents();
+    setStaffCatalogNotice(`บันทึก “${item.name}” ใน Mock data แล้ว`, 'ok');
+  }
+  renderStaffCatalog();
+}
+
 async function handleStaffCatalogAction(event) {
   const row = event.target.closest('[data-catalog-id]');
   if (!row || activeAccessRole !== 'staff') return;
   const collection = staffCatalogItems();
   const index = collection.findIndex(item => String(item.id) === row.dataset.catalogId);
   if (index < 0) return;
+  if (event.target.closest('[data-catalog-action="save-row"]')) {
+    await saveStaffCatalogTableRow(row, collection[index]);
+    return;
+  }
   if (event.target.closest('[data-catalog-action="toggle"]')) {
     if (!IPRINT_TEST_MODE) {
       const result = await saveStaffCatalogRemote(staffCatalogType, { ...collection[index], active: collection[index].active === false });
       if (!result.success) return setStaffCatalogNotice(result.error || 'เปลี่ยนสถานะไม่สำเร็จ', 'warn');
       Object.assign(collection[index], result.item);
+      await syncCatalogDependents();
       renderStaffCatalog();
       setStaffCatalogNotice(`${collection[index].active ? 'เปิด' : 'ปิด'}ใช้งานรายการแล้ว`, 'ok');
       return;
@@ -204,7 +275,7 @@ async function handleStaffCatalogAction(event) {
     setStaffCatalogNotice(`${collection[index].active ? 'เปิด' : 'ปิด'}ใช้งานรายการแล้ว`, 'ok');
     return;
   }
-  showStaffCatalogEditor(collection[index]);
+  if (staffCatalogView === 'cards' || event.target.closest('[data-catalog-action="edit"]')) showStaffCatalogEditor(collection[index]);
 }
 
 async function deleteStaffCatalogItem() {
@@ -240,6 +311,18 @@ function selectStaffCatalogTab(event) {
   showStaffCatalogList();
 }
 
+function selectStaffCatalogView(event) {
+  const button = event.target.closest('[data-catalog-view]');
+  if (!button) return;
+  staffCatalogView = button.dataset.catalogView === 'table' ? 'table' : 'cards';
+  document.querySelectorAll('[data-catalog-view]').forEach(option => {
+    const selected = option === button;
+    option.classList.toggle('is-selected', selected);
+    option.setAttribute('aria-pressed', String(selected));
+  });
+  renderStaffCatalog();
+}
+
 async function openStaffCatalog() {
   if (activeAccessRole !== 'staff') return;
   if (!IPRINT_TEST_MODE) {
@@ -263,6 +346,7 @@ function bindStaffCatalog() {
   $('closeStaffCatalogEditor')?.addEventListener('click', showStaffCatalogList);
   $('deleteStaffCatalogItem')?.addEventListener('click', deleteStaffCatalogItem);
   $('staffCatalogList')?.addEventListener('click', handleStaffCatalogAction);
+  $('staffCatalogViewToggle')?.addEventListener('click', selectStaffCatalogView);
   $('staffCapacityPoints')?.addEventListener('input', updateStaffCapacityPreview);
   $('staffCapacityBasis')?.addEventListener('change', updateStaffCapacityPreview);
   $('staffCapacityStep')?.addEventListener('input', updateStaffCapacityPreview);
