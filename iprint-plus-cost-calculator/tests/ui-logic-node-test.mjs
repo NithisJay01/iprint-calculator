@@ -26,6 +26,8 @@ serviceContext.getSelectedJobType = () => 'สติกเกอร์ Die-cut 1
 assert.equal(serviceContext.isStickerQuizJob(), true);
 serviceContext.getSelectedJobType = () => 'งานกระดาษ';
 assert.equal(serviceContext.isStickerQuizJob(), false);
+assert.equal(serviceContext.isSinglePrintService({ name: 'พิมพ์หน้าเดียว' }), true);
+assert.equal(serviceContext.isSinglePrintService({ name: 'พิมพ์ 2 หน้า' }), false);
 
 const previewContext = scriptContext();
 vm.runInContext(fs.readFileSync(new URL('../js/material-preview.js', import.meta.url), 'utf8'), previewContext);

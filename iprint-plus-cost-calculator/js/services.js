@@ -25,6 +25,10 @@ function isStickerQuizJob() {
   return /สติกเกอร์|sticker/i.test(String(jobType || ''));
 }
 
+function isSinglePrintService(service) {
+  return /หน้าเดียว|single/i.test(String(service?.name || ''));
+}
+
 function hasSelectedDiecutService() {
   return services.some(service => selectedServiceIds[String(service.id)] && isDiecutService(service));
 }
@@ -164,18 +168,17 @@ function createServiceGroup(groupData, scope = 'main') {
   title.className = 'service-group-title';
   title.textContent = groupData.definition.title;
   group.appendChild(title);
-  const quizLocked = scope === 'main' && groupData.definition.key === 'print' && isStickerQuizJob();
-  if (quizLocked) {
-    group.classList.add('is-quiz-locked');
-    group.setAttribute('aria-disabled', 'true');
+  const stickerSingleOnly = scope === 'main' && groupData.definition.key === 'print' && isStickerQuizJob();
+  if (stickerSingleOnly) {
+    group.classList.add('is-sticker-single-only');
     const note = document.createElement('div');
     note.className = 'service-group-lock-note';
-    note.textContent = 'ล็อกอัตโนมัติจากประเภทงานสติกเกอร์ที่เลือกใน Quiz';
+    note.textContent = 'งานสติกเกอร์ใช้รูปแบบพิมพ์หน้าเดียว';
     group.appendChild(note);
   }
   if (groupData.definition.noneLabel) group.appendChild(renderNoneServiceRow(groupData, scope));
-  groupData.services.forEach(service => group.appendChild(renderServiceRow(service, groupData, scope)));
-  if (quizLocked) group.querySelectorAll('input').forEach(control => { control.disabled = true; });
+  const visibleChoices = stickerSingleOnly ? groupData.services.filter(isSinglePrintService) : groupData.services;
+  visibleChoices.forEach(service => group.appendChild(renderServiceRow(service, groupData, scope)));
   return group;
 }
 
@@ -242,6 +245,16 @@ function renderServices() {
     return priority || a.definition.title.localeCompare(b.definition.title, 'th');
   });
   normalizeExclusiveSelections(groups);
+  if (isStickerQuizJob()) {
+    const print = groups.find(group => group.definition.key === 'print');
+    const single = print?.services.find(isSinglePrintService);
+    if (print && single) {
+      const alreadySingleOnly = print.services.every(service => Boolean(selectedServiceIds[String(service.id)]) === (service === single));
+      print.services.forEach(service => delete selectedServiceIds[String(service.id)]);
+      selectedServiceIds[String(single.id)] = true;
+      if (!alreadySingleOnly) saveState();
+    }
+  }
   const lockedMode = typeof getLockedCuttingMode === 'function' ? getLockedCuttingMode() : '';
   if (lockedMode && cuttingDefaultSelectionPending) {
     const cutting = groups.find(group => group.definition.key === 'cutting');
