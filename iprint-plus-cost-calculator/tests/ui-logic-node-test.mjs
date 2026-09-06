@@ -22,6 +22,10 @@ assert.equal(serviceContext.serviceGroupDefinition({ name: 'เคลือบ�
 assert.equal(serviceContext.serviceGroupDefinition({ name: 'เคลือบด้าน Matt Film' }).exclusive, true);
 assert.equal(serviceContext.serviceGroupDefinition({ name: 'ไดคัท All Sticker', category: 'Fininshing' }).key, 'cutting');
 assert.equal(serviceContext.serviceGroupDefinition({ name: 'ตัด 50%' }).noneLabel, 'ไม่ตัด');
+serviceContext.getSelectedJobType = () => 'สติกเกอร์ Die-cut 100%';
+assert.equal(serviceContext.isStickerQuizJob(), true);
+serviceContext.getSelectedJobType = () => 'งานกระดาษ';
+assert.equal(serviceContext.isStickerQuizJob(), false);
 
 const previewContext = scriptContext();
 vm.runInContext(fs.readFileSync(new URL('../js/material-preview.js', import.meta.url), 'utf8'), previewContext);

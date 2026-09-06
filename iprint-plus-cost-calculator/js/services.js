@@ -20,6 +20,11 @@ function isDiecutService(service) {
   return /ไดคัท|ไดคัต|die.?cut/i.test(text);
 }
 
+function isStickerQuizJob() {
+  const jobType = typeof getSelectedJobType === 'function' ? getSelectedJobType() : '';
+  return /สติกเกอร์|sticker/i.test(String(jobType || ''));
+}
+
 function hasSelectedDiecutService() {
   return services.some(service => selectedServiceIds[String(service.id)] && isDiecutService(service));
 }
@@ -159,8 +164,18 @@ function createServiceGroup(groupData, scope = 'main') {
   title.className = 'service-group-title';
   title.textContent = groupData.definition.title;
   group.appendChild(title);
+  const quizLocked = scope === 'main' && groupData.definition.key === 'print' && isStickerQuizJob();
+  if (quizLocked) {
+    group.classList.add('is-quiz-locked');
+    group.setAttribute('aria-disabled', 'true');
+    const note = document.createElement('div');
+    note.className = 'service-group-lock-note';
+    note.textContent = 'ล็อกอัตโนมัติจากประเภทงานสติกเกอร์ที่เลือกใน Quiz';
+    group.appendChild(note);
+  }
   if (groupData.definition.noneLabel) group.appendChild(renderNoneServiceRow(groupData, scope));
   groupData.services.forEach(service => group.appendChild(renderServiceRow(service, groupData, scope)));
+  if (quizLocked) group.querySelectorAll('input').forEach(control => { control.disabled = true; });
   return group;
 }
 
