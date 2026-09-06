@@ -292,10 +292,12 @@
         const yieldPerSheet = numberFromText(document.getElementById('yield').textContent);
         const quantity = Number(qty.value);
         const sheets = numberFromText(document.getElementById('sheets').textContent);
+        const displayedQuantity = numberFromText(document.getElementById('resultQuantity').textContent);
         const total = numberFromText(document.getElementById('total').textContent);
         const sale = numberFromText(document.getElementById('sale').textContent);
 
         assert(yieldPerSheet > 0, 'สูตรจำนวนแผ่นและราคาขาย', 'ผลผลิตต่อแผ่นต้องมากกว่า 0');
+        assert(displayedQuantity === quantity, 'สูตรจำนวนแผ่นและราคาขาย', 'จำนวนที่ลูกค้าต้องการในสรุปราคาไม่ตรงกับค่าที่กรอก');
         assert(sheets === Math.ceil(quantity / yieldPerSheet), 'สูตรจำนวนแผ่นและราคาขาย', 'จำนวนแผ่นไม่ตรงกับสูตรปัดขึ้น');
         assert(Math.abs(sale - total * 1.3) < 0.01, 'สูตรจำนวนแผ่นและราคาขาย', 'ราคาขายไม่ตรงกับกำไร 30%');
       });

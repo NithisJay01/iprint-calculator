@@ -27,6 +27,7 @@ function resetPreview() {
     $('sheets').textContent='—';
     $('yield').textContent='—';
     $('resultSize').textContent='—';
+    $('resultQuantity').textContent='—';
     $('gap').textContent='—';
     $('bleedSummary').textContent='—';
     $('total').textContent='—';
@@ -229,6 +230,7 @@ function calculate() {
         $('sheetPreview').innerHTML='';
         $('previewPaperName').textContent='Preset: '+String(p.name||'ไม่ระบุชื่อ');
         $('resultSize').textContent=W.toFixed(2)+' × '+H.toFixed(2)+' cm';
+        $('resultQuantity').textContent=Q.toLocaleString('th-TH');
         $('gap').textContent=formatMillimeters(G);
         $('bleedSummary').textContent=formatMillimeters(B);
         lastCalc=null;
@@ -243,6 +245,7 @@ function calculate() {
       $('gap').textContent=formatMillimeters(G);
       $('bleedSummary').textContent=formatMillimeters(B);
       $('resultSize').textContent=W.toFixed(2)+' × '+H.toFixed(2)+' cm';
+      $('resultQuantity').textContent=Q.toLocaleString('th-TH');
       $('total').textContent=money(tc);
       $('sale').textContent=money(sale);
       drawPreview(p,b,B,G);

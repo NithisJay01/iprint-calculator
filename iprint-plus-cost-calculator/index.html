@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#eef6ff">
   <title>iPrint</title>
-  <link rel="stylesheet" href="css/app.css?v=20260906-sticker-single-print">
+  <link rel="stylesheet" href="css/app.css?v=20260906-print-price-summary">
 </head>
 <body>
 <section class="login-gate" id="loginGate" aria-labelledby="loginTitle">
@@ -174,7 +174,7 @@
       </section>
       <section class="form-card">
         <h2 class="section-title">เลือกวัสดุ และบริการเพิ่มเติม (Add-ons)</h2>
-        <div class="locked-print-summary"><div><small>รูปแบบการพิมพ์จาก Step 1</small><strong id="costPrintSummary">ยังไม่ได้เลือกรูปแบบการพิมพ์</strong></div><button id="editPrintAtLayout" type="button">กลับไปแก้ที่ Step 1</button></div>
+        <div class="locked-print-summary"><div><small>รูปแบบการพิมพ์จาก Step 1</small><strong id="costPrintSummary">ยังไม่ได้เลือกรูปแบบการพิมพ์</strong></div><div class="locked-print-price"><small>ราคา</small><strong id="costPrintPrice">฿—</strong></div></div>
         <div class="field"><select id="materialSelect"><option value="">กำลังโหลดวัสดุจาก Notion…</option></select><div class="ms-status" id="materialStatus">—</div><div id="selectedMaterialSummary" class="material-selected" hidden></div></div>
         <div id="servicesContainer"><div class="ms-status">กำลังโหลดบริการจาก Notion…</div></div><div class="ms-status" id="serviceStatus">—</div>
       </section>
@@ -182,7 +182,7 @@
       <section class="outline-summary cost-analysis">
         <h2>คำนวณราคา</h2><p class="internal-note">“คำนวนราคาอาจคลาดเคลื่อนได้หากมีการอัพเดทราคา กรุณาตรวจสอบอีกครั้งหลังได้รับใบเสนอราคาฉบับเต็ม”</p>
         <div class="summary-settings row2" data-staff-only><div class="field"><label class="label" for="cost">ต้นทุนแผงเพิ่มต่อแผ่น</label><input id="cost" type="number" min="0" step="0.01" value="2.5"></div><div class="field"><label class="label" for="profitPercent">กำไรที่ต้องการ (%)</label><input id="profitPercent" type="number" min="0" step="1" value="30"></div></div>
-        <dl><div><dt>ขนาดชิ้นงาน</dt><dd id="resultSize">—</dd></div><div><dt>จำนวนกระดาษพิมพ์</dt><dd><span id="previewSheets">—</span> แผ่น</dd></div><div class="cost-service-breakdown"><dt>บริการที่เลือก</dt><dd id="costSelectedServices">ไม่มีบริการเพิ่มเติม</dd></div><div data-staff-only><dt>ต้นทุนรวมสุทธิ</dt><dd>฿<span id="total">—</span></dd></div><div class="summary-total"><dt>ราคาขายโดยประมาณ</dt><dd>฿<span id="sale">—</span></dd></div></dl>
+        <dl><div><dt>ขนาดชิ้นงาน</dt><dd id="resultSize">—</dd></div><div><dt>จำนวนที่ลูกค้าต้องการ</dt><dd><span id="resultQuantity">—</span> ชิ้น</dd></div><div><dt>จำนวนกระดาษพิมพ์</dt><dd><span id="previewSheets">—</span> แผ่น</dd></div><div class="cost-service-breakdown"><dt>บริการที่เลือก</dt><dd id="costSelectedServices">ไม่มีบริการเพิ่มเติม</dd></div><div data-staff-only><dt>ต้นทุนรวมสุทธิ</dt><dd>฿<span id="total">—</span></dd></div><div class="summary-total"><dt>ราคาขายโดยประมาณ</dt><dd>฿<span id="sale">—</span></dd></div></dl>
         <div class="calculation-meta" hidden><span id="previewPaperName">Preset: —</span><span id="previewInfo">—</span><span id="gap">3</span><span id="bleedSummary">3</span></div>
       </section>
     </section>
@@ -198,7 +198,7 @@
         <div class="brief-form-column">
           <div class="field job-name-field"><label class="label" for="jobName">ชื่อเรียกงาน <span>(แก้ไขได้)</span></label><input id="jobName" maxlength="120" placeholder="ใส่ชื่อเรียกงาน"><small class="job-name-hint">สร้างจากคำตอบก่อนเริ่ม Step 1 และแก้ไขได้เสมอ</small></div>
           <div class="brief-calc-summary" id="briefCalcSummary">—</div>
-          <div class="field file-provider-field brief-file-cta"><div class="brief-file-cta-head"><span>สำคัญสำหรับการผลิต</span><strong>ไฟล์จริงสำหรับส่งพิมพ์</strong><p>ทีมงานจะใช้ไฟล์จาก Link นี้เพื่อตรวจและผลิตงานจริง</p></div><section class="variants-section"><div class="section-heading"><strong>จำนวนแบบ</strong><small>เฉพาะขนาดและวัสดุเดียวกัน</small></div><p class="variant-explanation">หากงานมีหลายแบบ แต่เป็นประเภทงาน ขนาด และวัสดุเดียวกัน สามารถรวมหลายแบบไว้ในบรีฟเดียวได้ กรุณาระบุจำนวนของแต่ละแบบ</p><div id="jobVariants"></div><button class="add-variant-button" id="addJobVariant" type="button">+ เพิ่ม</button><div class="status" id="variantStatus"></div></section><div class="file-link-box"><strong>แนบไฟล์ต้นฉบับจาก Cloud</strong><ol><li>เปิด Cloud ในแท็บใหม่</li><li>เลือกไฟล์ กด Share และคัดลอกลิงก์</li><li>กลับมาวางลิงก์ด้านล่าง</li></ol><div class="file-provider-options"><a data-file-provider="gdrive" href="https://drive.google.com/drive/my-drive" target="_blank" rel="noopener noreferrer">Google Drive <span>↗</span></a><a data-file-provider="dropbox" href="https://www.dropbox.com/home" target="_blank" rel="noopener noreferrer">Dropbox <span>↗</span></a><a data-file-provider="onedrive" href="https://onedrive.live.com/" target="_blank" rel="noopener noreferrer">OneDrive <span>↗</span></a></div></div><label class="cloud-link-label" for="briefFileLink">Share link ของไฟล์ต้นฉบับ</label><input id="briefFileLink" type="url" placeholder="วาง Share link ที่นี่ เช่น https://..."><small class="cloud-link-note" id="cloudLinkNote">ตรวจสอบว่าเปิดสิทธิ์ให้ทีมงานเข้าถึงไฟล์แล้ว</small><div class="field-error" id="briefFileLinkError"></div></div>
+          <div class="field file-provider-field brief-file-cta"><div class="brief-file-cta-head"><span>สำคัญสำหรับการผลิต</span><strong>ไฟล์จริงสำหรับส่งพิมพ์</strong><p>ทีมงานจะใช้ไฟล์จาก Link นี้เพื่อตรวจและผลิตงานจริง</p></div><section class="variants-section"><div class="section-heading"><strong>จำนวนแบบ</strong></div><p class="variant-explanation">หากงานมีหลายแบบ แต่เป็นประเภทงาน ขนาด และวัสดุเดียวกัน สามารถรวมหลายแบบไว้ในบรีฟเดียวได้ กรุณาระบุจำนวนของแต่ละแบบ</p><div id="jobVariants"></div><button class="add-variant-button" id="addJobVariant" type="button">+ เพิ่ม</button><div class="status" id="variantStatus"></div></section><div class="file-link-box"><strong>แนบไฟล์ต้นฉบับจาก Cloud</strong><ol><li>เปิด Cloud ในแท็บใหม่</li><li>เลือกไฟล์ กด Share และคัดลอกลิงก์</li><li>กลับมาวางลิงก์ด้านล่าง</li></ol><div class="file-provider-options"><a data-file-provider="gdrive" href="https://drive.google.com/drive/my-drive" target="_blank" rel="noopener noreferrer">Google Drive <span>↗</span></a><a data-file-provider="dropbox" href="https://www.dropbox.com/home" target="_blank" rel="noopener noreferrer">Dropbox <span>↗</span></a><a data-file-provider="onedrive" href="https://onedrive.live.com/" target="_blank" rel="noopener noreferrer">OneDrive <span>↗</span></a></div></div><label class="cloud-link-label" for="briefFileLink">Share link ของไฟล์ต้นฉบับ</label><input id="briefFileLink" type="url" placeholder="วาง Share link ที่นี่ เช่น https://..."><small class="cloud-link-note" id="cloudLinkNote">ตรวจสอบว่าเปิดสิทธิ์ให้ทีมงานเข้าถึงไฟล์แล้ว</small><div class="field-error" id="briefFileLinkError"></div></div>
           <div class="field graphic-description-field"><label class="label" for="graphicBriefDescription">คำอธิบายสำหรับกราฟิก (ถ้ามี)</label><textarea id="graphicBriefDescription" maxlength="1200" placeholder="ระบุรายละเอียดเพิ่มเติมเช่น อยากให้ช่วยตรวจข้อความก่อนผลิต หรือ แก้รายละเอียดเล็กน้อยบนไฟล์"></textarea></div>
         </div>
       </div>
@@ -334,7 +334,7 @@
 <script src="js/shape-mask.js?v=20260906-flow-refresh"></script>
 <script src="js/material-preview.js?v=20260906-flow-refresh"></script>
 <script src="js/piece-preview.js?v=20260906-annotation-refresh"></script>
-<script src="js/calculator.js?v=20260906-layout-orientation"></script>
+<script src="js/calculator.js?v=20260906-customer-quantity-summary"></script>
 <script src="js/brief.js?v=20260906-layout-orientation"></script>
 <script src="js/cart.js?v=20260906-ios-trash-icon"></script>
 <script src="js/customer.js?v=20260831-material-preview"></script>
@@ -343,6 +343,6 @@
 <script src="js/staff-catalog.js?v=20260906-catalog-table"></script>
 <script src="js/staff-capacity.js?v=20260904-calendar-drag-task"></script>
 <script src="js/app.js?v=20260905-role-layout-controls"></script>
-<script src="js/flow.js?v=20260906-view-back-buttons"></script>
+<script src="js/flow.js?v=20260906-print-price-summary"></script>
 </body>
 </html>

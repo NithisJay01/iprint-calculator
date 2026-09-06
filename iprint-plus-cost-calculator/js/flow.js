@@ -414,6 +414,7 @@ function syncFlowSummary() {
     const printService = (lastCalc.services || []).find(service => typeof isPrintSideService === 'function' && isPrintSideService(service));
     const side = typeof getSelectedPrintSide === 'function' ? getSelectedPrintSide() : 'unspecified';
     $('costPrintSummary').textContent = printService?.name || (side === 'double' ? 'พิมพ์หน้า–หลัง' : side === 'single' ? 'พิมพ์หน้าเดียว' : 'ยังไม่ได้เลือกรูปแบบการพิมพ์');
+    if ($('costPrintPrice')) $('costPrintPrice').textContent = `฿${money(printService ? quantityServicePrice(printService, lastCalc) : 0)}`;
   }
   if ($('costSelectedServices')) {
     const selectedServices = Array.isArray(lastCalc.services) ? lastCalc.services : [];
@@ -815,7 +816,6 @@ function bindFlow() {
   $('editBrief').addEventListener('click', returnFromReview);
   $('reviewViewBack')?.addEventListener('click', returnFromReview);
   $('editMainArtwork')?.addEventListener('click', () => { showAppView('layout'); requestAnimationFrame(() => $('artworkImage')?.click()); });
-  $('editPrintAtLayout')?.addEventListener('click', () => showAppView('layout'));
   $('addAnotherItem').addEventListener('click', () => { prepareNewPrintItem(); showJobSetupQuestion(1); showAppView('jobSetup'); });
   $('workflowNewOrder').addEventListener('click', () => showAppView('home'));
   $('addJobVariant').addEventListener('click', () => {
