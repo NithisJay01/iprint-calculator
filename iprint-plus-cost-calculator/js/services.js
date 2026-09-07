@@ -273,13 +273,12 @@ function renderServices() {
   if (printBox) printBox.innerHTML = '';
   if (cuttingBox) cuttingBox.innerHTML = '';
   if (quickBox) quickBox.innerHTML = '';
-  if (!services.some(service => String(service.id) === 'ui-custom-request')) {
-    services.push({ id:'ui-custom-request', category:'DIY Solution', baseName:'ต้องการรีเควส', name:'ต้องการรีเควส', material:'(กรุณาระบุ)', price:0, pricePending:true, unit:'job', sortOrder:99, active:true, virtual:true });
-  }
-  const customRequestService = services.find(service => String(service.id) === 'ui-custom-request');
-  if (customRequestService) {
-    customRequestService.requestText = customServiceRequest;
-    customRequestService.name = customServiceRequest.trim() ? `${customRequestService.baseName}: ${customServiceRequest.trim()}` : customRequestService.baseName;
+  const hadCustomRequestState = Boolean(selectedServiceIds['ui-custom-request'] || customServiceRequest);
+  services = services.filter(service => String(service.id) !== 'ui-custom-request');
+  delete selectedServiceIds['ui-custom-request'];
+  customServiceRequest = '';
+  if (hadCustomRequestState) {
+    saveState();
   }
   if (!services.length) {
     box.innerHTML = '<div class="ms-status">ไม่พบบริการที่ Active</div>';
