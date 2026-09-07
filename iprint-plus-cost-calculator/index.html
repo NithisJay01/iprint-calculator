@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#eef6ff">
   <title>iPrint</title>
-  <link rel="stylesheet" href="css/app.css?v=20260907-print-first-preview">
+  <link rel="stylesheet" href="css/app.css?v=20260907-upload-before-description">
 </head>
 <body>
 <section class="login-gate" id="loginGate" aria-labelledby="loginTitle">
@@ -131,10 +131,10 @@
           <div class="artwork-current layout-artwork-current" id="artworkCurrent" hidden><img id="artworkThumbnail" alt="ภาพงานหลักที่เลือก"><div><strong id="artworkName">—</strong><span id="artworkMeta">—</span></div><div class="artwork-current-actions"><button id="rotateArtworkImage" type="button"><img class="button-icon" src="image/rotate.svg" alt="">หมุน 90°</button><button id="clearArtworkImage" type="button">ล้างภาพ</button></div></div>
           <div class="artwork-side-controls" id="artworkSideControls" hidden><div class="artwork-side-toggle" role="group" aria-label="เลือกด้านของ Artwork"><button type="button" data-artwork-side="front" class="is-selected" aria-pressed="true">ด้านหน้า</button><button type="button" data-artwork-side="back" aria-pressed="false">ด้านหลัง</button></div><label class="same-artwork-option"><input id="useFrontArtworkForBack" type="checkbox"> ใช้ภาพด้านหน้าเป็นด้านหลัง</label><div class="artwork-side-action-row"><label class="active-artwork-upload" for="artworkImage" id="activeArtworkUploadLabel">เปลี่ยนภาพด้านหน้า</label></div><small id="artworkSideStatus">หน้า ยังไม่มีภาพ • หลัง ยังไม่มีภาพ</small></div>
           <div class="sheet-dimensions"><span id="sheetWidthLabel">— mm</span><span id="sheetHeightLabel">— mm</span></div>
+          <label class="artwork-upload-button" id="layoutArtworkUpload" for="artworkImage" hidden><span><img class="button-icon" src="image/upload.svg" alt="">อัพโหลด / เปลี่ยนภาพตัวอย่าง Artwork</span></label>
           <details class="preview-read-more" open><summary>ข้อมูลสำคัญ</summary><div><img class="preview-info-mascot" src="image/iprint-mascot.png" alt="น้อง iPrint ผู้ช่วยอธิบาย Preview"><span>ค่าเริ่มต้น: ระยะห่างระหว่างชิ้นงาน 3 mm</span><span><b>ภาพบน Preview:</b> มีไว้สำหรับส่งบรีฟและสร้างความเข้าใจที่ตรงกันกับทีมเท่านั้น <b>ไม่ใช่ไฟล์ที่ใช้สำหรับพิมพ์</b></span><span class="safe-zone-warning"><b>เส้นประคือระยะ Safe zone เข้ามาจากขอบงาน 3 mm</b> กรุณาตรวจสอบ หากมีกราฟิกที่สำคัญหรือข้อความอยู่นอกพื้นที่ มีโอกาสถูกตัดออกได้</span></div></details>
         </div>
         <section class="layout-print-services" id="layoutPrintServices" aria-label="รูปแบบการพิมพ์"></section>
-        <label class="artwork-upload-button" id="layoutArtworkUpload" for="artworkImage" hidden><span><img class="button-icon" src="image/upload.svg" alt="">อัพโหลด / เปลี่ยนภาพตัวอย่าง Artwork</span></label>
         <div class="preview-drop-hint" aria-hidden="true"><span><img src="image/upload.svg" alt=""></span> วางภาพงานใน Preview</div>
       </div>
 
