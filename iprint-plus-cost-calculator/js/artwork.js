@@ -395,8 +395,9 @@ function setUseFrontArtworkForBack(enabled) {
 function syncArtworkSideControls() {
   const controls = $('artworkSideControls');
   if (!controls) return;
-  const doubleSided = typeof getSelectedPrintSide === 'function' && getSelectedPrintSide() === 'double';
-  controls.hidden = !doubleSided;
+  const printSide = typeof getSelectedPrintSide === 'function' ? getSelectedPrintSide() : 'unspecified';
+  const doubleSided = printSide === 'double';
+  controls.hidden = printSide === 'unspecified';
   if (!doubleSided && activeArtworkSide === 'back') {
     activeArtworkSide = 'front';
     updateArtworkControls();
@@ -404,13 +405,14 @@ function syncArtworkSideControls() {
   }
   controls.querySelectorAll('[data-artwork-side]').forEach(button => {
     const selected = button.dataset.artworkSide === activeArtworkSide;
+    const disabled = button.dataset.artworkSide === 'back' && !doubleSided;
+    button.disabled = disabled;
+    button.setAttribute('aria-disabled', disabled ? 'true' : 'false');
     button.classList.toggle('is-selected', selected);
     button.setAttribute('aria-pressed', selected ? 'true' : 'false');
   });
-  const sameInput = $('useFrontArtworkForBack');
-  if (sameInput) sameInput.checked = useFrontArtworkForBack;
   const uploadLabel = $('activeArtworkUploadLabel');
-  if (uploadLabel) uploadLabel.textContent = activeArtworkSide === 'back' ? 'อัปโหลดภาพด้านหลัง' : 'เปลี่ยนภาพด้านหน้า';
+  if (uploadLabel) uploadLabel.textContent = activeArtworkSide === 'back' ? 'อัปโหลดภาพด้านหลัง' : 'อัปโหลด / เปลี่ยนภาพด้านหน้า';
   const sideStatus = $('artworkSideStatus');
   if (sideStatus) {
     const state = getArtworkSideState();
@@ -540,7 +542,6 @@ function bindArtwork() {
     const button = event.target.closest('[data-artwork-side]');
     if (button) setActiveArtworkSide(button.dataset.artworkSide);
   });
-  $('useFrontArtworkForBack')?.addEventListener('change', event => setUseFrontArtworkForBack(event.target.checked));
   bindPreviewArtworkDrop();
   updateArtworkControls();
 }

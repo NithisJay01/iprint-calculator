@@ -36,10 +36,8 @@ function hasSelectedPrintService() {
 function syncLayoutPreviewVisibility() {
   const ready = hasSelectedPrintService();
   const content = $('layoutPreviewContent');
-  const upload = $('layoutArtworkUpload');
   const zone = $('previewDropZone');
   if (content) content.hidden = !ready;
-  if (upload) upload.hidden = !ready;
   if (zone) zone.classList.toggle('is-awaiting-print-choice', !ready);
 }
 
