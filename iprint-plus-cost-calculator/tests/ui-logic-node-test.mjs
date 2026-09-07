@@ -62,6 +62,6 @@ assert.equal(flowContext.isJobNameSuggestionVisible('นามบัตร', '�
 assert.equal(flowContext.isJobNameSuggestionVisible('สติกเกอร์', 'งานกระดาษ'), false);
 assert.equal(flowContext.isJobNameSuggestionVisible('นามบัตร', 'งานกระดาษ'), true);
 assert.equal(flowContext.randomJobNickname('นามบัตร', 0), 'นามบัตร ชุดใหม่');
-assert.equal(flowContext.randomJobNickname('นามบัตร', 0.999), 'นามบัตร รอบผลิตใหม่');
+assert.equal(flowContext.randomJobNickname('นามบัตร', 0.999), 'นามบัตร โปรเจกต์');
 
 console.log('UI logic node test passed');

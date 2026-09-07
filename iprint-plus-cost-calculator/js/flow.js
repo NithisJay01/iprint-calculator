@@ -20,10 +20,10 @@ const JOB_TYPE_DEFAULTS = {
 
 const JOB_NAME_SUFFIXES = [
   'ชุดใหม่',
-  'ล็อตเดือนนี้',
+  'โปรโมชั่น',
+  'สำหรับออกงาน',
   'เวอร์ชันอัปเดต',
-  'สำหรับโปรเจกต์ล่าสุด',
-  'รอบผลิตใหม่'
+  'โปรเจกต์'
 ];
 
 function isJobNameSuggestionVisible(suggestion, jobType = selectedJobType) {
