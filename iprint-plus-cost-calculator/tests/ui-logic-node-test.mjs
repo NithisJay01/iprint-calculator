@@ -49,4 +49,10 @@ assert.deepEqual(
   { mode: 'webgl', effect: 'foil' }
 );
 
+const piecePreviewContext = scriptContext();
+vm.runInContext(fs.readFileSync(new URL('../js/piece-preview.js', import.meta.url), 'utf8'), piecePreviewContext);
+assert.equal(piecePreviewContext.resolvePiecePreviewInitialSide('front', true), 'front');
+assert.equal(piecePreviewContext.resolvePiecePreviewInitialSide('back', true), 'back');
+assert.equal(piecePreviewContext.resolvePiecePreviewInitialSide('back', false), 'front');
+
 console.log('UI logic node test passed');

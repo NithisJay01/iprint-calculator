@@ -18,6 +18,10 @@ function piecePreviewHasDoubleSide() {
   return typeof getSelectedPrintSide === 'function' && getSelectedPrintSide() === 'double';
 }
 
+function resolvePiecePreviewInitialSide(side = 'front', doubleSided = piecePreviewHasDoubleSide()) {
+  return side === 'back' && doubleSided ? 'back' : 'front';
+}
+
 function renderPiecePreviewSide(side = 'front') {
   const frame = $('piecePreviewFrame');
   const source = piecePreviewState.source;
@@ -80,7 +84,8 @@ function openPiecePreview(piece) {
   const doubleSided = piecePreviewHasDoubleSide();
   $('piecePreviewBack').hidden = !doubleSided;
   $('piecePreviewSideToggle').classList.toggle('is-single-side', !doubleSided);
-  renderPiecePreviewSide('front');
+  const currentSide = typeof activeArtworkSide === 'string' ? activeArtworkSide : 'front';
+  renderPiecePreviewSide(resolvePiecePreviewInitialSide(currentSide, doubleSided));
   const modal = $('piecePreviewModal');
   modal.classList.add('open');
   modal.setAttribute('aria-hidden', 'false');
@@ -131,3 +136,4 @@ if (document.readyState === 'loading') document.addEventListener('DOMContentLoad
 else bindPiecePreview();
 
 window.openPiecePreview = openPiecePreview;
+window.resolvePiecePreviewInitialSide = resolvePiecePreviewInitialSide;
