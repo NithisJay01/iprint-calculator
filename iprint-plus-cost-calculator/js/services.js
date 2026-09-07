@@ -29,6 +29,20 @@ function isSinglePrintService(service) {
   return /หน้าเดียว|single/i.test(String(service?.name || ''));
 }
 
+function hasSelectedPrintService() {
+  return services.some(service => selectedServiceIds[String(service.id)] && isPrintSideService(service));
+}
+
+function syncLayoutPreviewVisibility() {
+  const ready = hasSelectedPrintService();
+  const content = $('layoutPreviewContent');
+  const upload = $('layoutArtworkUpload');
+  const zone = $('previewDropZone');
+  if (content) content.hidden = !ready;
+  if (upload) upload.hidden = !ready;
+  if (zone) zone.classList.toggle('is-awaiting-print-choice', !ready);
+}
+
 function hasSelectedDiecutService() {
   return services.some(service => selectedServiceIds[String(service.id)] && isDiecutService(service));
 }
@@ -265,6 +279,7 @@ function renderServices() {
   if (!services.length) {
     box.innerHTML = '<div class="ms-status">ไม่พบบริการที่ Active</div>';
     if (quickBox) quickBox.innerHTML = '<div class="ms-status">ไม่พบบริการที่ Active</div>';
+    syncLayoutPreviewVisibility();
     return;
   }
 
@@ -280,16 +295,6 @@ function renderServices() {
     return priority || a.definition.title.localeCompare(b.definition.title, 'th');
   });
   normalizeExclusiveSelections(groups);
-  if (isStickerQuizJob()) {
-    const print = groups.find(group => group.definition.key === 'print');
-    const single = print?.services.find(isSinglePrintService);
-    if (print && single) {
-      const alreadySingleOnly = print.services.every(service => Boolean(selectedServiceIds[String(service.id)]) === (service === single));
-      print.services.forEach(service => delete selectedServiceIds[String(service.id)]);
-      selectedServiceIds[String(single.id)] = true;
-      if (!alreadySingleOnly) saveState();
-    }
-  }
   const lockedMode = typeof getLockedCuttingMode === 'function' ? getLockedCuttingMode() : '';
   if (lockedMode && cuttingDefaultSelectionPending) {
     const cutting = groups.find(group => group.definition.key === 'cutting');
@@ -316,6 +321,7 @@ function renderServices() {
     if (quickBox) quickBox.appendChild(createServiceGroup(groupData, 'quick'));
   });
   $('serviceStatus').textContent = `${dataSourceLabel()} • ${services.length} บริการ`;
+  syncLayoutPreviewVisibility();
   if (typeof syncArtworkSideControls === 'function') syncArtworkSideControls();
   syncDiecutShapeAvailability();
 }
@@ -366,6 +372,8 @@ function serviceCost(sheetCount, pieceCount) {
 }
 
 window.serviceGroupDefinition = serviceGroupDefinition;
+window.hasSelectedPrintService = hasSelectedPrintService;
+window.syncLayoutPreviewVisibility = syncLayoutPreviewVisibility;
 window.hasSelectedDiecutService = hasSelectedDiecutService;
 window.syncDiecutShapeAvailability = syncDiecutShapeAvailability;
 window.resetCuttingDefaultSelection = () => { cuttingDefaultSelectionPending = true; };

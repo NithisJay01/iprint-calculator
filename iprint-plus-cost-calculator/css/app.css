@@ -379,6 +379,7 @@ html{background:#dce9f5}body{padding:0;background:#dce9f5;color:#080808}.mobile-
 .layout-preview-card>.artwork-upload-button{width:100%;align-self:stretch}.sheet-preview>.preview-usable{border:0}
 .layout-settings-lower{display:contents}
 .layout-preview-card>.layout-print-services{width:100%;min-width:0;align-self:stretch;margin:16px 0 0}
+.layout-preview-content{display:contents}.layout-preview-content[hidden],.layout-preview-card>.artwork-upload-button[hidden]{display:none!important}.layout-preview-card.is-awaiting-print-choice{min-height:0;justify-content:flex-start}.layout-preview-card.is-awaiting-print-choice>.layout-print-services{margin-top:0}
 .mobile-app .service-group-print.is-sticker-single-only{border-color:#8bc9ff;background:#eef8ff}.service-group-lock-note{margin:0 2px 8px;padding:8px 10px;border-radius:8px;background:#dcefff;color:#075c9b;font-size:10px;font-weight:800;line-height:1.45}
 @media(min-width:900px){.app-view[data-app-view="cost"].is-active{grid-template-areas:"back back" "preview addons" "preview analysis" "preview actions"}[data-app-view="cost"]>.view-back-button{grid-area:back;justify-self:start;margin:0}}
 
