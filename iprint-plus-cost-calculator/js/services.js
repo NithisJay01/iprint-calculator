@@ -94,6 +94,7 @@ function renderServiceRow(service, group, scope = 'main') {
   if (group.definition.exclusive) control.name = `service-${scope}-${group.definition.key}`;
   control.checked = Boolean(selectedServiceIds[String(service.id)]);
   row.classList.toggle('is-selected', control.checked);
+  let requestInput = null;
   control.addEventListener('change', () => {
     const hadDiecut = hasSelectedDiecutService();
     const hadDoubleSided = typeof getSelectedPrintSide === 'function' && getSelectedPrintSide() === 'double';
@@ -108,7 +109,7 @@ function renderServiceRow(service, group, scope = 'main') {
     saveState();
     renderServices();
     calculate();
-    if (service.pricePending && control.checked) requestAnimationFrame(() => document.querySelector(`[data-custom-service-request="${scope}"]`)?.focus());
+    if (service.pricePending && control.checked) requestAnimationFrame(() => requestInput?.focus());
     syncDiecutShapeAvailability();
     const hasDiecut = hasSelectedDiecutService();
     const hasDoubleSided = typeof getSelectedPrintSide === 'function' && getSelectedPrintSide() === 'double';
@@ -129,7 +130,6 @@ function renderServiceRow(service, group, scope = 'main') {
   meta.textContent = service.material || '';
   meta.hidden = !meta.textContent;
   main.append(name, meta);
-  let requestInput = null;
   if (service.pricePending) {
     requestInput = document.createElement('input');
     requestInput.type = 'text';
