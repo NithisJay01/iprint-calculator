@@ -378,6 +378,7 @@ html{background:#dce9f5}body{padding:0;background:#dce9f5;color:#080808}.mobile-
 @media(min-width:768px){.app-view[data-app-view="layout"].is-active{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(300px,.9fr);grid-template-areas:"back back" "intro intro" "preview form" "preview print" ". summary" ". actions";gap:16px 24px;align-items:start}[data-app-view="layout"]>.view-back-button{grid-area:back;justify-self:start;margin:0}[data-app-view="layout"]>.page-intro{grid-area:intro}[data-app-view="layout"]>.layout-form-card{grid-area:form}[data-app-view="layout"]>.layout-preview-card{grid-area:preview;min-width:0;margin:0}[data-app-view="layout"]>.preview-artwork-section{display:contents;grid-area:auto}[data-app-view="layout"]>.preview-artwork-section>.layout-print-services{grid-area:print;min-width:0}[data-app-view="layout"]>.outline-summary{grid-area:summary}[data-app-view="layout"]>.flow-actions{grid-area:actions;margin:0}}
 .layout-preview-card>.artwork-upload-button{width:100%;align-self:stretch}.sheet-preview>.preview-usable{border:0}
 .layout-settings-lower{display:contents}
+.layout-preview-card>.layout-print-services{width:100%;min-width:0;align-self:stretch;margin:16px 0 0}
 .mobile-app .service-group-print.is-sticker-single-only{border-color:#8bc9ff;background:#eef8ff}.service-group-lock-note{margin:0 2px 8px;padding:8px 10px;border-radius:8px;background:#dcefff;color:#075c9b;font-size:10px;font-weight:800;line-height:1.45}
 @media(min-width:900px){.app-view[data-app-view="cost"].is-active{grid-template-areas:"back back" "preview addons" "preview analysis" "preview actions"}[data-app-view="cost"]>.view-back-button{grid-area:back;justify-self:start;margin:0}}
 
@@ -405,4 +406,22 @@ html{background:#dce9f5}body{padding:0;background:#dce9f5;color:#080808}.mobile-
   [data-app-view="layout"]>.view-back-button{grid-area:back;justify-self:start;margin:0}
   [data-app-view="layout"]>.layout-preview-card{align-self:stretch}
   [data-app-view="layout"] .layout-print-services{margin-top:0}
+}
+
+/* Keep settings packed at their natural height, independently of the preview. */
+@media (min-width:768px){
+  .app-view[data-app-view="layout"].is-active{
+    grid-template-areas:"back back" "intro intro" "preview form" "preview lower";
+    grid-template-rows:max-content max-content max-content minmax(0,1fr);
+    align-content:start;
+  }
+  [data-app-view="layout"]>.layout-form-card{margin:0;min-width:0}
+  [data-app-view="layout"]>.layout-settings-lower{
+    display:flex;grid-area:lower;flex-direction:column;gap:16px;min-width:0;align-self:start;
+  }
+  [data-app-view="layout"]>.layout-settings-lower>.preview-artwork-section,
+  [data-app-view="layout"]>.layout-settings-lower>.outline-summary,
+  [data-app-view="layout"]>.layout-settings-lower>.flow-actions,
+  [data-app-view="layout"] .layout-settings-lower .layout-print-services{margin:0}
+  [data-app-view="layout"]>.layout-preview-card{align-self:start;justify-content:flex-start;min-height:0}
 }

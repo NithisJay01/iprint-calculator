@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#eef6ff">
   <title>iPrint</title>
-  <link rel="stylesheet" href="css/app.css?v=20260906-snap-layout-sections">
+  <link rel="stylesheet" href="css/app.css?v=20260907-layout-section-order">
 </head>
 <body>
 <section class="login-gate" id="loginGate" aria-labelledby="loginTitle">
@@ -124,6 +124,18 @@
     <section class="app-view" data-app-view="layout">
       <button class="view-back-button" data-flow-back="jobSetup" type="button"><img class="button-icon" src="image/arrow-left.svg" alt="">ย้อนกลับ</button>
       <div class="page-intro"><h1>คำนวณการวางชิ้นงาน</h1><p>ระบุขนาดและจำนวน เพื่อคำนวณจำนวนชิ้นงานสูงสุดต่อแผ่น</p></div>
+
+      <div class="layout-preview-card" id="previewDropZone">
+        <div class="preview-scroll"><div class="sheet-preview" id="sheetPreview"></div></div>
+        <div class="artwork-current layout-artwork-current" id="artworkCurrent" hidden><img id="artworkThumbnail" alt="ภาพงานหลักที่เลือก"><div><strong id="artworkName">—</strong><span id="artworkMeta">—</span></div><div class="artwork-current-actions"><button id="rotateArtworkImage" type="button"><img class="button-icon" src="image/rotate.svg" alt="">หมุน 90°</button><button id="clearArtworkImage" type="button">ล้างภาพ</button></div></div>
+        <div class="artwork-side-controls" id="artworkSideControls" hidden><div class="artwork-side-toggle" role="group" aria-label="เลือกด้านของ Artwork"><button type="button" data-artwork-side="front" class="is-selected" aria-pressed="true">ด้านหน้า</button><button type="button" data-artwork-side="back" aria-pressed="false">ด้านหลัง</button></div><label class="same-artwork-option"><input id="useFrontArtworkForBack" type="checkbox"> ใช้ภาพด้านหน้าเป็นด้านหลัง</label><div class="artwork-side-action-row"><label class="active-artwork-upload" for="artworkImage" id="activeArtworkUploadLabel">เปลี่ยนภาพด้านหน้า</label></div><small id="artworkSideStatus">หน้า ยังไม่มีภาพ • หลัง ยังไม่มีภาพ</small></div>
+        <div class="sheet-dimensions"><span id="sheetWidthLabel">— mm</span><span id="sheetHeightLabel">— mm</span></div>
+        <details class="preview-read-more" open><summary>ข้อมูลสำคัญ</summary><div><img class="preview-info-mascot" src="image/iprint-mascot.png" alt="น้อง iPrint ผู้ช่วยอธิบาย Preview"><span>ค่าเริ่มต้น: ระยะห่างระหว่างชิ้นงาน 3 mm</span><span><b>ภาพบน Preview:</b> มีไว้สำหรับส่งบรีฟและสร้างความเข้าใจที่ตรงกันกับทีมเท่านั้น <b>ไม่ใช่ไฟล์ที่ใช้สำหรับพิมพ์</b></span><span class="safe-zone-warning"><b>เส้นประคือระยะ Safe zone เข้ามาจากขอบงาน 3 mm</b> กรุณาตรวจสอบ หากมีกราฟิกที่สำคัญหรือข้อความอยู่นอกพื้นที่ มีโอกาสถูกตัดออกได้</span></div></details>
+        <section class="layout-print-services" id="layoutPrintServices" aria-label="รูปแบบการพิมพ์"></section>
+        <label class="artwork-upload-button" for="artworkImage"><span><img class="button-icon" src="image/upload.svg" alt="">อัพโหลด / เปลี่ยนภาพตัวอย่าง Artwork</span></label>
+        <div class="preview-drop-hint" aria-hidden="true"><span><img src="image/upload.svg" alt=""></span> วางภาพงานใน Preview</div>
+      </div>
+
       <section class="form-card layout-form-card">
         <div class="field"><label class="label" for="sheet">Preset กระดาษที่ใช้</label><select id="sheet"><option value="">กำลังโหลด Preset จาก Notion…</option></select></div>
         <div class="row2 dimension-fields">
@@ -136,22 +148,7 @@
           <div class="field slider-field"><div class="slider-label"><label class="label" for="bleed">Margin</label><output id="bleedValue" for="bleed">3 mm/ด้าน</output></div><input id="bleed" type="range" min="3" max="15" step="1" value="3"><div class="slider-scale"><span>3</span><span>15 mm</span></div></div>
         </div>
       </section>
-
-      <div class="layout-preview-card" id="previewDropZone">
-        <div class="preview-scroll"><div class="sheet-preview" id="sheetPreview"></div></div>
-        <div class="artwork-current layout-artwork-current" id="artworkCurrent" hidden><img id="artworkThumbnail" alt="ภาพงานหลักที่เลือก"><div><strong id="artworkName">—</strong><span id="artworkMeta">—</span></div><div class="artwork-current-actions"><button id="rotateArtworkImage" type="button"><img class="button-icon" src="image/rotate.svg" alt="">หมุน 90°</button><button id="clearArtworkImage" type="button">ล้างภาพ</button></div></div>
-        <div class="artwork-side-controls" id="artworkSideControls" hidden><div class="artwork-side-toggle" role="group" aria-label="เลือกด้านของ Artwork"><button type="button" data-artwork-side="front" class="is-selected" aria-pressed="true">ด้านหน้า</button><button type="button" data-artwork-side="back" aria-pressed="false">ด้านหลัง</button></div><label class="same-artwork-option"><input id="useFrontArtworkForBack" type="checkbox"> ใช้ภาพด้านหน้าเป็นด้านหลัง</label><div class="artwork-side-action-row"><label class="active-artwork-upload" for="artworkImage" id="activeArtworkUploadLabel">เปลี่ยนภาพด้านหน้า</label></div><small id="artworkSideStatus">หน้า ยังไม่มีภาพ • หลัง ยังไม่มีภาพ</small></div>
-        <label class="artwork-upload-button" for="artworkImage"><span><img class="button-icon" src="image/upload.svg" alt="">อัพโหลด / เปลี่ยนภาพตัวอย่าง Artwork</span></label>
-        <details class="preview-read-more" open><summary>ข้อมูลสำคัญ</summary><div><img class="preview-info-mascot" src="image/iprint-mascot.png" alt="น้อง iPrint ผู้ช่วยอธิบาย Preview"><span>ค่าเริ่มต้น: ระยะห่างระหว่างชิ้นงาน 3 mm</span><span><b>ภาพบน Preview:</b> มีไว้สำหรับส่งบรีฟและสร้างความเข้าใจที่ตรงกันกับทีมเท่านั้น <b>ไม่ใช่ไฟล์ที่ใช้สำหรับพิมพ์</b></span><span class="safe-zone-warning"><b>เส้นประคือระยะ Safe zone เข้ามาจากขอบงาน 3 mm</b> กรุณาตรวจสอบ หากมีกราฟิกที่สำคัญหรือข้อความอยู่นอกพื้นที่ มีโอกาสถูกตัดออกได้</span></div></details>
-        <div class="sheet-dimensions"><span id="sheetWidthLabel">— mm</span><span id="sheetHeightLabel">— mm</span></div>
-        <div class="preview-drop-hint" aria-hidden="true"><span><img src="image/upload.svg" alt=""></span> วางภาพงานใน Preview</div>
-      </div>
-
       <div class="layout-settings-lower">
-        <section class="preview-artwork-section">
-          <section class="layout-print-services" id="layoutPrintServices" aria-label="รูปแบบการพิมพ์"></section>
-        </section>
-
         <section class="outline-summary">
           <h2>ผลลัพธ์การคำนวณ Layout</h2>
           <dl><div><dt>จำนวนต่อแผ่น</dt><dd><span id="yield">—</span> ชิ้น / แผ่น</dd></div><div><dt>การจัดเรียง (Layout)</dt><dd id="layoutDirection">—</dd></div><div class="summary-total"><dt>จำนวนแผ่นที่ต้องใช้</dt><dd><span id="sheets">—</span> แผ่น</dd></div></dl>
