@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#eef6ff">
   <title>iPrint</title>
-  <link rel="stylesheet" href="css/app.css?v=20260907-quiz-tablet-stack">
+  <link rel="stylesheet" href="css/app.css?v=20260907-cost-preview-note">
 </head>
 <body>
 <section class="login-gate" id="loginGate" aria-labelledby="loginTitle">
@@ -166,7 +166,7 @@
         <div class="material-effect-toggle"><span><strong>Shader Preview</strong><small>แสงสะท้อนและเอฟเฟกต์วัสดุ</small></span><label class="switch-control" for="materialShaderToggle"><input id="materialShaderToggle" type="checkbox" checked><i aria-hidden="true"></i><b id="materialShaderToggleStatus">เปิด</b></label></div>
         <div class="cost-piece-tools" id="costPieceTools" hidden><button id="rotateCostPiecePaper" type="button"><img class="button-icon" src="image/rotate.svg" alt="">หมุนหน้ากระดาษ 90°</button><output id="costPiecePaperRotation">มุมหน้ากระดาษ 0°</output></div>
         <section class="diecut-shape-control" id="diecutShapeControl" aria-labelledby="diecutShapeTitle" aria-hidden="true" hidden><div><strong id="diecutShapeTitle">Shape ไดคัท</strong><small>PNG โปร่งใส หรือ SVG สีทึบ • ใช้เป็น Clipping mask บน Artwork</small></div><div class="diecut-shape-actions"><label for="diecutShapeFile">อัปโหลด Shape</label><button id="clearDiecutShape" type="button" hidden>ล้าง Shape</button></div><output id="diecutShapeStatus">ยังไม่ได้เลือก Shape • มุมฉาก 0°</output></section>
-        <div class="cost-preview-wrap" id="materialPreviewInteraction"><div class="material-preview-stage" id="materialPreviewStage"><div class="sheet-preview cost-sheet-preview" id="costSheetPreview"></div><div class="material-css-reflection" aria-hidden="true"></div><canvas id="materialShaderCanvas" class="material-shader-canvas" aria-hidden="true" hidden></canvas></div><details class="preview-read-more" open><summary>ข้อมูลสำคัญ</summary><div><img class="preview-info-mascot" src="image/iprint-mascot.png" alt="น้อง iPrint ผู้ช่วยอธิบาย Preview"><span>ค่าเริ่มต้น: ระยะห่างระหว่างชิ้นงาน 3 mm</span><span><b>ภาพบน Preview:</b> มีไว้สำหรับส่งบรีฟและสร้างความเข้าใจที่ตรงกันกับทีมเท่านั้น <b>ไม่ใช่ไฟล์ที่ใช้สำหรับพิมพ์</b></span><span class="safe-zone-warning"><b>เส้นประคือระยะ Safe zone เข้ามาจากขอบงาน 3 mm</b> กรุณาตรวจสอบ หากมีกราฟิกที่สำคัญหรือข้อความอยู่นอกพื้นที่ มีโอกาสถูกตัดออกได้</span></div></details></div>
+        <div class="cost-preview-wrap" id="materialPreviewInteraction"><div class="material-preview-stage" id="materialPreviewStage"><div class="sheet-preview cost-sheet-preview" id="costSheetPreview"></div><div class="material-css-reflection" aria-hidden="true"></div><canvas id="materialShaderCanvas" class="material-shader-canvas" aria-hidden="true" hidden></canvas></div><p class="cost-preview-note">Preview ใช้สำหรับตรวจสอบเท่านั้น ไม่ใช่ไฟล์สำหรับพิมพ์ • เส้นประคือ Safe zone 3 mm</p></div>
         <div class="preview-interaction-hint" id="materialPreviewHint" hidden>ลากซ้าย–ขวาเพื่อดูแสงสะท้อน</div>
         <div class="preview-finish-status" id="previewFinishStatus">Preview วัสดุและ Option เสริม</div>
       </section>
