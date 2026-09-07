@@ -129,8 +129,9 @@ function renderServiceRow(service, group, scope = 'main') {
   meta.textContent = service.material || '';
   meta.hidden = !meta.textContent;
   main.append(name, meta);
+  let requestInput = null;
   if (service.pricePending) {
-    const requestInput = document.createElement('input');
+    requestInput = document.createElement('input');
     requestInput.type = 'text';
     requestInput.className = 'service-request-input';
     requestInput.dataset.customServiceRequest = scope;
@@ -151,7 +152,6 @@ function renderServiceRow(service, group, scope = 'main') {
       saveState();
       calculate();
     });
-    main.appendChild(requestInput);
   }
   const priceBlock = document.createElement('div');
   priceBlock.className = 'service-price-block';
@@ -163,6 +163,7 @@ function renderServiceRow(service, group, scope = 'main') {
   priceUnit.textContent = service.pricePending ? 'รอประเมิน' : `/ต่อ${unit(service.unit)}`;
   priceBlock.append(price, priceUnit);
   row.append(control, main, priceBlock);
+  if (requestInput) row.appendChild(requestInput);
   return row;
 }
 
