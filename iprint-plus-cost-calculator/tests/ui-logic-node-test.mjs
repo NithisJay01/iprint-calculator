@@ -55,4 +55,13 @@ assert.equal(piecePreviewContext.resolvePiecePreviewInitialSide('front', true), 
 assert.equal(piecePreviewContext.resolvePiecePreviewInitialSide('back', true), 'back');
 assert.equal(piecePreviewContext.resolvePiecePreviewInitialSide('back', false), 'front');
 
+const flowContext = scriptContext();
+vm.runInContext(fs.readFileSync(new URL('../js/flow.js', import.meta.url), 'utf8'), flowContext);
+assert.equal(flowContext.isJobNameSuggestionVisible('สติกเกอร์', 'สติกเกอร์ Die-cut 50%'), true);
+assert.equal(flowContext.isJobNameSuggestionVisible('นามบัตร', 'สติกเกอร์ Die-cut 50%'), false);
+assert.equal(flowContext.isJobNameSuggestionVisible('สติกเกอร์', 'งานกระดาษ'), false);
+assert.equal(flowContext.isJobNameSuggestionVisible('นามบัตร', 'งานกระดาษ'), true);
+assert.equal(flowContext.randomJobNickname('นามบัตร', 0), 'นามบัตร ชุดใหม่');
+assert.equal(flowContext.randomJobNickname('นามบัตร', 0.999), 'นามบัตร รอบผลิตใหม่');
+
 console.log('UI logic node test passed');

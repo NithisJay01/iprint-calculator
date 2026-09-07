@@ -18,6 +18,41 @@ const JOB_TYPE_DEFAULTS = {
   'สติกเกอร์ Die-cut 100%': { width: 6, height: 6, quantity: 100, preset: /13\s*[×x*]?\s*19.*flatblade|flatblade.*13\s*[×x*]?\s*19/i, cutting: '100' }
 };
 
+const JOB_NAME_SUFFIXES = [
+  'ชุดใหม่',
+  'ล็อตเดือนนี้',
+  'เวอร์ชันอัปเดต',
+  'สำหรับโปรเจกต์ล่าสุด',
+  'รอบผลิตใหม่'
+];
+
+function isJobNameSuggestionVisible(suggestion, jobType = selectedJobType) {
+  const stickerJob = /สติกเกอร์|sticker/i.test(String(jobType || ''));
+  const paperJob = String(jobType || '').trim() === 'งานกระดาษ';
+  const stickerSuggestion = /สติกเกอร์|sticker/i.test(String(suggestion || ''));
+  if (stickerJob) return stickerSuggestion;
+  if (paperJob) return !stickerSuggestion;
+  return true;
+}
+
+function randomJobNickname(suggestion, randomValue = Math.random()) {
+  const normalized = Math.max(0, Math.min(0.999999, Number(randomValue) || 0));
+  const suffix = JOB_NAME_SUFFIXES[Math.floor(normalized * JOB_NAME_SUFFIXES.length)];
+  return `${String(suggestion || '').trim()} ${suffix}`.trim();
+}
+
+function syncJobNameSuggestions() {
+  document.querySelectorAll('[data-job-name-suggestion]').forEach(button => {
+    const visible = isJobNameSuggestionVisible(button.dataset.jobNameSuggestion, selectedJobType);
+    button.hidden = !visible;
+    button.setAttribute('aria-hidden', visible ? 'false' : 'true');
+    if (!visible) {
+      button.classList.remove('is-selected');
+      button.setAttribute('aria-pressed', 'false');
+    }
+  });
+}
+
 function flowEscape(value) {
   return String(value || '')
     .replaceAll('&', '&amp;')
@@ -47,6 +82,7 @@ function setJobType(type, options = {}) {
     button.classList.toggle('is-selected', selected);
     button.setAttribute('aria-pressed', selected ? 'true' : 'false');
   });
+  syncJobNameSuggestions();
   const input = $('jobName');
   if (!input || options.preserveName) return;
   const name = generatedJobName(selectedJobType, jobNickname);
@@ -874,7 +910,7 @@ function bindFlow() {
   $('jobNicknameForm')?.addEventListener('click', event => {
     const suggestion = event.target.closest('[data-job-name-suggestion]');
     if (!suggestion) return;
-    const value = suggestion.dataset.jobNameSuggestion || '';
+    const value = randomJobNickname(suggestion.dataset.jobNameSuggestion || '');
     setJobNickname(value);
     document.querySelectorAll('[data-job-name-suggestion]').forEach(button => {
       const selected = button === suggestion;
@@ -882,11 +918,13 @@ function bindFlow() {
       button.setAttribute('aria-pressed', selected ? 'true' : 'false');
     });
     $('jobNickname')?.focus();
-    announceUiChange(`เติมชื่องาน “${value}” แล้ว`, $('jobNickname'), { scroll: false });
+    announceUiChange(`สุ่มชื่องาน “${value}” แล้ว`, $('jobNickname'), { scroll: false });
   });
   $('jobNickname')?.addEventListener('input', event => {
     document.querySelectorAll('[data-job-name-suggestion]').forEach(button => {
-      const selected = button.dataset.jobNameSuggestion === event.target.value.trim();
+      const suggestion = String(button.dataset.jobNameSuggestion || '').trim();
+      const value = event.target.value.trim();
+      const selected = value === suggestion || value.startsWith(`${suggestion} `);
       button.classList.toggle('is-selected', selected);
       button.setAttribute('aria-pressed', selected ? 'true' : 'false');
     });
@@ -1060,6 +1098,8 @@ window.renderBriefReview = renderBriefReview;
 window.setJobType = setJobType;
 window.getSelectedJobType = getSelectedJobType;
 window.setJobNickname = setJobNickname;
+window.isJobNameSuggestionVisible = isJobNameSuggestionVisible;
+window.randomJobNickname = randomJobNickname;
 window.previewGalleryMarkup = previewGalleryMarkup;
 window.setCostPreviewMode = setCostPreviewMode;
 window.getCostPreviewMode = getCostPreviewMode;
