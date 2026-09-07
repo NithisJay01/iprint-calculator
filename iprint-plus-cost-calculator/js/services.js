@@ -37,8 +37,14 @@ function syncLayoutPreviewVisibility() {
   const ready = hasSelectedPrintService();
   const content = $('layoutPreviewContent');
   const zone = $('previewDropZone');
+  const nextButton = $('openMaterialsServices');
   if (content) content.hidden = !ready;
   if (zone) zone.classList.toggle('is-awaiting-print-choice', !ready);
+  if (nextButton) {
+    nextButton.disabled = !ready;
+    nextButton.setAttribute('aria-disabled', ready ? 'false' : 'true');
+    nextButton.title = ready ? '' : 'กรุณาเลือกรูปแบบการพิมพ์ก่อน';
+  }
 }
 
 function hasSelectedDiecutService() {

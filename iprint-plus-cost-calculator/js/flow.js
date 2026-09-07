@@ -1013,6 +1013,7 @@ function bindFlow() {
   $('startNewOrder').addEventListener('click', () => { closeOrderSuccess(); prepareNewPrintItem(); showAppView('home'); });
   $('viewOrderStatus').addEventListener('click', () => { closeOrderSuccess(); openWorkflow(); });
   $('openMaterialsServices').addEventListener('click', () => {
+    if (typeof hasSelectedPrintService === 'function' && !hasSelectedPrintService()) return;
     if (typeof closeSide === 'function') closeSide();
     showAppView('cost');
   });

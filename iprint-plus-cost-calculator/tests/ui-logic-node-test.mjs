@@ -28,6 +28,11 @@ serviceContext.getSelectedJobType = () => 'งานกระดาษ';
 assert.equal(serviceContext.isStickerQuizJob(), false);
 assert.equal(serviceContext.isSinglePrintService({ name: 'พิมพ์หน้าเดียว' }), true);
 assert.equal(serviceContext.isSinglePrintService({ name: 'พิมพ์ 2 หน้า' }), false);
+serviceContext.services = [{ id: 'print-single', category: 'รูปแบบการพิมพ์', name: 'พิมพ์หน้าเดียว' }];
+serviceContext.selectedServiceIds = {};
+assert.equal(serviceContext.hasSelectedPrintService(), false);
+serviceContext.selectedServiceIds['print-single'] = true;
+assert.equal(serviceContext.hasSelectedPrintService(), true);
 
 const previewContext = scriptContext();
 vm.runInContext(fs.readFileSync(new URL('../js/material-preview.js', import.meta.url), 'utf8'), previewContext);
