@@ -230,7 +230,7 @@
       <div class="workflow-customer" id="workflowCustomer"></div>
       <div class="page-intro"><h1>ติดตามสถานะงาน</h1><p id="workflowOrderNumber"></p></div>
       <div class="workflow-lookup"><div class="field"><label class="label" for="workflowTicketId">Order / Ticket ID</label><input id="workflowTicketId" autocomplete="off" placeholder="ใส่ Ticket ID"></div><button class="secondary-action" id="refreshWorkflow" type="button">โหลดสถานะ</button></div>
-      <div class="workflow-status status" id="workflowStatus" aria-live="polite"></div><section class="workflow-ticket" id="workflowTicketSummary" hidden></section><div class="workflow-list" id="workflowItemList"></div>
+      <div class="workflow-status status" id="workflowStatus" aria-live="polite"></div><section class="workflow-ticket" id="workflowTicketSummary" hidden></section><button class="secondary-action workflow-cancel-order" id="cancelWorkflowOrder" type="button" data-staff-only hidden>ยกเลิกคิวผลิตและคืนกำลังผลิต</button><div class="workflow-list" id="workflowItemList"></div>
       <button class="primary-action" id="workflowNewOrder" type="button">ออเดอร์งานพิมพ์เพิ่ม</button>
       <button id="closeWorkflow" type="button" hidden></button>
     </section>
@@ -325,7 +325,7 @@
 
 <script src="js/config.js?v=20260908-public-order-enabled"></script>
 <script src="js/core.js?v=20260908-production-queue"></script>
-<script src="js/api.js?v=20260908-production-queue"></script>
+<script src="js/api.js?v=20260908-order-cancellation"></script>
 <script src="js/presets.js?v=20260906-quick-brief"></script>
 <script src="js/materials.js?v=20260906-quick-brief"></script>
 <script src="js/services.js?v=20260907-hide-custom-request"></script>
@@ -337,7 +337,7 @@
 <script src="js/brief.js?v=20260906-custom-request"></script>
 <script src="js/cart.js?v=20260908-production-queue"></script>
 <script src="js/customer.js?v=20260831-material-preview"></script>
-<script src="js/workflow.js?v=20260831-material-preview"></script>
+<script src="js/workflow.js?v=20260908-order-cancellation"></script>
 <script src="js/quote.js?v=20260904-public-order"></script>
 <script src="js/staff-catalog.js?v=20260906-catalog-table"></script>
 <script src="js/staff-capacity.js?v=20260908-capacity-summary"></script>

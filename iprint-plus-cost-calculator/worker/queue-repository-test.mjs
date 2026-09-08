@@ -55,6 +55,7 @@ const repository = new NotionQueueRepository({ fetcher, headers: {}, dataSourceI
 const created = await repository.create({ allocationKey: 'order-1:item-1:1', orderKey: 'order-1', quoteNo: 'QT-1', itemKey: 'item-1', itemId: 'item-page-1', ticketId: 'ticket-1', title: 'Sticker', customer: 'Customer', date: '2026-09-09', deliveryDeadline: '2026-09-10', points: 4, totalPoints: 4 });
 assert.equal(created.id, 'allocation-1');
 assert.equal((await repository.findByKey('order-1:item-1:1')).id, 'allocation-1');
+assert.equal((await repository.listByTicketId('ticket-1'))[0].ticketId, 'ticket-1');
 const updated = await repository.update('allocation-1', { date: '2026-09-10', status: 'IN_PROGRESS' }, page.last_edited_time);
 assert.equal(updated.date, '2026-09-10');
 assert.equal(updated.status, 'IN_PROGRESS');

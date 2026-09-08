@@ -577,6 +577,18 @@ async function updateOrderItemStatusRemote(itemId, status, note = '') {
   }
 }
 
+async function cancelOrderProductionRemote(ticketId) {
+  if (IPRINT_TEST_MODE) return { success: true, cancellation: { ticketId, cancelledAllocations: 1, refundedPoints: 2 } };
+  const response = await fetch(`${API_ROOT}/staff/orders/${encodeURIComponent(ticketId)}/cancel`, {
+    method: 'POST', headers: { 'X-API-Key': getWriteApiKey() }
+  });
+  const text = await response.text();
+  let data = {};
+  try { data = JSON.parse(text); } catch (error) {}
+  if (!response.ok) throw new Error(data.error || text || `POST cancel HTTP ${response.status}`);
+  return data;
+}
+
 async function createCustomerRemote(customerData) {
     try {
       if (IPRINT_TEST_MODE) {

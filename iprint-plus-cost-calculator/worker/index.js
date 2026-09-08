@@ -6,6 +6,7 @@ import { planOrderSchedule } from './domain/scheduling.js';
 import { createCatalogRepository } from './repositories/notion-catalog-repository.js';
 import { createCapacityRepository } from './repositories/notion-capacity-repository.js';
 import { createQueueRepository } from './repositories/notion-queue-repository.js';
+import { cancelOrderProduction } from './services/order-cancellation.js';
 
 export default {
   async fetch(request, env) {
@@ -178,6 +179,7 @@ export default {
             "GET /staff/queue",
             "PATCH /staff/queue/:allocationId",
             "DELETE /staff/queue/:allocationId",
+            "POST /staff/orders/:ticketId/cancel",
             "GET /orders/:ticketId",
             "PATCH /order-items/:itemId/status"
           ]
@@ -613,6 +615,27 @@ export default {
           }
         } catch (error) {
           return json({ success: false, code: error.code || '', error: error.message, current: error.current || null, day: error.day || null, errors: error.errors || [], detail: error.detail || null }, error.status || 502);
+        }
+      }
+
+      const staffOrderCancelMatch = url.pathname.match(/^\/staff\/orders\/([^/]+)\/cancel$/);
+      if (staffOrderCancelMatch && request.method === 'POST') {
+        const authError = requireAuth(request);
+        if (authError) return authError;
+        if (!env.NOTION_PRODUCTION_ALLOCATIONS_DATA_SOURCE_ID || !env.NOTION_CAPACITY_DATA_SOURCE_ID) {
+          return json({ success: false, code: 'QUEUE_NOT_CONFIGURED', error: 'Production queue data sources are missing' }, 503);
+        }
+        const ticketId = decodeURIComponent(staffOrderCancelMatch[1] || '').trim();
+        if (!ticketId || ticketId.length > 100) return json({ success: false, error: 'Invalid ticket ID' }, 400);
+        try {
+          const cancellation = await cancelOrderProduction({
+            ticketId,
+            queueRepository: createQueueRepository(env, { headers: notionHeaders }),
+            capacityRepository: createCapacityRepository(env, { headers: notionHeaders })
+          });
+          return json({ success: true, cancellation });
+        } catch (error) {
+          return json({ success: false, code: error.code || '', error: error.message, detail: error.detail || null }, error.status || 502);
         }
       }
 

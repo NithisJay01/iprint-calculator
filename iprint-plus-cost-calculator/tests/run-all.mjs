@@ -17,6 +17,7 @@ const tests = [
   'worker/queue-worker-test.mjs',
   'worker/scheduling-domain-test.mjs',
   'worker/order-queue-smoke-test.mjs',
+  'worker/order-cancellation-test.mjs',
   'worker/system-check-test.mjs'
 ];
 

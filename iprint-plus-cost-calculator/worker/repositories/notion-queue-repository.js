@@ -98,6 +98,10 @@ export class NotionQueueRepository extends QueueRepository {
     return this.query(filters.length === 1 ? filters[0] : filters.length ? { and: filters } : undefined);
   }
 
+  async listByTicketId(ticketId) {
+    return this.query({ property: 'Order Ticket', relation: { contains: String(ticketId) } });
+  }
+
   async findByKey(key) {
     const results = await this.query({ property: 'Allocation Key', rich_text: { equals: String(key) } });
     return results[0] || null;

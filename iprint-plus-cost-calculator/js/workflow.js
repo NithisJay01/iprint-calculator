@@ -116,6 +116,8 @@ function renderWorkflow(order) {
   }
 
   const ticket = order.ticket;
+  const cancelButton = $('cancelWorkflowOrder');
+  if (cancelButton) cancelButton.hidden = document.body.dataset.accessRole !== 'staff';
   const reference = readLastOrder();
   if ($('workflowCustomer')) $('workflowCustomer').innerHTML = `<strong>สวัสดี, ${workflowEscape(reference?.customer || 'ลูกค้า')}</strong><br><span>คุณสามารถติดตามความคืบหน้าของงานแต่ละรายการได้ที่นี่</span>`;
   if ($('workflowOrderNumber')) $('workflowOrderNumber').textContent = reference?.quoteNo ? `หมายเลขออเดอร์ ${reference.quoteNo}` : (ticket.title || '');
@@ -166,6 +168,26 @@ function renderWorkflow(order) {
       </div>` : '<div class="workflow-item-done">รายการนี้ส่งมอบเรียบร้อยแล้ว</div>'}
     </article>`;
   }).join('');
+}
+
+async function cancelWorkflowOrder() {
+  const ticketId = normalizeTicketId($('workflowTicketId')?.value || readLastOrder()?.ticketId || '');
+  if (!ticketId || !window.confirm('ยกเลิกคิวผลิตทั้งหมดของออร์เดอร์นี้และคืนกำลังผลิตหรือไม่? Ticket จะยังเก็บไว้เป็นประวัติ')) return;
+  const button = $('cancelWorkflowOrder');
+  button.disabled = true;
+  setWorkflowStatus('กำลังยกเลิกคิวผลิตและคืนกำลังผลิต…');
+  try {
+    const result = await cancelOrderProductionRemote(ticketId);
+    const cancellation = result.cancellation || {};
+    setWorkflowStatus(cancellation.alreadyCancelled
+      ? 'ออร์เดอร์นี้ไม่มีคิวที่ต้องคืนแล้ว'
+      : `ยกเลิก ${cancellation.cancelledAllocations || 0} คิว และคืน ${cancellation.refundedPoints || 0} points แล้ว`, 'ok');
+    button.hidden = true;
+  } catch (error) {
+    setWorkflowStatus(error.message || String(error), 'warn');
+  } finally {
+    button.disabled = false;
+  }
 }
 
 async function loadWorkflow() {
@@ -248,4 +270,5 @@ function bindWorkflow() {
   $('closeWorkflow').addEventListener('click', closeWorkflow);
   $('refreshWorkflow').addEventListener('click', loadWorkflow);
   $('workflowItemList').addEventListener('click', handleWorkflowAction);
+  $('cancelWorkflowOrder')?.addEventListener('click', cancelWorkflowOrder);
 }

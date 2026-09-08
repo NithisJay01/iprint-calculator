@@ -100,6 +100,8 @@
   }
 }
 
+.workflow-cancel-order{width:100%;margin:0 0 12px;border-color:#e06b6b;color:#a32727;background:#fff7f7}
+
 @media(max-width:620px){.preview-workspace{grid-template-columns:1fr}.preview-quick-actions{display:grid;grid-template-columns:repeat(3,1fr);padding:0}.preview-quick-action{min-height:70px}.preview-quick-action br{display:none}.preview-quick-action b{font-size:9px}.preview-quick-action>span{width:23px;height:23px;font-size:15px}}
 
 /* Figma order workflow ---------------------------------------------------- */
