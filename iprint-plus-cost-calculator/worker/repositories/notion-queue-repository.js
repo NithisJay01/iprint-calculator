@@ -41,23 +41,39 @@ export class NotionQueueRepository extends QueueRepository {
     this.fetcher = fetcher;
     this.headers = headers;
     this.dataSourceId = dataSourceId;
+    this.resolvedDataSourceId = '';
     this.schemaCache = null;
   }
 
-  async schema() {
-    if (this.schemaCache) return this.schemaCache;
-    const response = await this.fetcher(`https://api.notion.com/v1/data_sources/${this.dataSourceId}`, { method: 'GET', headers: this.headers });
+  async resolveDataSource() {
+    if (this.resolvedDataSourceId && this.schemaCache) return { id: this.resolvedDataSourceId, properties: this.schemaCache };
+    let id = this.dataSourceId;
+    let response = await this.fetcher(`https://api.notion.com/v1/data_sources/${id}`, { method: 'GET', headers: this.headers });
+    if (response.status === 404) {
+      const databaseResponse = await this.fetcher(`https://api.notion.com/v1/databases/${id}`, { method: 'GET', headers: this.headers });
+      const databaseText = await databaseResponse.text();
+      if (!databaseResponse.ok) throw Object.assign(new Error('Notion queue database lookup failed'), { status: databaseResponse.status, detail: databaseText });
+      id = String(JSON.parse(databaseText)?.data_sources?.[0]?.id || '').trim();
+      if (!id) throw Object.assign(new Error('Notion queue database has no data source'), { status: 502 });
+      response = await this.fetcher(`https://api.notion.com/v1/data_sources/${id}`, { method: 'GET', headers: this.headers });
+    }
     const text = await response.text();
     if (!response.ok) throw Object.assign(new Error('Notion queue schema failed'), { status: response.status, detail: text });
+    this.resolvedDataSourceId = id;
     this.schemaCache = JSON.parse(text).properties || {};
-    return this.schemaCache;
+    return { id, properties: this.schemaCache };
+  }
+
+  async schema() {
+    return (await this.resolveDataSource()).properties;
   }
 
   async query(filter = undefined) {
+    const dataSourceId = (await this.resolveDataSource()).id;
     const results = [];
     let cursor = '';
     do {
-      const response = await this.fetcher(`https://api.notion.com/v1/data_sources/${this.dataSourceId}/query`, {
+      const response = await this.fetcher(`https://api.notion.com/v1/data_sources/${dataSourceId}/query`, {
         method: 'POST', headers: this.headers,
         body: JSON.stringify({
           page_size: 100,
@@ -132,10 +148,11 @@ export class NotionQueueRepository extends QueueRepository {
     if (!validation.success) throw Object.assign(new Error('Invalid queue allocation'), { status: 400, errors: validation.errors });
     const existing = await this.findByKey(validation.value.allocationKey);
     if (existing) return existing;
-    const schema = await this.schema();
+    const source = await this.resolveDataSource();
+    const schema = source.properties;
     const response = await this.fetcher('https://api.notion.com/v1/pages', {
       method: 'POST', headers: this.headers,
-      body: JSON.stringify({ parent: { type: 'data_source_id', data_source_id: this.dataSourceId }, properties: this.properties(validation.value, schema) })
+      body: JSON.stringify({ parent: { type: 'data_source_id', data_source_id: source.id }, properties: this.properties(validation.value, schema) })
     });
     const text = await response.text();
     if (!response.ok) throw Object.assign(new Error('Notion queue create failed'), { status: response.status, detail: text });

@@ -16,7 +16,7 @@ Backend ใช้ Cloudflare Worker แยกชื่อ `iprint-flow-api` เ�
 | `NOTION_TICKETS_DATA_SOURCE_ID` | Iprint Jobs | `4001a0ce-e8bd-8312-a136-07db4162080f` |
 | `NOTION_ORDER_ITEMS_DATA_SOURCE_ID` | Iprint Order Items | `3cc1a0ce-e8bd-8068-acd1-000bcaea0f4a` |
 | `NOTION_CAPACITY_DATA_SOURCE_ID` | Iprint Daily Capacity | `1038efe9-a49d-4561-9345-76c8ec0810cd` |
-| `NOTION_PRODUCTION_ALLOCATIONS_DATA_SOURCE_ID` | Iprint Production Allocations | สร้างฐานตาม Schema ด้านล่างแล้วนำ Data Source ID มาใส่ |
+| `NOTION_PRODUCTION_ALLOCATIONS_DATA_SOURCE_ID` | Iprint Production Allocations | `3d51a0ce-e8bd-80b1-b59c-e889da76463b` (Database ID; Worker resolve Data Source ให้อัตโนมัติ) |
 
 Data Source ID ไม่ใช่ Secret จึงเก็บใน `wrangler.toml` ได้ ส่วน Token และ API key ต้องเก็บเป็น Secret เท่านั้น
 
@@ -70,6 +70,8 @@ Worker จะตรวจว่าเลขออเดอร์และรา�
 - สร้างฐานข้อมูล Development แล้วเมื่อ 4 กันยายน 2026 และหน้า Staff ใช้ Flow ลิสต์วัน > เลือกวัน > แก้ไข > บันทึก
 
 `Iprint Production Allocations`
+
+- สร้างฐานหลักและฟิลด์ขั้นต่ำสำหรับ Queue API แล้วเมื่อ 8 กันยายน 2026
 
 - Title: `Name`
 - `Allocation Key`, `Order Key`, `Quote No`, `Item Key`, `Customer`, `Brief`, `Specs` (Text)
