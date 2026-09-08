@@ -1,7 +1,10 @@
 import { compareCatalogSnapshot, validateCatalogMutation } from './domain/catalog.js';
 import { validateOrderFoundation } from './domain/order.js';
+import { allocateOrderCapacity, calculateItemCapacity, normalizeCapacityDay } from './domain/capacity.js';
+import { QUEUE_STATUSES, canMoveQueueAllocation, queueStatusAllowsReservation } from './domain/queue.js';
 import { createCatalogRepository } from './repositories/notion-catalog-repository.js';
 import { createCapacityRepository } from './repositories/notion-capacity-repository.js';
+import { createQueueRepository } from './repositories/notion-queue-repository.js';
 
 export default {
   async fetch(request, env) {
@@ -170,6 +173,9 @@ export default {
             "POST /public/orders",
             "GET /staff/capacity",
             "PUT /staff/capacity/:date",
+            "GET /staff/queue",
+            "PATCH /staff/queue/:allocationId",
+            "DELETE /staff/queue/:allocationId",
             "GET /orders/:ticketId",
             "PATCH /order-items/:itemId/status"
           ]
@@ -525,6 +531,71 @@ export default {
           return json({ success: true, day });
         } catch (error) {
           return json({ success: false, code: error.code || '', error: error.message, errors: error.errors || [], current: error.current || null, detail: error.detail || null }, error.status || 502);
+        }
+      }
+
+      // ================================
+      // STAFF PRODUCTION QUEUE
+      // ================================
+
+      if (url.pathname === '/staff/queue' && request.method === 'GET') {
+        const authError = requireAuth(request);
+        if (authError) return authError;
+        if (!env.NOTION_PRODUCTION_ALLOCATIONS_DATA_SOURCE_ID) return json({ success: false, code: 'QUEUE_NOT_CONFIGURED', error: 'NOTION_PRODUCTION_ALLOCATIONS_DATA_SOURCE_ID is missing' }, 503);
+        try {
+          const repository = createQueueRepository(env, { headers: notionHeaders });
+          const jobs = await repository.list({ from: String(url.searchParams.get('from') || ''), to: String(url.searchParams.get('to') || '') });
+          return json({ success: true, jobs });
+        } catch (error) {
+          return json({ success: false, error: error.message, detail: error.detail || null }, error.status || 502);
+        }
+      }
+
+      const staffQueueMatch = url.pathname.match(/^\/staff\/queue\/([^/]+)$/);
+      if (staffQueueMatch && ['PATCH', 'DELETE'].includes(request.method)) {
+        const authError = requireAuth(request);
+        if (authError) return authError;
+        if (!env.NOTION_PRODUCTION_ALLOCATIONS_DATA_SOURCE_ID || !env.NOTION_CAPACITY_DATA_SOURCE_ID) {
+          return json({ success: false, code: 'QUEUE_NOT_CONFIGURED', error: 'Production queue data sources are missing' }, 503);
+        }
+        const allocationId = decodeURIComponent(staffQueueMatch[1] || '').trim();
+        const queueRepository = createQueueRepository(env, { headers: notionHeaders });
+        const capacityRepository = createCapacityRepository(env, { headers: notionHeaders });
+        try {
+          const current = await queueRepository.getById(allocationId);
+          if (!current) return json({ success: false, error: 'Queue allocation not found' }, 404);
+          const body = request.method === 'PATCH' ? await request.json().catch(() => null) : {};
+          if (request.method === 'PATCH' && !body) return json({ success: false, error: 'Invalid queue JSON' }, 400);
+          if (body?.expectedUpdatedAt && current.updatedAt && String(body.expectedUpdatedAt) !== current.updatedAt) {
+            return json({ success: false, code: 'QUEUE_WRITE_CONFLICT', error: 'Queue allocation was updated by another user', current }, 409);
+          }
+          const nextDate = String(body?.date || current.date);
+          const nextStatus = String(body?.status || current.status).toUpperCase();
+          if (!QUEUE_STATUSES.includes(nextStatus)) return json({ success: false, error: 'Queue status is invalid' }, 400);
+          if (nextDate !== current.date && !canMoveQueueAllocation(current)) return json({ success: false, error: 'Completed or cancelled allocation cannot be moved' }, 409);
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(nextDate)) return json({ success: false, error: 'date must use YYYY-MM-DD' }, 400);
+
+          const wasReserved = queueStatusAllowsReservation(current.status);
+          const willBeReserved = request.method !== 'DELETE' && queueStatusAllowsReservation(nextStatus);
+          const dateChanges = new Map();
+          if (wasReserved) dateChanges.set(current.date, (dateChanges.get(current.date) || 0) - current.points);
+          if (willBeReserved) dateChanges.set(nextDate, (dateChanges.get(nextDate) || 0) + current.points);
+          for (const [date, delta] of dateChanges) {
+            if (!delta) continue;
+            const existing = (await capacityRepository.list({ from: date, to: date }))[0] || normalizeCapacityDay({ date, dailyCapacity: Number(env.CAPACITY_DEFAULT_DAILY) || 20, reservedPoints: 0, cutoffTime: env.CAPACITY_CUTOFF_TIME || '15:00' });
+            const reservedPoints = Math.max(0, existing.reservedPoints + delta);
+            if (reservedPoints > existing.dailyCapacity && delta > 0) return json({ success: false, code: 'CAPACITY_UNAVAILABLE', error: 'Capacity is not available on the selected date', day: existing }, 409);
+            await capacityRepository.upsert(date, { ...existing, reservedPoints }, existing.updatedAt || '');
+          }
+
+          if (request.method === 'DELETE') {
+            await queueRepository.archive(allocationId);
+            return json({ success: true, removed: true, id: allocationId });
+          }
+          const allocation = await queueRepository.update(allocationId, { date: nextDate, status: nextStatus }, String(body.expectedUpdatedAt || ''));
+          return json({ success: true, allocation });
+        } catch (error) {
+          return json({ success: false, code: error.code || '', error: error.message, current: error.current || null, errors: error.errors || [], detail: error.detail || null }, error.status || 502);
         }
       }
 
