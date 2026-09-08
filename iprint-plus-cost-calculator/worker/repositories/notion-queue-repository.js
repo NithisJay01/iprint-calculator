@@ -99,7 +99,17 @@ export class NotionQueueRepository extends QueueRepository {
   }
 
   async listByTicketId(ticketId) {
-    return this.query({ property: 'Order Ticket', relation: { contains: String(ticketId) } });
+    const normalizedTicketId = String(ticketId || '').replace(/-/g, '').toLowerCase();
+    if (!normalizedTicketId) return [];
+
+    // Notion relation filters can fail when the relation targets a database
+    // whose data source was migrated or recreated. Reading the queue and
+    // matching the related page ID locally keeps cancellation compatible with
+    // both legacy database IDs and the newer data-source API.
+    const allocations = await this.query();
+    return allocations.filter(allocation =>
+      String(allocation.ticketId || '').replace(/-/g, '').toLowerCase() === normalizedTicketId
+    );
   }
 
   async findByKey(key) {

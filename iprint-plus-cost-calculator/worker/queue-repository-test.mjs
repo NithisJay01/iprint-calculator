@@ -25,12 +25,14 @@ const page = {
 };
 let stored = null;
 let archived = false;
+let lastQueryBody = null;
 const fetcher = async function (url, options = {}) {
   assert.equal(this, undefined, 'fetcher must not be invoked as a repository method');
   const method = options.method || 'GET';
   if (String(url).endsWith('/data_sources/queue-id') && method === 'GET') return Response.json({ properties: schema });
   if (String(url).endsWith('/data_sources/queue-id/query')) {
     const body = JSON.parse(options.body);
+    lastQueryBody = body;
     if (body.filter?.property === 'Allocation Key') return Response.json({ results: stored ? [stored] : [] });
     return Response.json({ results: stored ? [stored] : [] });
   }
@@ -56,6 +58,7 @@ const created = await repository.create({ allocationKey: 'order-1:item-1:1', ord
 assert.equal(created.id, 'allocation-1');
 assert.equal((await repository.findByKey('order-1:item-1:1')).id, 'allocation-1');
 assert.equal((await repository.listByTicketId('ticket-1'))[0].ticketId, 'ticket-1');
+assert.equal(lastQueryBody.filter, undefined, 'ticket lookup should not rely on a Notion relation filter');
 const updated = await repository.update('allocation-1', { date: '2026-09-10', status: 'IN_PROGRESS' }, page.last_edited_time);
 assert.equal(updated.date, '2026-09-10');
 assert.equal(updated.status, 'IN_PROGRESS');
