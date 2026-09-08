@@ -107,9 +107,11 @@ export class NotionQueueRepository extends QueueRepository {
     // matching the related page ID locally keeps cancellation compatible with
     // both legacy database IDs and the newer data-source API.
     const allocations = await this.query();
-    return allocations.filter(allocation =>
-      String(allocation.ticketId || '').replace(/-/g, '').toLowerCase() === normalizedTicketId
-    );
+    return allocations.filter(allocation => {
+      const relatedTicketId = String(allocation.ticketId || '').replace(/-/g, '').toLowerCase();
+      const ticketUrl = String(allocation.ticketUrl || '').replace(/-/g, '').toLowerCase();
+      return relatedTicketId === normalizedTicketId || ticketUrl.includes(normalizedTicketId);
+    });
   }
 
   async findByKey(key) {
