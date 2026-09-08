@@ -165,6 +165,17 @@ function capacityRemainingPercent(day) {
   return Math.max(0, Math.min(100, day.availablePoints / day.dailyCapacity * 100));
 }
 
+function capacitySummary(days) {
+  return days.reduce((summary, day) => {
+    const reserved = Math.max(0, Number(day.reservedPoints) || 0);
+    const available = Math.max(0, Number(day.availablePoints) || 0);
+    summary.reserved += reserved;
+    summary.available += available;
+    summary.total += reserved + available;
+    return summary;
+  }, { total: 0, reserved: 0, available: 0 });
+}
+
 function formatCapacityDate(date) {
   return new Date(`${date}T00:00:00`).toLocaleDateString('th-TH-u-ca-gregory', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
 }
@@ -183,9 +194,7 @@ function renderStaffCapacity() {
   const days = capacityWindow(staffCapacityDays);
   const monthKey = staffCapacityMonth.slice(0, 7);
   const monthDays = days.filter(day => day.date.startsWith(monthKey));
-  const total = monthDays.reduce((sum, day) => sum + day.dailyCapacity, 0);
-  const reserved = monthDays.reduce((sum, day) => sum + day.reservedPoints, 0);
-  const available = monthDays.reduce((sum, day) => sum + day.availablePoints, 0);
+  const { total, reserved, available } = capacitySummary(monthDays);
   const today = localCapacityDate(new Date());
   $('capacityTotalPoints').textContent = money(total);
   $('capacityReservedPoints').textContent = money(reserved);

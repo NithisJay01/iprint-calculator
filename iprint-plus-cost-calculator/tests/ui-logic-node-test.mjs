@@ -55,6 +55,16 @@ assert.equal(piecePreviewContext.resolvePiecePreviewInitialSide('front', true), 
 assert.equal(piecePreviewContext.resolvePiecePreviewInitialSide('back', true), 'back');
 assert.equal(piecePreviewContext.resolvePiecePreviewInitialSide('back', false), 'front');
 
+const capacityContext = scriptContext();
+vm.runInContext(fs.readFileSync(new URL('../js/staff-capacity.js', import.meta.url), 'utf8'), capacityContext);
+assert.deepEqual(
+  JSON.parse(JSON.stringify(capacityContext.capacitySummary([
+    { reservedPoints: 4, availablePoints: 16 },
+    { reservedPoints: 0, availablePoints: 0, closed: true }
+  ]))),
+  { total: 20, reserved: 4, available: 16 }
+);
+
 const flowContext = scriptContext();
 vm.runInContext(fs.readFileSync(new URL('../js/flow.js', import.meta.url), 'utf8'), flowContext);
 assert.equal(flowContext.isJobNameSuggestionVisible('สติกเกอร์', 'สติกเกอร์ Die-cut 50%'), true);
