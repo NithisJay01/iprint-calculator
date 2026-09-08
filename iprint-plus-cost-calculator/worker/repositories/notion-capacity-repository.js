@@ -18,7 +18,7 @@ function notionCapacityDay(page) {
 
 export class NotionCapacityRepository extends CapacityRepository {
   constructor({ fetcher = fetch, headers, dataSourceId }) {
-    super(); this.fetcher = fetcher; this.headers = headers; this.dataSourceId = dataSourceId; this.schemaCache = null;
+    super(); this.fetcher = (...args) => fetcher(...args); this.headers = headers; this.dataSourceId = dataSourceId; this.schemaCache = null;
   }
 
   async schema() {

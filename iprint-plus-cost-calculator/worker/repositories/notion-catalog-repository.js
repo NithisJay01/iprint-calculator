@@ -30,7 +30,7 @@ function notionCatalogItem(page, type) {
 export class NotionCatalogRepository extends CatalogRepository {
   constructor({ fetcher = fetch, headers, materialDataSourceId, serviceDataSourceId }) {
     super();
-    this.fetcher = fetcher;
+    this.fetcher = (...args) => fetcher(...args);
     this.headers = headers;
     this.dataSourceIds = { material: materialDataSourceId, service: serviceDataSourceId };
     this.schemaCache = new Map();

@@ -25,7 +25,8 @@ const page = {
 };
 let stored = null;
 let archived = false;
-const fetcher = async (url, options = {}) => {
+const fetcher = async function (url, options = {}) {
+  assert.equal(this, undefined, 'fetcher must not be invoked as a repository method');
   const method = options.method || 'GET';
   if (String(url).endsWith('/data_sources/queue-id') && method === 'GET') return Response.json({ properties: schema });
   if (String(url).endsWith('/data_sources/queue-id/query')) {

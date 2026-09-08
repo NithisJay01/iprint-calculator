@@ -38,7 +38,7 @@ function notionQueueAllocation(page) {
 export class NotionQueueRepository extends QueueRepository {
   constructor({ fetcher = fetch, headers, dataSourceId }) {
     super();
-    this.fetcher = fetcher;
+    this.fetcher = (...args) => fetcher(...args);
     this.headers = headers;
     this.dataSourceId = dataSourceId;
     this.resolvedDataSourceId = '';
