@@ -174,6 +174,7 @@ export default {
             "POST /public/orders",
             "GET /staff/capacity",
             "PUT /staff/capacity/:date",
+            "GET /staff/system-check",
             "GET /staff/queue",
             "PATCH /staff/queue/:allocationId",
             "DELETE /staff/queue/:allocationId",
@@ -936,6 +937,87 @@ export default {
           id: page.id,
           customerId,
           name: customerName
+        });
+      }
+
+      if (url.pathname === '/staff/system-check' && request.method === 'GET') {
+        const authError = requireAuth(request);
+        if (authError) return authError;
+
+        const sourceDefinitions = [
+          ['presets', 'NOTION_DATA_SOURCE_ID', true],
+          ['materials', 'NOTION_MATERIALS_DATA_SOURCE_ID', true],
+          ['services', 'NOTION_SERVICES_DATA_SOURCE_ID', true],
+          ['customers', 'NOTION_CUSTOMERS_DATA_SOURCE_ID', true],
+          ['quotes', 'NOTION_QUOTES_DATA_SOURCE_ID', true],
+          ['tickets', 'NOTION_TICKETS_DATA_SOURCE_ID', true],
+          ['orderItems', 'NOTION_ORDER_ITEMS_DATA_SOURCE_ID', true],
+          ['capacity', 'NOTION_CAPACITY_DATA_SOURCE_ID', true],
+          ['queue', 'NOTION_PRODUCTION_ALLOCATIONS_DATA_SOURCE_ID', true]
+        ];
+        const resolveSchema = async configuredId => {
+          const id = String(configuredId || '').trim();
+          if (!id) return { success: false, code: 'MISSING' };
+          let response = await fetch(`https://api.notion.com/v1/data_sources/${id}`, { method: 'GET', headers: notionHeaders });
+          if (response.status === 404) {
+            const databaseResponse = await fetch(`https://api.notion.com/v1/databases/${id}`, { method: 'GET', headers: notionHeaders });
+            if (databaseResponse.ok) {
+              const database = await databaseResponse.json();
+              const dataSourceId = String(database?.data_sources?.[0]?.id || '').trim();
+              if (dataSourceId) response = await fetch(`https://api.notion.com/v1/data_sources/${dataSourceId}`, { method: 'GET', headers: notionHeaders });
+            }
+          }
+          const text = await response.text();
+          if (!response.ok) return { success: false, code: 'NOTION_UNAVAILABLE', status: response.status, detail: text.slice(0, 500) };
+          const data = JSON.parse(text);
+          return { success: true, properties: data.properties || {} };
+        };
+        const schemaRequirements = {
+          capacity: {
+            Date: ['date'], 'Daily Capacity': ['number'], 'Reserved Points': ['number'],
+            Closed: ['checkbox'], 'Cutoff Time': ['rich_text']
+          },
+          queue: {
+            'Allocation Key': ['rich_text'], 'Order Key': ['rich_text'], 'Production Date': ['date'],
+            'Allocated Points': ['number'], Status: ['status', 'select']
+          },
+          orderItems: {
+            'Order Ticket': ['relation'], 'Capacity Points': ['number'], 'Scheduled Start': ['date'],
+            'Estimated Completion': ['date'], 'Queue Status': ['status', 'select']
+          }
+        };
+        const sources = {};
+        await Promise.all(sourceDefinitions.map(async ([name, envName, required]) => {
+          const result = await resolveSchema(env[envName]);
+          const missingProperties = [];
+          if (result.success && schemaRequirements[name]) {
+            for (const [property, types] of Object.entries(schemaRequirements[name])) {
+              if (!types.includes(result.properties[property]?.type)) missingProperties.push(`${property} (${types.join('/')})`);
+            }
+          }
+          sources[name] = {
+            required,
+            configured: Boolean(String(env[envName] || '').trim()),
+            reachable: result.success,
+            schemaValid: result.success && missingProperties.length === 0,
+            missingProperties,
+            ...(result.success ? {} : { code: result.code, status: result.status || null })
+          };
+        }));
+        const staffReady = Object.values(sources).every(source => !source.required || (source.configured && source.reachable && source.schemaValid));
+        const publicEnabled = String(env.PUBLIC_ORDER_ENABLED || '').toLowerCase() === 'true';
+        const publicReady = staffReady && publicEnabled && Boolean(String(env.TURNSTILE_SECRET_KEY || '').trim());
+        return json({
+          success: true,
+          ready: staffReady,
+          staffOrdering: { ready: staffReady },
+          publicOrdering: {
+            ready: publicReady,
+            enabled: publicEnabled,
+            turnstileConfigured: Boolean(String(env.TURNSTILE_SECRET_KEY || '').trim()),
+            expectedHostname: String(env.TURNSTILE_EXPECTED_HOSTNAME || 'iprint.tchl.online')
+          },
+          sources
         });
       }
 
@@ -2901,6 +2983,7 @@ export default {
           "POST /public/orders",
           "GET /staff/capacity",
           "PUT /staff/capacity/:date",
+          "GET /staff/system-check",
           "GET /staff/queue",
           "PATCH /staff/queue/:allocationId",
           "DELETE /staff/queue/:allocationId",

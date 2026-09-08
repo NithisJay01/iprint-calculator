@@ -76,6 +76,12 @@ QC → READY → DELIVERED
 ทดสอบ flow ของ Worker แบบไม่เรียก Notion จริงได้ด้วย:
 
 ```
+node tests/run-all.mjs
+```
+
+หรือเลือกรันเฉพาะส่วน:
+
+```
 node worker/ticket-smoke-test.mjs
 node worker/order-smoke-test.mjs
 node worker/order-domain-test.mjs
@@ -88,7 +94,11 @@ node worker/queue-domain-test.mjs
 node worker/queue-repository-test.mjs
 node worker/scheduling-domain-test.mjs
 node worker/order-queue-smoke-test.mjs
+node worker/queue-worker-test.mjs
+node worker/system-check-test.mjs
 ```
+
+หลัง deploy ใช้ `GET /staff/system-check` พร้อม header `X-API-Key` เพื่อตรวจว่าฐาน Notion ทุกฐานเข้าถึงได้, schema สำหรับ Order Items/Capacity/Queue ครบ และระบบรับออเดอร์สาธารณะตั้ง Turnstile พร้อมหรือยัง Endpoint นี้ไม่เขียนหรือแก้ข้อมูลใด ๆ
 
 ## Capacity Point และคิวรายวัน
 

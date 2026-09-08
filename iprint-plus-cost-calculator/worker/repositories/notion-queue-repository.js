@@ -54,13 +54,25 @@ export class NotionQueueRepository extends QueueRepository {
   }
 
   async query(filter = undefined) {
-    const response = await this.fetcher(`https://api.notion.com/v1/data_sources/${this.dataSourceId}/query`, {
-      method: 'POST', headers: this.headers,
-      body: JSON.stringify({ page_size: 100, ...(filter ? { filter } : {}), sorts: [{ property: 'Production Date', direction: 'ascending' }] })
-    });
-    const text = await response.text();
-    if (!response.ok) throw Object.assign(new Error('Notion queue query failed'), { status: response.status, detail: text });
-    return (JSON.parse(text).results || []).map(notionQueueAllocation);
+    const results = [];
+    let cursor = '';
+    do {
+      const response = await this.fetcher(`https://api.notion.com/v1/data_sources/${this.dataSourceId}/query`, {
+        method: 'POST', headers: this.headers,
+        body: JSON.stringify({
+          page_size: 100,
+          ...(cursor ? { start_cursor: cursor } : {}),
+          ...(filter ? { filter } : {}),
+          sorts: [{ property: 'Production Date', direction: 'ascending' }]
+        })
+      });
+      const text = await response.text();
+      if (!response.ok) throw Object.assign(new Error('Notion queue query failed'), { status: response.status, detail: text });
+      const page = JSON.parse(text);
+      results.push(...(page.results || []));
+      cursor = page.has_more && page.next_cursor ? page.next_cursor : '';
+    } while (cursor);
+    return results.map(notionQueueAllocation);
   }
 
   async list({ from = '', to = '' } = {}) {
