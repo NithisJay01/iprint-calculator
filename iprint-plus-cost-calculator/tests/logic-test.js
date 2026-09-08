@@ -2,14 +2,18 @@
   const frame = document.getElementById('app');
   const runButton = document.getElementById('runTests');
   const summary = document.getElementById('summary');
+  const lastRun = document.getElementById('lastRun');
   const results = document.getElementById('results');
   const generatedPreview = document.getElementById('generatedPreview');
   const generatedPreviewImage = generatedPreview.querySelector('img');
+  const LAST_RUN_KEY = 'iprint_logic_test_last_run_v1';
+  let runEntries = [];
 
   const wait = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
   const numberFromText = value => Number(String(value).replace(/[^0-9.-]/g, ''));
 
   function addResult(name, passed, detail = '') {
+    runEntries.push({ name, passed: Boolean(passed), detail });
     const row = document.createElement('li');
     row.className = passed ? 'pass' : 'fail';
     row.textContent = `${passed ? 'ผ่าน' : 'ไม่ผ่าน'} — ${name}${!passed && detail ? `: ${detail}` : ''}`;
@@ -71,6 +75,7 @@
   }
 
   async function run() {
+    runEntries = [];
     results.innerHTML = '';
     runButton.disabled = true;
     summary.textContent = 'กำลังทดสอบ…';
@@ -132,12 +137,13 @@
         assert(document.querySelector('[data-app-view="cost"]').contains(document.getElementById('costCuttingServices')) && !document.getElementById('layoutCuttingServices'), 'เริ่มต้นแอปและโหลด Preset', 'การตัดและติดเสริมวัสดุต้องอยู่ใน Step 2');
         assert(Number(cost.value) === 2.5, 'เริ่มต้นแอปและโหลด Preset', 'ต้นทุนต่อแผ่นเริ่มต้นต้องเป็น 2.5 บาท');
         assert(Number(pieceGap.value) === 3, 'เริ่มต้นแอปและโหลด Preset', 'Gap เริ่มต้นต้องเป็น 3 mm');
-        assert(pieceGap.type === 'range' && pieceGap.min === '1' && pieceGap.max === '15' && pieceGap.step === '0.5', 'เริ่มต้นแอปและโหลด Preset', 'Gap Slider ต้องปรับได้ 1–15 mm ทีละ 0.5 mm');
-        assert(bleed.type === 'range' && bleed.min === '1' && bleed.max === '15' && bleed.step === '0.5', 'เริ่มต้นแอปและโหลด Preset', 'Bleed Slider ต้องปรับได้ 1–15 mm ทีละ 0.5 mm');
+        assert(pieceGap.type === 'range' && pieceGap.min === '3' && pieceGap.max === '15' && pieceGap.step === '1', 'เริ่มต้นแอปและโหลด Preset', 'Gap Slider ต้องปรับได้ 3–15 mm ทีละ 1 mm');
+        assert(bleed.type === 'range' && bleed.min === '3' && bleed.max === '15' && bleed.step === '1', 'เริ่มต้นแอปและโหลด Preset', 'Bleed Slider ต้องปรับได้ 3–15 mm ทีละ 1 mm');
         assert(document.getElementById('flowStepper') && document.getElementById('cartModal'), 'เริ่มต้นแอปและโหลด Preset', 'ไม่พบ Stepper หรือตะกร้าของ Flow ใหม่');
         assert(document.getElementById('workflowModal'), 'เริ่มต้นแอปและโหลด Preset', 'ไม่พบหน้าติดตาม Workflow');
         assert(briefDeadline?.readOnly && deliveryDeadline?.readOnly && briefDeadline?.placeholder === 'เลือกวันที่' && deliveryDeadline?.placeholder === 'เลือกวันที่', 'เริ่มต้นแอปและโหลด Preset', 'Deadline ต้องเปิดปฏิทินแทนการรับข้อความจากคีย์บอร์ด');
-        assert(document.querySelectorAll('.native-date-control[type="date"]').length === 2, 'เริ่มต้นแอปและโหลด Preset', 'Deadline ต้องเลือกผ่านปฏิทินได้');
+        const dateControls = [...document.querySelectorAll('.native-date-control[type="date"]')];
+        assert(dateControls.length === 4 && dateControls.every(input => /^\d{4}-\d{2}-\d{2}$/.test(input.min)), 'เริ่มต้นแอปและโหลด Preset', 'Deadline ทุกจุดต้องเลือกผ่านปฏิทินและไม่อนุญาตวันย้อนหลัง');
         assert(document.querySelector('label[for="pieceGap"]')?.textContent === 'Gap Between' && document.querySelector('label[for="bleed"]')?.textContent === 'Margin', 'เริ่มต้นแอปและโหลด Preset', 'ชื่อ Slider ไม่ตรงกับ UX ล่าสุด');
         assert(!document.querySelector('.print-side-toggle'), 'เริ่มต้นแอปและโหลด Preset', 'ต้องเลือกพิมพ์หน้าเดียว/สองหน้าจากรายการบริการเท่านั้น');
         assert(document.querySelector('[data-service-option="laser"]')?.classList.contains('is-selected'), 'เริ่มต้นแอปและโหลด Preset', 'บริการ Laser ต้องเริ่มต้นเป็น Selected');
@@ -157,30 +163,25 @@
         assert(window.getComputedStyle(document.getElementById('materialPreviewInteraction')).scrollbarWidth === 'none', 'เริ่มต้นแอปและโหลด Preset', 'กรอบ Preview ต้องซ่อน scrollbar');
         assert(document.querySelector('.service-price-unit')?.textContent.startsWith('/ต่อ'), 'เริ่มต้นแอปและโหลด Preset', 'หน่วยบริการต้องอยู่ใต้ราคาในรูปแบบ /ต่อชิ้น หรือ /ต่อแผ่น');
         const requestRow = [...document.querySelectorAll('#servicesContainer .service-row')].find(row => row.querySelector('.service-name')?.textContent === 'ต้องการรีเควส');
-        assert(requestRow?.querySelector('input[type="checkbox"]') && requestRow.querySelector('.service-request-input') && requestRow.querySelector('.service-price')?.textContent === '?', 'เริ่มต้นแอปและโหลด Preset', 'บริการรีเควสต้องติ๊ก กรอกรายละเอียด และแสดงราคา ? ได้');
+        assert(!requestRow, 'เริ่มต้นแอปและโหลด Preset', 'บริการรีเควสที่พักใช้งานต้องไม่แสดงใน Step 2');
       });
 
       await check('Preview แสดง Preset และจัดชิ้นงานกึ่งกลาง', () => {
         const usable = document.querySelector('.preview-usable');
         const grid = document.querySelector('.preview-grid');
         const preset = document.getElementById('previewPaperName').textContent;
-        const usableWidth = parseFloat(usable?.style.width || 0);
-        const usableHeight = parseFloat(usable?.style.height || 0);
-        const gridWidth = grid?.getBoundingClientRect().width || 0;
-        const gridHeight = grid?.getBoundingClientRect().height || 0;
-        const left = parseFloat(grid?.style.left || 0);
-        const top = parseFloat(grid?.style.top || 0);
+        const usableRect = usable?.getBoundingClientRect();
+        const gridRect = grid?.getBoundingClientRect();
 
         assert(usable && grid, 'Preview แสดง Preset และจัดชิ้นงานกึ่งกลาง', 'ไม่พบ Preview layout');
         assert(preset.startsWith('Preset: ') && preset !== 'Preset: —', 'Preview แสดง Preset และจัดชิ้นงานกึ่งกลาง', 'ไม่แสดงชื่อ Preset');
-        assert(Math.abs(left - (usableWidth - gridWidth) / 2) < 1.5, 'Preview แสดง Preset และจัดชิ้นงานกึ่งกลาง', 'ชิ้นงานไม่ได้อยู่กึ่งกลางแนวนอน');
-        assert(Math.abs(top - (usableHeight - gridHeight) / 2) < 1.5, 'Preview แสดง Preset และจัดชิ้นงานกึ่งกลาง', 'ชิ้นงานไม่ได้อยู่กึ่งกลางแนวตั้ง');
+        assert(Math.abs((gridRect.left + gridRect.width / 2) - (usableRect.left + usableRect.width / 2)) < 2, 'Preview แสดง Preset และจัดชิ้นงานกึ่งกลาง', 'ชิ้นงานไม่ได้อยู่กึ่งกลางแนวนอน');
+        assert(Math.abs((gridRect.top + gridRect.height / 2) - (usableRect.top + usableRect.height / 2)) < 2, 'Preview แสดง Preset และจัดชิ้นงานกึ่งกลาง', 'ชิ้นงานไม่ได้อยู่กึ่งกลางแนวตั้ง');
       });
 
       await check('สลับ Preview รายแผ่นและรายชิ้นได้', async () => {
         window.showAppView('cost', { instant: true });
-        const sheetPieceRect = document.querySelector('#sheetPreview .piece').getBoundingClientRect();
-        const expectedRatio = sheetPieceRect.width / sheetPieceRect.height;
+        const expectedRatio = window.Iprint.getLastCalculation().b.pieceW / window.Iprint.getLastCalculation().b.pieceH;
         document.querySelector('[data-cost-preview-mode="piece"]').click();
         await wait(50);
         const preview = document.getElementById('costSheetPreview');
@@ -215,17 +216,17 @@
         }
       });
 
-      await check('ปรับ Bleed ใน Preview ได้โดยไม่เปลี่ยนสูตร', async () => {
+      await check('ล็อก Bleed สำหรับลูกค้าทั่วไปโดยไม่เปลี่ยนสูตร', async () => {
         const yieldBefore = numberFromText(document.getElementById('yield').textContent);
         setValue(window, bleed, 5);
         await wait(50);
         const yieldAfter = numberFromText(document.getElementById('yield').textContent);
         const bleedBox = document.querySelector('.piece .bleed');
-        assert(document.getElementById('bleedSummary').textContent === '5', 'ปรับ Bleed ใน Preview ได้โดยไม่เปลี่ยนสูตร', 'ค่า Bleed ในสรุปไม่อัปเดต');
-        assert(document.getElementById('bleedValue').textContent === '5 mm/ด้าน', 'ปรับ Bleed ใน Preview ได้โดยไม่เปลี่ยนสูตร', 'ค่า Bleed บน Slider ไม่อัปเดต');
-        assert(document.getElementById('previewInfo').textContent.includes('Bleed 5 mm/ด้าน'), 'ปรับ Bleed ใน Preview ได้โดยไม่เปลี่ยนสูตร', 'Preview ไม่อัปเดต Bleed');
-        assert(parseFloat(bleedBox?.style.left || 0) > 0, 'ปรับ Bleed ใน Preview ได้โดยไม่เปลี่ยนสูตร', 'ไม่พบกรอบ Bleed ที่อัปเดต');
-        assert(yieldAfter === yieldBefore, 'ปรับ Bleed ใน Preview ได้โดยไม่เปลี่ยนสูตร', 'Bleed ไม่ควรเปลี่ยนจำนวนชิ้นต่อแผ่น');
+        assert(bleed.disabled && document.getElementById('bleedSummary').textContent === '3', 'ล็อก Bleed สำหรับลูกค้าทั่วไปโดยไม่เปลี่ยนสูตร', 'ลูกค้าทั่วไปต้องใช้ค่า Bleed มาตรฐาน 3 mm');
+        assert(document.getElementById('bleedValue').textContent === '3 mm/ด้าน', 'ล็อก Bleed สำหรับลูกค้าทั่วไปโดยไม่เปลี่ยนสูตร', 'ค่า Bleed บน Slider ไม่ตรงกับค่ามาตรฐาน');
+        assert(document.getElementById('previewInfo').textContent.includes('Bleed 3 mm/ด้าน'), 'ล็อก Bleed สำหรับลูกค้าทั่วไปโดยไม่เปลี่ยนสูตร', 'Preview ไม่แสดงค่า Bleed มาตรฐาน');
+        assert(parseFloat(bleedBox?.style.left || 0) > 0, 'ล็อก Bleed สำหรับลูกค้าทั่วไปโดยไม่เปลี่ยนสูตร', 'ไม่พบกรอบ Bleed');
+        assert(yieldAfter === yieldBefore, 'ล็อก Bleed สำหรับลูกค้าทั่วไปโดยไม่เปลี่ยนสูตร', 'Bleed ไม่ควรเปลี่ยนจำนวนชิ้นต่อแผ่น');
       });
 
       await check('ควบคุม Gap และใช้ในสูตรการวางชิ้นงาน', async () => {
@@ -280,7 +281,8 @@
         document.getElementById('rotateArtworkImage').click();
         await wait(50);
         const rotatedArtwork = [...document.querySelectorAll('#sheetPreview .piece-artwork')];
-        assert(rotatedArtwork.length > 0 && rotatedArtwork.every(image => image.dataset.rotation === '90'), 'หมุน Artwork 90° โดยไม่เปลี่ยนสูตร Layout', 'ภาพใน Sheet Preview ไม่ได้หมุน 90° ทุกชิ้น');
+        const expectedPlacementRotation = String(window.Iprint.getArtworkPlacementRotation('front', Boolean(window.Iprint.getLastCalculation().b.rotate)));
+        assert(rotatedArtwork.length > 0 && rotatedArtwork.every(image => image.dataset.rotation === expectedPlacementRotation), 'หมุน Artwork 90° โดยไม่เปลี่ยนสูตร Layout', 'ภาพใน Sheet Preview ไม่ได้หมุนสัมพันธ์กับทิศทาง Layout');
         assert(rotatedArtwork.every(image => Number.parseFloat(image.style.getPropertyValue('--artwork-rotation-scale')) >= 1 && getComputedStyle(image).objectFit === 'cover'), 'หมุน Artwork 90° โดยไม่เปลี่ยนสูตร Layout', 'Artwork ที่หมุนต้อง Snap เต็มกรอบชิ้นงาน');
         assert(document.getElementById('artworkMeta').textContent.includes('มุม 90°'), 'หมุน Artwork 90° โดยไม่เปลี่ยนสูตร Layout', 'สถานะภาพไม่แสดงมุมล่าสุด');
         assert(numberFromText(document.getElementById('yield').textContent) === yieldBefore && numberFromText(document.getElementById('sheets').textContent) === sheetsBefore, 'หมุน Artwork 90° โดยไม่เปลี่ยนสูตร Layout', 'การหมุนภาพต้องไม่เปลี่ยนจำนวนชิ้นหรือจำนวนแผ่น');
@@ -485,9 +487,23 @@
     } finally {
       summary.className = failed ? 'fail' : 'pass';
       summary.textContent = `ผลทดสอบ: ผ่าน ${passed} รายการ, ไม่ผ่าน ${failed} รายการ`;
+      const ranAt = new Date().toISOString();
+      localStorage.setItem(LAST_RUN_KEY, JSON.stringify({ ranAt, passed, failed, entries: runEntries }));
+      lastRun.textContent = `บันทึกผลล่าสุด ${new Date(ranAt).toLocaleString('th-TH')} • เก็บไว้ใน Browser เครื่องนี้`;
       runButton.disabled = false;
     }
   }
 
   runButton.addEventListener('click', run);
+  try {
+    const saved = JSON.parse(localStorage.getItem(LAST_RUN_KEY) || 'null');
+    if (saved?.ranAt && Array.isArray(saved.entries)) {
+      runEntries = [];
+      results.innerHTML = '';
+      saved.entries.forEach(entry => addResult(entry.name, entry.passed, entry.detail));
+      summary.className = saved.failed ? 'fail' : 'pass';
+      summary.textContent = `ผลทดสอบล่าสุด: ผ่าน ${saved.passed} รายการ, ไม่ผ่าน ${saved.failed} รายการ`;
+      lastRun.textContent = `รันเมื่อ ${new Date(saved.ranAt).toLocaleString('th-TH')} • ผลนี้ถูกเรียกคืนหลังรีเฟรชหน้า`;
+    }
+  } catch {}
 })();

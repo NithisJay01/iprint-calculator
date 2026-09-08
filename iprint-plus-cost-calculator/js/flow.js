@@ -76,7 +76,11 @@ function setJobType(type, options = {}) {
   const previousJobType = selectedJobType;
   selectedJobType = String(type || '').trim();
   lockedCuttingMode = JOB_TYPE_DEFAULTS[selectedJobType]?.cutting || '';
-  if (previousJobType !== selectedJobType && typeof resetCuttingDefaultSelection === 'function') resetCuttingDefaultSelection();
+  if (previousJobType !== selectedJobType) {
+    jobNickname = '';
+    if ($('jobNickname')) $('jobNickname').value = '';
+    if (typeof resetCuttingDefaultSelection === 'function') resetCuttingDefaultSelection();
+  }
   document.querySelectorAll('[data-job-type]').forEach(button => {
     const selected = button.dataset.jobType === selectedJobType;
     button.classList.toggle('is-selected', selected);
@@ -195,7 +199,7 @@ function showAppView(name, options = {}) {
   }
   if (name === 'cost' || name === 'brief' || name === 'review') syncFlowSummary();
   if (name === 'cart' && typeof renderCart === 'function') renderCart();
-  if (!options.preserveScroll) window.scrollTo({ top: 0, behavior: options.instant ? 'auto' : 'smooth' });
+  if (!options.preserveScroll) window.scrollTo({ top: 0, behavior: 'auto' });
   return true;
 }
 
@@ -832,6 +836,8 @@ function prepareNewPrintItem() {
 
 function bindFlow() {
   setJobVariants([{ name: '', quantity: Number($('qty').value) || 500 }]);
+  const today = getLocalTodayIso();
+  document.querySelectorAll('.native-date-control[type="date"]').forEach(input => { input.min = today; });
   showAppView('home', { instant: true });
   $('startPrintOrder').addEventListener('click', () => { quickBriefMode = false; showJobSetupQuestion(1); showAppView('jobSetup'); });
   $('startQuickBrief')?.addEventListener('click', startQuickBrief);

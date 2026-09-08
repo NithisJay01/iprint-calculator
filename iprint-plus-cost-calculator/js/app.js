@@ -290,6 +290,7 @@ function startApplication() {
   bind();
   window.Iprint = {
     calculate,
+    getLastCalculation: () => lastCalc,
     findBest,
     syncPresets,
     syncMaterials,
@@ -306,6 +307,7 @@ function startApplication() {
     rotateArtworkImage,
     setActiveArtworkSide,
     getArtworkRotation,
+    getArtworkPlacementRotation,
     setCostPreviewMode,
     getCostPreviewMode,
     rotateCostPiecePaper,
