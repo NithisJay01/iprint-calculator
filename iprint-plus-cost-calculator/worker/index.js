@@ -628,8 +628,18 @@ export default {
         const ticketId = decodeURIComponent(staffOrderCancelMatch[1] || '').trim();
         if (!ticketId || ticketId.length > 100) return json({ success: false, error: 'Invalid ticket ID' }, 400);
         try {
+          let orderKey = '';
+          const ticketResponse = await fetch(`https://api.notion.com/v1/pages/${encodeURIComponent(ticketId)}`, {
+            method: 'GET', headers: notionHeaders
+          });
+          if (ticketResponse.ok) {
+            const ticketPage = await ticketResponse.json();
+            orderKey = (ticketPage?.properties?.['Order Key']?.rich_text || [])
+              .map(item => item?.plain_text || item?.text?.content || '').join('').trim();
+          }
           const cancellation = await cancelOrderProduction({
             ticketId,
+            orderKey,
             queueRepository: createQueueRepository(env, { headers: notionHeaders }),
             capacityRepository: createCapacityRepository(env, { headers: notionHeaders })
           });

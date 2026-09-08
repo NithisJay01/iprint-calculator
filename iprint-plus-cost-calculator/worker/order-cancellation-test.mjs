@@ -11,6 +11,7 @@ const days = new Map([
 ]);
 const queueRepository = {
   async listByTicketId(id) { return allocations.filter(item => item.ticketId === id); },
+  async listByOrderKey(key) { return allocations.filter(item => item.orderKey === key); },
   async getById(id) { return allocations.find(item => item.id === id) || null; },
   async update(id, patch) {
     const item = allocations.find(entry => entry.id === id);

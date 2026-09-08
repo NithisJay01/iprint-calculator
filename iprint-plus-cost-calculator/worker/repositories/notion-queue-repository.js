@@ -114,6 +114,13 @@ export class NotionQueueRepository extends QueueRepository {
     });
   }
 
+  async listByOrderKey(orderKey) {
+    const normalizedOrderKey = String(orderKey || '').trim();
+    if (!normalizedOrderKey) return [];
+    const allocations = await this.query();
+    return allocations.filter(allocation => allocation.orderKey === normalizedOrderKey);
+  }
+
   async findByKey(key) {
     const results = await this.query({ property: 'Allocation Key', rich_text: { equals: String(key) } });
     return results[0] || null;

@@ -59,6 +59,7 @@ assert.equal(created.id, 'allocation-1');
 assert.equal((await repository.findByKey('order-1:item-1:1')).id, 'allocation-1');
 assert.equal((await repository.listByTicketId('ticket-1'))[0].ticketId, 'ticket-1');
 assert.equal(lastQueryBody.filter, undefined, 'ticket lookup should not rely on a Notion relation filter');
+assert.equal((await repository.listByOrderKey('order-1')).length, 1);
 const storedRelation = stored.properties['Order Ticket'];
 const storedTicketUrl = stored.properties['Ticket URL'];
 stored.properties['Order Ticket'] = { relation: [] };

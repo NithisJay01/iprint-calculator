@@ -1,7 +1,10 @@
 import { canMoveQueueAllocation } from '../domain/queue.js';
 
-export async function cancelOrderProduction({ ticketId, queueRepository, capacityRepository }) {
-  const allocations = await queueRepository.listByTicketId(ticketId);
+export async function cancelOrderProduction({ ticketId, orderKey = '', queueRepository, capacityRepository }) {
+  let allocations = await queueRepository.listByTicketId(ticketId);
+  if (!allocations.length && orderKey && typeof queueRepository.listByOrderKey === 'function') {
+    allocations = await queueRepository.listByOrderKey(orderKey);
+  }
   const active = allocations.filter(canMoveQueueAllocation);
   if (!active.length) return { ticketId, cancelledAllocations: 0, refundedPoints: 0, alreadyCancelled: true };
 
