@@ -317,15 +317,19 @@ function updateQueueMovePreview() {
   $('confirmQueueMove').disabled = !assessment.success;
 }
 
-function moveQueueJob(job, targetDate) {
+async function moveQueueJob(job, targetDate) {
   const assessment = assessQueueMove(job, targetDate);
   if (!assessment.success) {
     setStaffCapacityNotice(assessment.message, 'warn');
     return false;
   }
   if (!IPRINT_TEST_MODE) {
-    setStaffCapacityNotice('การย้ายคิวจริงจะเปิดใช้หลังเพิ่ม Queue API', 'warn');
-    return false;
+    const result = await updateStaffQueueRemote(job.id, { date: targetDate, expectedUpdatedAt: job.updatedAt || '' });
+    if (!result.success) { setStaffCapacityNotice(result.error || 'ย้ายคิวไม่สำเร็จ', 'warn'); return false; }
+    Object.assign(job, result.allocation, { orderNo: result.allocation.quoteNo || result.allocation.orderKey || job.orderNo, taskStatus: result.allocation.status });
+    await loadStaffCapacity();
+    setStaffCapacityNotice(`ย้าย ${job.orderNo} ไป ${formatCapacityDate(targetDate)} แล้ว`, 'ok');
+    return true;
   }
   const sourceDate = job.date;
   job.date = targetDate;
@@ -341,24 +345,27 @@ function clearQueueDropTargets(calendar = $('staffCapacityList')) {
   calendar?.querySelectorAll('.capacity-queue-job.is-dragging').forEach(job => job.classList.remove('is-dragging'));
 }
 
-function submitQueueMove(event) {
+async function submitQueueMove(event) {
   event.preventDefault();
   const job = staffQueueJobs.find(item => item.id === $('staffQueueMoveJobId').value);
   const targetDate = $('staffQueueMoveDate').value;
   if (!job || !targetDate) return;
   updateQueueMovePreview();
   if ($('confirmQueueMove').disabled) return;
-  if (moveQueueJob(job, targetDate)) {
+  if (await moveQueueJob(job, targetDate)) {
     staffCapacityMonth = firstCapacityMonth(targetDate);
     showStaffCapacityList();
   }
 }
 
-function updateQueueTaskStatus(jobId, nextStatus) {
+async function updateQueueTaskStatus(jobId, nextStatus) {
   const job = staffQueueJobs.find(item => item.id === jobId);
   if (!job) return;
   if (!IPRINT_TEST_MODE) {
-    setStaffCapacityNotice('การเปลี่ยนสถานะจริงจะเปิดใช้หลังเพิ่ม Queue API', 'warn');
+    const result = await updateStaffQueueRemote(job.id, { status: nextStatus, expectedUpdatedAt: job.updatedAt || '' });
+    if (!result.success) { setStaffCapacityNotice(result.error || 'เปลี่ยนสถานะคิวไม่สำเร็จ', 'warn'); await loadStaffCapacity(); return; }
+    Object.assign(job, result.allocation, { orderNo: result.allocation.quoteNo || result.allocation.orderKey || job.orderNo, taskStatus: result.allocation.status });
+    setStaffCapacityNotice(`${job.orderNo} เปลี่ยนเป็น “${queueTaskStatusLabel(job.taskStatus)}” แล้ว`, 'ok');
     renderStaffCapacity();
     return;
   }
@@ -417,8 +424,10 @@ async function loadStaffCapacity() {
     staffQueueJobs = testQueueJobs();
     staffCapacityDays = testCapacityDays();
   } else {
-    staffCapacityDays = await fetchStaffCapacityRemote(range.from, range.to);
-    staffQueueJobs = staffCapacityDays.flatMap(day => Array.isArray(day.jobs) ? day.jobs : []);
+    [staffCapacityDays, staffQueueJobs] = await Promise.all([
+      fetchStaffCapacityRemote(range.from, range.to),
+      fetchStaffQueueRemote(range.from, range.to)
+    ]);
   }
   renderStaffCapacity();
 }
@@ -473,13 +482,13 @@ function bindStaffCapacity() {
     day.classList.add(assessment.success ? 'is-drop-target' : 'is-drop-invalid');
     event.dataTransfer.dropEffect = assessment.success ? 'move' : 'none';
   });
-  calendar?.addEventListener('drop', event => {
+  calendar?.addEventListener('drop', async event => {
     const day = event.target.closest('[data-capacity-drop-date]');
     const job = staffQueueJobs.find(item => item.id === draggedQueueJobId);
     if (!day || !job) return;
     event.preventDefault();
     const targetDate = day.dataset.capacityDropDate;
-    const moved = moveQueueJob(job, targetDate);
+    const moved = await moveQueueJob(job, targetDate);
     clearQueueDropTargets(calendar);
     draggedQueueJobId = '';
     queueDragEndedAt = Date.now();

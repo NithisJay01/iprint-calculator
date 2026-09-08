@@ -654,3 +654,22 @@ async function saveStaffCapacityRemote(day) {
   if (!response.ok || !data.success) return { success: false, error: data.error || `บันทึกกำลังผลิตไม่สำเร็จ (${response.status})` };
   return data;
 }
+
+async function fetchStaffQueueRemote(from, to) {
+  const query = new URLSearchParams({ from, to });
+  const response = await fetch(`${API.staffQueue}?${query}`, { method: 'GET', cache: 'no-store', headers: { 'X-API-Key': getWriteApiKey() } });
+  const data = await response.json().catch(() => ({}));
+  if (response.status === 503 && data.code === 'QUEUE_NOT_CONFIGURED') return [];
+  if (!response.ok || !data.success) throw new Error(data.error || `โหลดคิวผลิตไม่สำเร็จ (${response.status})`);
+  return (Array.isArray(data.jobs) ? data.jobs : []).map(job => ({ ...job, orderNo: job.quoteNo || job.orderKey || '-', taskStatus: job.status || 'QUEUED' }));
+}
+
+async function updateStaffQueueRemote(id, patch) {
+  const response = await fetch(`${API.staffQueue}/${encodeURIComponent(id)}`, {
+    method: 'PATCH', headers: writeHeaders(), body: JSON.stringify(patch)
+  });
+  const data = await response.json().catch(() => ({}));
+  if (response.status === 409) return { success: false, code: data.code || 'QUEUE_WRITE_CONFLICT', current: data.current || null, error: data.error || 'คิวถูกแก้ไขจากอีกหน้าต่าง กรุณาโหลดใหม่' };
+  if (!response.ok || !data.success) return { success: false, error: data.error || `อัปเดตคิวไม่สำเร็จ (${response.status})` };
+  return data;
+}

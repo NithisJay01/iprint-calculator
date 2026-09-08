@@ -4,7 +4,7 @@
   const IPRINT_CONFIG=window.IPRINT_CONFIG||{};
   const API_ROOT=String(IPRINT_CONFIG.apiRoot||'https://iprint-flow-api.iprint-garphic1.workers.dev').replace(/\/$/,'');
   const API= {
-    presets:API_ROOT+'/presets',materials:API_ROOT+'/materials',services:API_ROOT+'/services',quotes:API_ROOT+'/quotes',tickets:API_ROOT+'/tickets',orders:API_ROOT+'/orders',publicOrders:API_ROOT+'/public/orders',orderItems:API_ROOT+'/order-items',customers: API_ROOT + '/customers',authCheck:API_ROOT+'/auth/check',staffMaterials:API_ROOT+'/staff/materials',staffServices:API_ROOT+'/staff/services',staffCapacity:API_ROOT+'/staff/capacity',
+    presets:API_ROOT+'/presets',materials:API_ROOT+'/materials',services:API_ROOT+'/services',quotes:API_ROOT+'/quotes',tickets:API_ROOT+'/tickets',orders:API_ROOT+'/orders',publicOrders:API_ROOT+'/public/orders',orderItems:API_ROOT+'/order-items',customers: API_ROOT + '/customers',authCheck:API_ROOT+'/auth/check',staffMaterials:API_ROOT+'/staff/materials',staffServices:API_ROOT+'/staff/services',staffCapacity:API_ROOT+'/staff/capacity',staffQueue:API_ROOT+'/staff/queue',
   }
   ;
   const BLEED_MM=3;

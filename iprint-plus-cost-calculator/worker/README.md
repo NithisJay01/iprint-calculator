@@ -21,6 +21,8 @@ node worker/catalog-contract-test.mjs
 - สร้างออเดอร์หลายชิ้นงานผ่าน `POST /orders` โดยสร้าง Ticket หลัก 1 หน้าใน `Iprint Jobs` และสร้าง Order Item แยกตามจำนวนรายการใน `Iprint Order Items`
 - อ่านสถานะ Ticket และรายการผ่าน `GET /orders/:ticketId`
 - เปลี่ยนสถานะรายการผ่าน `PATCH /order-items/:itemId/status` พร้อมบันทึกประวัติและรวมสถานะกลับไปยัง Ticket
+- จัดคิวผลิตอัตโนมัติเมื่อสร้างออเดอร์ หากตั้งค่า Production Allocations พร้อม โดยคำนวณ Capacity Points, แบ่งงานใหญ่ข้ามวัน และตรวจวันส่ง
+- จัดการคิวจริงผ่าน `GET /staff/queue`, `PATCH /staff/queue/:allocationId` และ `DELETE /staff/queue/:allocationId`
 
 เมื่อกด **ดาวน์โหลดภาพสรุปบรีฟงาน** หน้าเว็บจะดาวน์โหลด PNG และสร้าง Ticket ใน Notion หากตั้งค่า Worker ครบถ้วน
 
@@ -82,6 +84,10 @@ node worker/capacity-domain-test.mjs
 node worker/capacity-repository-test.mjs
 node worker/capacity-worker-test.mjs
 node worker/workflow-smoke-test.mjs
+node worker/queue-domain-test.mjs
+node worker/queue-repository-test.mjs
+node worker/scheduling-domain-test.mjs
+node worker/order-queue-smoke-test.mjs
 ```
 
 ## Capacity Point และคิวรายวัน

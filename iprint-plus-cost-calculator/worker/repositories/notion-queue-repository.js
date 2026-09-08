@@ -21,6 +21,8 @@ function notionQueueAllocation(page) {
     itemKey: textValue(p['Item Key']),
     title: textValue(p.Name) || textValue(p.Title),
     customer: textValue(p.Customer),
+    brief: textValue(p.Brief),
+    specs: textValue(p.Specs),
     date: p['Production Date']?.date?.start || '',
     points: p['Allocated Points']?.number,
     totalPoints: p['Total Points']?.number,
@@ -97,6 +99,8 @@ export class NotionQueueRepository extends QueueRepository {
     set('Quote No', 'rich_text', rich(allocation.quoteNo));
     set('Item Key', 'rich_text', rich(allocation.itemKey));
     set('Customer', 'rich_text', rich(allocation.customer));
+    set('Brief', 'rich_text', rich(allocation.brief));
+    set('Specs', 'rich_text', rich(allocation.specs));
     set('Production Date', 'date', { date: { start: allocation.date } });
     set('Delivery Deadline', 'date', { date: /^\d{4}-\d{2}-\d{2}$/.test(allocation.deliveryDeadline) ? { start: allocation.deliveryDeadline } : null });
     set('Allocated Points', 'number', { number: allocation.points });

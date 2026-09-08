@@ -133,6 +133,9 @@ function snapshotCartItem(calc, id) {
     ,virtual: Boolean(service.virtual)
     ,pricePending: Boolean(service.pricePending)
     ,requestText: String(service.requestText || '')
+    ,capacityPoints: Number(service.capacityPoints) || 0
+    ,capacityBasis: String(service.capacityBasis || 'job')
+    ,capacityStep: Number(service.capacityStep) || 1
   }));
 
   return {

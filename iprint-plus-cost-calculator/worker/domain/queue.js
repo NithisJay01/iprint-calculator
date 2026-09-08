@@ -24,6 +24,8 @@ export function normalizeQueueAllocation(input = {}) {
     itemKey: clean(input.itemKey, 200),
     title: clean(input.title),
     customer: clean(input.customer),
+    brief: clean(input.brief),
+    specs: clean(input.specs),
     date: clean(input.date, 10),
     points: points(input.points),
     totalPoints: points(input.totalPoints),
@@ -53,7 +55,7 @@ export function canMoveQueueAllocation(allocation) {
 }
 
 export function queueStatusAllowsReservation(status) {
-  return !['COMPLETED', 'CANCELLED'].includes(clean(status).toUpperCase());
+  return clean(status).toUpperCase() !== 'CANCELLED';
 }
 
 export { QUEUE_STATUSES };

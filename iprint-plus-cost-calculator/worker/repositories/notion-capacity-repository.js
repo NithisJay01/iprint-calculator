@@ -34,13 +34,25 @@ export class NotionCapacityRepository extends CapacityRepository {
     const filters = [];
     if (from) filters.push({ property: 'Date', date: { on_or_after: from } });
     if (to) filters.push({ property: 'Date', date: { on_or_before: to } });
-    const response = await this.fetcher(`https://api.notion.com/v1/data_sources/${this.dataSourceId}/query`, {
-      method: 'POST', headers: this.headers,
-      body: JSON.stringify({ page_size: 100, ...(filters.length ? { filter: filters.length === 1 ? filters[0] : { and: filters } } : {}), sorts: [{ property: 'Date', direction: 'ascending' }] })
-    });
-    const text = await response.text();
-    if (!response.ok) throw Object.assign(new Error('Notion capacity list failed'), { status: response.status, detail: text });
-    return (JSON.parse(text).results || []).map(notionCapacityDay).filter(day => day.date);
+    const results = [];
+    let cursor = '';
+    do {
+      const response = await this.fetcher(`https://api.notion.com/v1/data_sources/${this.dataSourceId}/query`, {
+        method: 'POST', headers: this.headers,
+        body: JSON.stringify({
+          page_size: 100,
+          ...(cursor ? { start_cursor: cursor } : {}),
+          ...(filters.length ? { filter: filters.length === 1 ? filters[0] : { and: filters } } : {}),
+          sorts: [{ property: 'Date', direction: 'ascending' }]
+        })
+      });
+      const text = await response.text();
+      if (!response.ok) throw Object.assign(new Error('Notion capacity list failed'), { status: response.status, detail: text });
+      const page = JSON.parse(text);
+      results.push(...(page.results || []));
+      cursor = page.has_more && page.next_cursor ? page.next_cursor : '';
+    } while (cursor);
+    return results.map(notionCapacityDay).filter(day => day.date);
   }
 
   async findByDate(date) {

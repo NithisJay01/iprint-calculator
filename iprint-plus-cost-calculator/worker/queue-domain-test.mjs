@@ -12,7 +12,8 @@ assert.equal(normalized.priority, 'URGENT');
 assert.equal(validateQueueAllocation(normalized).success, true);
 assert.equal(validateQueueAllocation({}).success, false);
 assert.equal(queueStatusAllowsReservation('IN_PROGRESS'), true);
-assert.equal(queueStatusAllowsReservation('COMPLETED'), false);
+assert.equal(queueStatusAllowsReservation('COMPLETED'), true);
+assert.equal(queueStatusAllowsReservation('CANCELLED'), false);
 assert.equal(canMoveQueueAllocation({ status: 'QUEUED' }), true);
 assert.equal(canMoveQueueAllocation({ status: 'CANCELLED' }), false);
 

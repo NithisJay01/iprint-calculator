@@ -16,6 +16,7 @@ Backend ใช้ Cloudflare Worker แยกชื่อ `iprint-flow-api` เ�
 | `NOTION_TICKETS_DATA_SOURCE_ID` | Iprint Jobs | `4001a0ce-e8bd-8312-a136-07db4162080f` |
 | `NOTION_ORDER_ITEMS_DATA_SOURCE_ID` | Iprint Order Items | `3cc1a0ce-e8bd-8068-acd1-000bcaea0f4a` |
 | `NOTION_CAPACITY_DATA_SOURCE_ID` | Iprint Daily Capacity | `1038efe9-a49d-4561-9345-76c8ec0810cd` |
+| `NOTION_PRODUCTION_ALLOCATIONS_DATA_SOURCE_ID` | Iprint Production Allocations | สร้างฐานตาม Schema ด้านล่างแล้วนำ Data Source ID มาใส่ |
 
 Data Source ID ไม่ใช่ Secret จึงเก็บใน `wrangler.toml` ได้ ส่วน Token และ API key ต้องเก็บเป็น Secret เท่านั้น
 
@@ -68,10 +69,30 @@ Worker จะตรวจว่าเลขออเดอร์และรา�
 - `Status` (Select): `OPEN`, `FULL`, `CLOSED`; Worker คำนวณใหม่ทุกครั้งที่บันทึก
 - สร้างฐานข้อมูล Development แล้วเมื่อ 4 กันยายน 2026 และหน้า Staff ใช้ Flow ลิสต์วัน > เลือกวัน > แก้ไข > บันทึก
 
+`Iprint Production Allocations`
+
+- Title: `Name`
+- `Allocation Key`, `Order Key`, `Quote No`, `Item Key`, `Customer`, `Brief`, `Specs` (Text)
+- `Production Date`, `Delivery Deadline` (Date)
+- `Allocated Points`, `Total Points`, `Allocation Index`, `Allocation Count` (Number)
+- `Order Ticket` (Relation ไป `Iprint Jobs`)
+- `Order Item` (Relation ไป `Iprint Order Items`)
+- `Ticket URL` (URL)
+- `Status` (Status หรือ Select): `QUEUED`, `IN_PROGRESS`, `PAUSED`, `COMPLETED`, `CANCELLED`
+- `Priority` (Select): `NORMAL`, `URGENT`
+
+เพิ่มใน `Iprint Order Items` เพื่อให้ทีมเห็นแผนผลิตจากรายการโดยตรง:
+
+- `Capacity Points` (Number)
+- `Scheduled Start`, `Estimated Completion` (Date)
+- `Queue Status` (Select): `QUEUED`, `IN_PROGRESS`, `PAUSED`, `COMPLETED`, `CANCELLED`
+
+Worker จะไม่เปิดระบบจองคิวจนกว่าจะตั้ง `NOTION_PRODUCTION_ALLOCATIONS_DATA_SOURCE_ID` จึง deploy โค้ดก่อนสร้างฐานได้โดยไม่กระทบการรับออเดอร์เดิม
+
 ## ขั้นตอนที่เจ้าของ Workspace ต้องทำหนึ่งครั้ง
 
 1. เปิด Notion Developer Portal แล้วสร้าง Internal Integration ชื่อ `iPrint Flow Worker` ใน Workspace `พื้นที่ของ iprint.garphic1`.
-2. ให้สิทธิ์อ่าน เพิ่ม และแก้ไขเนื้อหา จากนั้นเพิ่มฐานข้อมูลทั้ง 8 รายการด้านบนใน Content access ของ Integration หรือใช้เมนู Add connections ของแต่ละฐานข้อมูล.
+2. ให้สิทธิ์อ่าน เพิ่ม และแก้ไขเนื้อหา จากนั้นเพิ่มฐานข้อมูลทั้งหมดด้านบนใน Content access ของ Integration หรือใช้เมนู Add connections ของแต่ละฐานข้อมูล.
 3. คัดลอก Internal Integration Secret ไปเก็บใน Cloudflare Worker Secret ชื่อ `NOTION_TOKEN` ห้ามวาง Secret ในไฟล์หรือส่งเข้า Git.
 4. สร้างค่าสุ่มยาวสำหรับ `WRITE_API_KEY` และเก็บเป็น Cloudflare Worker Secret เช่นกัน.
 5. ก่อนเปิดให้ลูกค้าสั่งซื้อโดยไม่ Login ให้สร้าง Cloudflare Turnstile widget สำหรับ `iprint.tchl.online` แล้วเก็บ `TURNSTILE_SECRET_KEY` เป็น Worker Secret จากนั้นจึงตั้ง `PUBLIC_ORDER_ENABLED = "true"`. ค่าเริ่มต้นเป็น `false` เพื่อไม่เปิด endpoint สาธารณะโดยไม่ตั้งใจ
@@ -93,9 +114,10 @@ npx wrangler dev --config worker/wrangler.toml
 
 ## ตรวจสอบก่อน Deploy
 
-- Integration เปิดฐานข้อมูลทั้ง 8 รายการได้
+- Integration เปิดฐานข้อมูลทั้งหมด รวม `Iprint Production Allocations` ได้
 - `NOTION_TOKEN` และ `WRITE_API_KEY` อยู่ใน Worker Secrets
-- ทดสอบ Worker แบบ mock ผ่านครบทั้ง 3 ไฟล์
+- ทดสอบ Worker แบบ mock ทุกไฟล์ผ่าน
 - ทดสอบ `GET /presets`, `GET /materials`, `GET /services` กับ Notion จริง
 - สร้างออเดอร์ทดสอบหนึ่งรายการ แล้วตรวจ Relation ระหว่าง `Iprint Jobs` กับ `Iprint Order Items`
 - ทดสอบเปลี่ยน `Workflow Status` หนึ่งขั้นและตรวจหน้า Tracking
+- ตรวจว่าออเดอร์สร้าง Allocation, เพิ่ม `Reserved Points` และแสดงในปฏิทิน Staff

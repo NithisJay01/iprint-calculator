@@ -1,7 +1,8 @@
 import { compareCatalogSnapshot, validateCatalogMutation } from './domain/catalog.js';
 import { validateOrderFoundation } from './domain/order.js';
-import { allocateOrderCapacity, calculateItemCapacity, normalizeCapacityDay } from './domain/capacity.js';
+import { normalizeCapacityDay } from './domain/capacity.js';
 import { QUEUE_STATUSES, canMoveQueueAllocation, queueStatusAllowsReservation } from './domain/queue.js';
+import { planOrderSchedule } from './domain/scheduling.js';
 import { createCatalogRepository } from './repositories/notion-catalog-repository.js';
 import { createCapacityRepository } from './repositories/notion-capacity-repository.js';
 import { createQueueRepository } from './repositories/notion-queue-repository.js';
@@ -580,22 +581,37 @@ export default {
           const dateChanges = new Map();
           if (wasReserved) dateChanges.set(current.date, (dateChanges.get(current.date) || 0) - current.points);
           if (willBeReserved) dateChanges.set(nextDate, (dateChanges.get(nextDate) || 0) + current.points);
-          for (const [date, delta] of dateChanges) {
-            if (!delta) continue;
-            const existing = (await capacityRepository.list({ from: date, to: date }))[0] || normalizeCapacityDay({ date, dailyCapacity: Number(env.CAPACITY_DEFAULT_DAILY) || 20, reservedPoints: 0, cutoffTime: env.CAPACITY_CUTOFF_TIME || '15:00' });
-            const reservedPoints = Math.max(0, existing.reservedPoints + delta);
-            if (reservedPoints > existing.dailyCapacity && delta > 0) return json({ success: false, code: 'CAPACITY_UNAVAILABLE', error: 'Capacity is not available on the selected date', day: existing }, 409);
-            await capacityRepository.upsert(date, { ...existing, reservedPoints }, existing.updatedAt || '');
-          }
+          const appliedCapacityChanges = [];
+          try {
+            for (const [date, delta] of dateChanges) {
+              if (!delta) continue;
+              const existing = (await capacityRepository.list({ from: date, to: date }))[0] || normalizeCapacityDay({ date, dailyCapacity: Number(env.CAPACITY_DEFAULT_DAILY) || 20, reservedPoints: 0, cutoffTime: env.CAPACITY_CUTOFF_TIME || '15:00' });
+              const reservedPoints = Math.max(0, existing.reservedPoints + delta);
+              if (reservedPoints > existing.dailyCapacity && delta > 0) throw Object.assign(new Error('Capacity is not available on the selected date'), { status: 409, code: 'CAPACITY_UNAVAILABLE', day: existing });
+              await capacityRepository.upsert(date, { ...existing, reservedPoints }, existing.updatedAt || '');
+              appliedCapacityChanges.push({ date, delta });
+            }
 
-          if (request.method === 'DELETE') {
-            await queueRepository.archive(allocationId);
-            return json({ success: true, removed: true, id: allocationId });
+            if (request.method === 'DELETE') {
+              await queueRepository.archive(allocationId);
+              return json({ success: true, removed: true, id: allocationId });
+            }
+            const allocation = await queueRepository.update(allocationId, { date: nextDate, status: nextStatus }, String(body.expectedUpdatedAt || ''));
+            return json({ success: true, allocation });
+          } catch (error) {
+            for (const change of appliedCapacityChanges.reverse()) {
+              const latest = (await capacityRepository.list({ from: change.date, to: change.date }))[0];
+              if (latest) {
+                await capacityRepository.upsert(change.date, {
+                  ...latest,
+                  reservedPoints: Math.max(0, latest.reservedPoints - change.delta)
+                }, latest.updatedAt || '').catch(() => {});
+              }
+            }
+            throw error;
           }
-          const allocation = await queueRepository.update(allocationId, { date: nextDate, status: nextStatus }, String(body.expectedUpdatedAt || ''));
-          return json({ success: true, allocation });
         } catch (error) {
-          return json({ success: false, code: error.code || '', error: error.message, current: error.current || null, errors: error.errors || [], detail: error.detail || null }, error.status || 502);
+          return json({ success: false, code: error.code || '', error: error.message, current: error.current || null, day: error.day || null, errors: error.errors || [], detail: error.detail || null }, error.status || 502);
         }
       }
 
@@ -1113,6 +1129,52 @@ export default {
           }, 409);
         }
 
+        let orderSchedule = null;
+        let capacityDaysByDate = {};
+        const queueConfigured = Boolean(env.NOTION_CAPACITY_DATA_SOURCE_ID && env.NOTION_PRODUCTION_ALLOCATIONS_DATA_SOURCE_ID);
+        if (queueConfigured) {
+          try {
+            const capacityRepository = createCapacityRepository(env, { headers: notionHeaders });
+            const capacityDays = await capacityRepository.list({});
+            capacityDaysByDate = Object.fromEntries(capacityDays.map(day => [day.date, {
+              capacity: day.dailyCapacity,
+              reserved: day.reservedPoints,
+              closed: day.closed,
+              updatedAt: day.updatedAt,
+              source: day
+            }]));
+            orderSchedule = planOrderSchedule({
+              orderItems,
+              now: new Date(),
+              days: capacityDaysByDate,
+              enforceDeadline: String(env.CAPACITY_ENFORCE_DEADLINE || 'true').toLowerCase() !== 'false',
+              policy: {
+                dailyCapacity: Number(env.CAPACITY_DEFAULT_DAILY) || 20,
+                cutoffTime: String(env.CAPACITY_CUTOFF_TIME || '15:00'),
+                businessDays: String(env.CAPACITY_BUSINESS_DAYS || '1,2,3,4,5,6').split(',').map(Number),
+                timeZone: String(env.CAPACITY_TIME_ZONE || 'Asia/Bangkok'),
+                maxSearchDays: Number(env.CAPACITY_MAX_SEARCH_DAYS) || 180,
+                largeJobDailyShare: Number(env.CAPACITY_LARGE_JOB_DAILY_SHARE) || 0.5
+              }
+            });
+            if (!orderSchedule.success) {
+              return json({
+                success: false,
+                code: orderSchedule.code,
+                error: orderSchedule.code === 'CAPACITY_DEADLINE_UNAVAILABLE'
+                  ? 'Production capacity cannot meet the requested delivery date'
+                  : 'Production capacity is unavailable',
+                itemIndex: orderSchedule.itemIndex,
+                itemKey: orderSchedule.itemKey,
+                deadline: orderSchedule.deadline || null,
+                allocation: orderSchedule.allocation || null
+              }, 409);
+            }
+          } catch (error) {
+            return json({ success: false, code: 'CAPACITY_PLANNING_FAILED', error: error.message, detail: error.detail || null }, error.status || 502);
+          }
+        }
+
         const resolveDataSource = async configuredId => {
           let dataSourceId = String(configuredId || "").trim();
           let response = await fetch(
@@ -1346,6 +1408,11 @@ export default {
           setItem("Yield", "number", { number: Number(item.yield) || 0 });
           setItem("Price", "number", { number: Number(item.price) || 0 });
           setItem("Brief", "rich_text", { rich_text: richText(item.brief || "") });
+          const itemSchedule = orderSchedule?.plans?.[index] || null;
+          setItem("Capacity Points", "number", { number: Number(itemSchedule?.capacity?.points) || 0 });
+          setItem("Scheduled Start", "date", { date: itemSchedule?.startDate ? { start: itemSchedule.startDate } : null });
+          setItem("Estimated Completion", "date", { date: itemSchedule?.estimatedCompletionDate ? { start: itemSchedule.estimatedCompletionDate } : null });
+          if (itemSchedule) setItemWorkflow(["Queue Status"], "QUEUED");
           setItemWorkflow(["Workflow Status", "Status", "สถานะ"], "NEW");
           setItemWorkflow(["Workflow Phase", "Stage", "ขั้นตอน"], "GRAPHIC");
           setItemWorkflow(["Proof Status", "สถานะ Proof"], "PENDING");
@@ -1378,6 +1445,12 @@ export default {
                brief: item.brief,
                briefDeadline: item.briefDeadline,
                deliveryDeadline: item.deliveryDeadline,
+               capacity: itemSchedule ? {
+                 points: itemSchedule.capacity.points,
+                 startDate: itemSchedule.startDate,
+                 estimatedCompletionDate: itemSchedule.estimatedCompletionDate,
+                 allocationCount: itemSchedule.allocations.length
+               } : null,
                status: "NEW"
              }))
           });
@@ -1401,6 +1474,79 @@ export default {
             }, response.status);
           }
           itemIds.push(JSON.parse(text).id);
+        }
+
+        let queueResult = { enabled: false, status: 'NOT_CONFIGURED', allocations: [] };
+        if (queueConfigured && orderSchedule) {
+          const queueRepository = createQueueRepository(env, { headers: notionHeaders });
+          const capacityRepository = createCapacityRepository(env, { headers: notionHeaders });
+          const pending = [];
+          for (const plan of orderSchedule.plans) {
+            const item = orderItems[plan.itemIndex];
+            for (const [partIndex, part] of plan.allocations.entries()) {
+              const allocationKey = `${orderKey}:${item.id}:${partIndex + 1}`;
+              const existing = await queueRepository.findByKey(allocationKey);
+              if (!existing) pending.push({ plan, item, part, partIndex, allocationKey, itemId: itemIds[plan.itemIndex] });
+            }
+          }
+
+          const reservationChanges = new Map();
+          pending.forEach(entry => reservationChanges.set(entry.part.date, (reservationChanges.get(entry.part.date) || 0) + entry.part.points));
+          const reservedThisAttempt = [];
+          const createdThisAttempt = [];
+          try {
+            for (const [date, addedPoints] of reservationChanges) {
+              const existing = (await capacityRepository.list({ from: date, to: date }))[0] || normalizeCapacityDay({
+                date, dailyCapacity: Number(env.CAPACITY_DEFAULT_DAILY) || 20, reservedPoints: 0,
+                cutoffTime: String(env.CAPACITY_CUTOFF_TIME || '15:00')
+              });
+              if (existing.closed || existing.reservedPoints + addedPoints > existing.dailyCapacity) {
+                throw Object.assign(new Error('Capacity changed while the order was being created'), { status: 409, code: 'CAPACITY_WRITE_CONFLICT' });
+              }
+              const updated = await capacityRepository.upsert(date, { ...existing, reservedPoints: existing.reservedPoints + addedPoints }, existing.updatedAt || '');
+              reservedThisAttempt.push({ date, points: addedPoints, updated });
+            }
+            for (const entry of pending) {
+              const allocation = await queueRepository.create({
+                allocationKey: entry.allocationKey,
+                orderKey,
+                quoteNo,
+                ticketId,
+                ticketUrl: ticketPage.url || '',
+                itemId: entry.itemId,
+                itemKey: entry.item.id,
+                title: entry.item.name,
+                customer: order.customer || '',
+                brief: entry.item.brief || '',
+                specs: `${entry.item.size || '-'} • ${entry.item.material?.name || entry.item.paper?.name || '-'} • ${Number(entry.item.quantity || 0).toLocaleString('th-TH')} ${entry.item.unit || 'ชิ้น'} • ${(entry.item.services || []).map(service => service.name).join(', ') || 'ไม่มีบริการเพิ่มเติม'}`,
+                date: entry.part.date,
+                points: entry.part.points,
+                totalPoints: entry.plan.capacity.points,
+                allocationIndex: entry.partIndex + 1,
+                allocationCount: entry.plan.allocations.length,
+                status: 'QUEUED',
+                priority: order.rush === true ? 'URGENT' : 'NORMAL',
+                deliveryDeadline: entry.item.deliveryDeadline || ''
+              });
+              createdThisAttempt.push(allocation);
+            }
+            const allAllocations = await queueRepository.list({ from: orderSchedule.startDate || '', to: orderSchedule.estimatedCompletionDate || '' });
+            queueResult = {
+              enabled: true,
+              status: 'SCHEDULED',
+              totalPoints: orderSchedule.totalPoints,
+              startDate: orderSchedule.startDate,
+              estimatedCompletionDate: orderSchedule.estimatedCompletionDate,
+              allocations: allAllocations.filter(allocation => allocation.orderKey === orderKey)
+            };
+          } catch (error) {
+            for (const allocation of createdThisAttempt.reverse()) await queueRepository.archive(allocation.id).catch(() => {});
+            for (const reservation of reservedThisAttempt.reverse()) {
+              const latest = (await capacityRepository.list({ from: reservation.date, to: reservation.date }))[0];
+              if (latest) await capacityRepository.upsert(reservation.date, { ...latest, reservedPoints: Math.max(0, latest.reservedPoints - reservation.points) }, latest.updatedAt || '').catch(() => {});
+            }
+            return json({ success: false, code: error.code || 'QUEUE_SCHEDULE_FAILED', error: error.message, ticketId, itemIds }, error.status || 502);
+          }
         }
 
         const uploadFile = async (file, fallbackFilename) => {
@@ -1559,6 +1705,7 @@ export default {
           id: ticketId,
           url: ticketPage.url || null,
           itemIds,
+          queue: queueResult,
           order: orderFoundation
         });
       }
@@ -2754,6 +2901,9 @@ export default {
           "POST /public/orders",
           "GET /staff/capacity",
           "PUT /staff/capacity/:date",
+          "GET /staff/queue",
+          "PATCH /staff/queue/:allocationId",
+          "DELETE /staff/queue/:allocationId",
           "POST /tickets"
         ]
       }, 404);
