@@ -14,14 +14,6 @@ let quickBriefMode = false;
 let quickBriefStep = 1;
 const QUICK_BRIEF_QUIZ_COUNT = 4;
 const QUICK_BRIEF_LAST_STEP = QUICK_BRIEF_QUIZ_COUNT + 2;
-const QUICK_BRIEF_NARRATION = [
-  'เริ่มจากตั้งชื่อให้งานนี้ก่อนครับ จะได้ค้นหาออร์เดอร์ได้ง่าย',
-  'บอกขนาดและจำนวนที่ต้องการ ระบบจะคำนวณการวางชิ้นงานให้ทันทีครับ',
-  'เลือกวัสดุและรูปแบบการพิมพ์ให้ครบ เพื่อให้ราคาที่คำนวณตรงกับงานจริงครับ',
-  'ระบุวันรับงานและลิงก์ไฟล์ที่ทีมงานเปิดได้ เท่านี้ข้อมูลก็พร้อมส่งครับ',
-  'ข้อมูลสำคัญครบแล้วครับ ลองตรวจทานอีกครั้งก่อนดูราคา',
-  'นี่คือราคาโดยประมาณ หากทุกอย่างถูกต้อง กดยืนยันเพื่อไปตรวจออร์เดอร์ขั้นสุดท้ายได้เลยครับ'
-];
 
 const JOB_TYPE_DEFAULTS = {
   'งานกระดาษ': { width: 9, height: 5.4, quantity: 500, preset: /13\s*[×x*]?\s*19.*manual|manual.*13\s*[×x*]?\s*19/i, cutting: '' },
@@ -545,10 +537,8 @@ function showQuickBriefStep(step) {
   const progress = $('quickWizardProgress');
   if (progress) progress.innerHTML = Array.from({ length: QUICK_BRIEF_LAST_STEP }, (_, index) => {
     const value = index + 1;
-    const label = value <= QUICK_BRIEF_QUIZ_COUNT ? value : value === QUICK_BRIEF_QUIZ_COUNT + 1 ? 'สรุป' : 'ราคา';
-    return `<i class="${value <= quickBriefStep ? 'is-active' : ''}"><span>${label}</span></i>`;
+    return `<i class="${value <= quickBriefStep ? 'is-active' : ''}" aria-label="ขั้นตอน ${value} จาก ${QUICK_BRIEF_LAST_STEP}"></i>`;
   }).join('');
-  if ($('quickNarratorMessage')) $('quickNarratorMessage').textContent = QUICK_BRIEF_NARRATION[quickBriefStep - 1] || '';
   if (quickBriefStep >= 5) renderQuickBriefReview();
   if (quickBriefStep === 6) syncQuickBriefSummary();
   const back = $('quickBriefBack');

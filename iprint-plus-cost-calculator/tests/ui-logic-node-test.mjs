@@ -94,10 +94,10 @@ const quickBriefSource = fs.readFileSync(new URL('../js/flow.js', import.meta.ur
 assert.equal((quickBriefHtml.match(/data-quick-step="[1-6]"/g) || []).length, 6);
 assert.match(quickBriefHtml, /คำถาม 4 จาก 4/);
 assert.match(quickBriefHtml, /ข้อมูลสำคัญครบ พร้อมส่งต่อเพื่อคำนวณและสร้างออร์เดอร์/);
-assert.match(quickBriefHtml, /id="quickNarratorMessage"/);
+assert.doesNotMatch(quickBriefHtml, /id="quickNarratorMessage"/);
 assert.equal((quickBriefHtml.match(/data-quick-job-name-suggestion=/g) || []).length, 7);
 assert.match(quickBriefSource, /const QUICK_BRIEF_QUIZ_COUNT = 4/);
-assert.match(quickBriefSource, /const QUICK_BRIEF_NARRATION = \[/);
+assert.doesNotMatch(quickBriefSource, /const QUICK_BRIEF_NARRATION = \[/);
 assert.match(quickBriefSource, /Number\.isInteger\(quantity\)/);
 assert.match(quickBriefSource, /validQuickBriefSourceLink\(\)/);
 
