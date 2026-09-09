@@ -175,17 +175,17 @@ function drawPreview(p,b,bleedMm,gapMm) {
       piece.setAttribute('role','button');
       piece.setAttribute('aria-label','ดูตัวอย่างชิ้นที่ '+(i+1));
       piece.dataset.pieceIndex=String(i+1);
-      piece.style.width=(b.pieceW*scale)+'px';
-      piece.style.height=(b.pieceH*scale)+'px';
-      piece.style.marginLeft=(-(b.bleed||0)*scale)+'px';
-      piece.style.marginTop=(-(b.bleed||0)*scale)+'px';
+      // The sheet overview uses the trim pitch so shared bleed never overlaps
+      // neighbouring cards visually. The piece modal keeps the true outer size.
+      piece.style.width=(pitchW*scale)+'px';
+      piece.style.height=(pitchH*scale)+'px';
       if(artworkUrl) {
         piece.classList.add('has-artwork');
         const artwork=document.createElement('img');
         artwork.className='piece-artwork';
         artwork.src=artworkUrl;
         artwork.alt='';
-        if(typeof applyArtworkRotation==='function')applyArtworkRotation(artwork,artworkSide,b.pieceW,b.pieceH,Boolean(b.rotate));
+        if(typeof applyArtworkRotation==='function')applyArtworkRotation(artwork,artworkSide,pitchW,pitchH,Boolean(b.rotate));
         piece.appendChild(artwork)
       }
       if(materialEffect) {
@@ -205,14 +205,14 @@ function drawPreview(p,b,bleedMm,gapMm) {
       number.textContent=i+1;
       const bleed=document.createElement('div');
       bleed.className='bleed';
-      const inset=bleedMm*scale;
+      const inset=Math.max(1,Math.min(2,scale));
       bleed.style.left=inset+'px';
       bleed.style.top=inset+'px';
       bleed.style.right=inset+'px';
       bleed.style.bottom=inset+'px';
       const safeZone=document.createElement('div');
       safeZone.className='safe-zone';
-      const safeInset=bleedMm*2*scale;
+      const safeInset=Math.max(inset+1,bleedMm*scale);
       safeZone.style.left=safeInset+'px';
       safeZone.style.top=safeInset+'px';
       safeZone.style.right=safeInset+'px';

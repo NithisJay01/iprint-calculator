@@ -139,6 +139,8 @@ assert.match(materialSource, /classList\.toggle\('is-complete',Boolean\(m\)\)/);
 assert.match(quickBriefSource, /function roundedCornerStyle\(width, height\)/);
 assert.match(calculatorSource, /function findBest\(p,Wcm,Hcm,gapMm=0,bleedMm=0\)/);
 assert.match(calculatorSource, /activeAccessRole!==['"]staff['"]\)return 0/);
+assert.doesNotMatch(calculatorSource, /piece\.style\.marginLeft/);
+assert.match(calculatorSource, /piece\.style\.width=\(pitchW\*scale\)/);
 assert.match(quickBriefHtml, /เส้นแดง: แนวตัด/);
 assert.match(quickBriefHtml, /เส้นเขียว: พื้นที่ปลอดภัย/);
 assert.match(quickBriefHtml, /ไซส์จริงของงาน/);

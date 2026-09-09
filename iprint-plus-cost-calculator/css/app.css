@@ -453,6 +453,7 @@ html{background:#dce9f5}body{padding:0;background:#dce9f5;color:#080808}.mobile-
 .piece-number{z-index:6}
 .piece .bleed,.piece .safe-zone,.preview-gallery-piece .bleed,.preview-gallery-piece .safe-zone{position:absolute;display:block;min-width:2px;min-height:2px;z-index:3;box-shadow:0 0 0 .5px rgba(255,255,255,.7);background:none;pointer-events:none;transform:translateZ(0)}
 .piece .bleed,.preview-gallery-piece .bleed{border:1px solid #e32636!important}
+.preview-grid .piece{border-color:#148cf0}
 .piece .safe-zone,.preview-gallery-piece .safe-zone{z-index:4;border:1px solid #009b57}
 .has-rounded-corner{border-radius:0!important}
 .has-rounded-corner .bleed{border-radius:var(--rounded-corner-radius-x,4px) / var(--rounded-corner-radius-y,4px)!important}
