@@ -11,6 +11,17 @@ let costPiecePaperRotation = 0;
 let lockedCuttingMode = '';
 let pendingVariantQuantityChange = null;
 let quickBriefMode = false;
+let quickBriefStep = 1;
+const QUICK_BRIEF_QUIZ_COUNT = 4;
+const QUICK_BRIEF_LAST_STEP = QUICK_BRIEF_QUIZ_COUNT + 2;
+const QUICK_BRIEF_NARRATION = [
+  'เริ่มจากตั้งชื่อให้งานนี้ก่อนครับ จะได้ค้นหาออร์เดอร์ได้ง่าย',
+  'บอกขนาดและจำนวนที่ต้องการ ระบบจะคำนวณการวางชิ้นงานให้ทันทีครับ',
+  'เลือกวัสดุและรูปแบบการพิมพ์ให้ครบ เพื่อให้ราคาที่คำนวณตรงกับงานจริงครับ',
+  'ระบุวันรับงานและลิงก์ไฟล์ที่ทีมงานเปิดได้ เท่านี้ข้อมูลก็พร้อมส่งครับ',
+  'ข้อมูลสำคัญครบแล้วครับ ลองตรวจทานอีกครั้งก่อนดูราคา',
+  'นี่คือราคาโดยประมาณ หากทุกอย่างถูกต้อง กดยืนยันเพื่อไปตรวจออร์เดอร์ขั้นสุดท้ายได้เลยครับ'
+];
 
 const JOB_TYPE_DEFAULTS = {
   'งานกระดาษ': { width: 9, height: 5.4, quantity: 500, preset: /13\s*[×x*]?\s*19.*manual|manual.*13\s*[×x*]?\s*19/i, cutting: '' },
@@ -507,6 +518,83 @@ function syncQuickBriefSummary() {
     : '<span><b>ไม่มีบริการเพิ่มเติม</b><strong>฿0.00</strong></span>';
 }
 
+function renderQuickBriefReview() {
+  const target = $('quickBriefReview');
+  if (!target) return;
+  const material = materials.find(item => String(item.id) === String(selectedMaterialId));
+  const preset = presets?.[selectedSheet];
+  const chosenServices = services.filter(service => selectedServiceIds[String(service.id)]).map(service => service.name).filter(Boolean);
+  const rows = [
+    ['ชื่องาน', $('quickJobName')?.value.trim() || '—'],
+    ['ขนาดและจำนวน', `${Number($('quickW')?.value) || 0} × ${Number($('quickH')?.value) || 0} ซม. • ${(Number($('quickQty')?.value) || 0).toLocaleString('th-TH')} ชิ้น`],
+    ['Preset', preset?.name || '—'],
+    ['วัสดุ', material?.name || '—'],
+    ['บริการ', chosenServices.join(', ') || 'ไม่มีบริการเพิ่มเติม'],
+    ['วันที่ต้องการรับ', $('quickDeliveryDeadline')?.value || '—'],
+    ['ไฟล์ต้นฉบับ', $('quickBriefFileLink')?.value.trim() || '—'],
+    ['รายละเอียด', $('quickBriefDescription')?.value.trim() || 'ไม่มี']
+  ];
+  target.innerHTML = rows.map(([label, value]) => `<div><dt>${flowEscape(label)}</dt><dd>${flowEscape(value)}</dd></div>`).join('');
+}
+
+function showQuickBriefStep(step) {
+  quickBriefStep = Math.max(1, Math.min(QUICK_BRIEF_LAST_STEP, Number(step) || 1));
+  document.querySelectorAll('[data-quick-step]').forEach(panel => { panel.hidden = Number(panel.dataset.quickStep) !== quickBriefStep; });
+  const grid = document.querySelector('.quick-brief-grid');
+  if (grid) grid.hidden = quickBriefStep === 5;
+  const progress = $('quickWizardProgress');
+  if (progress) progress.innerHTML = Array.from({ length: QUICK_BRIEF_LAST_STEP }, (_, index) => {
+    const value = index + 1;
+    const label = value <= QUICK_BRIEF_QUIZ_COUNT ? value : value === QUICK_BRIEF_QUIZ_COUNT + 1 ? 'สรุป' : 'ราคา';
+    return `<i class="${value <= quickBriefStep ? 'is-active' : ''}"><span>${label}</span></i>`;
+  }).join('');
+  if ($('quickNarratorMessage')) $('quickNarratorMessage').textContent = QUICK_BRIEF_NARRATION[quickBriefStep - 1] || '';
+  if (quickBriefStep >= 5) renderQuickBriefReview();
+  if (quickBriefStep === 6) syncQuickBriefSummary();
+  const back = $('quickBriefBack');
+  const next = $('quickBriefNext');
+  if (back) back.innerHTML = `<img class="button-icon" src="image/arrow-left.svg" alt="">${quickBriefStep === 1 ? 'ยกเลิก' : quickBriefStep === 6 ? 'แก้ไขบรีฟ' : 'ย้อนกลับ'}`;
+  if (next) next.innerHTML = `${quickBriefStep === 4 ? 'สรุปบรีฟ' : quickBriefStep === 5 ? 'ดูราคา' : quickBriefStep === 6 ? 'ยืนยัน' : 'ถัดไป'}<img class="button-icon" src="image/arrow-right-light.svg" alt="">`;
+  if ($('quickBriefStatus')) $('quickBriefStatus').textContent = '';
+  document.querySelector(`[data-quick-step="${quickBriefStep}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function validQuickBriefSourceLink() {
+  try { return ['http:', 'https:'].includes(new URL($('quickBriefFileLink')?.value.trim() || '').protocol); } catch { return false; }
+}
+
+function nextQuickBriefStep() {
+  if (quickBriefStep === 1 && !$('quickJobName')?.value.trim()) return focusQuickBriefField($('quickJobName'), 'กรุณาระบุชื่อเรียกงาน');
+  if (quickBriefStep === 2) {
+    const width = Number($('quickW')?.value);
+    const height = Number($('quickH')?.value);
+    const quantity = Number($('quickQty')?.value);
+    if (!selectedSheet) return focusQuickBriefField($('quickSheet'), 'กรุณาเลือก Preset กระดาษ');
+    if (!(width > 0)) return focusQuickBriefField($('quickW'), 'กรุณาระบุความกว้างมากกว่า 0');
+    if (!(height > 0)) return focusQuickBriefField($('quickH'), 'กรุณาระบุความสูงมากกว่า 0');
+    if (!Number.isInteger(quantity) || quantity < 1) return focusQuickBriefField($('quickQty'), 'กรุณาระบุจำนวนเป็นจำนวนเต็มอย่างน้อย 1 ชิ้น');
+    if (!lastCalc) return focusQuickBriefField($('quickSheet'), 'ไม่สามารถคำนวณ Layout จากข้อมูลนี้ได้ กรุณาตรวจสอบขนาดและ Preset');
+  }
+  if (quickBriefStep === 3 && !selectedMaterialId) return focusQuickBriefField($('quickMaterialSelect'), 'กรุณาเลือกวัสดุ');
+  if (quickBriefStep === 3 && !hasSelectedPrintService()) {
+    if ($('quickBriefStatus')) $('quickBriefStatus').textContent = 'กรุณาเลือกรูปแบบการพิมพ์';
+    return;
+  }
+  if (quickBriefStep === 3 && !validateCustomServiceRequest('quick')) return;
+  if (quickBriefStep === 4) {
+    const deliveryDate = normalizeFlowDateValue($('quickDeliveryDeadline')?.value);
+    if (!deliveryDate || deliveryDate < getLocalTodayIso()) return focusQuickBriefField($('quickDeliveryDeadline'), 'กรุณาเลือกวันที่ต้องการรับงานตั้งแต่วันนี้เป็นต้นไป');
+    if (!validQuickBriefSourceLink()) return focusQuickBriefField($('quickBriefFileLink'), 'กรุณาใส่ลิงก์ไฟล์ต้นฉบับที่ทีมงานเข้าถึงได้');
+  }
+  if (quickBriefStep === QUICK_BRIEF_LAST_STEP) return continueQuickBrief();
+  showQuickBriefStep(quickBriefStep + 1);
+}
+
+function previousQuickBriefStep() {
+  if (quickBriefStep === 1) return showAppView('home');
+  showQuickBriefStep(quickBriefStep === 6 ? 4 : quickBriefStep - 1);
+}
+
 function startQuickBrief() {
   prepareNewPrintItem();
   quickBriefMode = true;
@@ -526,6 +614,7 @@ function startQuickBrief() {
   if ($('quickBriefStatus')) $('quickBriefStatus').textContent = '';
   calculate();
   showAppView('quickBrief');
+  showQuickBriefStep(1);
 }
 
 function focusQuickBriefField(field, message) {
@@ -847,7 +936,8 @@ function bindFlow() {
   showAppView('home', { instant: true });
   $('startPrintOrder').addEventListener('click', () => { quickBriefMode = false; showJobSetupQuestion(1); showAppView('jobSetup'); });
   $('startQuickBrief')?.addEventListener('click', startQuickBrief);
-  $('quickBriefContinue')?.addEventListener('click', continueQuickBrief);
+  $('quickBriefNext')?.addEventListener('click', nextQuickBriefStep);
+  $('quickBriefBack')?.addEventListener('click', previousQuickBriefStep);
   [['quickW', 'w'], ['quickH', 'h'], ['quickQty', 'qty']].forEach(([quickId, sourceId]) => {
     $(quickId)?.addEventListener('input', event => {
       $(sourceId).value = event.target.value;

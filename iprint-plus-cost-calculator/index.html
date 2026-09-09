@@ -71,29 +71,40 @@
 
     <section class="app-view quick-brief-view" data-app-view="quickBrief">
       <button class="view-back-button" data-flow-back="home" type="button"><img class="button-icon" src="image/arrow-left.svg" alt="">ย้อนกลับ</button>
-      <div class="page-intro"><h1>Quick Brief</h1><p>ตั้งค่างานและเลือกบริการทั้งหมดในหน้าเดียว โดยไม่ต้องอัปโหลดภาพ</p></div>
+      <div class="page-intro"><h1>Quick Brief</h1><p>ตอบทีละข้อ แล้วตรวจบรีฟและราคาก่อนยืนยัน</p></div>
+      <div class="quick-quiz-conversation">
+      <figure class="quick-narrator">
+        <img src="image/iprint-mascot.png" alt="น้อง iPrint ผู้ช่วยรับบรีฟ">
+        <figcaption><strong id="quickNarratorTitle">น้อง iPrint</strong><span>ผู้ช่วยรับบรีฟ</span></figcaption>
+      </figure>
+      <div class="quick-quiz-dialogue">
+      <p class="quick-narrator-copy" id="quickNarratorMessage" aria-live="polite">เริ่มจากตั้งชื่อให้งานนี้ก่อนครับ จะได้ค้นหาออร์เดอร์ได้ง่าย</p>
+      <div class="quick-wizard-progress" id="quickWizardProgress" aria-label="Quick Brief 6 ขั้นตอน"></div>
       <div class="quick-brief-grid">
         <div class="quick-brief-form">
-          <section class="form-card">
-            <h2 class="section-title">ข้อมูลงาน</h2>
+          <section class="form-card quick-wizard-panel" data-quick-step="1">
+            <small class="quick-question-count">คำถาม 1 จาก 4</small><h2 class="section-title">อยากเรียกงานนี้ว่าอะไร?</h2>
             <div class="field"><label class="label" for="quickJobName">ชื่อเรียกงาน</label><input id="quickJobName" maxlength="120" placeholder="เช่น นามบัตรคุณเมย์"></div>
-            <div class="field"><label class="label" for="quickDeliveryDeadline">วันที่ต้องการรับงาน</label><div class="date-input-shell"><input id="quickDeliveryDeadline" type="text" inputmode="none" placeholder="DD/MM/YYYY" autocomplete="off" readonly required aria-haspopup="dialog"><span class="date-picker-icon" aria-hidden="true">▣</span><input class="native-date-control" data-date-for="quickDeliveryDeadline" type="date" lang="en-GB" aria-label="เลือกวันที่ต้องการรับงานจากปฏิทิน"></div></div>
-            <div class="field"><label class="label" for="quickBriefFileLink">ลิงก์ไฟล์ต้นฉบับ <span class="optional-label">(จำเป็น)</span></label><div class="file-provider-options quick-file-provider-options" aria-label="เปิดบริการ Cloud เพื่อคัดลอกลิงก์ไฟล์"><a href="https://drive.google.com/drive/my-drive" target="_blank" rel="noopener noreferrer">Google Drive <span aria-hidden="true">↗</span></a><a href="https://onedrive.live.com/" target="_blank" rel="noopener noreferrer">OneDrive <span aria-hidden="true">↗</span></a><a href="https://www.dropbox.com/home" target="_blank" rel="noopener noreferrer">Dropbox <span aria-hidden="true">↗</span></a></div><input id="quickBriefFileLink" type="url" placeholder="https://..." required aria-required="true"></div>
-            <div class="field"><label class="label" for="quickBriefDescription">รายละเอียดเพิ่มเติม <span class="optional-label">(ถ้ามี)</span></label><textarea id="quickBriefDescription" maxlength="1200" placeholder="ระบุคำขอหรือรายละเอียดสำหรับทีมกราฟิก"></textarea></div>
           </section>
-          <section class="form-card">
-            <h2 class="section-title">ขนาดและจำนวน</h2>
+          <section class="form-card quick-wizard-panel" data-quick-step="2" hidden>
+            <small class="quick-question-count">คำถาม 2 จาก 4</small><h2 class="section-title">งานมีขนาดและจำนวนเท่าไหร่?</h2>
             <div class="field"><label class="label" for="quickSheet">Preset กระดาษที่ใช้</label><select id="quickSheet"><option value="">กำลังโหลด Preset…</option></select></div>
             <div class="row2"><div class="field"><label class="label" for="quickW">กว้าง (ซม.)</label><input id="quickW" type="number" min="0.1" max="100" step="0.1" value="9"></div><div class="field"><label class="label" for="quickH">สูง (ซม.)</label><input id="quickH" type="number" min="0.1" max="100" step="0.1" value="5.4"></div></div>
             <div class="field"><label class="label" for="quickQty">จำนวนที่ต้องการ</label><div class="input-suffix"><input id="quickQty" type="number" min="1" step="1" value="500"><span>ชิ้น</span></div></div>
           </section>
-          <section class="form-card">
-            <h2 class="section-title">วัสดุและบริการ</h2>
+          <section class="form-card quick-wizard-panel" data-quick-step="3" hidden>
+            <small class="quick-question-count">คำถาม 3 จาก 4</small><h2 class="section-title">ต้องการวัสดุและบริการอะไร?</h2>
             <div class="field"><label class="label" for="quickMaterialSelect">วัสดุ</label><select id="quickMaterialSelect"><option value="">กำลังโหลดวัสดุ…</option></select></div>
             <div class="quick-services" id="quickServicesContainer"><div class="ms-status">กำลังโหลดบริการ…</div></div>
           </section>
+          <section class="form-card quick-wizard-panel" data-quick-step="4" hidden>
+            <small class="quick-question-count">คำถาม 4 จาก 4</small><h2 class="section-title">ต้องการรับงานเมื่อไหร่ และส่งไฟล์ทางไหน?</h2>
+            <div class="field"><label class="label" for="quickDeliveryDeadline">วันที่ต้องการรับงาน</label><div class="date-input-shell"><input id="quickDeliveryDeadline" type="text" inputmode="none" placeholder="DD/MM/YYYY" autocomplete="off" readonly required aria-haspopup="dialog"><span class="date-picker-icon" aria-hidden="true">▣</span><input class="native-date-control" data-date-for="quickDeliveryDeadline" type="date" lang="en-GB" aria-label="เลือกวันที่ต้องการรับงานจากปฏิทิน"></div></div>
+            <div class="field"><label class="label" for="quickBriefFileLink">ลิงก์ไฟล์ต้นฉบับ <span class="optional-label">(จำเป็น)</span></label><div class="file-provider-options quick-file-provider-options" aria-label="เปิดบริการ Cloud เพื่อคัดลอกลิงก์ไฟล์"><a href="https://drive.google.com/drive/my-drive" target="_blank" rel="noopener noreferrer">Google Drive <span aria-hidden="true">↗</span></a><a href="https://onedrive.live.com/" target="_blank" rel="noopener noreferrer">OneDrive <span aria-hidden="true">↗</span></a><a href="https://www.dropbox.com/home" target="_blank" rel="noopener noreferrer">Dropbox <span aria-hidden="true">↗</span></a></div><input id="quickBriefFileLink" type="url" placeholder="https://..." required aria-required="true"></div>
+            <div class="field"><label class="label" for="quickBriefDescription">รายละเอียดเพิ่มเติม <span class="optional-label">(ถ้ามี)</span></label><textarea id="quickBriefDescription" maxlength="1200" placeholder="ระบุคำขอหรือรายละเอียดสำหรับทีมกราฟิก"></textarea></div>
+          </section>
         </div>
-        <aside class="quick-brief-results">
+        <aside class="quick-brief-results quick-wizard-panel" data-quick-step="6" hidden>
           <section class="form-card quick-preview-panel">
             <div class="section-heading"><strong>Preview Layout</strong><small>ไม่ต้องอัปโหลดภาพ</small></div>
             <div class="quick-preview-scroll"><div class="sheet-preview quick-sheet-preview" id="quickSheetPreview"></div></div>
@@ -105,8 +116,11 @@
           </section>
         </aside>
       </div>
+      <section class="form-card quick-brief-review quick-wizard-panel" data-quick-step="5" hidden><small class="quick-question-count">สรุปบรีฟ</small><h2 class="section-title">ตรวจข้อมูลก่อนดูราคา</h2><p class="quick-ready-status">✓ ข้อมูลสำคัญครบ พร้อมส่งต่อเพื่อคำนวณและสร้างออร์เดอร์</p><dl id="quickBriefReview"></dl></section>
       <div class="quick-brief-status status" id="quickBriefStatus" aria-live="polite"></div>
-      <div class="flow-actions"><button class="secondary-action" data-flow-back="home" type="button"><img class="button-icon" src="image/arrow-left.svg" alt="">ยกเลิก</button><button class="primary-action" id="quickBriefContinue" type="button">ตรวจสอบ Brief<img class="button-icon" src="image/arrow-right-light.svg" alt=""></button></div>
+      <div class="flow-actions quick-wizard-actions"><button class="secondary-action" id="quickBriefBack" type="button"><img class="button-icon" src="image/arrow-left.svg" alt="">ย้อนกลับ</button><button class="primary-action" id="quickBriefNext" type="button">ถัดไป<img class="button-icon" src="image/arrow-right-light.svg" alt=""></button></div>
+      </div>
+      </div>
     </section>
 
     <section class="app-view job-setup-view" data-app-view="jobSetup">
@@ -345,6 +359,6 @@
 <script src="js/staff-catalog.js?v=20260909-service-images"></script>
 <script src="js/staff-capacity.js?v=20260908-capacity-summary"></script>
 <script src="js/app.js?v=20260909-flow-controller"></script>
-<script src="js/flow.js?v=20260909-flow-controller"></script>
+<script src="js/flow.js?v=20260909-quick-wizard-narrator"></script>
 </body>
 </html>
