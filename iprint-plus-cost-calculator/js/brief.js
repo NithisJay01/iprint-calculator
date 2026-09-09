@@ -339,8 +339,8 @@ function briefReviewSheetSvg(calc,artworkUrl,side,x,y,width,height,shapeUrl='') 
     const mask=shapeUrl?`<mask id="${maskId}" maskUnits="userSpaceOnUse" style="mask-type:alpha"><image href="${briefEscapeSvg(shapeUrl)}" x="${cellX+1}" y="${cellY+1}" width="${Math.max(1,cellW-2)}" height="${Math.max(1,cellH-2)}" preserveAspectRatio="none"/></mask>`:'';
     const image=briefReviewArtworkSvg(artworkUrl,cellX+1,cellY+1,Math.max(1,cellW-2),Math.max(1,cellH-2),clipId,shapeUrl?maskId:'',Boolean(calc.b?.rotate));
     const tint=briefReviewMaterialTint(calc).replace('class="piece-tint"',`x="${cellX+1}" y="${cellY+1}" width="${Math.max(1,cellW-2)}" height="${Math.max(1,cellH-2)}"`);
-    const radius=rounded?Math.max(2,Math.min(cellW,cellH)*.12):0;
-    cells.push(`<defs><clipPath id="${clipId}"><rect x="${cellX+1}" y="${cellY+1}" width="${Math.max(1,cellW-2)}" height="${Math.max(1,cellH-2)}" rx="${radius}"/></clipPath>${mask}</defs><rect x="${cellX}" y="${cellY}" width="${cellW}" height="${cellH}" rx="${radius}" fill="#fff" stroke="${diecut?'#ff8b00':'#8a949e'}" ${diecut?'stroke-dasharray="3 2"':''}/>${image}${tint}`);
+    const radiusX=rounded?Math.min(cellW/2,4*scale):0,radiusY=rounded?Math.min(cellH/2,4*scale):0;
+    cells.push(`<defs><clipPath id="${clipId}"><rect x="${cellX+1}" y="${cellY+1}" width="${Math.max(1,cellW-2)}" height="${Math.max(1,cellH-2)}" rx="${radiusX}" ry="${radiusY}"/></clipPath>${mask}</defs><rect x="${cellX}" y="${cellY}" width="${cellW}" height="${cellH}" rx="${radiusX}" ry="${radiusY}" fill="#fff" stroke="${diecut?'#ff8b00':'#8a949e'}" ${diecut?'stroke-dasharray="3 2"':''}/>${image}${tint}`);
   }
   return `<rect x="${x}" y="${y}" width="${width}" height="${height}" rx="14" fill="#edf4f8"/><rect x="${paperX}" y="${paperY}" width="${paperW}" height="${paperH}" rx="4" fill="#fff" stroke="#75818b"/><rect x="${usableX}" y="${usableY}" width="${usableWidth}" height="${usableHeight}" fill="none" stroke="#a1adb6" stroke-dasharray="5 4"/>${cells.join('')}${briefReviewSurfaceOverlay(paperX,paperY,paperW,paperH,calc)}`;
 }
@@ -352,12 +352,12 @@ function briefReviewPieceSvg(calc,artworkUrl,x,y,width,height,shapeUrl='') {
   const clipId='review-piece-'+Math.random().toString(36).slice(2);
   const diecut=(calc.services||[]).some(service=>/ไดคัท|die.?cut/.test(String(service?.name||'').toLowerCase()));
   const rounded=(calc.services||[]).some(service=>/ตัดมุม|rounded.?corner/.test(String(service?.name||'').toLowerCase()));
-  const radius=rounded?Math.max(5,Math.min(pieceW,pieceH)*.12):0;
+  const radiusX=rounded?Math.min(pieceW/2,4*scale):0,radiusY=rounded?Math.min(pieceH/2,4*scale):0;
   const maskId=`${clipId}-shape`;
   const mask=shapeUrl?`<mask id="${maskId}" maskUnits="userSpaceOnUse" style="mask-type:alpha"><image href="${briefEscapeSvg(shapeUrl)}" x="${pieceX+1}" y="${pieceY+1}" width="${Math.max(1,pieceW-2)}" height="${Math.max(1,pieceH-2)}" preserveAspectRatio="none"/></mask>`:'';
   const image=briefReviewArtworkSvg(artworkUrl,pieceX+1,pieceY+1,Math.max(1,pieceW-2),Math.max(1,pieceH-2),clipId,shapeUrl?maskId:'',Boolean(calc.b?.rotate));
   const tint=briefReviewMaterialTint(calc).replace('class="piece-tint"',`x="${pieceX+1}" y="${pieceY+1}" width="${Math.max(1,pieceW-2)}" height="${Math.max(1,pieceH-2)}"`);
-  return `<rect x="${x}" y="${y}" width="${width}" height="${height}" rx="14" fill="#edf4f8"/><defs><clipPath id="${clipId}"><rect x="${pieceX+1}" y="${pieceY+1}" width="${Math.max(1,pieceW-2)}" height="${Math.max(1,pieceH-2)}" rx="${radius}"/></clipPath>${mask}</defs><rect x="${pieceX}" y="${pieceY}" width="${pieceW}" height="${pieceH}" rx="${radius}" fill="#fff" stroke="${diecut?'#ff8b00':'#8a949e'}" ${diecut?'stroke-dasharray="5 3"':''}/>${image}${tint}${briefReviewSurfaceOverlay(pieceX,pieceY,pieceW,pieceH,calc)}`;
+  return `<rect x="${x}" y="${y}" width="${width}" height="${height}" rx="14" fill="#edf4f8"/><defs><clipPath id="${clipId}"><rect x="${pieceX+1}" y="${pieceY+1}" width="${Math.max(1,pieceW-2)}" height="${Math.max(1,pieceH-2)}" rx="${radiusX}" ry="${radiusY}"/></clipPath>${mask}</defs><rect x="${pieceX}" y="${pieceY}" width="${pieceW}" height="${pieceH}" rx="${radiusX}" ry="${radiusY}" fill="#fff" stroke="${diecut?'#ff8b00':'#8a949e'}" ${diecut?'stroke-dasharray="5 3"':''}/>${image}${tint}${briefReviewSurfaceOverlay(pieceX,pieceY,pieceW,pieceH,calc)}`;
 }
 
 function briefReviewImageSvg(calc,artworkUrls,shapeUrl='') {

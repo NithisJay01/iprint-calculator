@@ -28,6 +28,8 @@ serviceContext.getSelectedJobType = () => 'งานกระดาษ';
 assert.equal(serviceContext.isStickerQuizJob(), false);
 assert.equal(serviceContext.isSinglePrintService({ name: 'พิมพ์หน้าเดียว' }), true);
 assert.equal(serviceContext.isSinglePrintService({ name: 'พิมพ์ 2 หน้า' }), false);
+assert.equal(serviceContext.isDiecutService({ name: 'ไดคัทตัดมุม' }), false);
+assert.equal(serviceContext.isDiecutService({ name: 'ไดคัท All Sticker' }), true);
 serviceContext.services = [{ id: 'print-single', category: 'รูปแบบการพิมพ์', name: 'พิมพ์หน้าเดียว' }];
 serviceContext.selectedServiceIds = {};
 assert.equal(serviceContext.hasSelectedPrintService(), false);
@@ -112,5 +114,6 @@ assert.match(quickBriefHtml, /layout-settings-lower">\s*<section class="form-car
 assert.match(quickBriefHtml, /class="layout-form-title">ขนาดชิ้นงาน/);
 assert.match(quickBriefHtml, /id="materialSelectionCta"/);
 assert.match(materialSource, /classList\.toggle\('is-complete',Boolean\(m\)\)/);
+assert.match(quickBriefSource, /function roundedCornerStyle\(width, height\)/);
 
 console.log('UI logic node test passed');

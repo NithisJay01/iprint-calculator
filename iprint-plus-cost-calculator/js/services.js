@@ -15,9 +15,14 @@ function isCuttingService(service) {
   return /การตัด|ไดคัท|ไดคัต|ตัด\s*(?:50|100|ครึ่ง|เต็ม)|die.?cut|kiss.?cut|cutting/i.test(text);
 }
 
+function isRoundedCornerService(service) {
+  const text = `${service?.category || ''} ${service?.name || ''}`;
+  return /ตัดมุม|rounded.?corner/i.test(text);
+}
+
 function isDiecutService(service) {
   const text = `${service?.category || ''} ${service?.name || ''}`;
-  return /ไดคัท|ไดคัต|die.?cut/i.test(text);
+  return !isRoundedCornerService(service) && /ไดคัท|ไดคัต|die.?cut/i.test(text);
 }
 
 function isStickerQuizJob() {

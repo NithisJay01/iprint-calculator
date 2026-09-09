@@ -253,6 +253,12 @@ function flowPreviewHasRoundedCorner() {
   return (lastCalc?.services || []).some(service => /ตัดมุม|rounded.?corner/.test(String(service?.name || '').toLowerCase()));
 }
 
+function roundedCornerStyle(width, height) {
+  const radiusX = Math.min(50, 400 / Math.max(1, Number(width) || 1));
+  const radiusY = Math.min(50, 400 / Math.max(1, Number(height) || 1));
+  return `--rounded-corner-radius-x:${radiusX}%;--rounded-corner-radius-y:${radiusY}%`;
+}
+
 function previewArtworkMarkup(side, width, height) {
   const artwork = typeof getArtworkPreviewUrl === 'function' ? getArtworkPreviewUrl(side) : '';
   if (!artwork) return '<span class="preview-gallery-empty">ยังไม่มีภาพ</span>';
@@ -267,7 +273,8 @@ function previewGalleryPieceMarkup(side, width, height) {
   const materialClass = flowPreviewMaterialClass();
   const diecutClass = flowPreviewHasDiecut() ? ' has-diecut-effect' : '';
   const cornerClass = flowPreviewHasRoundedCorner() ? ' has-rounded-corner' : '';
-  return `<span class="preview-gallery-piece${diecutClass}${cornerClass}">${previewArtworkMarkup(side, width, height)}${materialClass ? `<i class="piece-material-effect ${materialClass}" aria-hidden="true"></i>` : ''}</span>`;
+  const cornerStyle = cornerClass ? ` style="${roundedCornerStyle(width, height)}"` : '';
+  return `<span class="preview-gallery-piece${diecutClass}${cornerClass}"${cornerStyle}>${previewArtworkMarkup(side, width, height)}${materialClass ? `<i class="piece-material-effect ${materialClass}" aria-hidden="true"></i>` : ''}</span>`;
 }
 
 function imposedPieceDimensions() {
@@ -312,7 +319,8 @@ function piecePreviewGalleryMarkup(side = 'front') {
   const displayScale = Math.min(maxWidth / width, maxHeight / height);
   const displayWidth = Math.max(72, width * displayScale);
   const roundedClass = flowPreviewHasRoundedCorner() ? ' has-rounded-corner' : '';
-  return `<div class="preview-gallery-surface preview-gallery-piece-frame${roundedClass}" ${previewGallerySurfaceAttributes()} style="width:${displayWidth}px;aspect-ratio:${width}/${height}">${previewGalleryPieceMarkup(side, width, height)}<i class="preview-gallery-reflection" aria-hidden="true"></i></div>`;
+  const cornerStyle = roundedClass ? roundedCornerStyle(width, height) : '';
+  return `<div class="preview-gallery-surface preview-gallery-piece-frame${roundedClass}" ${previewGallerySurfaceAttributes()} style="width:${displayWidth}px;aspect-ratio:${width}/${height};${cornerStyle}">${previewGalleryPieceMarkup(side, width, height)}<i class="preview-gallery-reflection" aria-hidden="true"></i></div>`;
 }
 
 function previewGalleryMarkup() {
@@ -390,6 +398,8 @@ function renderCostPreviewMode() {
     preview.style.setProperty('--piece-paper-width', `${Math.max(1, swapsSides ? height : width)}px`);
     preview.style.setProperty('--piece-paper-height', `${Math.max(1, swapsSides ? width : height)}px`);
     preview.style.setProperty('--piece-paper-rotation', `${costPiecePaperRotation}deg`);
+    preview.style.setProperty('--rounded-corner-radius-x', `${Math.min(50, 400 / Math.max(1, pieceWidth))}%`);
+    preview.style.setProperty('--rounded-corner-radius-y', `${Math.min(50, 400 / Math.max(1, pieceHeight))}%`);
     preview.classList.toggle('has-paper-rotation', costPiecePaperRotation !== 0);
     stage.dataset.paperRotation = String(costPiecePaperRotation);
   } else {
@@ -398,6 +408,8 @@ function renderCostPreviewMode() {
     preview.style.removeProperty('--piece-paper-width');
     preview.style.removeProperty('--piece-paper-height');
     preview.style.removeProperty('--piece-paper-rotation');
+    preview.style.removeProperty('--rounded-corner-radius-x');
+    preview.style.removeProperty('--rounded-corner-radius-y');
     delete stage.dataset.paperRotation;
     preview.innerHTML = source.innerHTML;
     preview.style.width = source.style.width;

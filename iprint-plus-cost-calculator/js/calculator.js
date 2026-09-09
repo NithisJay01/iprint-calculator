@@ -189,7 +189,11 @@ function drawPreview(p,b,bleedMm,gapMm) {
         piece.appendChild(materialOverlay)
       }
       if(hasDiecut)piece.classList.add('has-diecut-effect');
-      if(hasRoundedCorner)piece.classList.add('has-rounded-corner');
+      if(hasRoundedCorner) {
+        piece.classList.add('has-rounded-corner');
+        piece.style.setProperty('--rounded-corner-radius-x',Math.min(50,400/Math.max(1,b.pieceW))+'%');
+        piece.style.setProperty('--rounded-corner-radius-y',Math.min(50,400/Math.max(1,b.pieceH))+'%')
+      }
       const number=document.createElement('span');
       number.className='piece-number';
       number.textContent=i+1;
