@@ -938,6 +938,30 @@ function bindFlow() {
   $('startQuickBrief')?.addEventListener('click', startQuickBrief);
   $('quickBriefNext')?.addEventListener('click', nextQuickBriefStep);
   $('quickBriefBack')?.addEventListener('click', previousQuickBriefStep);
+  $('quickJobNameSuggestions')?.addEventListener('click', event => {
+    const suggestion = event.target.closest('[data-quick-job-name-suggestion]');
+    if (!suggestion) return;
+    const value = randomJobNickname(suggestion.dataset.quickJobNameSuggestion || '');
+    $('quickJobName').value = value;
+    $('quickJobName').removeAttribute('aria-invalid');
+    $('quickJobNameSuggestions').querySelectorAll('[data-quick-job-name-suggestion]').forEach(button => {
+      const selected = button === suggestion;
+      button.classList.toggle('is-selected', selected);
+      button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+    });
+    if ($('quickBriefStatus')) $('quickBriefStatus').textContent = '';
+    $('quickJobName').focus();
+    announceUiChange(`ตั้งชื่อแนะนำเป็น “${value}” แล้ว`, $('quickJobName'), { scroll: false });
+  });
+  $('quickJobName')?.addEventListener('input', event => {
+    $('quickJobNameSuggestions')?.querySelectorAll('[data-quick-job-name-suggestion]').forEach(button => {
+      const suggestion = String(button.dataset.quickJobNameSuggestion || '').trim();
+      const value = event.target.value.trim();
+      const selected = value === suggestion || value.startsWith(`${suggestion} `);
+      button.classList.toggle('is-selected', selected);
+      button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+    });
+  });
   [['quickW', 'w'], ['quickH', 'h'], ['quickQty', 'qty']].forEach(([quickId, sourceId]) => {
     $(quickId)?.addEventListener('input', event => {
       $(sourceId).value = event.target.value;
