@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#eef6ff">
   <title>iPrint</title>
-  <link rel="stylesheet" href="css/app.css?v=20260908-staff-visibility">
+  <link rel="stylesheet" href="css/app.css?v=20260909-flow-controller">
 </head>
 <body>
 <section class="login-gate" id="loginGate" aria-labelledby="loginTitle">
@@ -138,7 +138,7 @@
       </div>
 
       <section class="form-card layout-form-card">
-        <div class="field"><label class="label" for="sheet">Preset กระดาษที่ใช้</label><select id="sheet"><option value="">กำลังโหลด Preset จาก Notion…</option></select></div>
+        <div class="field"><label class="label" for="sheet">Preset กระดาษที่ใช้</label><select id="sheet"><option value="">กำลังโหลด Preset จาก Notion…</option></select><p class="preset-lock-status" id="presetLockStatus" hidden></p></div>
         <div class="row2 dimension-fields">
           <div class="field dimension-field"><label class="label" for="w">กว้าง (ซม.)</label><input id="w" type="number" min="0.1" max="100" step="0.1" value="9"><input class="dimension-slider" id="wSlider" type="range" min="0.1" max="100" step="0.1" value="9" aria-label="ปรับความกว้างด้วยแถบเลื่อน"></div>
           <div class="field dimension-field"><label class="label" for="h">สูง (ซม.)</label><input id="h" type="number" min="0.1" max="100" step="0.1" value="5.4"><input class="dimension-slider" id="hSlider" type="range" min="0.1" max="100" step="0.1" value="5.4" aria-label="ปรับความสูงด้วยแถบเลื่อน"></div>
@@ -241,7 +241,7 @@
       <div class="staff-catalog-notice" id="staffCatalogNotice" role="status"></div>
       <div class="staff-catalog-tabs" id="staffCatalogTabs" role="tablist" aria-label="ประเภทข้อมูล"><button class="is-selected" type="button" data-catalog-tab="materials" role="tab" aria-selected="true">วัสดุ</button><button type="button" data-catalog-tab="services" role="tab" aria-selected="false">บริการ</button></div>
       <section class="staff-catalog-list-panel" id="staffCatalogListPanel">
-        <div class="staff-catalog-toolbar"><div class="staff-catalog-view-toggle" id="staffCatalogViewToggle" role="group" aria-label="รูปแบบการจัดการรายการ"><button class="is-selected" type="button" data-catalog-view="cards" aria-pressed="true">การ์ด</button><button type="button" data-catalog-view="table" aria-pressed="false">ตาราง</button><button type="button" data-catalog-view="visibility" aria-pressed="false">การแสดงผล</button></div><button class="primary-action staff-catalog-add" id="addStaffCatalogItem" type="button"><img class="button-icon" src="image/plus.svg" alt="">เพิ่มรายการ</button></div>
+        <div class="staff-catalog-toolbar"><div class="staff-catalog-view-toggle" id="staffCatalogViewToggle" role="group" aria-label="รูปแบบการจัดการรายการ"><button class="is-selected" type="button" data-catalog-view="cards" aria-pressed="true">การ์ด</button><button type="button" data-catalog-view="table" aria-pressed="false">ตาราง</button><button type="button" data-catalog-view="visibility" aria-pressed="false">แสดง/ซ่อน</button><button type="button" data-catalog-view="flow" aria-pressed="false">Flow</button></div><button class="primary-action staff-catalog-add" id="addStaffCatalogItem" type="button"><img class="button-icon" src="image/plus.svg" alt="">เพิ่มรายการ</button></div>
         <div class="staff-catalog-list" id="staffCatalogList"></div>
       </section>
       <section class="staff-catalog-editor" id="staffCatalogEditor" hidden>
@@ -324,11 +324,12 @@
 <div class="ui-change-toast" id="uiChangeToast" role="status" aria-live="polite" aria-atomic="true" hidden></div>
 
 <script src="js/config.js?v=20260908-public-order-enabled"></script>
-<script src="js/core.js?v=20260908-production-queue"></script>
-<script src="js/api.js?v=20260908-order-cancellation"></script>
-<script src="js/presets.js?v=20260906-quick-brief"></script>
+<script src="js/core.js?v=20260909-flow-controller"></script>
+<script src="js/api.js?v=20260909-flow-controller"></script>
+<script src="js/flow-settings.js?v=20260909-flow-controller"></script>
+<script src="js/presets.js?v=20260909-flow-controller"></script>
 <script src="js/materials.js?v=20260906-quick-brief"></script>
-<script src="js/services.js?v=20260907-hide-custom-request"></script>
+<script src="js/services.js?v=20260909-flow-controller"></script>
 <script src="js/artwork.js?v=20260907-responsive-artwork-module"></script>
 <script src="js/shape-mask.js?v=20260906-flow-refresh"></script>
 <script src="js/material-preview.js?v=20260906-flow-refresh"></script>
@@ -339,9 +340,10 @@
 <script src="js/customer.js?v=20260831-material-preview"></script>
 <script src="js/workflow.js?v=20260908-order-cancellation"></script>
 <script src="js/quote.js?v=20260904-public-order"></script>
-<script src="js/staff-catalog.js?v=20260908-staff-visibility"></script>
+<script src="js/staff-flow-settings.js?v=20260909-flow-controller"></script>
+<script src="js/staff-catalog.js?v=20260909-flow-controller"></script>
 <script src="js/staff-capacity.js?v=20260908-capacity-summary"></script>
-<script src="js/app.js?v=20260907-project-cleanup"></script>
-<script src="js/flow.js?v=20260907-project-cleanup"></script>
+<script src="js/app.js?v=20260909-flow-controller"></script>
+<script src="js/flow.js?v=20260909-flow-controller"></script>
 </body>
 </html>

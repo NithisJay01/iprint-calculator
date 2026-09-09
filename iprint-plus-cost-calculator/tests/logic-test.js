@@ -142,6 +142,7 @@
         assert(document.getElementById('flowStepper') && document.getElementById('cartModal'), 'เริ่มต้นแอปและโหลด Preset', 'ไม่พบ Stepper หรือตะกร้าของ Flow ใหม่');
         assert(document.getElementById('workflowModal'), 'เริ่มต้นแอปและโหลด Preset', 'ไม่พบหน้าติดตาม Workflow');
         assert(document.querySelector('[data-catalog-view="visibility"]'), 'เริ่มต้นแอปและโหลด Preset', 'ไม่พบหน้าตั้งค่าการแสดงบริการสำหรับ Staff');
+        assert(document.querySelector('[data-catalog-view="flow"]') && document.getElementById('presetLockStatus'), 'เริ่มต้นแอปและโหลด Preset', 'ไม่พบ Flow Controller หรือสถานะล็อก Preset');
         assert(briefDeadline?.readOnly && deliveryDeadline?.readOnly && briefDeadline?.placeholder === 'เลือกวันที่' && deliveryDeadline?.placeholder === 'เลือกวันที่', 'เริ่มต้นแอปและโหลด Preset', 'Deadline ต้องเปิดปฏิทินแทนการรับข้อความจากคีย์บอร์ด');
         const dateControls = [...document.querySelectorAll('.native-date-control[type="date"]')];
         assert(dateControls.length === 4 && dateControls.every(input => /^\d{4}-\d{2}-\d{2}$/.test(input.min)), 'เริ่มต้นแอปและโหลด Preset', 'Deadline ทุกจุดต้องเลือกผ่านปฏิทินและไม่อนุญาตวันย้อนหลัง');

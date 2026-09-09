@@ -1,25 +1,33 @@
 function renderPresets() {
     const sel=$('sheet');
     sel.innerHTML='';
-    const ids=Object.keys(presets);
+    const entries=typeof flowPresetsForJobType==='function'?flowPresetsForJobType(selectedJobType):Object.entries(presets);
+    const ids=entries.map(([id])=>id);
     if(!ids.length) {
       sel.innerHTML='<option value="">ไม่พบ Preset</option>';
       if($('quickSheet'))$('quickSheet').innerHTML=sel.innerHTML;
       return
     }
-    ids.forEach(id=> {
-      const p=presets[id],o=document.createElement('option');
+    entries.forEach(([id,p])=> {
+      const o=document.createElement('option');
       o.value=id;
       o.textContent=p.name+' ('+p.fullW+' × '+p.fullH+' cm)';
       sel.appendChild(o)
     }
     );
-    if(!presets[selectedSheet])selectedSheet=ids[0];
+    const configuredDefault=typeof flowDefaultPresetId==='function'?flowDefaultPresetId(selectedJobType):'';
+    if(configuredDefault&&ids.includes(configuredDefault))selectedSheet=configuredDefault;
+    else if(!ids.includes(selectedSheet))selectedSheet=ids[0];
     sel.value=selectedSheet;
+    const locked=Boolean(selectedJobType)&&typeof isFlowPresetLocked==='function'&&isFlowPresetLocked(selectedJobType);
+    sel.disabled=locked;
+    const lockStatus=$('presetLockStatus');
+    if(lockStatus){lockStatus.hidden=!locked;lockStatus.textContent=locked?'Preset นี้ถูกกำหนดจากประเภทงานและไม่สามารถเปลี่ยนได้':''}
     const quickSel=$('quickSheet');
     if(quickSel) {
       quickSel.innerHTML=sel.innerHTML;
-      quickSel.value=selectedSheet
+      quickSel.value=selectedSheet;
+      quickSel.disabled=locked
     }
   }
 

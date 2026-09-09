@@ -288,7 +288,17 @@ function renderServices() {
   }
 
   const groupMap = new Map();
-  const visibleServices = services.filter(service => !/^custom$/i.test(String(service.name || '').trim()) && !/DIY\s*ส่วนเสริม/i.test(String(service.name || '')));
+  const scopedServices = typeof flowServicesForJobType === 'function' ? flowServicesForJobType(services, typeof getSelectedJobType === 'function' ? getSelectedJobType() : '') : services;
+  const allowedIds = new Set(scopedServices.map(service => String(service.id)));
+  Object.keys(selectedServiceIds).forEach(id => { if (!allowedIds.has(String(id))) delete selectedServiceIds[id]; });
+  if (!scopedServices.length) {
+    box.innerHTML = '<div class="ms-status">ประเภทงานนี้ยังไม่ได้เปิดบริการ</div>';
+    if (quickBox) quickBox.innerHTML = '<div class="ms-status">ประเภทงานนี้ยังไม่ได้เปิดบริการ</div>';
+    $('serviceStatus').textContent = 'Flow Setting • 0 บริการ';
+    syncLayoutPreviewVisibility();
+    return;
+  }
+  const visibleServices = scopedServices.filter(service => !/^custom$/i.test(String(service.name || '').trim()) && !/DIY\s*ส่วนเสริม/i.test(String(service.name || '')));
   visibleServices.forEach(service => {
     const definition = serviceGroupDefinition(service);
     if (!groupMap.has(definition.key)) groupMap.set(definition.key, { definition, services: [] });
@@ -324,7 +334,7 @@ function renderServices() {
       : createServiceGroup(groupData, 'main'));
     if (quickBox) quickBox.appendChild(createServiceGroup(groupData, 'quick'));
   });
-  $('serviceStatus').textContent = `${dataSourceLabel()} • ${services.length} บริการ`;
+  $('serviceStatus').textContent = `${dataSourceLabel()} • ${scopedServices.length} บริการ`;
   syncLayoutPreviewVisibility();
   if (typeof syncArtworkSideControls === 'function') syncArtworkSideControls();
   syncDiecutShapeAvailability();

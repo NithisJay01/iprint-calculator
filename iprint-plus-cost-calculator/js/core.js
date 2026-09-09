@@ -4,7 +4,7 @@
   const IPRINT_CONFIG=window.IPRINT_CONFIG||{};
   const API_ROOT=String(IPRINT_CONFIG.apiRoot||'https://iprint-flow-api.iprint-garphic1.workers.dev').replace(/\/$/,'');
   const API= {
-    presets:API_ROOT+'/presets',materials:API_ROOT+'/materials',services:API_ROOT+'/services',quotes:API_ROOT+'/quotes',tickets:API_ROOT+'/tickets',orders:API_ROOT+'/orders',publicOrders:API_ROOT+'/public/orders',orderItems:API_ROOT+'/order-items',customers: API_ROOT + '/customers',authCheck:API_ROOT+'/auth/check',staffMaterials:API_ROOT+'/staff/materials',staffServices:API_ROOT+'/staff/services',staffCapacity:API_ROOT+'/staff/capacity',staffQueue:API_ROOT+'/staff/queue',
+    presets:API_ROOT+'/presets',flowSettings:API_ROOT+'/flow-settings',materials:API_ROOT+'/materials',services:API_ROOT+'/services',quotes:API_ROOT+'/quotes',tickets:API_ROOT+'/tickets',orders:API_ROOT+'/orders',publicOrders:API_ROOT+'/public/orders',orderItems:API_ROOT+'/order-items',customers: API_ROOT + '/customers',authCheck:API_ROOT+'/auth/check',staffMaterials:API_ROOT+'/staff/materials',staffServices:API_ROOT+'/staff/services',staffFlowSettings:API_ROOT+'/staff/flow-settings',staffCapacity:API_ROOT+'/staff/capacity',staffQueue:API_ROOT+'/staff/queue',
   }
   ;
   const BLEED_MM=3;
@@ -12,7 +12,8 @@
   const CACHE= {
     presets:IPRINT_TEST_MODE?'iprint_test_cache_presets_v1':'iprint_cache_presets_v1',
     materials:IPRINT_TEST_MODE?'iprint_test_cache_materials_v1':'iprint_cache_materials_v1',
-    services:IPRINT_TEST_MODE?'iprint_test_cache_services_v1':'iprint_cache_services_v1'
+    services:IPRINT_TEST_MODE?'iprint_test_cache_services_v1':'iprint_cache_services_v1',
+    flowSettings:IPRINT_TEST_MODE?'iprint_test_flow_settings_v1':'iprint_flow_settings_v1'
   }
   ;
   /* Static HTML cannot keep a write key secret. Leave blank unless you accept that the key is visible to browser users.
@@ -25,6 +26,7 @@
   let presets = {};
   let materials = [];
   let services = [];
+  let flowSettings = null;
   let customers = [];
   let selectedSheet = '';
   let selectedMaterialId = '';

@@ -274,6 +274,7 @@ function bind() {
     $('printQuote').addEventListener('click',printQuote);
     window.addEventListener('resize',()=>setTimeout(calculate,60));
     calculate();
+    syncFlowSettings();
     syncPresets();
     syncMaterials();
     syncServices();
@@ -293,6 +294,7 @@ function startApplication() {
     getLastCalculation: () => lastCalc,
     findBest,
     syncPresets,
+    syncFlowSettings,
     syncMaterials,
     syncServices,
     syncCustomers,

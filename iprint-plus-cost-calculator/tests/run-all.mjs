@@ -4,6 +4,7 @@ const tests = [
   'tests/deployment-config-test.mjs',
   'tests/ui-logic-node-test.mjs',
   'worker/catalog-contract-test.mjs',
+  'worker/flow-settings-test.mjs',
   'worker/order-domain-test.mjs',
   'worker/order-smoke-test.mjs',
   'worker/public-order-security-test.mjs',

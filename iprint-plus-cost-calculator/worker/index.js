@@ -6,6 +6,7 @@ import { planOrderSchedule } from './domain/scheduling.js';
 import { createCatalogRepository } from './repositories/notion-catalog-repository.js';
 import { createCapacityRepository } from './repositories/notion-capacity-repository.js';
 import { createQueueRepository } from './repositories/notion-queue-repository.js';
+import { createFlowSettingsRepository } from './repositories/notion-flow-settings-repository.js';
 import { cancelOrderProduction } from './services/order-cancellation.js';
 
 export default {
@@ -162,6 +163,8 @@ export default {
           endpoints: [
             "GET /auth/check",
             "GET /presets",
+            "GET /flow-settings",
+            "PUT /staff/flow-settings",
             "POST /presets",
             "DELETE /presets?id=",
             "GET /materials",
@@ -190,6 +193,28 @@ export default {
       // ================================
       // PAPER PRESETS - GET
       // ================================
+
+      if (url.pathname === "/flow-settings" && request.method === "GET") {
+        try {
+          const repository = createFlowSettingsRepository(env, { headers: notionHeaders });
+          return json({ success: true, settings: await repository.get() });
+        } catch (error) {
+          return json({ success: false, error: error.message, detail: error.detail || null }, error.status || 502);
+        }
+      }
+
+      if (url.pathname === "/staff/flow-settings" && request.method === "PUT") {
+        const authError = requireAuth(request);
+        if (authError) return authError;
+        const body = await request.json().catch(() => null);
+        if (!body) return json({ success: false, error: "Invalid JSON body" }, 400);
+        try {
+          const repository = createFlowSettingsRepository(env, { headers: notionHeaders });
+          return json({ success: true, settings: await repository.save(body) });
+        } catch (error) {
+          return json({ success: false, error: error.message, errors: error.errors || [], detail: error.detail || null }, error.status || 502);
+        }
+      }
 
       if (
         url.pathname === "/presets" &&
@@ -3004,6 +3029,8 @@ export default {
         endpoints: [
           "GET /auth/check",
           "GET /presets",
+          "GET /flow-settings",
+          "PUT /staff/flow-settings",
           "POST /presets",
           "DELETE /presets?id=",
           "GET /materials",

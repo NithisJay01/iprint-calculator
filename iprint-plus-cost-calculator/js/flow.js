@@ -87,6 +87,8 @@ function setJobType(type, options = {}) {
     button.setAttribute('aria-pressed', selected ? 'true' : 'false');
   });
   syncJobNameSuggestions();
+  if (typeof renderPresets === 'function') renderPresets();
+  if (typeof renderServices === 'function') renderServices();
   const input = $('jobName');
   if (!input || options.preserveName) return;
   const name = generatedJobName(selectedJobType, jobNickname);
@@ -164,12 +166,16 @@ function applyJobTypeDefaults() {
   $('h').value = defaults.height;
   $('qty').value = defaults.quantity;
   setJobVariants([{ name: jobNickname || (selectedJobType === 'อื่น ๆ' ? 'แบบหลัก' : selectedJobType), quantity: defaults.quantity }]);
-  const presetEntry = Object.entries(presets || {}).find(([, preset]) => defaults.preset.test(String(preset?.name || '')));
+  const configuredPresetId = typeof flowDefaultPresetId === 'function' ? flowDefaultPresetId(selectedJobType) : '';
+  const presetEntry = configuredPresetId && presets[configuredPresetId]
+    ? [configuredPresetId, presets[configuredPresetId]]
+    : Object.entries(presets || {}).find(([, preset]) => defaults.preset.test(String(preset?.name || '')));
   if (presetEntry) {
     selectedSheet = presetEntry[0];
     $('sheet').value = selectedSheet;
     saveState();
   }
+  if (typeof renderPresets === 'function') renderPresets();
   if (typeof renderServices === 'function') renderServices();
   const presetName = presetEntry?.[1]?.name || presets?.[selectedSheet]?.name || 'Preset ปัจจุบัน';
   return `${selectedJobType} • ${defaults.width}×${defaults.height} cm • ${defaults.quantity.toLocaleString('th-TH')} ชิ้น • ${presetName}`;

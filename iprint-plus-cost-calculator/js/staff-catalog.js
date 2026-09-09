@@ -119,6 +119,10 @@ function renderStaffServiceVisibility(items) {
 function renderStaffCatalog() {
   const list = $('staffCatalogList');
   if (!list) return;
+  if (staffCatalogView === 'flow' && typeof renderStaffFlowSettings === 'function') {
+    list.innerHTML = renderStaffFlowSettings();
+    return;
+  }
   const items = [...staffCatalogItems()].sort((a, b) => {
     const aOrder = Number.isFinite(Number(a.sortOrder)) ? Number(a.sortOrder) : 9999;
     const bOrder = Number.isFinite(Number(b.sortOrder)) ? Number(b.sortOrder) : 9999;
@@ -152,7 +156,7 @@ function showStaffCatalogList() {
   $('staffCatalogListPanel').hidden = false;
   $('staffCatalogTabs').hidden = false;
   $('staffCatalogBack').hidden = false;
-  $('addStaffCatalogItem').hidden = staffCatalogView === 'visibility';
+  $('addStaffCatalogItem').hidden = ['visibility', 'flow'].includes(staffCatalogView);
   renderStaffCatalog();
 }
 
@@ -274,6 +278,9 @@ async function saveStaffCatalogTableRow(row, item) {
 }
 
 async function handleStaffCatalogAction(event) {
+  if (staffCatalogView === 'flow' && typeof handleStaffFlowSettingsAction === 'function') {
+    if (await handleStaffFlowSettingsAction(event)) return;
+  }
   const row = event.target.closest('[data-catalog-id]');
   if (!row || activeAccessRole !== 'staff') return;
   const collection = staffCatalogItems();
@@ -328,7 +335,7 @@ function selectStaffCatalogTab(event) {
   const button = event.target.closest('[data-catalog-tab]');
   if (!button) return;
   staffCatalogType = button.dataset.catalogTab;
-  if (staffCatalogType === 'materials' && staffCatalogView === 'visibility') staffCatalogView = 'cards';
+  if (staffCatalogView === 'flow' || (staffCatalogType === 'materials' && staffCatalogView === 'visibility')) staffCatalogView = 'cards';
   document.querySelectorAll('[data-catalog-tab]').forEach(tab => {
     const selected = tab === button;
     tab.classList.toggle('is-selected', selected);
@@ -346,8 +353,8 @@ function selectStaffCatalogTab(event) {
 function selectStaffCatalogView(event) {
   const button = event.target.closest('[data-catalog-view]');
   if (!button) return;
-  staffCatalogView = ['cards', 'table', 'visibility'].includes(button.dataset.catalogView) ? button.dataset.catalogView : 'cards';
-  if (staffCatalogView === 'visibility') {
+  staffCatalogView = ['cards', 'table', 'visibility', 'flow'].includes(button.dataset.catalogView) ? button.dataset.catalogView : 'cards';
+  if (staffCatalogView === 'visibility' || staffCatalogView === 'flow') {
     staffCatalogType = 'services';
     document.querySelectorAll('[data-catalog-tab]').forEach(tab => {
       const selected = tab.dataset.catalogTab === 'services';
@@ -361,7 +368,7 @@ function selectStaffCatalogView(event) {
     option.classList.toggle('is-selected', selected);
     option.setAttribute('aria-pressed', String(selected));
   });
-  $('addStaffCatalogItem').hidden = staffCatalogView === 'visibility';
+  $('addStaffCatalogItem').hidden = ['visibility', 'flow'].includes(staffCatalogView);
   renderStaffCatalog();
 }
 

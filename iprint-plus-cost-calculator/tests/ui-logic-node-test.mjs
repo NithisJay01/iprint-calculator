@@ -34,6 +34,20 @@ assert.equal(serviceContext.hasSelectedPrintService(), false);
 serviceContext.selectedServiceIds['print-single'] = true;
 assert.equal(serviceContext.hasSelectedPrintService(), true);
 
+const flowSettingsContext = scriptContext();
+flowSettingsContext.selectedJobType = 'งานกระดาษ';
+flowSettingsContext.flowSettings = null;
+flowSettingsContext.presets = {
+  paper: { name: '13×19 ตัดเต็มแผ่น Manual' },
+  other: { name: 'SRA3' }
+};
+vm.runInContext(fs.readFileSync(new URL('../js/flow-settings.js', import.meta.url), 'utf8'), flowSettingsContext);
+assert.deepEqual(JSON.parse(JSON.stringify(flowSettingsContext.flowPresetsForJobType('งานกระดาษ'))).map(([id]) => id), ['paper']);
+assert.equal(flowSettingsContext.flowDefaultPresetId('งานกระดาษ'), 'paper');
+assert.equal(flowSettingsContext.isFlowPresetLocked('งานกระดาษ'), true);
+flowSettingsContext.flowSettings = flowSettingsContext.normalizeClientFlowSettings({ jobTypes: { 'งานกระดาษ': { configured: true, presetIds: ['other'], defaultPresetId: 'other', lockPreset: false, serviceIds: ['service-a'] } } });
+assert.deepEqual(JSON.parse(JSON.stringify(flowSettingsContext.flowServicesForJobType([{ id: 'service-a' }, { id: 'service-b' }], 'งานกระดาษ'))), [{ id: 'service-a' }]);
+
 const previewContext = scriptContext();
 vm.runInContext(fs.readFileSync(new URL('../js/material-preview.js', import.meta.url), 'utf8'), previewContext);
 assert.deepEqual(

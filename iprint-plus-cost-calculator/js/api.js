@@ -1,6 +1,9 @@
 const IPRINT_TEST_FIXTURES = {
   presets: {
     presets: [
+      { id: 'test-paper-13x19', name: '13×19 ตัดเต็มแผ่น Manual', fullW: 33.02, fullH: 48.26, usableW: 33.02, usableH: 48.26, type: 'เต็มพื้นที่', active: true },
+      { id: 'test-mimaki-13x19', name: '13×19 Mimaki', fullW: 33.02, fullH: 48.26, usableW: 31.5, usableH: 46.7, type: 'Mimaki', active: true },
+      { id: 'test-flatblade-13x19', name: '13×19 Flatblade', fullW: 33.02, fullH: 48.26, usableW: 31.5, usableH: 46.7, type: 'Flatblade', active: true },
       { id: 'test-sra3', name: 'SRA3', fullW: 32.9, fullH: 48.3, usableW: 31.5, usableH: 46.9, type: 'เผื่อมาร์คมาตรฐาน', active: true }
     ]
   },
@@ -24,6 +27,17 @@ const IPRINT_TEST_FIXTURES = {
       { id: 'test-rounded-corner', category: 'DIY Solution', name: 'ไดคัทตัดมุม', material: 'มุมมน • ค่าเริ่มต้นไม่เลือก = มุมฉาก 0°', price: 0, unit: 'piece', sortOrder: 95, active: true }
     ]
   },
+  flowSettings: {
+    settings: {
+      version: 1,
+      jobTypes: {
+        'งานกระดาษ': { enabled: true, configured: true, presetIds: ['test-paper-13x19'], defaultPresetId: 'test-paper-13x19', lockPreset: true, serviceIds: ['test-print-single', 'test-print-double', 'test-lam-matte', 'test-lam-gloss', 'test-lam-hologram', 'test-rounded-corner'] },
+        'สติกเกอร์ Die-cut 50%': { enabled: true, configured: false, presetIds: [], defaultPresetId: '', lockPreset: false, serviceIds: [] },
+        'สติกเกอร์ Die-cut 100%': { enabled: true, configured: false, presetIds: [], defaultPresetId: '', lockPreset: false, serviceIds: [] },
+        'อื่น ๆ': { enabled: true, configured: false, presetIds: [], defaultPresetId: '', lockPreset: false, serviceIds: [] }
+      }
+    }
+  },
   customers: {
     customers: [
       { id: 'test-customer-001', name: 'ลูกค้าทดสอบ iPrint', company: 'Mock Studio', phone: '0812345678', email: 'test@example.com', address: '123 ถนนทดสอบ กรุงเทพฯ', active: true }
@@ -40,6 +54,7 @@ function cloneTestData(value) {
 function getTestApiFixture(url) {
   const path = new URL(url, window.location.href).pathname;
   if (path.endsWith('/presets')) return cloneTestData(IPRINT_TEST_FIXTURES.presets);
+  if (path.endsWith('/flow-settings')) return cloneTestData(IPRINT_TEST_FIXTURES.flowSettings);
   if (path.endsWith('/materials')) return cloneTestData(IPRINT_TEST_FIXTURES.materials);
   if (path.endsWith('/services')) return cloneTestData(IPRINT_TEST_FIXTURES.services);
   if (path.endsWith('/customers')) return cloneTestData(IPRINT_TEST_FIXTURES.customers);
