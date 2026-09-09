@@ -36,10 +36,18 @@ export function normalizeFlowSettings(input = {}) {
     value: String(option?.value || '').trim().slice(0, 120),
     label: String(option?.label || option?.value || '').trim().slice(0, 120)
   })).filter(option => option.value && option.label).slice(0, 20);
+  const sourceSteps = sourceQuiz.steps && typeof sourceQuiz.steps === 'object' ? sourceQuiz.steps : {};
+  const step = (key, title, description) => ({ enabled: sourceSteps[key]?.enabled !== false,
+    title: String(sourceSteps[key]?.title || title).trim().slice(0, 160),
+    description: String(sourceSteps[key]?.description || description).trim().slice(0, 500) });
   return { version: 2, quiz: {
     title: String(sourceQuiz.title || 'งานนี้เป็นงานประเภทอะไร?').trim().slice(0, 160),
     description: String(sourceQuiz.description || 'เลือกคำตอบที่ใกล้เคียงที่สุด เดี๋ยวผมช่วยตั้งค่าเริ่มต้นให้ครับ').trim().slice(0, 500),
-    options
+    options,
+    steps: {
+      nickname: step('nickname', 'อยากเรียกงานนี้ว่าอะไร?', 'ชื่อนี้มีไว้สำหรับเป็นชื่อออร์เดอร์หลัก และจะถูกใช้เป็นหัวข้อในการส่งบรีฟงานครับ'),
+      delivery: step('delivery', 'อยากรับงานเมื่อไหร่ครับ', 'เลือกวันมารับงานที่ร้านได้เลย หรือถ้าส่งเป็นพัสดุวันอาจคลาดเคลื่อนเล็กน้อยขึ้นอยู่กับบริการขนส่งครับ')
+    }
   }, jobTypes };
 }
 

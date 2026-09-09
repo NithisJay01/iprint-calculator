@@ -47,12 +47,22 @@ function normalizeClientFlowSettings(input = {}) {
     value: String(option?.value || '').trim(),
     label: String(option?.label || option?.value || '').trim()
   })).filter(option => option.value && option.label).slice(0, 20);
+  const sourceSteps = sourceQuiz.steps && typeof sourceQuiz.steps === 'object' ? sourceQuiz.steps : {};
+  const step = (key, title, description) => ({
+    enabled: sourceSteps[key]?.enabled !== false,
+    title: String(sourceSteps[key]?.title || title).trim().slice(0, 160),
+    description: String(sourceSteps[key]?.description || description).trim().slice(0, 500)
+  });
   return {
     version: 2,
     quiz: {
       title: String(sourceQuiz.title || 'งานนี้เป็นงานประเภทอะไร?').trim().slice(0, 160),
       description: String(sourceQuiz.description || 'เลือกคำตอบที่ใกล้เคียงที่สุด เดี๋ยวผมช่วยตั้งค่าเริ่มต้นให้ครับ').trim().slice(0, 500),
-      options
+      options,
+      steps: {
+        nickname: step('nickname', 'อยากเรียกงานนี้ว่าอะไร?', 'ชื่อนี้มีไว้สำหรับเป็นชื่อออร์เดอร์หลัก และจะถูกใช้เป็นหัวข้อในการส่งบรีฟงานครับ'),
+        delivery: step('delivery', 'อยากรับงานเมื่อไหร่ครับ', 'เลือกวันมารับงานที่ร้านได้เลย หรือถ้าส่งเป็นพัสดุวันอาจคลาดเคลื่อนเล็กน้อยขึ้นอยู่กับบริการขนส่งครับ')
+      }
     },
     jobTypes
   };
@@ -112,6 +122,24 @@ function syncFlowJobTypeVisibility() {
   const description = title?.nextElementSibling;
   if (title) title.textContent = normalized.quiz.title;
   if (description) description.textContent = normalized.quiz.description;
+  const nicknameTitle = $('jobNicknameQuestion');
+  const deliveryTitle = $('jobDatesQuestion');
+  if (nicknameTitle) nicknameTitle.textContent = normalized.quiz.steps.nickname.title;
+  if (nicknameTitle?.nextElementSibling) nicknameTitle.nextElementSibling.textContent = normalized.quiz.steps.nickname.description;
+  if (deliveryTitle) deliveryTitle.textContent = normalized.quiz.steps.delivery.title;
+  if (deliveryTitle?.nextElementSibling) deliveryTitle.nextElementSibling.textContent = normalized.quiz.steps.delivery.description;
+  const enabledSteps = [1, ...(normalized.quiz.steps.nickname.enabled ? [2] : []), ...(normalized.quiz.steps.delivery.enabled ? [3] : [])];
+  document.querySelectorAll('[data-job-quiz-step]').forEach(marker => { marker.hidden = !enabledSteps.includes(Number(marker.dataset.jobQuizStep)); });
+  enabledSteps.forEach((stepNumber, index) => {
+    const panel = document.querySelector(`[data-job-quiz-question="${stepNumber}"]`);
+    const counter = panel?.querySelector(':scope > small');
+    if (counter) counter.textContent = `คำถาม ${index + 1} จาก ${enabledSteps.length}`;
+  });
+  document.querySelector('.job-quiz-progress')?.setAttribute('aria-label', `คำถาม ${enabledSteps.length} ข้อ`);
+}
+
+function isFlowQuizStepEnabled(step) {
+  return normalizeClientFlowSettings(flowSettings || {}).quiz.steps[step]?.enabled !== false;
 }
 
 async function syncFlowSettings() {
@@ -147,3 +175,4 @@ window.flowDefaultPresetId = flowDefaultPresetId;
 window.isFlowPresetLocked = isFlowPresetLocked;
 window.flowServicesForJobType = flowServicesForJobType;
 window.syncFlowJobTypeVisibility = syncFlowJobTypeVisibility;
+window.isFlowQuizStepEnabled = isFlowQuizStepEnabled;

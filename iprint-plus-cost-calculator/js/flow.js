@@ -906,8 +906,11 @@ function bindFlow() {
         requestAnimationFrame(() => $('jobTypeOther')?.focus());
         return;
       }
-      showJobSetupQuestion(2);
-      announceUiChange('เลือกประเภทงานแล้ว ตั้งชื่องานต่อได้เลย', $('[data-job-quiz-question="2"]'));
+      if (isFlowQuizStepEnabled('nickname')) {
+        showJobSetupQuestion(2);
+        announceUiChange('เลือกประเภทงานแล้ว ตั้งชื่องานต่อได้เลย', $('[data-job-quiz-question="2"]'));
+      } else if (isFlowQuizStepEnabled('delivery')) showJobSetupQuestion(3);
+      else completeJobSetup();
     }
   });
   $('jobTypeOtherForm')?.addEventListener('submit', event => {
@@ -915,7 +918,9 @@ function bindFlow() {
     const customType = $('jobTypeOther')?.value.trim();
     if (!customType) return;
     setJobType(customType);
-    showJobSetupQuestion(2);
+    if (isFlowQuizStepEnabled('nickname')) showJobSetupQuestion(2);
+    else if (isFlowQuizStepEnabled('delivery')) showJobSetupQuestion(3);
+    else completeJobSetup();
   });
   $('jobSetupToHome')?.addEventListener('click', () => showAppView('home'));
   $('jobSetupBack')?.addEventListener('click', () => showJobSetupQuestion(1));
@@ -941,8 +946,8 @@ function bindFlow() {
       button.setAttribute('aria-pressed', selected ? 'true' : 'false');
     });
   });
-  $('jobNicknameForm')?.addEventListener('submit', event => { event.preventDefault(); setJobNickname($('jobNickname')?.value || ''); showJobSetupQuestion(3); });
-  $('jobDatesBack')?.addEventListener('click', () => showJobSetupQuestion(2));
+  $('jobNicknameForm')?.addEventListener('submit', event => { event.preventDefault(); setJobNickname($('jobNickname')?.value || ''); if (isFlowQuizStepEnabled('delivery')) showJobSetupQuestion(3); else completeJobSetup(); });
+  $('jobDatesBack')?.addEventListener('click', () => showJobSetupQuestion(isFlowQuizStepEnabled('nickname') ? 2 : 1));
   $('jobDatesForm')?.addEventListener('submit', event => {
     event.preventDefault();
     const deliveryDate = normalizeFlowDateValue($('quizDeliveryDeadline').value);
