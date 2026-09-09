@@ -8,9 +8,12 @@ export const FLOW_JOB_TYPES = Object.freeze([
 export function normalizeFlowSettings(input = {}) {
   const source = input && typeof input === 'object' ? input : {};
   const sourceRules = source.jobTypes && typeof source.jobTypes === 'object' ? source.jobTypes : {};
+  const sourceQuiz = source.quiz && typeof source.quiz === 'object' ? source.quiz : {};
+  const configuredOptions = Array.isArray(sourceQuiz.options) ? sourceQuiz.options : [];
+  const optionKeys = configuredOptions.map(option => String(option?.value || '').trim()).filter(Boolean);
   const jobTypes = {};
 
-  FLOW_JOB_TYPES.forEach(jobType => {
+  [...new Set([...FLOW_JOB_TYPES, ...Object.keys(sourceRules), ...optionKeys])].forEach(jobType => {
     const rule = sourceRules[jobType] && typeof sourceRules[jobType] === 'object' ? sourceRules[jobType] : {};
     const uniqueIds = values => [...new Set((Array.isArray(values) ? values : [])
       .map(value => String(value || '').trim()).filter(Boolean))].slice(0, 100);
@@ -28,7 +31,16 @@ export function normalizeFlowSettings(input = {}) {
     };
   });
 
-  return { version: 1, jobTypes };
+  const fallbackOptions = FLOW_JOB_TYPES.map(value => ({ value, label: value.replace('สติกเกอร์ Die-cut', 'สติกเกอร์ตัด') }));
+  const options = (configuredOptions.length ? configuredOptions : fallbackOptions).map(option => ({
+    value: String(option?.value || '').trim().slice(0, 120),
+    label: String(option?.label || option?.value || '').trim().slice(0, 120)
+  })).filter(option => option.value && option.label).slice(0, 20);
+  return { version: 2, quiz: {
+    title: String(sourceQuiz.title || 'งานนี้เป็นงานประเภทอะไร?').trim().slice(0, 160),
+    description: String(sourceQuiz.description || 'เลือกคำตอบที่ใกล้เคียงที่สุด เดี๋ยวผมช่วยตั้งค่าเริ่มต้นให้ครับ').trim().slice(0, 500),
+    options
+  }, jobTypes };
 }
 
 export function validateFlowSettings(input = {}) {
@@ -38,5 +50,6 @@ export function validateFlowSettings(input = {}) {
   Object.entries(value.jobTypes).forEach(([jobType, rule]) => {
     if (rule.lockPreset && !rule.defaultPresetId) errors.push(`${jobType}: locked preset requires a default preset`);
   });
+  if (!value.quiz.options.length) errors.push('quiz must have at least one option');
   return { success: errors.length === 0, errors, value };
 }

@@ -122,6 +122,19 @@ function renderServiceRow(service, group, scope = 'main') {
 
   const main = document.createElement('div');
   main.className = 'service-main';
+  const imageUrl = /^https:\/\/[^\s]+$/i.test(String(service.imageUrl || '').trim()) ? String(service.imageUrl).trim() : '';
+  if (imageUrl) {
+    const image = document.createElement('img');
+    image.className = 'service-thumbnail';
+    image.src = imageUrl;
+    image.alt = '';
+    image.loading = 'lazy';
+    image.referrerPolicy = 'no-referrer';
+    main.classList.add('has-image');
+    main.append(image);
+  }
+  const copy = document.createElement('div');
+  copy.className = 'service-copy';
   const name = document.createElement('div');
   name.className = 'service-name';
   name.textContent = service.baseName || service.name;
@@ -129,7 +142,8 @@ function renderServiceRow(service, group, scope = 'main') {
   meta.className = 'service-meta';
   meta.textContent = service.material || '';
   meta.hidden = !meta.textContent;
-  main.append(name, meta);
+  copy.append(name, meta);
+  main.append(copy);
   if (service.pricePending) {
     requestInput = document.createElement('input');
     requestInput.type = 'text';

@@ -250,6 +250,7 @@
           <input id="staffCatalogEditId" type="hidden">
           <div class="field"><label class="label" for="staffCatalogName">ชื่อรายการ</label><input id="staffCatalogName" maxlength="120" required></div>
           <div class="field staff-catalog-category" id="staffCatalogCategoryWrap" hidden><label class="label" for="staffCatalogCategory">หมวดหมู่บริการ</label><input id="staffCatalogCategory" list="staffCatalogCategoryList" maxlength="80" placeholder="เลือกหรือพิมพ์ชื่อหมวดใหม่"><datalist id="staffCatalogCategoryList"></datalist><p class="hint">เปลี่ยนหมวดแล้วบริการจะย้ายกลุ่มในหน้าคำนวณทันที</p></div>
+          <div class="field staff-catalog-image-field" id="staffCatalogImageWrap" hidden><label class="label" for="staffCatalogImageUrl">ภาพบริการ</label><input id="staffCatalogImageUrl" type="url" maxlength="2000" placeholder="https://example.com/service-image.jpg"><div class="staff-catalog-image-preview" id="staffCatalogImagePreview"><span>ยังไม่ได้กำหนดภาพ</span></div><p class="hint">ใช้ URL รูปภาพสาธารณะแบบ HTTPS ภาพจะแสดงในตัวเลือกบริการของลูกค้า</p></div>
           <div class="row2"><div class="field"><label class="label" for="staffCatalogPrice">ราคา</label><input id="staffCatalogPrice" type="number" min="0" step="0.01" required></div><div class="field"><label class="label" for="staffCatalogUnit">หน่วย</label><select id="staffCatalogUnit"><option value="sheet">ต่อแผ่น</option><option value="piece">ต่อชิ้น</option><option value="job">ต่องาน</option></select></div></div>
           <section class="staff-capacity-fields" id="staffCatalogCapacityWrap" hidden><div class="staff-capacity-heading"><div><small>PRODUCTION CAPACITY</small><h3>กำลังผลิตของบริการ</h3></div><span>ใช้จัดคิวรายวัน</span></div><div class="row3"><div class="field"><label class="label" for="staffCapacityPoints">แต้มต่อช่วง</label><input id="staffCapacityPoints" type="number" min="0" step="0.25" value="0"></div><div class="field"><label class="label" for="staffCapacityBasis">วิธีคิด</label><select id="staffCapacityBasis"><option value="job">ต่องาน</option><option value="sheet">ตามจำนวนแผ่น</option><option value="piece">ตามจำนวนชิ้น</option></select></div><div class="field"><label class="label" for="staffCapacityStep">จำนวนต่อช่วง</label><input id="staffCapacityStep" type="number" min="1" step="1" value="1"></div></div><p class="staff-capacity-preview" id="staffCapacityPreview">บริการนี้ยังไม่เพิ่มภาระในคิว</p></section>
           <label class="staff-active-control"><input id="staffCatalogActive" type="checkbox" checked><span>เปิดใช้งานรายการนี้</span></label>
@@ -326,10 +327,10 @@
 <script src="js/config.js?v=20260908-public-order-enabled"></script>
 <script src="js/core.js?v=20260909-flow-controller"></script>
 <script src="js/api.js?v=20260909-flow-controller"></script>
-<script src="js/flow-settings.js?v=20260909-flow-controller"></script>
+<script src="js/flow-settings.js?v=20260909-node-controller"></script>
 <script src="js/presets.js?v=20260909-flow-controller"></script>
 <script src="js/materials.js?v=20260906-quick-brief"></script>
-<script src="js/services.js?v=20260909-flow-controller"></script>
+<script src="js/services.js?v=20260909-service-images"></script>
 <script src="js/artwork.js?v=20260907-responsive-artwork-module"></script>
 <script src="js/shape-mask.js?v=20260906-flow-refresh"></script>
 <script src="js/material-preview.js?v=20260906-flow-refresh"></script>
@@ -340,8 +341,8 @@
 <script src="js/customer.js?v=20260831-material-preview"></script>
 <script src="js/workflow.js?v=20260908-order-cancellation"></script>
 <script src="js/quote.js?v=20260904-public-order"></script>
-<script src="js/staff-flow-settings.js?v=20260909-flow-controller"></script>
-<script src="js/staff-catalog.js?v=20260909-flow-controller"></script>
+<script src="js/staff-flow-settings.js?v=20260909-node-controller"></script>
+<script src="js/staff-catalog.js?v=20260909-service-images"></script>
 <script src="js/staff-capacity.js?v=20260908-capacity-summary"></script>
 <script src="js/app.js?v=20260909-flow-controller"></script>
 <script src="js/flow.js?v=20260909-flow-controller"></script>

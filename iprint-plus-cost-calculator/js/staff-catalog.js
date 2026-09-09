@@ -19,11 +19,26 @@ function syncStaffCategoryControl() {
   const isService = staffCatalogType === 'services';
   $('staffCatalogCategoryWrap').hidden = !isService;
   $('staffCatalogCapacityWrap').hidden = !isService;
+  $('staffCatalogImageWrap').hidden = !isService;
   $('staffCatalogCategory').required = isService;
   $('staffCatalogCategoryList').innerHTML = staffServiceCategories()
     .map(category => `<option value="${staffCatalogEscape(category)}"></option>`).join('');
   if (!isService) $('staffCatalogCategory').value = '';
   updateStaffCapacityPreview();
+}
+
+function staffServiceImageUrl(value) {
+  const url = String(value || '').trim();
+  return /^https:\/\/[^\s]+$/i.test(url) ? url : '';
+}
+
+function updateStaffServiceImagePreview() {
+  const preview = $('staffCatalogImagePreview');
+  if (!preview) return;
+  const url = staffServiceImageUrl($('staffCatalogImageUrl')?.value);
+  preview.innerHTML = url
+    ? `<img src="${staffCatalogEscape(url)}" alt="ตัวอย่างภาพบริการ" referrerpolicy="no-referrer"><span>ตัวอย่างภาพบริการ</span>`
+    : '<span>ยังไม่ได้กำหนดภาพ</span>';
 }
 
 function staffCapacityBasisLabel(value) {
@@ -59,7 +74,9 @@ function staffCatalogResetForm() {
   $('staffCapacityPoints').value = '0';
   $('staffCapacityBasis').value = 'job';
   $('staffCapacityStep').value = '1';
+  $('staffCatalogImageUrl').value = '';
   syncStaffCategoryControl();
+  updateStaffServiceImagePreview();
 }
 
 function setStaffCatalogNotice(message, kind = '') {
@@ -145,6 +162,7 @@ function renderStaffCatalog() {
   }
   list.innerHTML = items.map(item => `
     <article class="staff-catalog-item ${item.active === false ? 'is-inactive' : 'is-active'}" data-catalog-id="${staffCatalogEscape(item.id)}">
+      ${staffCatalogType === 'services' && staffServiceImageUrl(item.imageUrl) ? `<img class="staff-catalog-thumb" src="${staffCatalogEscape(item.imageUrl)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ''}
       <div><strong>${staffCatalogEscape(item.name || 'ไม่ระบุชื่อ')}</strong><span>${staffCatalogType === 'services' ? `${staffCatalogEscape(item.category || 'บริการเพิ่มเติม')} • ` : ''}฿${money(item.price)} / ${staffCatalogEscape(unit(item.unit))}</span>${staffCatalogType === 'services' ? `<small class="staff-catalog-capacity">กำลังผลิต ${Number(item.capacityPoints || 0).toLocaleString('th-TH')} แต้ม / ${Number(item.capacityStep || 1).toLocaleString('th-TH')} ${staffCatalogEscape(staffCapacityBasisLabel(item.capacityBasis || 'job'))}</small>` : ''}<small class="staff-catalog-updated">${staffCatalogEscape(formatStaffCatalogUpdatedAt(item.updatedAt))}</small></div>
       <div class="staff-catalog-item-side"><span class="staff-catalog-state ${item.active === false ? 'is-off' : ''}">${item.active === false ? 'ปิด' : 'เปิด'}</span><b aria-hidden="true">›</b></div>
       <div class="staff-catalog-quick-actions"><button class="staff-catalog-quick-edit" type="button" data-catalog-action="edit"><img class="button-icon" src="image/edit.svg" alt="">แก้ไขรายละเอียด</button><button class="staff-catalog-quick-toggle ${item.active === false ? 'will-enable' : 'will-disable'}" type="button" data-catalog-action="toggle">${item.active === false ? 'เปิดใช้งาน' : 'ปิดใช้งาน'}</button></div>
@@ -178,6 +196,8 @@ function showStaffCatalogEditor(item = null) {
     $('staffCapacityPoints').value = Number(item.capacityPoints) || 0;
     $('staffCapacityBasis').value = ['job', 'sheet', 'piece'].includes(item.capacityBasis) ? item.capacityBasis : 'job';
     $('staffCapacityStep').value = Math.max(1, Number(item.capacityStep) || 1);
+    $('staffCatalogImageUrl').value = item.imageUrl || '';
+    updateStaffServiceImagePreview();
     updateStaffCapacityPreview();
   }
   setTimeout(() => $('staffCatalogName').focus(), 50);
@@ -208,12 +228,14 @@ async function submitStaffCatalog(event) {
   const capacityPoints = Number($('staffCapacityPoints').value);
   const capacityBasis = $('staffCapacityBasis').value;
   const capacityStep = Number($('staffCapacityStep').value);
+  const rawImageUrl = $('staffCatalogImageUrl').value.trim();
+  const imageUrl = staffServiceImageUrl(rawImageUrl);
   const invalidCapacity = staffCatalogType === 'services' && (
     !Number.isFinite(capacityPoints) || capacityPoints < 0 ||
     !['job', 'sheet', 'piece'].includes(capacityBasis) ||
     !Number.isFinite(capacityStep) || capacityStep <= 0
   );
-  if (!name || !Number.isFinite(price) || price < 0 || (staffCatalogType === 'services' && !category) || invalidCapacity) {
+  if (!name || !Number.isFinite(price) || price < 0 || (staffCatalogType === 'services' && (!category || (rawImageUrl && !imageUrl))) || invalidCapacity) {
     setStaffCatalogNotice('กรุณากรอกชื่อ ราคา หมวดหมู่ และแต้มกำลังผลิตให้ถูกต้อง', 'warn');
     return;
   }
@@ -225,6 +247,7 @@ async function submitStaffCatalog(event) {
     next.capacityPoints = capacityPoints;
     next.capacityBasis = capacityBasis;
     next.capacityStep = capacityBasis === 'job' ? 1 : capacityStep;
+    next.imageUrl = imageUrl;
   }
   if (!IPRINT_TEST_MODE) {
     const result = await saveStaffCatalogRemote(staffCatalogType, { ...next, id, updatedAt: existing?.updatedAt || '' });
@@ -399,5 +422,6 @@ function bindStaffCatalog() {
   $('staffCapacityPoints')?.addEventListener('input', updateStaffCapacityPreview);
   $('staffCapacityBasis')?.addEventListener('change', updateStaffCapacityPreview);
   $('staffCapacityStep')?.addEventListener('input', updateStaffCapacityPreview);
+  $('staffCatalogImageUrl')?.addEventListener('input', updateStaffServiceImagePreview);
   document.querySelector('.staff-catalog-tabs')?.addEventListener('click', selectStaffCatalogTab);
 }

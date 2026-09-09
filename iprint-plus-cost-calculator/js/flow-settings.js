@@ -22,8 +22,12 @@ const FLOW_FALLBACK_PRESET_MATCHERS = {
 
 function normalizeClientFlowSettings(input = {}) {
   const sourceRules = input?.jobTypes && typeof input.jobTypes === 'object' ? input.jobTypes : {};
+  const sourceQuiz = input?.quiz && typeof input.quiz === 'object' ? input.quiz : {};
+  const configuredOptions = Array.isArray(sourceQuiz.options) ? sourceQuiz.options : [];
+  const optionKeys = configuredOptions.map(option => String(option?.value || '').trim()).filter(Boolean);
+  const allJobTypes = [...new Set([...FLOW_SETTING_JOB_TYPES, ...Object.keys(sourceRules), ...optionKeys])];
   const jobTypes = {};
-  FLOW_SETTING_JOB_TYPES.forEach(jobType => {
+  allJobTypes.forEach(jobType => {
     const rule = sourceRules[jobType] && typeof sourceRules[jobType] === 'object' ? sourceRules[jobType] : {};
     const uniqueIds = values => [...new Set((Array.isArray(values) ? values : []).map(String).map(value => value.trim()).filter(Boolean))];
     const presetIds = uniqueIds(rule.presetIds);
@@ -38,7 +42,20 @@ function normalizeClientFlowSettings(input = {}) {
       serviceIds: uniqueIds(rule.serviceIds)
     };
   });
-  return { version: 1, jobTypes };
+  const fallbackOptions = FLOW_SETTING_JOB_TYPES.map(value => ({ value, label: FLOW_SETTING_LABELS[value] || value }));
+  const options = (configuredOptions.length ? configuredOptions : fallbackOptions).map(option => ({
+    value: String(option?.value || '').trim(),
+    label: String(option?.label || option?.value || '').trim()
+  })).filter(option => option.value && option.label).slice(0, 20);
+  return {
+    version: 2,
+    quiz: {
+      title: String(sourceQuiz.title || 'งานนี้เป็นงานประเภทอะไร?').trim().slice(0, 160),
+      description: String(sourceQuiz.description || 'เลือกคำตอบที่ใกล้เคียงที่สุด เดี๋ยวผมช่วยตั้งค่าเริ่มต้นให้ครับ').trim().slice(0, 500),
+      options
+    },
+    jobTypes
+  };
 }
 
 function getFlowRule(jobType = selectedJobType) {
@@ -86,12 +103,15 @@ function flowServicesForJobType(items, jobType = selectedJobType) {
 }
 
 function syncFlowJobTypeVisibility() {
-  document.querySelectorAll('[data-job-type]').forEach(button => {
-    const rule = getFlowRule(button.dataset.jobType);
-    const visible = !rule || rule.enabled !== false;
-    button.hidden = !visible;
-    button.setAttribute('aria-hidden', visible ? 'false' : 'true');
-  });
+  const normalized = normalizeClientFlowSettings(flowSettings || {});
+  const container = $('jobTypeOptions');
+  if (!container) return;
+  const thumbClass = value => value === 'งานกระดาษ' ? 'paper' : /50/.test(value) ? 'kisscut' : /100/.test(value) ? 'diecut' : 'other';
+  container.innerHTML = normalized.quiz.options.filter(option => normalized.jobTypes[option.value]?.enabled !== false).map(option => `<button type="button" data-job-type="${flowEscape(option.value)}" aria-pressed="${selectedJobType === option.value}"><span class="job-type-thumb job-type-thumb-${thumbClass(option.value)}" aria-hidden="true"></span><span>${flowEscape(option.label)}</span></button>`).join('');
+  const title = $('jobTypeQuestion');
+  const description = title?.nextElementSibling;
+  if (title) title.textContent = normalized.quiz.title;
+  if (description) description.textContent = normalized.quiz.description;
 }
 
 async function syncFlowSettings() {

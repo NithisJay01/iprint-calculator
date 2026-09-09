@@ -37,7 +37,8 @@ export function normalizeCatalogItem(input = {}) {
     previewRenderer: String(input.previewRenderer || ''),
     previewEffect: String(input.previewEffect || ''),
     shaderPreset: String(input.shaderPreset || ''),
-    textureUrl: String(input.textureUrl || '')
+    textureUrl: String(input.textureUrl || ''),
+    imageUrl: type === 'service' ? String(input.imageUrl || '').trim() : ''
   };
 }
 
@@ -49,6 +50,7 @@ export function validateCatalogMutation(input = {}) {
   if (!Number.isFinite(Number(input.price)) || Number(input.price) < 0) errors.push('price must be zero or greater');
   if (!item.unit) errors.push('unit must be sheet, piece, or job');
   if (item.type === 'service' && !item.category) errors.push('service category is required');
+  if (item.imageUrl && !/^https:\/\//i.test(item.imageUrl)) errors.push('imageUrl must be a public HTTPS URL');
   if (item.type === 'service' && input.capacityPoints !== undefined && input.capacityPoints !== '' &&
       (!Number.isFinite(Number(input.capacityPoints)) || Number(input.capacityPoints) < 0)) {
     errors.push('capacityPoints must be zero or greater');

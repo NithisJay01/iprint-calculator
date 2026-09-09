@@ -17,6 +17,7 @@ const rawPage = {
     'Capacity Points': { number: 1.5 },
     'Capacity Basis': { select: { name: 'piece' } },
     'Capacity Step': { number: 100 }
+    ,'Image URL': { url: 'https://cdn.example.com/matt-film.jpg' }
   }
 };
 
@@ -32,6 +33,10 @@ const fetcher = async (url, options = {}) => {
   if (String(url).endsWith('/v1/pages/service-1') && method === 'GET') return Response.json(rawPage);
   if (String(url).endsWith('/v1/data_sources/services-id/query')) return Response.json({ results: [rawPage] });
   if (String(url).endsWith('/v1/data_sources/services-id') && method === 'GET') return Response.json({ properties: schema });
+  if (String(url).endsWith('/v1/data_sources/services-id') && method === 'PATCH') {
+    schema['Image URL'] = { type: 'url' };
+    return Response.json({ properties: schema });
+  }
   if (String(url).endsWith('/v1/pages') && method === 'POST') {
     const body = JSON.parse(options.body);
     return Response.json({
@@ -61,6 +66,7 @@ assert.deepEqual(item, normalizeCatalogItem({
   id: 'service-1', externalId: 'service-1', type: 'service', name: 'เคลือบด้าน',
   category: 'การเคลือบ', price: 5, cost: 3, unit: 'sheet', active: true,
   sortOrder: 2, capacityPoints: 1.5, capacityBasis: 'piece', capacityStep: 100,
+  imageUrl: 'https://cdn.example.com/matt-film.jpg',
   version: 1, createdAt: '2026-09-01T00:00:00.000Z',
   updatedAt: '2026-09-04T08:30:00.000Z'
 }));
@@ -79,13 +85,14 @@ const conflict = compareCatalogSnapshot({ price: 4, unit: 'sheet', capacityPoint
 assert.equal(conflict.changed, true);
 assert.deepEqual(conflict.reasons, ['price_changed']);
 
-const created = await repository.create('service', { name: 'ไดคัท', category: 'การตัด', price: 2, cost: 1, unit: 'piece', active: true, sortOrder: 4, capacityPoints: 2, capacityBasis: 'piece', capacityStep: 250 });
+const created = await repository.create('service', { name: 'ไดคัท', category: 'การตัด', price: 2, cost: 1, unit: 'piece', active: true, sortOrder: 4, capacityPoints: 2, capacityBasis: 'piece', capacityStep: 250, imageUrl: 'https://cdn.example.com/diecut.jpg' });
 assert.equal(created.id, 'service-created');
 assert.equal(created.category, 'การตัด');
 assert.equal(created.price, 2);
 assert.equal(created.capacityPoints, 2);
 assert.equal(created.capacityBasis, 'piece');
 assert.equal(created.capacityStep, 250);
+assert.equal(created.imageUrl, 'https://cdn.example.com/diecut.jpg');
 
 const updated = await repository.update('service', 'service-1', { price: 6, active: false }, item.updatedAt);
 assert.equal(updated.price, 6);

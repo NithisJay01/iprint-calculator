@@ -23,7 +23,8 @@ function notionCatalogItem(page, type) {
     previewRenderer: properties['Preview Renderer']?.select?.name || '',
     previewEffect: properties['Preview Effect']?.select?.name || '',
     shaderPreset: properties['Shader Preset']?.select?.name || '',
-    textureUrl: properties['Texture URL']?.url || properties['Texture URL']?.files?.[0]?.external?.url || properties['Texture URL']?.files?.[0]?.file?.url || ''
+    textureUrl: properties['Texture URL']?.url || properties['Texture URL']?.files?.[0]?.external?.url || properties['Texture URL']?.files?.[0]?.file?.url || '',
+    imageUrl: properties['Image URL']?.url || properties.Image?.files?.[0]?.external?.url || properties.Image?.files?.[0]?.file?.url || ''
   });
 }
 
@@ -46,6 +47,19 @@ export class NotionCatalogRepository extends CatalogRepository {
     return schema;
   }
 
+  async ensureSchema(type) {
+    const schema = await this.schema(type);
+    if (type !== 'service' || schema['Image URL']?.type === 'url') return schema;
+    const response = await this.fetcher(`https://api.notion.com/v1/data_sources/${this.dataSourceIds[type]}`, {
+      method: 'PATCH', headers: this.headers, body: JSON.stringify({ properties: { 'Image URL': { url: {} } } })
+    });
+    const text = await response.text();
+    if (!response.ok) throw Object.assign(new Error('Notion service image schema update failed'), { status: response.status, detail: text });
+    const nextSchema = JSON.parse(text).properties || {};
+    this.schemaCache.set(type, nextSchema);
+    return nextSchema;
+  }
+
   notionProperties(type, item, schema) {
     const properties = {};
     const titleName = Object.entries(schema).find(([, property]) => property?.type === 'title')?.[0];
@@ -65,6 +79,7 @@ export class NotionCatalogRepository extends CatalogRepository {
       set('Capacity Points', 'number', { number: item.capacityPoints });
       set('Capacity Basis', 'select', { select: { name: item.capacityBasis } });
       set('Capacity Step', 'number', { number: item.capacityStep });
+      set('Image URL', 'url', { url: item.imageUrl || null });
     }
     return properties;
   }
@@ -96,7 +111,7 @@ export class NotionCatalogRepository extends CatalogRepository {
   async create(type, input) {
     const validation = validateCatalogMutation({ ...input, type });
     if (!validation.success) throw Object.assign(new Error('Invalid catalog item'), { status: 400, errors: validation.errors });
-    const schema = await this.schema(type);
+    const schema = await this.ensureSchema(type);
     const response = await this.fetcher('https://api.notion.com/v1/pages', {
       method: 'POST',
       headers: this.headers,
@@ -118,7 +133,7 @@ export class NotionCatalogRepository extends CatalogRepository {
     }
     const validation = validateCatalogMutation({ ...current, ...input, id: current.id, type });
     if (!validation.success) throw Object.assign(new Error('Invalid catalog item'), { status: 400, errors: validation.errors });
-    const schema = await this.schema(type);
+    const schema = await this.ensureSchema(type);
     const response = await this.fetcher(`https://api.notion.com/v1/pages/${encodeURIComponent(id)}`, {
       method: 'PATCH',
       headers: this.headers,

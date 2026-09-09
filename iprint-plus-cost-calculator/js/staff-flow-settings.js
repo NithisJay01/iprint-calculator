@@ -22,13 +22,20 @@ function staffEffectiveFlowRule(jobType) {
 }
 
 function renderStaffFlowSettings() {
+  const normalizedSettings = normalizeClientFlowSettings(flowSettings || {});
+  const quizOptions = normalizedSettings.quiz.options;
+  if (!quizOptions.some(option => option.value === staffFlowJobType)) staffFlowJobType = quizOptions[0]?.value || 'งานกระดาษ';
   const rule = staffEffectiveFlowRule(staffFlowJobType);
   const activePresets = Object.entries(presets || {});
   const activeServices = services.filter(service => service.active !== false);
   const serviceGroups = [...new Set(activeServices.map(service => String(service.category || 'บริการเพิ่มเติม')))].sort((a, b) => a.localeCompare(b, 'th'));
+  const currentOption = quizOptions.find(option => option.value === staffFlowJobType) || { value: staffFlowJobType, label: staffFlowJobType };
   return `<section class="staff-flow-controller" aria-labelledby="staffFlowControllerTitle">
     <div class="staff-flow-controller-head"><div><small>FLOW CONTROLLER</small><h2 id="staffFlowControllerTitle">กำหนดสิ่งที่ลูกค้าเลือกได้</h2></div><span>${rule.configured ? 'ตั้งค่าแล้ว' : 'ใช้ค่าแนะนำ'}</span></div>
-    <div class="staff-flow-job-tabs" role="tablist" aria-label="เลือกประเภทงาน">${FLOW_SETTING_JOB_TYPES.map(jobType => `<button type="button" role="tab" data-flow-job-type="${staffFlowEscape(jobType)}" aria-selected="${jobType === staffFlowJobType}" class="${jobType === staffFlowJobType ? 'is-selected' : ''}">${staffFlowEscape(FLOW_SETTING_LABELS[jobType])}</button>`).join('')}</div>
+    <div class="staff-flow-node-map" aria-label="โครงสร้าง Flow"><article><b>เริ่ม</b><small>ลูกค้าเริ่มงาน</small></article><i>→</i><article class="is-active"><b>Quiz</b><small>${quizOptions.length} ตัวเลือก</small></article><i>→</i><article><b>Preset</b><small>${rule.presetIds.length} รายการ</small></article><i>→</i><article><b>บริการ</b><small>${rule.serviceIds.length} รายการ</small></article><i>→</i><article><b>Layout</b><small>คำนวณราคา</small></article></div>
+    <section class="staff-flow-rule-card staff-flow-quiz-editor"><div class="staff-flow-rule-title"><div><small>Q</small><h3>แก้ไข Quiz ประเภทงาน</h3></div><span>เพิ่ม ลด หรือเปลี่ยนข้อความได้</span></div><div class="field"><label class="label" for="staffFlowQuizTitle">คำถาม</label><input id="staffFlowQuizTitle" data-flow-quiz="title" maxlength="160" value="${staffFlowEscape(normalizedSettings.quiz.title)}"></div><div class="field"><label class="label" for="staffFlowQuizDescription">คำอธิบาย</label><textarea id="staffFlowQuizDescription" data-flow-quiz="description" maxlength="500">${staffFlowEscape(normalizedSettings.quiz.description)}</textarea></div><div class="staff-flow-add-option"><input data-flow-new-option maxlength="120" placeholder="ชื่อตัวเลือกประเภทงานใหม่"><button type="button" data-flow-setting-action="add-option">+ เพิ่มตัวเลือก</button></div></section>
+    <div class="staff-flow-job-tabs" role="tablist" aria-label="เลือกประเภทงาน">${quizOptions.map(option => `<button type="button" role="tab" data-flow-job-type="${staffFlowEscape(option.value)}" aria-selected="${option.value === staffFlowJobType}" class="${option.value === staffFlowJobType ? 'is-selected' : ''}">${staffFlowEscape(option.label)}</button>`).join('')}</div>
+    <div class="staff-flow-option-editor"><label><span>ชื่อที่แสดงใน Quiz</span><input data-flow-option-label maxlength="120" value="${staffFlowEscape(currentOption.label)}"></label><button type="button" data-flow-setting-action="delete-option"${quizOptions.length <= 1 ? ' disabled' : ''}>ลบตัวเลือกนี้</button></div>
     <label class="staff-flow-master-toggle"><input type="checkbox" data-flow-setting="enabled"${rule.enabled ? ' checked' : ''}><span><strong>แสดงประเภทงานนี้ใน Quiz</strong><small>เมื่อปิด ลูกค้าจะไม่เห็นตัวเลือกนี้ตอนเริ่มงาน</small></span></label>
     <section class="staff-flow-rule-card"><div class="staff-flow-rule-title"><div><small>01</small><h3>Preset หน้ากระดาษ</h3></div><label><input type="checkbox" data-flow-setting="lockPreset"${rule.lockPreset ? ' checked' : ''}> ล็อกไม่ให้ลูกค้าเปลี่ยน</label></div>
       <p>เลือก Preset ที่ใช้ได้ และกำหนดค่าเริ่มต้นหนึ่งรายการ</p>
@@ -63,8 +70,40 @@ function collectStaffFlowRule(container) {
 async function handleStaffFlowSettingsAction(event) {
   const jobTypeButton = event.target.closest('[data-flow-job-type]');
   if (jobTypeButton) {
+    const container = event.target.closest('.staff-flow-controller');
+    const draft = normalizeClientFlowSettings(flowSettings || {});
+    draft.quiz.title = container?.querySelector('[data-flow-quiz="title"]')?.value.trim() || draft.quiz.title;
+    draft.quiz.description = container?.querySelector('[data-flow-quiz="description"]')?.value.trim() || '';
+    const currentLabel = container?.querySelector('[data-flow-option-label]')?.value.trim();
+    const currentOption = draft.quiz.options.find(option => option.value === staffFlowJobType);
+    if (currentOption && currentLabel) currentOption.label = currentLabel;
+    flowSettings = normalizeClientFlowSettings(draft);
     staffFlowJobType = jobTypeButton.dataset.flowJobType;
     renderStaffCatalog();
+    return true;
+  }
+  if (event.target.closest('[data-flow-setting-action="add-option"]')) {
+    const input = event.target.closest('.staff-flow-controller')?.querySelector('[data-flow-new-option]');
+    const label = String(input?.value || '').trim();
+    if (!label) return true;
+    const nextSettings = normalizeClientFlowSettings(flowSettings || {});
+    const value = `custom-${Date.now()}`;
+    nextSettings.quiz.options.push({ value, label });
+    nextSettings.jobTypes[value] = { enabled: true, configured: false, presetIds: [], defaultPresetId: '', lockPreset: false, serviceIds: [] };
+    flowSettings = normalizeClientFlowSettings(nextSettings);
+    staffFlowJobType = value;
+    renderStaffCatalog();
+    setStaffCatalogNotice(`เพิ่มตัวเลือก Quiz “${label}” แล้ว กดบันทึก Flow เพื่อยืนยัน`, 'ok');
+    return true;
+  }
+  if (event.target.closest('[data-flow-setting-action="delete-option"]')) {
+    const nextSettings = normalizeClientFlowSettings(flowSettings || {});
+    nextSettings.quiz.options = nextSettings.quiz.options.filter(option => option.value !== staffFlowJobType);
+    delete nextSettings.jobTypes[staffFlowJobType];
+    flowSettings = normalizeClientFlowSettings(nextSettings);
+    staffFlowJobType = flowSettings.quiz.options[0]?.value || 'งานกระดาษ';
+    renderStaffCatalog();
+    setStaffCatalogNotice('นำตัวเลือกออกจาก Quiz แล้ว กดบันทึก Flow เพื่อยืนยัน', 'ok');
     return true;
   }
   const allowedControl = event.target.closest('[data-flow-preset-allowed]');
@@ -97,6 +136,11 @@ async function handleStaffFlowSettingsAction(event) {
   }
   if (nextRule.lockPreset) nextRule.presetIds = [nextRule.defaultPresetId];
   const nextSettings = normalizeClientFlowSettings(flowSettings || {});
+  nextSettings.quiz.title = container.querySelector('[data-flow-quiz="title"]')?.value.trim() || nextSettings.quiz.title;
+  nextSettings.quiz.description = container.querySelector('[data-flow-quiz="description"]')?.value.trim() || '';
+  const optionLabel = container.querySelector('[data-flow-option-label]')?.value.trim();
+  const option = nextSettings.quiz.options.find(item => item.value === staffFlowJobType);
+  if (option && optionLabel) option.label = optionLabel;
   nextSettings.jobTypes[staffFlowJobType] = nextRule;
   try {
     if (IPRINT_TEST_MODE) {
@@ -109,7 +153,8 @@ async function handleStaffFlowSettingsAction(event) {
     renderPresets();
     renderServices();
     renderStaffCatalog();
-    setStaffCatalogNotice(`บันทึก Flow “${FLOW_SETTING_LABELS[staffFlowJobType]}” แล้ว`, 'ok');
+    const savedLabel = flowSettings.quiz.options.find(option => option.value === staffFlowJobType)?.label || FLOW_SETTING_LABELS[staffFlowJobType] || staffFlowJobType;
+    setStaffCatalogNotice(`บันทึก Flow “${savedLabel}” แล้ว`, 'ok');
   } catch (error) {
     setStaffCatalogNotice(error.message || 'บันทึก Flow ไม่สำเร็จ', 'warn');
   }
