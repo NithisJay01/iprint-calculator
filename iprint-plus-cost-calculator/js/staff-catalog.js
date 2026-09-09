@@ -95,6 +95,27 @@ function renderStaffCatalogTable(items) {
   </table></div>`;
 }
 
+function renderStaffServiceVisibility(items) {
+  const visibleCount = items.filter(item => item.active !== false).length;
+  const categories = [...new Set(items.map(item => String(item.category || 'บริการเพิ่มเติม').trim()))]
+    .sort((a, b) => a.localeCompare(b, 'th'));
+  return `<section class="service-visibility-settings" aria-labelledby="serviceVisibilityTitle">
+    <div class="service-visibility-summary">
+      <div><small>บริการที่ลูกค้าเห็น</small><strong id="serviceVisibilityTitle">${visibleCount} จาก ${items.length} รายการ</strong></div>
+      <p>ปิดการแสดงผลเพื่อซ่อนบริการจากหน้าคำนวณ โดยข้อมูลราคาและออร์เดอร์เก่าจะไม่ถูกลบ</p>
+    </div>
+    ${categories.map(category => {
+      const categoryItems = items.filter(item => String(item.category || 'บริการเพิ่มเติม').trim() === category);
+      return `<section class="service-visibility-group"><div class="service-visibility-group-title"><strong>${staffCatalogEscape(category)}</strong><span>${categoryItems.filter(item => item.active !== false).length}/${categoryItems.length} แสดงอยู่</span></div><div class="service-visibility-list">
+        ${categoryItems.map(item => `<article class="service-visibility-row${item.active === false ? ' is-hidden' : ''}" data-catalog-id="${staffCatalogEscape(item.id)}">
+          <div><strong>${staffCatalogEscape(item.name || 'ไม่ระบุชื่อ')}</strong><span>฿${money(item.price)} / ${staffCatalogEscape(unit(item.unit))}</span></div>
+          <button class="service-visibility-switch" type="button" role="switch" aria-checked="${item.active === false ? 'false' : 'true'}" aria-label="${item.active === false ? 'แสดง' : 'ซ่อน'} ${staffCatalogEscape(item.name || 'บริการ')}" data-catalog-action="toggle"><span aria-hidden="true"></span><b>${item.active === false ? 'ซ่อนอยู่' : 'แสดงอยู่'}</b></button>
+        </article>`).join('')}
+      </div></section>`;
+    }).join('')}
+  </section>`;
+}
+
 function renderStaffCatalog() {
   const list = $('staffCatalogList');
   if (!list) return;
@@ -108,6 +129,10 @@ function renderStaffCatalog() {
   });
   if (!items.length) {
     list.innerHTML = '<div class="staff-catalog-empty">ยังไม่มีรายการในหมวดนี้</div>';
+    return;
+  }
+  if (staffCatalogView === 'visibility') {
+    list.innerHTML = renderStaffServiceVisibility(items);
     return;
   }
   if (staffCatalogView === 'table') {
@@ -127,6 +152,7 @@ function showStaffCatalogList() {
   $('staffCatalogListPanel').hidden = false;
   $('staffCatalogTabs').hidden = false;
   $('staffCatalogBack').hidden = false;
+  $('addStaffCatalogItem').hidden = staffCatalogView === 'visibility';
   renderStaffCatalog();
 }
 
@@ -264,7 +290,7 @@ async function handleStaffCatalogAction(event) {
       Object.assign(collection[index], result.item);
       await syncCatalogDependents();
       renderStaffCatalog();
-      setStaffCatalogNotice(`${collection[index].active ? 'เปิด' : 'ปิด'}ใช้งานรายการแล้ว`, 'ok');
+      setStaffCatalogNotice(`${collection[index].active ? 'แสดง' : 'ซ่อน'} “${collection[index].name}” บนหน้าลูกค้าแล้ว`, 'ok');
       return;
     }
     collection[index].active = collection[index].active === false;
@@ -272,7 +298,7 @@ async function handleStaffCatalogAction(event) {
     persistTestCatalog();
     syncCatalogDependents();
     renderStaffCatalog();
-    setStaffCatalogNotice(`${collection[index].active ? 'เปิด' : 'ปิด'}ใช้งานรายการแล้ว`, 'ok');
+    setStaffCatalogNotice(`${collection[index].active ? 'แสดง' : 'ซ่อน'} “${collection[index].name}” ใน Mock data แล้ว`, 'ok');
     return;
   }
   if (staffCatalogView === 'cards' || event.target.closest('[data-catalog-action="edit"]')) showStaffCatalogEditor(collection[index]);
@@ -302,24 +328,40 @@ function selectStaffCatalogTab(event) {
   const button = event.target.closest('[data-catalog-tab]');
   if (!button) return;
   staffCatalogType = button.dataset.catalogTab;
+  if (staffCatalogType === 'materials' && staffCatalogView === 'visibility') staffCatalogView = 'cards';
   document.querySelectorAll('[data-catalog-tab]').forEach(tab => {
     const selected = tab === button;
     tab.classList.toggle('is-selected', selected);
     tab.setAttribute('aria-selected', String(selected));
   });
   staffCatalogResetForm();
+  document.querySelectorAll('[data-catalog-view]').forEach(option => {
+    const selected = option.dataset.catalogView === staffCatalogView;
+    option.classList.toggle('is-selected', selected);
+    option.setAttribute('aria-pressed', String(selected));
+  });
   showStaffCatalogList();
 }
 
 function selectStaffCatalogView(event) {
   const button = event.target.closest('[data-catalog-view]');
   if (!button) return;
-  staffCatalogView = button.dataset.catalogView === 'table' ? 'table' : 'cards';
+  staffCatalogView = ['cards', 'table', 'visibility'].includes(button.dataset.catalogView) ? button.dataset.catalogView : 'cards';
+  if (staffCatalogView === 'visibility') {
+    staffCatalogType = 'services';
+    document.querySelectorAll('[data-catalog-tab]').forEach(tab => {
+      const selected = tab.dataset.catalogTab === 'services';
+      tab.classList.toggle('is-selected', selected);
+      tab.setAttribute('aria-selected', String(selected));
+    });
+    staffCatalogResetForm();
+  }
   document.querySelectorAll('[data-catalog-view]').forEach(option => {
     const selected = option === button;
     option.classList.toggle('is-selected', selected);
     option.setAttribute('aria-pressed', String(selected));
   });
+  $('addStaffCatalogItem').hidden = staffCatalogView === 'visibility';
   renderStaffCatalog();
 }
 
