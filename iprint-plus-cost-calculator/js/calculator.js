@@ -10,10 +10,11 @@ function findBest(p,Wcm,Hcm,gapMm=0,bleedMm=0) {
     let best=null;
     [[W,H,false],[H,W,true]].forEach(([trimW,trimH,rotate])=> {
       const pw=trimW+bleed*2,ph=trimH+bleed*2;
-      // For n pieces, only the (n - 1) inner gaps consume space.
-      const nx=Math.floor((uw+gap)/(pw+gap)),ny=Math.floor((uh+gap)/(ph+gap)),n=nx*ny;
+      // Bleed is shared/overlapped between neighbouring pieces. It must not reduce
+      // the production yield; only the finished trim size and explicit gap do.
+      const nx=Math.floor((uw+gap)/(trimW+gap)),ny=Math.floor((uh+gap)/(trimH+gap)),n=nx*ny;
       if(n>0&&(!best||n>best.yield))best= {
-        yield:n,nx,ny,pieceW:pw,pieceH:ph,trimW,trimH,bleed,rotate
+        yield:n,nx,ny,pieceW:pw,pieceH:ph,pitchW:trimW,pitchH:trimH,trimW,trimH,bleed,rotate
       }
     }
     );
@@ -150,12 +151,13 @@ function drawPreview(p,b,bleedMm,gapMm) {
     const grid=document.createElement('div');
     grid.className='preview-grid';
     const gapPx=gapMm*scale;
-    const gridW=b.nx*b.pieceW*scale+Math.max(0,b.nx-1)*gapPx;
-    const gridH=b.ny*b.pieceH*scale+Math.max(0,b.ny-1)*gapPx;
+    const pitchW=(b.pitchW||b.trimW||b.pieceW),pitchH=(b.pitchH||b.trimH||b.pieceH);
+    const gridW=b.nx*pitchW*scale+Math.max(0,b.nx-1)*gapPx;
+    const gridH=b.ny*pitchH*scale+Math.max(0,b.ny-1)*gapPx;
     grid.style.left=Math.max(0,((uw*scale)-gridW)/2)+'px';
     grid.style.top=Math.max(0,((uh*scale)-gridH)/2)+'px';
-    grid.style.gridTemplateColumns='repeat('+b.nx+','+(b.pieceW*scale)+'px)';
-    grid.style.gridTemplateRows='repeat('+b.ny+','+(b.pieceH*scale)+'px)';
+    grid.style.gridTemplateColumns='repeat('+b.nx+','+(pitchW*scale)+'px)';
+    grid.style.gridTemplateRows='repeat('+b.ny+','+(pitchH*scale)+'px)';
     grid.style.gap=gapPx+'px';
     const artworkUrl=typeof getArtworkPreviewUrl==='function'?getArtworkPreviewUrl():'';
     const artworkSide=typeof activeArtworkSide==='string'?activeArtworkSide:'front';
@@ -175,6 +177,8 @@ function drawPreview(p,b,bleedMm,gapMm) {
       piece.dataset.pieceIndex=String(i+1);
       piece.style.width=(b.pieceW*scale)+'px';
       piece.style.height=(b.pieceH*scale)+'px';
+      piece.style.marginLeft=(-(b.bleed||0)*scale)+'px';
+      piece.style.marginTop=(-(b.bleed||0)*scale)+'px';
       if(artworkUrl) {
         piece.classList.add('has-artwork');
         const artwork=document.createElement('img');

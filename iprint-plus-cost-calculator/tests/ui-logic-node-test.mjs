@@ -114,8 +114,9 @@ const coreSource = fs.readFileSync(new URL('../js/core.js', import.meta.url), 'u
 const calculatorContext = scriptContext();
 vm.runInContext(calculatorSource, calculatorContext);
 assert.equal(calculatorContext.findBest({ usableW: 8.5, usableH: 8.5 }, 4, 4, 0, 0).yield, 4);
-assert.equal(calculatorContext.findBest({ usableW: 8.5, usableH: 8.5 }, 4, 4, 0, 3).yield, 1);
+assert.equal(calculatorContext.findBest({ usableW: 8.5, usableH: 8.5 }, 4, 4, 0, 3).yield, 4);
 assert.equal(calculatorContext.findBest({ usableW: 8.5, usableH: 8.5 }, 4, 4, 0, 3).pieceW, 46);
+assert.equal(calculatorContext.findBest({ usableW: 31.5, usableH: 46.7 }, 9, 5.4, 0, 3).yield, 25);
 assert.equal((quickBriefHtml.match(/data-quick-step="[1-6]"/g) || []).length, 6);
 assert.match(quickBriefHtml, /คำถาม 4 จาก 4/);
 assert.match(quickBriefHtml, /ข้อมูลสำคัญครบ พร้อมส่งต่อเพื่อคำนวณและสร้างออร์เดอร์/);

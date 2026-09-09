@@ -320,9 +320,11 @@ function sheetPreviewGalleryMarkup(side = 'front') {
   const ny = Math.max(1, Number(lastCalc.b?.ny) || 1);
   const pieceW = Math.max(1, Number(lastCalc.b?.pieceW) || 1);
   const pieceH = Math.max(1, Number(lastCalc.b?.pieceH) || 1);
+  const pitchW = Math.max(1, Number(lastCalc.b?.pitchW || lastCalc.b?.trimW) || pieceW);
+  const pitchH = Math.max(1, Number(lastCalc.b?.pitchH || lastCalc.b?.trimH) || pieceH);
   const gap = Math.max(0, Number(lastCalc.gap) || 0);
-  const gridW = nx * pieceW + Math.max(0, nx - 1) * gap;
-  const gridH = ny * pieceH + Math.max(0, ny - 1) * gap;
+  const gridW = nx * pitchW + Math.max(0, nx - 1) * gap;
+  const gridH = ny * pitchH + Math.max(0, ny - 1) * gap;
   const count = Math.max(1, Number(lastCalc.b?.yield) || nx * ny);
   const pieces = Array.from({ length: count }, () => previewGalleryPieceMarkup(side, pieceW, pieceH)).join('');
   const usableStyle = `left:${(fullW - usableW) / fullW * 50}%;top:${(fullH - usableH) / fullH * 50}%;width:${usableW / fullW * 100}%;height:${usableH / fullH * 100}%`;
