@@ -109,5 +109,8 @@ assert.match(quickBriefSource, /button\.dataset\.flowNext === 'brief' && !select
 assert.match(quickBriefHtml, /class="preset-preview-guidance"/);
 assert.doesNotMatch(quickBriefHtml, /<details class="preview-read-more"/);
 assert.match(quickBriefHtml, /layout-settings-lower">\s*<section class="form-card layout-print-services/);
+assert.match(quickBriefHtml, /class="layout-form-title">ขนาดชิ้นงาน/);
+assert.match(quickBriefHtml, /id="materialSelectionCta"/);
+assert.match(materialSource, /classList\.toggle\('is-complete',Boolean\(m\)\)/);
 
 console.log('UI logic node test passed');

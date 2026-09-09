@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#eef6ff">
   <title>iPrint</title>
-  <link rel="stylesheet" href="css/app.css?v=20260909-layout-sections">
+  <link rel="stylesheet" href="css/app.css?v=20260909-material-cta">
 </head>
 <body>
 <section class="login-gate" id="loginGate" aria-labelledby="loginTitle">
@@ -150,6 +150,7 @@
       </div>
 
       <section class="form-card layout-form-card">
+        <h2 class="layout-form-title">ขนาดชิ้นงาน</h2>
         <div class="field"><label class="label" for="sheet">Preset กระดาษที่ใช้</label><select id="sheet"><option value="">กำลังโหลด Preset จาก Notion…</option></select><p class="preset-lock-status" id="presetLockStatus" hidden></p><div class="preset-preview-guidance" role="note"><span>ระยะห่างชิ้นงานเริ่มต้น 3 mm • Preview ใช้สำหรับตรวจสอบและส่งบรีฟ ไม่ใช่ไฟล์สำหรับพิมพ์</span><span><b>Safe zone 3 mm:</b> ตรวจสอบข้อความหรือกราฟิกสำคัญไม่ให้อยู่นอกเส้นประ</span></div></div>
         <div class="row2 dimension-fields">
           <div class="field dimension-field"><label class="label" for="w">กว้าง (ซม.)</label><input id="w" type="number" min="0.1" max="100" step="0.1" value="9"><input class="dimension-slider" id="wSlider" type="range" min="0.1" max="100" step="0.1" value="9" aria-label="ปรับความกว้างด้วยแถบเลื่อน"></div>
@@ -186,7 +187,7 @@
       <section class="form-card">
         <h2 class="section-title">เลือกวัสดุ และบริการเพิ่มเติม (Add-ons)</h2>
         <div class="locked-print-summary"><div><small>รูปแบบการพิมพ์จาก Step 1</small><strong id="costPrintSummary">ยังไม่ได้เลือกรูปแบบการพิมพ์</strong></div><div class="locked-print-price"><small>ราคา</small><strong id="costPrintPrice">฿—</strong></div></div>
-        <div class="field"><label class="label" for="materialSelect">เลือกวัสดุ</label><select id="materialSelect"><option value="">กำลังโหลดวัสดุจาก Notion…</option></select><div class="ms-status" id="materialStatus">—</div><div id="selectedMaterialSummary" class="material-selected" hidden></div></div>
+        <div class="field material-selection-cta" id="materialSelectionCta"><div class="material-selection-heading"><label class="label" for="materialSelect">เลือกวัสดุ</label><span>จำเป็น</span></div><select id="materialSelect"><option value="">กำลังโหลดวัสดุจาก Notion…</option></select><div class="ms-status" id="materialStatus">—</div><div id="selectedMaterialSummary" class="material-selected" hidden></div></div>
         <section class="layout-cutting-services" id="costCuttingServices" aria-label="การตัดและติดเสริมวัสดุ"></section>
         <div id="servicesContainer"><div class="ms-status">กำลังโหลดบริการจาก Notion…</div></div><div class="ms-status" id="serviceStatus">—</div>
       </section>
@@ -342,7 +343,7 @@
 <script src="js/api.js?v=20260909-flow-controller"></script>
 <script src="js/flow-settings.js?v=20260909-material-flow"></script>
 <script src="js/presets.js?v=20260909-preset-copy"></script>
-<script src="js/materials.js?v=20260909-material-gate"></script>
+<script src="js/materials.js?v=20260909-material-cta"></script>
 <script src="js/services.js?v=20260909-service-images"></script>
 <script src="js/artwork.js?v=20260907-responsive-artwork-module"></script>
 <script src="js/shape-mask.js?v=20260906-flow-refresh"></script>

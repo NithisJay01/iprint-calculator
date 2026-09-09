@@ -24,6 +24,8 @@ function renderMaterials() {
     setStatus('materialStatus',dataSourceLabel()+' • '+visibleMaterials.length+' วัสดุ','ok');
     const m=visibleMaterials.find(x=>String(x.id)===String(selectedMaterialId));
     const s=$('selectedMaterialSummary');
+    const cta=$('materialSelectionCta');
+    if(cta)cta.classList.toggle('is-complete',Boolean(m));
     if(m) {
       s.hidden=false;
       s.textContent='เลือก: '+m.name+' • ฿'+money(m.price)+' / '+unit(m.unit)
