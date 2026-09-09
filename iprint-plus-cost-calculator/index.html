@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#eef6ff">
   <title>iPrint</title>
-  <link rel="stylesheet" href="css/app.css?v=20260909-rounded-corner-4mm">
+  <link rel="stylesheet" href="css/app.css?v=20260909-print-mode-prompt">
 </head>
 <body>
 <section class="login-gate" id="loginGate" aria-labelledby="loginTitle">
@@ -151,15 +151,15 @@
 
       <section class="form-card layout-form-card">
         <h2 class="layout-form-title">ขนาดชิ้นงาน</h2>
-        <div class="field"><label class="label" for="sheet">Preset กระดาษที่ใช้</label><select id="sheet"><option value="">กำลังโหลด Preset จาก Notion…</option></select><p class="preset-lock-status" id="presetLockStatus" hidden></p><div class="preset-preview-guidance" role="note"><span>ระยะห่างชิ้นงานเริ่มต้น 3 mm • Preview ใช้สำหรับตรวจสอบและส่งบรีฟ ไม่ใช่ไฟล์สำหรับพิมพ์</span><span><b>Safe zone 3 mm:</b> ตรวจสอบข้อความหรือกราฟิกสำคัญไม่ให้อยู่นอกเส้นประ</span></div></div>
+        <div class="field"><label class="label" for="sheet">Preset กระดาษที่ใช้</label><select id="sheet"><option value="">กำลังโหลด Preset จาก Notion…</option></select><p class="preset-lock-status" id="presetLockStatus" hidden></p><div class="preset-preview-guidance" role="note"><span><b>ขนาดที่กรอกคือขนาดหลังตัด</b> • ระบบเพิ่มพื้นที่ตัดตกออกไปด้านละ 3 mm</span><span>รูปให้เต็มขอบนอก • ตัดตามเส้นสีแดง • ข้อความสำคัญให้อยู่ในเส้นสีเขียว</span></div></div>
         <div class="row2 dimension-fields">
           <div class="field dimension-field"><label class="label" for="w">กว้าง (ซม.)</label><input id="w" type="number" min="0.1" max="100" step="0.1" value="9"><input class="dimension-slider" id="wSlider" type="range" min="0.1" max="100" step="0.1" value="9" aria-label="ปรับความกว้างด้วยแถบเลื่อน"></div>
           <div class="field dimension-field"><label class="label" for="h">สูง (ซม.)</label><input id="h" type="number" min="0.1" max="100" step="0.1" value="5.4"><input class="dimension-slider" id="hSlider" type="range" min="0.1" max="100" step="0.1" value="5.4" aria-label="ปรับความสูงด้วยแถบเลื่อน"></div>
         </div>
         <div class="field"><label class="label" for="qty">จำนวนที่ต้องการ (ชิ้น)</label><div class="input-suffix"><input id="qty" type="number" min="1" step="1" value="500"><span>ชิ้น</span></div></div>
         <div class="row2 slider-settings" data-staff-only aria-label="ตั้งค่า Gap และ Margin สำหรับพนักงาน">
-          <div class="field slider-field"><div class="slider-label"><label class="label" for="pieceGap">Gap Between</label><output id="pieceGapValue" for="pieceGap">3 mm</output></div><input id="pieceGap" type="range" min="3" max="15" step="1" value="3"><div class="slider-scale"><span>3</span><span>15 mm</span></div></div>
-          <div class="field slider-field"><div class="slider-label"><label class="label" for="bleed">Margin</label><output id="bleedValue" for="bleed">3 mm/ด้าน</output></div><input id="bleed" type="range" min="3" max="15" step="1" value="3"><div class="slider-scale"><span>3</span><span>15 mm</span></div></div>
+          <div class="field slider-field"><div class="slider-label"><label class="label" for="pieceGap">ระยะห่างระหว่างงาน</label><output id="pieceGapValue" for="pieceGap">3 mm</output></div><input id="pieceGap" type="range" min="3" max="15" step="1" value="3"><div class="slider-scale"><span>3</span><span>15 mm</span></div></div>
+          <div class="field slider-field"><div class="slider-label"><label class="label" for="bleed">ระยะตัดตก</label><output id="bleedValue" for="bleed">3 mm/ด้าน</output></div><input id="bleed" type="range" min="3" max="15" step="1" value="3"><div class="slider-scale"><span>3</span><span>15 mm</span></div></div>
         </div>
       </section>
       <div class="layout-settings-lower">
@@ -180,7 +180,7 @@
         <div class="material-effect-toggle"><span><strong>Shader Preview</strong><small>แสงสะท้อนและเอฟเฟกต์วัสดุ</small></span><label class="switch-control" for="materialShaderToggle"><input id="materialShaderToggle" type="checkbox" checked><i aria-hidden="true"></i><b id="materialShaderToggleStatus">เปิด</b></label></div>
         <div class="cost-piece-tools" id="costPieceTools" hidden><button id="rotateCostPiecePaper" type="button"><img class="button-icon" src="image/rotate.svg" alt="">หมุนหน้ากระดาษ 90°</button><output id="costPiecePaperRotation">มุมหน้ากระดาษ 0°</output></div>
         <section class="diecut-shape-control" id="diecutShapeControl" aria-labelledby="diecutShapeTitle" aria-hidden="true" hidden><div><strong id="diecutShapeTitle">Shape ไดคัท</strong><small>PNG โปร่งใส หรือ SVG สีทึบ • ใช้เป็น Clipping mask บน Artwork</small></div><div class="diecut-shape-actions"><label for="diecutShapeFile">อัปโหลด Shape</label><button id="clearDiecutShape" type="button" hidden>ล้าง Shape</button></div><output id="diecutShapeStatus">ยังไม่ได้เลือก Shape • มุมฉาก 0°</output></section>
-        <div class="cost-preview-wrap" id="materialPreviewInteraction"><div class="material-preview-stage" id="materialPreviewStage"><div class="sheet-preview cost-sheet-preview" id="costSheetPreview"></div><div class="material-css-reflection" aria-hidden="true"></div><canvas id="materialShaderCanvas" class="material-shader-canvas" aria-hidden="true" hidden></canvas></div><p class="cost-preview-note">Preview ใช้สำหรับตรวจสอบเท่านั้น ไม่ใช่ไฟล์สำหรับพิมพ์ • เส้นประคือ Safe zone 3 mm</p></div>
+        <div class="cost-preview-wrap" id="materialPreviewInteraction"><div class="material-preview-stage" id="materialPreviewStage"><div class="sheet-preview cost-sheet-preview" id="costSheetPreview"></div><div class="material-css-reflection" aria-hidden="true"></div><canvas id="materialShaderCanvas" class="material-shader-canvas" aria-hidden="true" hidden></canvas></div><div class="preview-zone-legend" aria-label="คำอธิบายเส้นบน Preview"><span class="is-edge">ขอบไฟล์รวมตัดตก</span><span class="is-trim">เส้นแดง: แนวตัด</span><span class="is-safe">เส้นเขียว: พื้นที่ปลอดภัย</span></div><p class="cost-preview-note">รูปต้องเต็มถึงขอบนอก • งานจะถูกตัดตามเส้นสีแดง • ข้อความสำคัญให้อยู่ในเส้นสีเขียว</p></div>
         <div class="preview-interaction-hint" id="materialPreviewHint" hidden>ลากซ้าย–ขวาเพื่อดูแสงสะท้อน</div>
         <div class="preview-finish-status" id="previewFinishStatus">Preview วัสดุและ Option เสริม</div>
       </section>
@@ -335,22 +335,24 @@
 
 <div class="modal piece-preview-modal" id="piecePreviewModal" aria-hidden="true"><div class="modal-card"><div class="modal-head"><div><small>PREVIEW รายชิ้น</small><h2 id="piecePreviewTitle">ตัวอย่างชิ้นงาน</h2></div><button class="close-sheet" id="closePiecePreview" type="button" aria-label="ปิด Preview รายชิ้น">×</button></div><div class="piece-preview-body"><div class="piece-preview-frame" id="piecePreviewFrame"></div><div class="piece-preview-side-toggle" id="piecePreviewSideToggle" role="group" aria-label="เลือกด้านของ Preview รายชิ้น"><button class="is-selected" id="piecePreviewFront" type="button" data-piece-preview-side="front" aria-pressed="true">ด้านหน้า</button><button id="piecePreviewBack" type="button" data-piece-preview-side="back" aria-pressed="false">ด้านหลัง</button></div><p id="piecePreviewStatus">กำลังแสดงด้านหน้า</p></div></div></div>
 
+<div class="modal print-mode-modal" id="printModeModal" aria-hidden="true"><div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="printModeTitle"><div class="print-mode-head"><small>ก่อนเริ่ม STEP 1</small><h2 id="printModeTitle">เลือกรูปแบบการพิมพ์</h2><p>เลือกให้ตรงกับไฟล์งาน เพื่อให้ระบบเตรียม Preview และคำนวณราคาได้ถูกต้อง</p></div><div class="print-mode-choices" id="printModeChoices"></div><button class="secondary-action print-mode-back" id="printModeBack" type="button"><img class="button-icon" src="image/arrow-left.svg" alt="">กลับไปแก้ข้อมูล</button></div></div>
+
 <button id="downloadBrief" type="button" hidden>ส่งบรีฟ</button><div id="briefStatus" hidden></div>
 <div class="ui-change-toast" id="uiChangeToast" role="status" aria-live="polite" aria-atomic="true" hidden></div>
 
 <script src="js/config.js?v=20260908-public-order-enabled"></script>
-<script src="js/core.js?v=20260909-flow-controller"></script>
+<script src="js/core.js?v=20260909-print-mode-prompt"></script>
 <script src="js/api.js?v=20260909-flow-controller"></script>
 <script src="js/flow-settings.js?v=20260909-material-flow"></script>
 <script src="js/presets.js?v=20260909-preset-copy"></script>
 <script src="js/materials.js?v=20260909-material-cta"></script>
-<script src="js/services.js?v=20260909-rounded-corner-4mm"></script>
+<script src="js/services.js?v=20260909-print-mode-prompt"></script>
 <script src="js/artwork.js?v=20260907-responsive-artwork-module"></script>
 <script src="js/shape-mask.js?v=20260906-flow-refresh"></script>
 <script src="js/material-preview.js?v=20260906-flow-refresh"></script>
-<script src="js/piece-preview.js?v=20260907-active-preview-side"></script>
-<script src="js/calculator.js?v=20260909-rounded-corner-4mm"></script>
-<script src="js/brief.js?v=20260909-rounded-corner-4mm"></script>
+<script src="js/piece-preview.js?v=20260909-print-mode-prompt"></script>
+<script src="js/calculator.js?v=20260909-print-mode-prompt"></script>
+<script src="js/brief.js?v=20260909-print-mode-prompt"></script>
 <script src="js/cart.js?v=20260908-production-queue"></script>
 <script src="js/customer.js?v=20260831-material-preview"></script>
 <script src="js/workflow.js?v=20260908-order-cancellation"></script>
@@ -358,7 +360,7 @@
 <script src="js/staff-flow-settings.js?v=20260909-material-flow"></script>
 <script src="js/staff-catalog.js?v=20260909-service-images"></script>
 <script src="js/staff-capacity.js?v=20260908-capacity-summary"></script>
-<script src="js/app.js?v=20260909-flow-controller"></script>
-<script src="js/flow.js?v=20260909-rounded-corner-4mm"></script>
+<script src="js/app.js?v=20260909-print-mode-prompt"></script>
+<script src="js/flow.js?v=20260909-print-mode-prompt"></script>
 </body>
 </html>

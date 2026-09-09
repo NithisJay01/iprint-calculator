@@ -30,6 +30,11 @@ function isStickerQuizJob() {
   return /สติกเกอร์|sticker/i.test(String(jobType || ''));
 }
 
+function usesLegacyStickerSingleMode() {
+  const rule = typeof getFlowRule === 'function' ? getFlowRule() : null;
+  return isStickerQuizJob() && !rule?.configured;
+}
+
 function isSinglePrintService(service) {
   return /หน้าเดียว|single/i.test(String(service?.name || ''));
 }
@@ -233,7 +238,7 @@ function createServiceGroup(groupData, scope = 'main') {
   title.className = 'service-group-title';
   title.textContent = groupData.definition.title;
   group.appendChild(title);
-  const stickerSingleOnly = scope === 'main' && groupData.definition.key === 'print' && isStickerQuizJob();
+  const stickerSingleOnly = scope === 'main' && groupData.definition.key === 'print' && usesLegacyStickerSingleMode();
   if (stickerSingleOnly) {
     group.classList.add('is-sticker-single-only');
     const note = document.createElement('div');
@@ -357,6 +362,85 @@ function renderServices() {
   syncLayoutPreviewVisibility();
   if (typeof syncArtworkSideControls === 'function') syncArtworkSideControls();
   syncDiecutShapeAvailability();
+  if ($('printModeModal')?.classList.contains('open')) renderPrintModePrompt();
+}
+
+function availablePrintModeServices() {
+  const jobType = typeof getSelectedJobType === 'function' ? getSelectedJobType() : '';
+  const scoped = typeof flowServicesForJobType === 'function' ? flowServicesForJobType(services, jobType) : services;
+  return scoped.filter(service => isPrintSideService(service) && (!usesLegacyStickerSingleMode() || isSinglePrintService(service)));
+}
+
+function selectPrintModeService(service) {
+  services.filter(isPrintSideService).forEach(candidate => delete selectedServiceIds[String(candidate.id)]);
+  selectedServiceIds[String(service.id)] = true;
+  saveState();
+  renderServices();
+  calculate();
+}
+
+function renderPrintModePrompt() {
+  const box = $('printModeChoices');
+  if (!box) return;
+  const choices = availablePrintModeServices();
+  box.replaceChildren();
+  if (!choices.length) {
+    const empty = document.createElement('p');
+    empty.className = 'print-mode-empty';
+    empty.textContent = 'Flow นี้ยังไม่มีรูปแบบการพิมพ์ กรุณาให้ Staff เปิดบริการอย่างน้อย 1 รายการ';
+    box.appendChild(empty);
+    return;
+  }
+  choices.forEach(service => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'print-mode-choice';
+    const image = document.createElement('img');
+    image.src = isSinglePrintService(service) ? 'image/print-single-side.png' : 'image/print-double-side.png';
+    image.alt = '';
+    const copy = document.createElement('span');
+    const title = document.createElement('strong');
+    title.textContent = service.name || 'รูปแบบการพิมพ์';
+    const detail = document.createElement('small');
+    detail.textContent = isSinglePrintService(service) ? 'พิมพ์เฉพาะด้านหน้า อีกด้านไม่พิมพ์' : 'พิมพ์ทั้งด้านหน้าและด้านหลัง';
+    const action = document.createElement('b');
+    action.textContent = 'เลือก';
+    copy.append(title, detail);
+    button.append(image, copy, action);
+    button.addEventListener('click', () => {
+      selectPrintModeService(service);
+      closePrintModePrompt();
+      showAppView('layout');
+      announceUiChange(`เลือกรูปแบบ ${service.name} แล้ว`, $('previewDropZone'), { scroll: false });
+    });
+    box.appendChild(button);
+  });
+}
+
+function openPrintModePrompt(recommendation = '') {
+  const choices = availablePrintModeServices();
+  if (choices.length === 1) {
+    selectPrintModeService(choices[0]);
+    showAppView('layout');
+    announceUiChange(`Flow นี้กำหนดรูปแบบ ${choices[0].name} ไว้แล้ว`, $('previewDropZone'), { scroll: false });
+    return;
+  }
+  services.filter(isPrintSideService).forEach(service => delete selectedServiceIds[String(service.id)]);
+  const modal = $('printModeModal');
+  if (!modal) return;
+  modal.dataset.recommendation = recommendation || '';
+  renderServices();
+  renderPrintModePrompt();
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden', 'false');
+  requestAnimationFrame(() => modal.querySelector('.print-mode-choice')?.focus());
+}
+
+function closePrintModePrompt() {
+  const modal = $('printModeModal');
+  if (!modal) return;
+  modal.classList.remove('open');
+  modal.setAttribute('aria-hidden', 'true');
 }
 
 async function syncServices() {
@@ -411,3 +495,6 @@ window.hasSelectedDiecutService = hasSelectedDiecutService;
 window.syncDiecutShapeAvailability = syncDiecutShapeAvailability;
 window.resetCuttingDefaultSelection = () => { cuttingDefaultSelectionPending = true; };
 window.isPendingPriceService = service => Boolean(service?.pricePending);
+window.availablePrintModeServices = availablePrintModeServices;
+window.openPrintModePrompt = openPrintModePrompt;
+window.closePrintModePrompt = closePrintModePrompt;

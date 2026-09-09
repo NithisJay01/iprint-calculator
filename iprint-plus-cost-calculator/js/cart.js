@@ -321,7 +321,7 @@ async function restoreCartItem(item) {
   $('cost').value = item.editor?.costPerSheet ?? 2.5;
   $('profitPercent').value = item.editor?.profitPercent ?? 30;
   const canTuneLayout = typeof activeAccessRole !== 'undefined' && activeAccessRole === 'staff';
-  $('pieceGap').value = canTuneLayout ? (item.gap || 3) : 3;
+  $('pieceGap').value = canTuneLayout ? (item.gap || 3) : 0;
   $('bleed').value = canTuneLayout ? (item.bleed || 3) : 3;
   selectedMaterialId = String(item.material?.id || '');
   selectedServiceIds = {};

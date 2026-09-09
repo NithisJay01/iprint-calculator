@@ -302,11 +302,90 @@ function syncPieceMarginLine(piece, widthMm, heightMm) {
   line.style.top = `${verticalInset}%`;
   line.style.bottom = `${verticalInset}%`;
   line.setAttribute('aria-hidden', 'true');
-  line.title = `Margin ${marginMm.toLocaleString('th-TH', { maximumFractionDigits: 1 })} mm`;
+  line.title = `เส้นตัด • ตัดตก ${marginMm.toLocaleString('th-TH', { maximumFractionDigits: 1 })} mm`;
+  let safeLine = piece.querySelector('.safe-zone');
+  if (!safeLine) {
+    safeLine = document.createElement('div');
+    safeLine.className = 'safe-zone';
+    piece.appendChild(safeLine);
+  }
+  const safeHorizontalInset = Math.min(49, marginMm * 2 / safeWidth * 100);
+  const safeVerticalInset = Math.min(49, marginMm * 2 / safeHeight * 100);
+  safeLine.style.left = `${safeHorizontalInset}%`;
+  safeLine.style.right = `${safeHorizontalInset}%`;
+  safeLine.style.top = `${safeVerticalInset}%`;
+  safeLine.style.bottom = `${safeVerticalInset}%`;
+  safeLine.setAttribute('aria-hidden', 'true');
+  safeLine.title = `พื้นที่ปลอดภัย • เข้าในเส้นตัด ${marginMm.toLocaleString('th-TH', { maximumFractionDigits: 1 })} mm`;
   return line;
 }
 
 window.syncPieceMarginLine = syncPieceMarginLine;
+
+function syncPieceBleedArtwork(piece, widthMm, heightMm) {
+  if (!piece) return;
+  piece.querySelectorAll('.piece-artwork-trim').forEach(node => node.remove());
+  const artwork = piece.querySelector('.piece-artwork');
+  if (!artwork) return;
+  const bleedMm = Math.max(0, Number(lastCalc?.bleed) || 3);
+  const width = Math.max(.01, Number(widthMm) || 1);
+  const height = Math.max(.01, Number(heightMm) || 1);
+  piece.style.setProperty('--trim-inset-x', `${Math.min(49, bleedMm / width * 100)}%`);
+  piece.style.setProperty('--trim-inset-y', `${Math.min(49, bleedMm / height * 100)}%`);
+  const trimArtwork = artwork.cloneNode(true);
+  trimArtwork.classList.add('piece-artwork-trim');
+  trimArtwork.setAttribute('aria-hidden', 'true');
+  artwork.after(trimArtwork);
+}
+
+window.syncPieceBleedArtwork = syncPieceBleedArtwork;
+
+function isValidProjectUrl(value, httpsOnly = false) {
+  try {
+    const protocol = new URL(String(value || '').trim()).protocol;
+    return httpsOnly ? protocol === 'https:' : ['http:', 'https:'].includes(protocol);
+  } catch {
+    return false;
+  }
+}
+
+function syncUrlValidationFeedback(input, showInvalid = false) {
+  if (!input) return false;
+  const value = input.value.trim();
+  const valid = Boolean(value) && isValidProjectUrl(value, input.id === 'staffCatalogImageUrl');
+  input.classList.toggle('is-valid', valid);
+  if (valid) input.classList.remove('is-invalid');
+  else if (showInvalid && value) input.classList.add('is-invalid');
+  else input.classList.remove('is-valid');
+  let status = input.parentElement?.querySelector(`[data-url-validation-for="${input.id}"]`);
+  if (!status && input.parentElement) {
+    status = document.createElement('small');
+    status.className = 'url-validation-status';
+    status.dataset.urlValidationFor = input.id;
+    input.insertAdjacentElement('afterend', status);
+  }
+  if (status) {
+    status.classList.toggle('is-valid', valid);
+    status.classList.toggle('is-invalid', Boolean(showInvalid && value && !valid));
+    status.textContent = valid ? '✓ ลิงก์ถูกต้อง' : showInvalid && value ? 'กรุณาตรวจสอบรูปแบบลิงก์' : '';
+  }
+  return valid;
+}
+
+function bindUrlValidationFeedback() {
+  document.querySelectorAll('input[type="url"]').forEach(input => {
+    if (input.dataset.urlValidationBound) return;
+    input.dataset.urlValidationBound = 'true';
+    input.addEventListener('input', () => syncUrlValidationFeedback(input));
+    input.addEventListener('change', () => syncUrlValidationFeedback(input, true));
+    input.addEventListener('blur', () => syncUrlValidationFeedback(input, true));
+    syncUrlValidationFeedback(input);
+  });
+}
+
+window.isValidProjectUrl = isValidProjectUrl;
+window.syncUrlValidationFeedback = syncUrlValidationFeedback;
+window.bindUrlValidationFeedback = bindUrlValidationFeedback;
 
 function cachePut(key,data) {
     try {

@@ -146,7 +146,7 @@
         assert(briefDeadline?.readOnly && deliveryDeadline?.readOnly && briefDeadline?.placeholder === 'เลือกวันที่' && deliveryDeadline?.placeholder === 'เลือกวันที่', 'เริ่มต้นแอปและโหลด Preset', 'Deadline ต้องเปิดปฏิทินแทนการรับข้อความจากคีย์บอร์ด');
         const dateControls = [...document.querySelectorAll('.native-date-control[type="date"]')];
         assert(dateControls.length === 4 && dateControls.every(input => /^\d{4}-\d{2}-\d{2}$/.test(input.min)), 'เริ่มต้นแอปและโหลด Preset', 'Deadline ทุกจุดต้องเลือกผ่านปฏิทินและไม่อนุญาตวันย้อนหลัง');
-        assert(document.querySelector('label[for="pieceGap"]')?.textContent === 'Gap Between' && document.querySelector('label[for="bleed"]')?.textContent === 'Margin', 'เริ่มต้นแอปและโหลด Preset', 'ชื่อ Slider ไม่ตรงกับ UX ล่าสุด');
+        assert(document.querySelector('label[for="pieceGap"]')?.textContent === 'ระยะห่างระหว่างงาน' && document.querySelector('label[for="bleed"]')?.textContent === 'ระยะตัดตก', 'เริ่มต้นแอปและโหลด Preset', 'ชื่อ Slider ไม่ตรงกับ UX ล่าสุด');
         assert(!document.querySelector('.print-side-toggle'), 'เริ่มต้นแอปและโหลด Preset', 'ต้องเลือกพิมพ์หน้าเดียว/สองหน้าจากรายการบริการเท่านั้น');
         assert(document.querySelector('[data-service-option="laser"]')?.classList.contains('is-selected'), 'เริ่มต้นแอปและโหลด Preset', 'บริการ Laser ต้องเริ่มต้นเป็น Selected');
         assert(document.querySelector('[data-service-option="inkjet"]')?.classList.contains('is-coming-soon'), 'เริ่มต้นแอปและโหลด Preset', 'บริการ Inkjet ต้องแสดง Coming soon');
@@ -218,17 +218,17 @@
         }
       });
 
-      await check('ล็อก Bleed สำหรับลูกค้าทั่วไปโดยไม่เปลี่ยนสูตร', async () => {
+      await check('ล็อก Bleed มาตรฐานสำหรับลูกค้าทั่วไป', async () => {
         const yieldBefore = numberFromText(document.getElementById('yield').textContent);
         setValue(window, bleed, 5);
         await wait(50);
         const yieldAfter = numberFromText(document.getElementById('yield').textContent);
         const bleedBox = document.querySelector('.piece .bleed');
-        assert(bleed.disabled && document.getElementById('bleedSummary').textContent === '3', 'ล็อก Bleed สำหรับลูกค้าทั่วไปโดยไม่เปลี่ยนสูตร', 'ลูกค้าทั่วไปต้องใช้ค่า Bleed มาตรฐาน 3 mm');
-        assert(document.getElementById('bleedValue').textContent === '3 mm/ด้าน', 'ล็อก Bleed สำหรับลูกค้าทั่วไปโดยไม่เปลี่ยนสูตร', 'ค่า Bleed บน Slider ไม่ตรงกับค่ามาตรฐาน');
-        assert(document.getElementById('previewInfo').textContent.includes('Bleed 3 mm/ด้าน'), 'ล็อก Bleed สำหรับลูกค้าทั่วไปโดยไม่เปลี่ยนสูตร', 'Preview ไม่แสดงค่า Bleed มาตรฐาน');
-        assert(parseFloat(bleedBox?.style.left || 0) > 0, 'ล็อก Bleed สำหรับลูกค้าทั่วไปโดยไม่เปลี่ยนสูตร', 'ไม่พบกรอบ Bleed');
-        assert(yieldAfter === yieldBefore, 'ล็อก Bleed สำหรับลูกค้าทั่วไปโดยไม่เปลี่ยนสูตร', 'Bleed ไม่ควรเปลี่ยนจำนวนชิ้นต่อแผ่น');
+        assert(bleed.disabled && document.getElementById('bleedSummary').textContent === '3', 'ล็อก Bleed มาตรฐานสำหรับลูกค้าทั่วไป', 'ลูกค้าทั่วไปต้องใช้ค่า Bleed มาตรฐาน 3 mm');
+        assert(document.getElementById('bleedValue').textContent === '3 mm/ด้าน', 'ล็อก Bleed มาตรฐานสำหรับลูกค้าทั่วไป', 'ค่า Bleed บน Slider ไม่ตรงกับค่ามาตรฐาน');
+        assert(document.getElementById('previewInfo').textContent.includes('ตัดตก 3 mm/ด้าน'), 'ล็อก Bleed มาตรฐานสำหรับลูกค้าทั่วไป', 'Preview ไม่แสดงค่า Bleed มาตรฐาน');
+        assert(parseFloat(bleedBox?.style.left || 0) > 0, 'ล็อก Bleed มาตรฐานสำหรับลูกค้าทั่วไป', 'ไม่พบเส้นตัด');
+        assert(yieldAfter === yieldBefore, 'ล็อก Bleed มาตรฐานสำหรับลูกค้าทั่วไป', 'ผู้ใช้ทั่วไปต้องเปลี่ยนค่า Bleed ที่ถูกล็อกไม่ได้');
       });
 
       await check('ควบคุม Gap และใช้ในสูตรการวางชิ้นงาน', async () => {
@@ -241,10 +241,10 @@
         setValue(window, pieceGap, 3);
         await wait(50);
         const grid = document.querySelector('.preview-grid');
-        assert(document.getElementById('gap').textContent === '3', 'ควบคุม Gap และใช้ในสูตรการวางชิ้นงาน', 'ค่า Gap ในสรุปไม่อัปเดต');
-        assert(document.getElementById('pieceGapValue').textContent === '3 mm', 'ควบคุม Gap และใช้ในสูตรการวางชิ้นงาน', 'ค่า Gap บน Slider ไม่อัปเดต');
-        assert(document.getElementById('previewInfo').textContent.includes('Gap 3 mm'), 'ควบคุม Gap และใช้ในสูตรการวางชิ้นงาน', 'Preview ไม่อัปเดต Gap');
-        assert(parseFloat(grid?.style.gap || 0) > 0, 'ควบคุม Gap และใช้ในสูตรการวางชิ้นงาน', 'Preview ไม่แสดงช่องว่างระหว่างชิ้นงาน');
+        assert(document.getElementById('gap').textContent === '0', 'ควบคุม Gap และใช้ในสูตรการวางชิ้นงาน', 'ลูกค้าทั่วไปต้องจัดพื้นที่ตัดตกชิดกัน');
+        assert(document.getElementById('pieceGapValue').textContent === '0 mm', 'ควบคุม Gap และใช้ในสูตรการวางชิ้นงาน', 'ลูกค้าทั่วไปต้องเห็นค่า Gap 0 mm');
+        assert(document.getElementById('previewInfo').textContent.includes('ระยะห่าง 0 mm'), 'ควบคุม Gap และใช้ในสูตรการวางชิ้นงาน', 'Preview ไม่อัปเดตระยะห่าง');
+        assert(parseFloat(grid?.style.gap || 0) === 0, 'ควบคุม Gap และใช้ในสูตรการวางชิ้นงาน', 'พื้นที่ตัดตกของลูกค้าทั่วไปต้องชิดกัน');
       });
 
       await check('ภาพงานใน Preview เป็นข้อมูลชั่วคราว', async () => {

@@ -16,7 +16,8 @@ function scriptContext() {
 }
 
 const serviceContext = scriptContext();
-vm.runInContext(fs.readFileSync(new URL('../js/services.js', import.meta.url), 'utf8'), serviceContext);
+const serviceSource = fs.readFileSync(new URL('../js/services.js', import.meta.url), 'utf8');
+vm.runInContext(serviceSource, serviceContext);
 assert.equal(serviceContext.serviceGroupDefinition({ name: 'พิมพ์ 2 หน้า' }).key, 'print');
 assert.equal(serviceContext.serviceGroupDefinition({ name: 'เคลือบโฮโลแกรม' }).key, 'lamination');
 assert.equal(serviceContext.serviceGroupDefinition({ name: 'เคลือบด้าน Matt Film' }).exclusive, true);
@@ -35,6 +36,19 @@ serviceContext.selectedServiceIds = {};
 assert.equal(serviceContext.hasSelectedPrintService(), false);
 serviceContext.selectedServiceIds['print-single'] = true;
 assert.equal(serviceContext.hasSelectedPrintService(), true);
+serviceContext.services = [
+  { id: 'print-single', category: 'รูปแบบการพิมพ์', name: 'พิมพ์หน้าเดียว' },
+  { id: 'print-double', category: 'รูปแบบการพิมพ์', name: 'พิมพ์หน้า-หลัง' }
+];
+serviceContext.flowServicesForJobType = items => items;
+serviceContext.getFlowRule = () => ({ configured: true });
+assert.equal(serviceContext.availablePrintModeServices().length, 2);
+serviceContext.flowServicesForJobType = items => items.filter(item => item.id === 'print-single');
+assert.equal(serviceContext.availablePrintModeServices().length, 1);
+serviceContext.getFlowRule = () => ({ configured: false });
+serviceContext.getSelectedJobType = () => 'สติกเกอร์ Die-cut 50%';
+serviceContext.flowServicesForJobType = items => items;
+assert.equal(serviceContext.availablePrintModeServices().length, 1);
 
 const flowSettingsContext = scriptContext();
 flowSettingsContext.selectedJobType = 'งานกระดาษ';
@@ -95,6 +109,13 @@ const quickBriefHtml = fs.readFileSync(new URL('../index.html', import.meta.url)
 const quickBriefSource = fs.readFileSync(new URL('../js/flow.js', import.meta.url), 'utf8');
 const presetSource = fs.readFileSync(new URL('../js/presets.js', import.meta.url), 'utf8');
 const materialSource = fs.readFileSync(new URL('../js/materials.js', import.meta.url), 'utf8');
+const calculatorSource = fs.readFileSync(new URL('../js/calculator.js', import.meta.url), 'utf8');
+const coreSource = fs.readFileSync(new URL('../js/core.js', import.meta.url), 'utf8');
+const calculatorContext = scriptContext();
+vm.runInContext(calculatorSource, calculatorContext);
+assert.equal(calculatorContext.findBest({ usableW: 8.5, usableH: 8.5 }, 4, 4, 0, 0).yield, 4);
+assert.equal(calculatorContext.findBest({ usableW: 8.5, usableH: 8.5 }, 4, 4, 0, 3).yield, 1);
+assert.equal(calculatorContext.findBest({ usableW: 8.5, usableH: 8.5 }, 4, 4, 0, 3).pieceW, 46);
 assert.equal((quickBriefHtml.match(/data-quick-step="[1-6]"/g) || []).length, 6);
 assert.match(quickBriefHtml, /คำถาม 4 จาก 4/);
 assert.match(quickBriefHtml, /ข้อมูลสำคัญครบ พร้อมส่งต่อเพื่อคำนวณและสร้างออร์เดอร์/);
@@ -115,5 +136,13 @@ assert.match(quickBriefHtml, /class="layout-form-title">ขนาดชิ้น
 assert.match(quickBriefHtml, /id="materialSelectionCta"/);
 assert.match(materialSource, /classList\.toggle\('is-complete',Boolean\(m\)\)/);
 assert.match(quickBriefSource, /function roundedCornerStyle\(width, height\)/);
+assert.match(calculatorSource, /function findBest\(p,Wcm,Hcm,gapMm=0,bleedMm=0\)/);
+assert.match(calculatorSource, /activeAccessRole!==['"]staff['"]\)return 0/);
+assert.match(quickBriefHtml, /เส้นแดง: แนวตัด/);
+assert.match(quickBriefHtml, /เส้นเขียว: พื้นที่ปลอดภัย/);
+assert.match(coreSource, /✓ ลิงก์ถูกต้อง/);
+assert.match(quickBriefHtml, /id="printModeModal"/);
+assert.match(serviceSource, /image\/print-single-side\.png/);
+assert.match(serviceSource, /image\/print-double-side\.png/);
 
 console.log('UI logic node test passed');

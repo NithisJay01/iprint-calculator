@@ -3,16 +3,17 @@ function normalizeUnit(u) {
     return x==='sheet'||x==='sheets'||x==='แผ่น'?'sheet':x==='piece'||x==='pieces'||x==='ชิ้น'||x==='ดวง'?'piece':x==='job'||x==='งาน'?'job':x
   }
 
-function findBest(p,Wcm,Hcm,gapMm=0) {
+function findBest(p,Wcm,Hcm,gapMm=0,bleedMm=0) {
     const uw=Number(p.usableW)*10,uh=Number(p.usableH)*10;
     const W=Number(Wcm)*10,H=Number(Hcm)*10;
-    const gap=Math.max(0,Number(gapMm)||0);
+    const gap=Math.max(0,Number(gapMm)||0),bleed=Math.max(0,Number(bleedMm)||0);
     let best=null;
-    [[W,H,false],[H,W,true]].forEach(([pw,ph,rotate])=> {
+    [[W,H,false],[H,W,true]].forEach(([trimW,trimH,rotate])=> {
+      const pw=trimW+bleed*2,ph=trimH+bleed*2;
       // For n pieces, only the (n - 1) inner gaps consume space.
       const nx=Math.floor((uw+gap)/(pw+gap)),ny=Math.floor((uh+gap)/(ph+gap)),n=nx*ny;
       if(n>0&&(!best||n>best.yield))best= {
-        yield:n,nx,ny,pieceW:pw,pieceH:ph,rotate
+        yield:n,nx,ny,pieceW:pw,pieceH:ph,trimW,trimH,bleed,rotate
       }
     }
     );
@@ -44,7 +45,7 @@ function previewBleed() {
   }
 
 function previewGap() {
-    if(typeof activeAccessRole==='undefined'||activeAccessRole!=='staff')return 3;
+    if(typeof activeAccessRole==='undefined'||activeAccessRole!=='staff')return 0;
     const value=Number($('pieceGap')?.value);
     return Number.isFinite(value)&&value>=0?value:0
   }
@@ -55,7 +56,8 @@ function applyLayoutControlAccess() {
       const input=$(id);
       if(!input)return;
       input.disabled=!isStaff;
-      if(!isStaff)input.value='3';
+      if(!isStaff)input.value=id==='pieceGap'?'0':'3';
+      else if(id==='pieceGap'&&Number(input.value)<Number(input.min))input.value=input.min;
     });
     if(typeof syncPreviewSliderValues==='function')syncPreviewSliderValues()
   }
@@ -191,8 +193,8 @@ function drawPreview(p,b,bleedMm,gapMm) {
       if(hasDiecut)piece.classList.add('has-diecut-effect');
       if(hasRoundedCorner) {
         piece.classList.add('has-rounded-corner');
-        piece.style.setProperty('--rounded-corner-radius-x',Math.min(50,400/Math.max(1,b.pieceW))+'%');
-        piece.style.setProperty('--rounded-corner-radius-y',Math.min(50,400/Math.max(1,b.pieceH))+'%')
+        piece.style.setProperty('--rounded-corner-radius-x',Math.min(50,400/Math.max(1,b.trimW||b.pieceW))+'%');
+        piece.style.setProperty('--rounded-corner-radius-y',Math.min(50,400/Math.max(1,b.trimH||b.pieceH))+'%')
       }
       const number=document.createElement('span');
       number.className='piece-number';
@@ -204,13 +206,20 @@ function drawPreview(p,b,bleedMm,gapMm) {
       bleed.style.top=inset+'px';
       bleed.style.right=inset+'px';
       bleed.style.bottom=inset+'px';
-      piece.append(number,bleed);
+      const safeZone=document.createElement('div');
+      safeZone.className='safe-zone';
+      const safeInset=bleedMm*2*scale;
+      safeZone.style.left=safeInset+'px';
+      safeZone.style.top=safeInset+'px';
+      safeZone.style.right=safeInset+'px';
+      safeZone.style.bottom=safeInset+'px';
+      piece.append(number,bleed,safeZone);
       grid.appendChild(piece)
     }
     usable.appendChild(grid);
     el.appendChild(usable);
     $('previewPaperName').textContent='Preset: '+String(p.name||'ไม่ระบุชื่อ');
-    $('previewInfo').textContent='กระดาษ '+Number(p.fullW).toFixed(2)+' × '+Number(p.fullH).toFixed(2)+' cm • พื้นที่ใช้งาน '+Number(p.usableW).toFixed(2)+' × '+Number(p.usableH).toFixed(2)+' cm • '+b.yield+' ดวง/แผ่น • Gap '+formatMillimeters(gapMm)+' mm • Bleed '+formatMillimeters(bleedMm)+' mm/ด้าน • '+(b.rotate?'หมุน 90°':'แนวปกติ')+' • Layout '+b.nx+' × '+b.ny
+    $('previewInfo').textContent='กระดาษ '+Number(p.fullW).toFixed(2)+' × '+Number(p.fullH).toFixed(2)+' cm • พื้นที่ใช้งาน '+Number(p.usableW).toFixed(2)+' × '+Number(p.usableH).toFixed(2)+' cm • '+b.yield+' ดวง/แผ่น • ระยะห่าง '+formatMillimeters(gapMm)+' mm • ตัดตก '+formatMillimeters(bleedMm)+' mm/ด้าน • '+(b.rotate?'หมุน 90°':'แนวปกติ')+' • Layout '+b.nx+' × '+b.ny
   }
 
 function calculate() {
@@ -226,7 +235,7 @@ function calculate() {
         resetPreview();
         return
       }
-      const b=findBest(p,W,H,G);
+      const b=findBest(p,W,H,G,B);
       if(!b) {
         $('sheets').textContent='0';
         $('yield').textContent='ขนาดใหญ่เกินไป';

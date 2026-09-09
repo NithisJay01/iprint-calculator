@@ -59,9 +59,10 @@ function renderPiecePreviewSide(side = 'front') {
     clone.prepend(empty);
   }
 
-  const width = Math.max(1, Number(lastCalc?.W) || 1);
-  const height = Math.max(1, Number(lastCalc?.H) || 1);
-  syncPieceMarginLine(clone, width * 10, height * 10);
+  const width = Math.max(1, Number(lastCalc?.b?.pieceW) || Number(lastCalc?.W) * 10 || 1);
+  const height = Math.max(1, Number(lastCalc?.b?.pieceH) || Number(lastCalc?.H) * 10 || 1);
+  syncPieceMarginLine(clone, width, height);
+  syncPieceBleedArtwork(clone, width, height);
   clone.style.aspectRatio = `${width} / ${height}`;
   frame.replaceChildren(clone);
 
@@ -73,7 +74,7 @@ function renderPiecePreviewSide(side = 'front') {
   const rotation = typeof getArtworkRotation === 'function' ? getArtworkRotation(nextSide) : 0;
   const calculatedMargin = Number(lastCalc?.bleed);
   const margin = Math.max(0, Number.isFinite(calculatedMargin) ? calculatedMargin : 3);
-  $('piecePreviewStatus').textContent = `ชิ้นที่ ${piecePreviewState.index.toLocaleString('th-TH')} • ${nextSide === 'back' ? 'ด้านหลัง' : 'ด้านหน้า'} • Margin ${margin.toLocaleString('th-TH', { maximumFractionDigits: 1 })} mm • หมุน ${rotation}°`;
+  $('piecePreviewStatus').textContent = `ชิ้นที่ ${piecePreviewState.index.toLocaleString('th-TH')} • ${nextSide === 'back' ? 'ด้านหลัง' : 'ด้านหน้า'} • ขนาดหลังตัด ${Number(lastCalc?.W).toLocaleString('th-TH',{maximumFractionDigits:2})} × ${Number(lastCalc?.H).toLocaleString('th-TH',{maximumFractionDigits:2})} cm • ตัดตก ${margin.toLocaleString('th-TH', { maximumFractionDigits: 1 })} mm • หมุน ${rotation}°`;
 }
 
 function openPiecePreview(piece) {

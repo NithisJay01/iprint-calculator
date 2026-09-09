@@ -138,6 +138,7 @@ function briefArtworkPreview(calc, artworkUrl, top=574, sideLabel='ด้าน�
       const width=pieceW*paperScale;
       const height=pieceH*paperScale;
       const inset=Math.min(width/3,height/3,bleed/10*paperScale);
+      const safeInset=Math.min(width/2.1,height/2.1,bleed/5*paperScale);
       const clipId=`briefPieceClip${row}-${column}`;
       const clip=`<defs><clipPath id="${clipId}"><rect x="${x+1}" y="${y+1}" width="${Math.max(1,width-2)}" height="${Math.max(1,height-2)}" rx="2"/></clipPath></defs>`;
       const placeholder=`<rect x="${x}" y="${y}" width="${width}" height="${height}" rx="3" fill="#eaf5ff" stroke="#8fc6ef"/>`;
@@ -145,7 +146,7 @@ function briefArtworkPreview(calc, artworkUrl, top=574, sideLabel='ด้าน�
         ? `<image href="${briefEscapeSvg(artworkUrl)}" x="${x+1}" y="${y+1}" width="${Math.max(1,width-2)}" height="${Math.max(1,height-2)}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${clipId})"/>`
         : '';
       const bleedMark=inset>0
-        ? `<rect x="${x+inset}" y="${y+inset}" width="${Math.max(1,width-inset*2)}" height="${Math.max(1,height-inset*2)}" fill="none" stroke="#0a8cff" stroke-dasharray="2 2" stroke-width=".8"/>`
+        ? `<rect x="${x+inset}" y="${y+inset}" width="${Math.max(1,width-inset*2)}" height="${Math.max(1,height-inset*2)}" fill="none" stroke="#e32636" stroke-width=".8"/><rect x="${x+safeInset}" y="${y+safeInset}" width="${Math.max(1,width-safeInset*2)}" height="${Math.max(1,height-safeInset*2)}" fill="none" stroke="#009b57" stroke-width=".8"/>`
         : '';
       cells.push(clip+placeholder+image+bleedMark);
     }
@@ -166,7 +167,7 @@ function briefArtworkPreview(calc, artworkUrl, top=574, sideLabel='ด้าน�
     <text x="98" y="${top+618}" class="label">กระดาษ ${briefEscapeSvg(paperSize)}</text>
     <text x="98" y="${top+640}" class="detail">พื้นที่ใช้งาน ${briefEscapeSvg(usableSize)}</text>
     <text x="544" y="${top+618}" class="label">${(Number(calc.b?.yield)||0).toLocaleString('th-TH')} ดวง/แผ่น • Layout ${nx} × ${ny}</text>
-    <text x="544" y="${top+640}" class="detail">Gap ${gap.toLocaleString('th-TH',{maximumFractionDigits:1})} mm • Bleed ${bleed.toLocaleString('th-TH',{maximumFractionDigits:1})} mm/ด้าน${isPartial?' • แสดง Preview บางส่วน':''}</text>`;
+    <text x="544" y="${top+640}" class="detail">ระยะห่าง ${gap.toLocaleString('th-TH',{maximumFractionDigits:1})} mm • ตัดตก ${bleed.toLocaleString('th-TH',{maximumFractionDigits:1})} mm/ด้าน${isPartial?' • แสดง Preview บางส่วน':''}</text>`;
 }
 
 function briefReferenceGallery(referenceUrls, y) {
@@ -279,7 +280,7 @@ function briefImageSvg(calc, artworkUrl='', referenceUrls=[], description='', ba
     <text x="580" y="228" class="header-meta">จำนวนชิ้นงาน</text>
     <text x="580" y="278" class="brand">${briefEscapeSvg(quantity)}</text>
     <text x="50" y="374" class="section">แผนการผลิต</text>
-    ${briefCard(50,400,475,'จำนวนชิ้นงานต่อแผ่น',yieldValue,'Layout '+(calc.b?.nx||0)+' × '+(calc.b?.ny||0)+' • Gap '+Number(calc.gap||0).toLocaleString('th-TH',{maximumFractionDigits:1})+' mm • Bleed '+Number(calc.bleed||0).toLocaleString('th-TH',{maximumFractionDigits:1})+' mm/ด้าน')}
+    ${briefCard(50,400,475,'จำนวนชิ้นงานต่อแผ่น',yieldValue,'Layout '+(calc.b?.nx||0)+' × '+(calc.b?.ny||0)+' • ระยะห่าง '+Number(calc.gap||0).toLocaleString('th-TH',{maximumFractionDigits:1})+' mm • ตัดตก '+Number(calc.bleed||0).toLocaleString('th-TH',{maximumFractionDigits:1})+' mm/ด้าน')}
     ${briefCard(555,400,475,'จำนวนแผ่นที่ใช้',sheetValue,'Preset '+paperName)}
     ${briefArtworkPreview(calc,artworkUrl,previewTop,'ด้านหน้า')}
     ${includeBack?briefArtworkPreview(calc,backArtworkUrl,previewTop+previewBlockHeight,'ด้านหลัง'):''}
@@ -329,6 +330,7 @@ function briefReviewSheetSvg(calc,artworkUrl,side,x,y,width,height,shapeUrl='') 
   const maximum=Math.min(96,Math.max(1,Number(calc.b?.yield)||nx*ny));
   const diecut=(calc.services||[]).some(service=>/ไดคัท|die.?cut/.test(String(service?.name||'').toLowerCase()));
   const rounded=(calc.services||[]).some(service=>/ตัดมุม|rounded.?corner/.test(String(service?.name||'').toLowerCase()));
+  const bleed=Math.max(0,Number(calc.bleed)||3)/10;
   const cells=[];
   for(let index=0;index<maximum;index++) {
     const row=Math.floor(index/nx),column=index%nx;
@@ -339,8 +341,9 @@ function briefReviewSheetSvg(calc,artworkUrl,side,x,y,width,height,shapeUrl='') 
     const mask=shapeUrl?`<mask id="${maskId}" maskUnits="userSpaceOnUse" style="mask-type:alpha"><image href="${briefEscapeSvg(shapeUrl)}" x="${cellX+1}" y="${cellY+1}" width="${Math.max(1,cellW-2)}" height="${Math.max(1,cellH-2)}" preserveAspectRatio="none"/></mask>`:'';
     const image=briefReviewArtworkSvg(artworkUrl,cellX+1,cellY+1,Math.max(1,cellW-2),Math.max(1,cellH-2),clipId,shapeUrl?maskId:'',Boolean(calc.b?.rotate));
     const tint=briefReviewMaterialTint(calc).replace('class="piece-tint"',`x="${cellX+1}" y="${cellY+1}" width="${Math.max(1,cellW-2)}" height="${Math.max(1,cellH-2)}"`);
+    const trimInset=bleed*scale,safeInset=bleed*2*scale;
     const radiusX=rounded?Math.min(cellW/2,4*scale):0,radiusY=rounded?Math.min(cellH/2,4*scale):0;
-    cells.push(`<defs><clipPath id="${clipId}"><rect x="${cellX+1}" y="${cellY+1}" width="${Math.max(1,cellW-2)}" height="${Math.max(1,cellH-2)}" rx="${radiusX}" ry="${radiusY}"/></clipPath>${mask}</defs><rect x="${cellX}" y="${cellY}" width="${cellW}" height="${cellH}" rx="${radiusX}" ry="${radiusY}" fill="#fff" stroke="${diecut?'#ff8b00':'#8a949e'}" ${diecut?'stroke-dasharray="3 2"':''}/>${image}${tint}`);
+    cells.push(`<defs><clipPath id="${clipId}"><rect x="${cellX+1}" y="${cellY+1}" width="${Math.max(1,cellW-2)}" height="${Math.max(1,cellH-2)}"/></clipPath>${mask}</defs><rect x="${cellX}" y="${cellY}" width="${cellW}" height="${cellH}" fill="#fff" stroke="${diecut?'#ff8b00':'#8a949e'}" ${diecut?'stroke-dasharray="3 2"':''}/>${image}${tint}<rect x="${cellX+trimInset}" y="${cellY+trimInset}" width="${Math.max(1,cellW-trimInset*2)}" height="${Math.max(1,cellH-trimInset*2)}" rx="${radiusX}" ry="${radiusY}" fill="none" stroke="#e32636"/><rect x="${cellX+safeInset}" y="${cellY+safeInset}" width="${Math.max(1,cellW-safeInset*2)}" height="${Math.max(1,cellH-safeInset*2)}" fill="none" stroke="#009b57"/>`);
   }
   return `<rect x="${x}" y="${y}" width="${width}" height="${height}" rx="14" fill="#edf4f8"/><rect x="${paperX}" y="${paperY}" width="${paperW}" height="${paperH}" rx="4" fill="#fff" stroke="#75818b"/><rect x="${usableX}" y="${usableY}" width="${usableWidth}" height="${usableHeight}" fill="none" stroke="#a1adb6" stroke-dasharray="5 4"/>${cells.join('')}${briefReviewSurfaceOverlay(paperX,paperY,paperW,paperH,calc)}`;
 }
@@ -352,12 +355,14 @@ function briefReviewPieceSvg(calc,artworkUrl,x,y,width,height,shapeUrl='') {
   const clipId='review-piece-'+Math.random().toString(36).slice(2);
   const diecut=(calc.services||[]).some(service=>/ไดคัท|die.?cut/.test(String(service?.name||'').toLowerCase()));
   const rounded=(calc.services||[]).some(service=>/ตัดมุม|rounded.?corner/.test(String(service?.name||'').toLowerCase()));
+  const bleed=Math.max(0,Number(calc.bleed)||3);
   const radiusX=rounded?Math.min(pieceW/2,4*scale):0,radiusY=rounded?Math.min(pieceH/2,4*scale):0;
   const maskId=`${clipId}-shape`;
   const mask=shapeUrl?`<mask id="${maskId}" maskUnits="userSpaceOnUse" style="mask-type:alpha"><image href="${briefEscapeSvg(shapeUrl)}" x="${pieceX+1}" y="${pieceY+1}" width="${Math.max(1,pieceW-2)}" height="${Math.max(1,pieceH-2)}" preserveAspectRatio="none"/></mask>`:'';
   const image=briefReviewArtworkSvg(artworkUrl,pieceX+1,pieceY+1,Math.max(1,pieceW-2),Math.max(1,pieceH-2),clipId,shapeUrl?maskId:'',Boolean(calc.b?.rotate));
   const tint=briefReviewMaterialTint(calc).replace('class="piece-tint"',`x="${pieceX+1}" y="${pieceY+1}" width="${Math.max(1,pieceW-2)}" height="${Math.max(1,pieceH-2)}"`);
-  return `<rect x="${x}" y="${y}" width="${width}" height="${height}" rx="14" fill="#edf4f8"/><defs><clipPath id="${clipId}"><rect x="${pieceX+1}" y="${pieceY+1}" width="${Math.max(1,pieceW-2)}" height="${Math.max(1,pieceH-2)}" rx="${radiusX}" ry="${radiusY}"/></clipPath>${mask}</defs><rect x="${pieceX}" y="${pieceY}" width="${pieceW}" height="${pieceH}" rx="${radiusX}" ry="${radiusY}" fill="#fff" stroke="${diecut?'#ff8b00':'#8a949e'}" ${diecut?'stroke-dasharray="5 3"':''}/>${image}${tint}${briefReviewSurfaceOverlay(pieceX,pieceY,pieceW,pieceH,calc)}`;
+  const trimInset=bleed*scale,safeInset=bleed*2*scale;
+  return `<rect x="${x}" y="${y}" width="${width}" height="${height}" rx="14" fill="#edf4f8"/><defs><clipPath id="${clipId}"><rect x="${pieceX+1}" y="${pieceY+1}" width="${Math.max(1,pieceW-2)}" height="${Math.max(1,pieceH-2)}"/></clipPath>${mask}</defs><rect x="${pieceX}" y="${pieceY}" width="${pieceW}" height="${pieceH}" fill="#fff" stroke="${diecut?'#ff8b00':'#8a949e'}" ${diecut?'stroke-dasharray="5 3"':''}/>${image}${tint}<rect x="${pieceX+trimInset}" y="${pieceY+trimInset}" width="${Math.max(1,pieceW-trimInset*2)}" height="${Math.max(1,pieceH-trimInset*2)}" rx="${radiusX}" ry="${radiusY}" fill="none" stroke="#e32636" stroke-width="2"/><rect x="${pieceX+safeInset}" y="${pieceY+safeInset}" width="${Math.max(1,pieceW-safeInset*2)}" height="${Math.max(1,pieceH-safeInset*2)}" fill="none" stroke="#009b57" stroke-width="2"/>${briefReviewSurfaceOverlay(pieceX,pieceY,pieceW,pieceH,calc)}`;
 }
 
 function briefReviewImageSvg(calc,artworkUrls,shapeUrl='') {

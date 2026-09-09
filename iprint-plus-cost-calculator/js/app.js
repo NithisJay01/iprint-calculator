@@ -230,6 +230,7 @@ function bind() {
     }
     );
     bindVirtualKnobs();
+    bindUrlValidationFeedback();
     bindArtwork();
     bindDiecutShape();
     bindCart();
