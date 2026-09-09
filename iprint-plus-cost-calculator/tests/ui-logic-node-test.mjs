@@ -106,5 +106,8 @@ assert.match(presetSource, /Preset กระดาษกำหนดไว้ต
 assert.doesNotMatch(presetSource, /ไม่สามารถเปลี่ยนได้/);
 assert.match(materialSource, /nextButton\.disabled=missing/);
 assert.match(quickBriefSource, /button\.dataset\.flowNext === 'brief' && !selectedMaterialId/);
+assert.match(quickBriefHtml, /class="preset-preview-guidance"/);
+assert.doesNotMatch(quickBriefHtml, /<details class="preview-read-more"/);
+assert.match(quickBriefHtml, /layout-settings-lower">\s*<section class="form-card layout-print-services/);
 
 console.log('UI logic node test passed');

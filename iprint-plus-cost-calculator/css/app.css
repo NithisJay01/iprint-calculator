@@ -388,6 +388,7 @@ html{background:#dce9f5}body{padding:0;background:#dce9f5;color:#080808}.mobile-
 .layout-preview-content{display:contents}.layout-preview-content[hidden]{display:none!important}.layout-preview-card.is-awaiting-print-choice{min-height:0;justify-content:flex-start}.layout-preview-card.is-awaiting-print-choice>.layout-print-services{margin-top:0}
 #openMaterialsServices.primary-action:disabled{border-color:#b9cad8;background:#dce6ee;color:#758898;box-shadow:none;transform:none;cursor:not-allowed}
 .cost-cta-actions .primary-action:disabled{border-color:#b9cad8;background:#dce6ee;color:#758898;box-shadow:none;transform:none;cursor:not-allowed}
+.preset-preview-guidance{display:grid;gap:4px;margin-top:8px;color:#60788b;font-size:9px;line-height:1.45}.preset-preview-guidance b{color:#c55231}.layout-print-services-card{padding:14px;border-color:#b8d7ed;background:#f7fbff}.layout-print-services-card:empty{display:none}.layout-print-services-card>.service-group{margin:0}
 .mobile-app .service-group-print.is-sticker-single-only{border-color:#8bc9ff;background:#eef8ff}.service-group-lock-note{margin:0 2px 8px;padding:8px 10px;border-radius:8px;background:#dcefff;color:#075c9b;font-size:10px;font-weight:800;line-height:1.45}
 @media(min-width:900px){.app-view[data-app-view="cost"].is-active{grid-template-areas:"back back" "preview addons" "preview analysis" "preview actions"}[data-app-view="cost"]>.view-back-button{grid-area:back;justify-self:start;margin:0}}
 
