@@ -19,6 +19,7 @@ export function normalizeFlowSettings(input = {}) {
       .map(value => String(value || '').trim()).filter(Boolean))].slice(0, 100);
     const presetIds = uniqueIds(rule.presetIds);
     const serviceIds = uniqueIds(rule.serviceIds);
+    const materialIds = Array.isArray(rule.materialIds) ? uniqueIds(rule.materialIds) : ['*'];
     let defaultPresetId = String(rule.defaultPresetId || '').trim();
     if (defaultPresetId && !presetIds.includes(defaultPresetId)) presetIds.unshift(defaultPresetId);
     jobTypes[jobType] = {
@@ -27,6 +28,7 @@ export function normalizeFlowSettings(input = {}) {
       presetIds,
       defaultPresetId,
       lockPreset: rule.lockPreset === true,
+      materialIds,
       serviceIds
     };
   });

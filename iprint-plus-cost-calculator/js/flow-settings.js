@@ -31,6 +31,7 @@ function normalizeClientFlowSettings(input = {}) {
     const rule = sourceRules[jobType] && typeof sourceRules[jobType] === 'object' ? sourceRules[jobType] : {};
     const uniqueIds = values => [...new Set((Array.isArray(values) ? values : []).map(String).map(value => value.trim()).filter(Boolean))];
     const presetIds = uniqueIds(rule.presetIds);
+    const materialIds = Array.isArray(rule.materialIds) ? uniqueIds(rule.materialIds) : ['*'];
     const defaultPresetId = String(rule.defaultPresetId || '').trim();
     if (defaultPresetId && !presetIds.includes(defaultPresetId)) presetIds.unshift(defaultPresetId);
     jobTypes[jobType] = {
@@ -39,6 +40,7 @@ function normalizeClientFlowSettings(input = {}) {
       presetIds,
       defaultPresetId,
       lockPreset: rule.lockPreset === true,
+      materialIds,
       serviceIds: uniqueIds(rule.serviceIds)
     };
   });
@@ -112,6 +114,15 @@ function flowServicesForJobType(items, jobType = selectedJobType) {
   return list.filter(service => allowed.has(String(service.id)));
 }
 
+function flowMaterialsForJobType(items, jobType = selectedJobType) {
+  const list = Array.isArray(items) ? items : [];
+  const rule = getFlowRule(jobType);
+  if (!rule?.configured) return list;
+  const allowed = new Set(rule.materialIds.map(String));
+  if (allowed.has('*')) return list;
+  return list.filter(material => allowed.has(String(material.id)));
+}
+
 function syncFlowJobTypeVisibility() {
   const normalized = normalizeClientFlowSettings(flowSettings || {});
   const container = $('jobTypeOptions');
@@ -160,12 +171,21 @@ async function syncFlowSettings() {
 }
 
 async function saveFlowSettingsRemote(settings) {
-  const response = await fetch(API.staffFlowSettings, {
-    method: 'PUT', headers: writeHeaders(), body: JSON.stringify(normalizeClientFlowSettings(settings))
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok || !data.success) throw new Error(data.error || `บันทึก Flow Settings ไม่สำเร็จ (${response.status})`);
-  return normalizeClientFlowSettings(data.settings || settings);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 20000);
+  try {
+    const response = await fetch(API.staffFlowSettings, {
+      method: 'PUT', headers: writeHeaders(), body: JSON.stringify(normalizeClientFlowSettings(settings)), signal: controller.signal
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.success) throw new Error(data.error || `บันทึก Flow Settings ไม่สำเร็จ (${response.status})`);
+    return normalizeClientFlowSettings(data.settings || settings);
+  } catch (error) {
+    if (error?.name === 'AbortError') throw new Error('บันทึกไม่สำเร็จ: Worker ตอบกลับช้าเกิน 20 วินาที');
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 window.normalizeClientFlowSettings = normalizeClientFlowSettings;
@@ -174,5 +194,6 @@ window.flowPresetsForJobType = flowPresetsForJobType;
 window.flowDefaultPresetId = flowDefaultPresetId;
 window.isFlowPresetLocked = isFlowPresetLocked;
 window.flowServicesForJobType = flowServicesForJobType;
+window.flowMaterialsForJobType = flowMaterialsForJobType;
 window.syncFlowJobTypeVisibility = syncFlowJobTypeVisibility;
 window.isFlowQuizStepEnabled = isFlowQuizStepEnabled;

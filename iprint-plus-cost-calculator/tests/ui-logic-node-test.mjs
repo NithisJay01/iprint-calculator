@@ -45,8 +45,9 @@ vm.runInContext(fs.readFileSync(new URL('../js/flow-settings.js', import.meta.ur
 assert.deepEqual(JSON.parse(JSON.stringify(flowSettingsContext.flowPresetsForJobType('งานกระดาษ'))).map(([id]) => id), ['paper']);
 assert.equal(flowSettingsContext.flowDefaultPresetId('งานกระดาษ'), 'paper');
 assert.equal(flowSettingsContext.isFlowPresetLocked('งานกระดาษ'), true);
-flowSettingsContext.flowSettings = flowSettingsContext.normalizeClientFlowSettings({ jobTypes: { 'งานกระดาษ': { configured: true, presetIds: ['other'], defaultPresetId: 'other', lockPreset: false, serviceIds: ['service-a'] } } });
+flowSettingsContext.flowSettings = flowSettingsContext.normalizeClientFlowSettings({ jobTypes: { 'งานกระดาษ': { configured: true, presetIds: ['other'], defaultPresetId: 'other', lockPreset: false, materialIds: ['material-a'], serviceIds: ['service-a'] } } });
 assert.deepEqual(JSON.parse(JSON.stringify(flowSettingsContext.flowServicesForJobType([{ id: 'service-a' }, { id: 'service-b' }], 'งานกระดาษ'))), [{ id: 'service-a' }]);
+assert.deepEqual(JSON.parse(JSON.stringify(flowSettingsContext.flowMaterialsForJobType([{ id: 'material-a' }, { id: 'material-b' }], 'งานกระดาษ'))), [{ id: 'material-a' }]);
 
 const previewContext = scriptContext();
 vm.runInContext(fs.readFileSync(new URL('../js/material-preview.js', import.meta.url), 'utf8'), previewContext);

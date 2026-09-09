@@ -1,11 +1,13 @@
 function renderMaterials() {
     const sel=$('materialSelect');
+    const visibleMaterials=typeof flowMaterialsForJobType==='function'?flowMaterialsForJobType(materials,selectedJobType):materials;
+    if(selectedMaterialId&&!visibleMaterials.some(m=>String(m.id)===String(selectedMaterialId)))selectedMaterialId='';
     sel.innerHTML='';
     const ph=document.createElement('option');
     ph.value='';
     ph.textContent='เลือกวัสดุ';
     sel.appendChild(ph);
-    materials.forEach(m=> {
+    visibleMaterials.forEach(m=> {
       const o=document.createElement('option');
       o.value=String(m.id);
       o.textContent=m.name+' • ฿'+money(m.price)+' / '+unit(m.unit);
@@ -19,8 +21,8 @@ function renderMaterials() {
       quickSel.innerHTML=sel.innerHTML;
       quickSel.value=selectedMaterialId
     }
-    setStatus('materialStatus',dataSourceLabel()+' • '+materials.length+' วัสดุ','ok');
-    const m=materials.find(x=>String(x.id)===String(selectedMaterialId));
+    setStatus('materialStatus',dataSourceLabel()+' • '+visibleMaterials.length+' วัสดุ','ok');
+    const m=visibleMaterials.find(x=>String(x.id)===String(selectedMaterialId));
     const s=$('selectedMaterialSummary');
     if(m) {
       s.hidden=false;

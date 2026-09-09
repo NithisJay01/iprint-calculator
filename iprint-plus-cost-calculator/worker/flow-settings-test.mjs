@@ -5,6 +5,7 @@ import { NotionFlowSettingsRepository } from './repositories/notion-flow-setting
 const normalized = normalizeFlowSettings({ jobTypes: { 'งานกระดาษ': { lockPreset: true, defaultPresetId: 'paper-1', serviceIds: ['service-1', 'service-1'] } } });
 assert.deepEqual(normalized.jobTypes['งานกระดาษ'].presetIds, ['paper-1']);
 assert.deepEqual(normalized.jobTypes['งานกระดาษ'].serviceIds, ['service-1']);
+assert.deepEqual(normalized.jobTypes['งานกระดาษ'].materialIds, ['*']);
 assert.equal(normalized.quiz.options.length, 4);
 const customQuiz = normalizeFlowSettings({ quiz: { title: 'เลือกประเภท', options: [{ value: 'โปสเตอร์', label: 'โปสเตอร์' }] }, jobTypes: { 'โปสเตอร์': { enabled: true } } });
 assert.equal(customQuiz.quiz.title, 'เลือกประเภท');
