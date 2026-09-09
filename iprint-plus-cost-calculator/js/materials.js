@@ -27,7 +27,17 @@ function renderMaterials() {
     if(m) {
       s.hidden=false;
       s.textContent='เลือก: '+m.name+' • ฿'+money(m.price)+' / '+unit(m.unit)
-    } else s.hidden=true
+    } else s.hidden=true;
+    syncMaterialRequirement()
+  }
+
+function syncMaterialRequirement() {
+    const nextButton=document.querySelector('[data-flow-next="brief"]');
+    if(!nextButton)return;
+    const missing=!String(selectedMaterialId||'').trim();
+    nextButton.disabled=missing;
+    nextButton.setAttribute('aria-disabled',missing?'true':'false');
+    nextButton.title=missing?'กรุณาเลือกวัสดุก่อนดำเนินการต่อ':''
   }
 
 async function syncMaterials() {

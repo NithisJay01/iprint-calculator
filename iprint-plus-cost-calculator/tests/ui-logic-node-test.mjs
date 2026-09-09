@@ -91,6 +91,8 @@ assert.equal(flowContext.randomJobNickname('นามบัตร', 0.999), 'น
 
 const quickBriefHtml = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const quickBriefSource = fs.readFileSync(new URL('../js/flow.js', import.meta.url), 'utf8');
+const presetSource = fs.readFileSync(new URL('../js/presets.js', import.meta.url), 'utf8');
+const materialSource = fs.readFileSync(new URL('../js/materials.js', import.meta.url), 'utf8');
 assert.equal((quickBriefHtml.match(/data-quick-step="[1-6]"/g) || []).length, 6);
 assert.match(quickBriefHtml, /คำถาม 4 จาก 4/);
 assert.match(quickBriefHtml, /ข้อมูลสำคัญครบ พร้อมส่งต่อเพื่อคำนวณและสร้างออร์เดอร์/);
@@ -100,5 +102,9 @@ assert.match(quickBriefSource, /const QUICK_BRIEF_QUIZ_COUNT = 4/);
 assert.doesNotMatch(quickBriefSource, /const QUICK_BRIEF_NARRATION = \[/);
 assert.match(quickBriefSource, /Number\.isInteger\(quantity\)/);
 assert.match(quickBriefSource, /validQuickBriefSourceLink\(\)/);
+assert.match(presetSource, /Preset กระดาษกำหนดไว้ตามประเภทงานที่เลือก/);
+assert.doesNotMatch(presetSource, /ไม่สามารถเปลี่ยนได้/);
+assert.match(materialSource, /nextButton\.disabled=missing/);
+assert.match(quickBriefSource, /button\.dataset\.flowNext === 'brief' && !selectedMaterialId/);
 
 console.log('UI logic node test passed');

@@ -22,7 +22,7 @@ function renderPresets() {
     const locked=Boolean(selectedJobType)&&typeof isFlowPresetLocked==='function'&&isFlowPresetLocked(selectedJobType);
     sel.disabled=locked;
     const lockStatus=$('presetLockStatus');
-    if(lockStatus){lockStatus.hidden=!locked;lockStatus.textContent=locked?'Preset นี้ถูกกำหนดจากประเภทงานและไม่สามารถเปลี่ยนได้':''}
+    if(lockStatus){lockStatus.hidden=!locked;lockStatus.textContent=locked?'Preset กระดาษกำหนดไว้ตามประเภทงานที่เลือก':''}
     const quickSel=$('quickSheet');
     if(quickSel) {
       quickSel.innerHTML=sel.innerHTML;

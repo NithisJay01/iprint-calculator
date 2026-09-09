@@ -977,6 +977,11 @@ function bindFlow() {
   $('headerHome')?.addEventListener('click', () => showAppView('home'));
   $('headerWorkflow')?.addEventListener('click', () => openWorkflow());
   document.querySelectorAll('[data-flow-next]').forEach(button => button.addEventListener('click', () => {
+    if (button.dataset.flowNext === 'brief' && !selectedMaterialId) {
+      setStatus('materialStatus', 'กรุณาเลือกวัสดุก่อนดำเนินการต่อ', 'warn');
+      $('materialSelect')?.focus();
+      return;
+    }
     if (button.dataset.flowNext === 'brief' && !validateCustomServiceRequest('main')) return;
     showAppView(button.dataset.flowNext);
   }));
