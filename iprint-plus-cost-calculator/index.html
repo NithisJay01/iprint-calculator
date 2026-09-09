@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#eef6ff">
   <title>iPrint</title>
-  <link rel="stylesheet" href="css/app.css?v=20260909-print-mode-prompt">
+  <link rel="stylesheet" href="css/app.css?v=20260909-preview-guide">
 </head>
 <body>
 <section class="login-gate" id="loginGate" aria-labelledby="loginTitle">
@@ -145,14 +145,20 @@
           <div class="sheet-dimensions"><span id="sheetWidthLabel">— mm</span><span id="sheetHeightLabel">— mm</span></div>
           <div class="artwork-current layout-artwork-current" id="artworkCurrent" hidden><img id="artworkThumbnail" alt="ภาพงานหลักที่เลือก"><div><strong id="artworkName">—</strong><span id="artworkMeta">—</span></div><div class="artwork-current-actions"><button id="rotateArtworkImage" type="button"><img class="button-icon" src="image/rotate.svg" alt="">หมุน 90°</button><button id="clearArtworkImage" type="button">ล้างภาพ</button></div></div>
           <div class="artwork-side-controls" id="artworkSideControls" hidden><div class="artwork-side-toggle" role="group" aria-label="เลือกด้านของ Artwork"><button type="button" data-artwork-side="front" class="is-selected" aria-pressed="true">ด้านหน้า</button><button type="button" data-artwork-side="back" aria-pressed="false">ด้านหลัง</button></div><div class="artwork-side-action-row"><label class="active-artwork-upload" for="artworkImage" id="activeArtworkUploadLabel">อัปโหลดภาพด้านหน้า</label></div><small id="artworkSideStatus">หน้า ยังไม่มีภาพ • หลัง ยังไม่มีภาพ</small></div>
+          <div class="preview-zone-guide" aria-label="คำอธิบายพื้นที่ใน Preview">
+            <div class="is-edge"><i aria-hidden="true"></i><span><strong>ขอบนอก — พื้นที่ตัดตก</strong><small>ยืดสีและรูปภาพให้เต็มถึงขอบนี้</small></span></div>
+            <div class="is-trim"><i aria-hidden="true"></i><span><strong>เส้นตัด — ขนาดงานจริง</strong><small>เครื่องจะตัดงานตามเส้นนี้</small></span></div>
+            <div class="is-safe"><i aria-hidden="true"></i><span><strong>พื้นที่ปลอดภัย</strong><small>วางข้อความ โลโก้ และข้อมูลสำคัญไว้ภายในเส้นนี้</small></span></div>
+          </div>
         </div>
         <div class="preview-drop-hint" aria-hidden="true"><span><img src="image/upload.svg" alt=""></span> วางภาพงานใน Preview</div>
       </div>
 
       <section class="form-card layout-form-card">
         <h2 class="layout-form-title">ขนาดชิ้นงาน</h2>
-        <div class="field"><label class="label" for="sheet">Preset กระดาษที่ใช้</label><select id="sheet"><option value="">กำลังโหลด Preset จาก Notion…</option></select><p class="preset-lock-status" id="presetLockStatus" hidden></p><div class="preset-preview-guidance" role="note"><span><b>ขนาดที่กรอกคือขนาดหลังตัด</b> • ระบบเพิ่มพื้นที่ตัดตกออกไปด้านละ 3 mm</span><span>รูปให้เต็มขอบนอก • ตัดตามเส้นสีแดง • ข้อความสำคัญให้อยู่ในเส้นสีเขียว</span></div></div>
+        <div class="field"><label class="label" for="sheet">Preset กระดาษที่ใช้</label><select id="sheet"><option value="">กำลังโหลด Preset จาก Notion…</option></select><p class="preset-lock-status" id="presetLockStatus" hidden></p><div class="preset-preview-guidance" role="note"><span>ขนาดที่กรอกคือขนาดจริงของงานที่ต้องการ</span></div></div>
         <div class="row2 dimension-fields">
+          <h3 class="dimension-section-title">ไซส์จริงของงาน</h3>
           <div class="field dimension-field"><label class="label" for="w">กว้าง (ซม.)</label><input id="w" type="number" min="0.1" max="100" step="0.1" value="9"><input class="dimension-slider" id="wSlider" type="range" min="0.1" max="100" step="0.1" value="9" aria-label="ปรับความกว้างด้วยแถบเลื่อน"></div>
           <div class="field dimension-field"><label class="label" for="h">สูง (ซม.)</label><input id="h" type="number" min="0.1" max="100" step="0.1" value="5.4"><input class="dimension-slider" id="hSlider" type="range" min="0.1" max="100" step="0.1" value="5.4" aria-label="ปรับความสูงด้วยแถบเลื่อน"></div>
         </div>

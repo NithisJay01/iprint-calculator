@@ -140,6 +140,11 @@ assert.match(calculatorSource, /function findBest\(p,Wcm,Hcm,gapMm=0,bleedMm=0\)
 assert.match(calculatorSource, /activeAccessRole!==['"]staff['"]\)return 0/);
 assert.match(quickBriefHtml, /เส้นแดง: แนวตัด/);
 assert.match(quickBriefHtml, /เส้นเขียว: พื้นที่ปลอดภัย/);
+assert.match(quickBriefHtml, /ไซส์จริงของงาน/);
+assert.match(quickBriefHtml, /ขอบนอก — พื้นที่ตัดตก/);
+assert.match(quickBriefHtml, /เครื่องจะตัดงานตามเส้นนี้/);
+assert.match(quickBriefHtml, /วางข้อความ โลโก้ และข้อมูลสำคัญไว้ภายในเส้นนี้/);
+assert.match(quickBriefHtml, /ขนาดที่กรอกคือขนาดจริงของงานที่ต้องการ/);
 assert.match(coreSource, /✓ ลิงก์ถูกต้อง/);
 assert.match(quickBriefHtml, /id="printModeModal"/);
 assert.match(serviceSource, /image\/print-single-side\.png/);

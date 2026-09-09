@@ -466,6 +466,13 @@ html{background:#dce9f5}body{padding:0;background:#dce9f5;color:#080808}.mobile-
 .preview-zone-legend span::before{content:"";width:14px;height:2px;border-radius:99px;background:#8a949e}
 .preview-zone-legend .is-trim::before{background:#e32636}
 .preview-zone-legend .is-safe::before{background:#009b57}
+.dimension-section-title{grid-column:1/-1;margin:0 0 -3px;color:var(--flow-navy);font-size:13px}
+.preview-zone-guide{display:grid;width:100%;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px;padding:11px;border:1px solid #cfe1ef;border-radius:11px;background:#f7fbff;text-align:left}
+.preview-zone-guide>div{display:grid;grid-template-columns:12px minmax(0,1fr);align-items:start;gap:7px;min-width:0}
+.preview-zone-guide i{display:block;width:10px;height:10px;margin-top:3px;border:2px solid #148cf0;border-radius:50%}
+.preview-zone-guide .is-trim i{border-color:#e32636}.preview-zone-guide .is-safe i{border-color:#009b57}
+.preview-zone-guide strong,.preview-zone-guide small{display:block}.preview-zone-guide strong{color:var(--flow-navy);font-size:9px;line-height:1.35}.preview-zone-guide small{margin-top:2px;color:var(--flow-muted);font-size:8px;line-height:1.4}
+@media(max-width:560px){.preview-zone-guide{grid-template-columns:1fr}.preview-zone-guide>div{grid-template-columns:12px minmax(0,1fr)}.preview-zone-guide strong{font-size:10px}.preview-zone-guide small{font-size:9px}}
 .mobile-app input[type="url"].is-valid{padding-right:42px;border-color:#1a9b5f;background-color:#f3fff8;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='10' fill='%231a9b5f'/%3E%3Cpath d='m7.5 12.2 3 3 6-6' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;background-size:22px 22px;box-shadow:0 0 0 3px rgba(26,155,95,.1)}
 .url-validation-status{display:none;margin-top:6px;color:var(--flow-muted);font-size:10px;font-weight:700}
 .url-validation-status.is-valid,.url-validation-status.is-invalid{display:block}
