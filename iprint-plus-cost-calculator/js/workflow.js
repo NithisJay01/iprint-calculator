@@ -1,4 +1,5 @@
 const LAST_ORDER_STORAGE_KEY = IPRINT_TEST_MODE ? 'iprint_test_last_order_v1' : 'iprint_last_order_v1';
+let currentWorkflowReference = null;
 
 const WORKFLOW_LABELS = {
   NEW: 'งานใหม่',
@@ -93,6 +94,7 @@ function rememberOrder(remote, order) {
   };
 
   localStorage.setItem(LAST_ORDER_STORAGE_KEY, JSON.stringify(reference));
+  currentWorkflowReference = reference;
   const input = $('workflowTicketId');
   if (input) input.value = reference.ticketId;
 }
@@ -108,17 +110,18 @@ function renderWorkflow(order) {
   currentWorkflowOrder = order || null;
   const summary = $('workflowTicketSummary');
   const list = $('workflowItemList');
+  const cancelButton = $('cancelWorkflowOrder');
 
   if (!order?.ticket) {
+    if (cancelButton) cancelButton.hidden = true;
     summary.hidden = true;
     list.innerHTML = '<div class="workflow-empty">ยังไม่ได้โหลดข้อมูล Ticket</div>';
     return;
   }
 
   const ticket = order.ticket;
-  const cancelButton = $('cancelWorkflowOrder');
   if (cancelButton) cancelButton.hidden = document.body.dataset.accessRole !== 'staff';
-  const reference = readLastOrder();
+  const reference = currentWorkflowReference || readLastOrder();
   if ($('workflowCustomer')) $('workflowCustomer').innerHTML = `<strong>สวัสดี, ${workflowEscape(reference?.customer || 'ลูกค้า')}</strong><br><span>คุณสามารถติดตามความคืบหน้าของงานแต่ละรายการได้ที่นี่</span>`;
   if ($('workflowOrderNumber')) $('workflowOrderNumber').textContent = reference?.quoteNo ? `หมายเลขออเดอร์ ${reference.quoteNo}` : (ticket.title || '');
   summary.hidden = false;
@@ -170,23 +173,91 @@ function renderWorkflow(order) {
   }).join('');
 }
 
-async function cancelWorkflowOrder() {
-  const ticketId = normalizeTicketId($('workflowTicketId')?.value || readLastOrder()?.ticketId || '');
-  if (!ticketId || !window.confirm('ยกเลิกคิวผลิตทั้งหมดของออร์เดอร์นี้และคืนกำลังผลิตหรือไม่? Ticket จะยังเก็บไว้เป็นประวัติ')) return;
+async function cancelWorkflowOrder(identifier = '') {
+  const ticketId = normalizeTicketId(identifier || $('workflowTicketId')?.value || currentWorkflowReference?.identifier || readLastOrder()?.ticketId || '');
+  if (!ticketId || !window.confirm('ยกเลิกคิวผลิตทั้งหมดของออร์เดอร์นี้และคืนกำลังผลิตหรือไม่? Ticket จะยังเก็บไว้เป็นประวัติ')) return false;
   const button = $('cancelWorkflowOrder');
   button.disabled = true;
   setWorkflowStatus('กำลังยกเลิกคิวผลิตและคืนกำลังผลิต…');
   try {
     const result = await cancelOrderProductionRemote(ticketId);
     const cancellation = result.cancellation || {};
-    setWorkflowStatus(cancellation.alreadyCancelled
+    const successMessage = cancellation.alreadyCancelled
       ? 'ออร์เดอร์นี้ไม่มีคิวที่ต้องคืนแล้ว'
-      : `ยกเลิก ${cancellation.cancelledAllocations || 0} คิว และคืน ${cancellation.refundedPoints || 0} points แล้ว`, 'ok');
+      : `ยกเลิก ${cancellation.cancelledAllocations || 0} คิว และคืน ${cancellation.refundedPoints || 0} points แล้ว`;
     button.hidden = true;
+    if (document.body.dataset.accessRole === 'staff') await searchWorkflowOrders();
+    setWorkflowStatus(successMessage, 'ok');
+    return true;
   } catch (error) {
     setWorkflowStatus(error.message || String(error), 'warn');
   } finally {
     button.disabled = false;
+  }
+  return false;
+}
+
+function renderWorkflowSearchResults(orders = []) {
+  const container = $('workflowSearchResults');
+  if (!container) return;
+  if (!orders.length) {
+    container.innerHTML = '<div class="workflow-search-empty">ไม่พบออร์เดอร์ ลองค้นด้วยเลขออร์เดอร์หรือชื่อลูกค้า</div>';
+    return;
+  }
+  container.innerHTML = orders.map(order => `<article class="workflow-search-card" data-workflow-order="${workflowEscape(order.identifier)}">
+    <button type="button" class="workflow-search-main" data-workflow-select-order="${workflowEscape(order.identifier)}" data-ticket-id="${workflowEscape(order.ticketId)}">
+      <span><strong>${workflowEscape(order.quoteNo || order.title || 'ออร์เดอร์')}</strong><small>${workflowEscape(order.customer || 'ไม่ระบุลูกค้า')} • ${workflowEscape(order.title || '')}</small></span>
+      <b>${Number(order.reservedPoints || 0).toLocaleString('th-TH')} แต้ม<small>${Number(order.activeAllocationCount || 0)} คิวที่ใช้งาน</small></b>
+    </button>
+    <div class="workflow-search-actions">
+      ${order.ticketUrl ? `<a href="${workflowEscape(order.ticketUrl)}" target="_blank" rel="noopener noreferrer">เปิด Notion</a>` : '<span>Ticket ถูกลบหรือไม่มีลิงก์</span>'}
+      <button type="button" data-workflow-cancel-order="${workflowEscape(order.identifier)}" ${order.activeAllocationCount ? '' : 'disabled'}>ยกเลิกและคืนแต้ม</button>
+    </div>
+  </article>`).join('');
+}
+
+async function searchWorkflowOrders() {
+  if (document.body.dataset.accessRole !== 'staff') return false;
+  const button = $('searchWorkflowOrders');
+  const query = $('workflowOrderSearch')?.value.trim() || '';
+  if (button) { button.disabled = true; button.textContent = 'กำลังค้นหา…'; }
+  setWorkflowStatus('กำลังค้นหาออร์เดอร์และคิวผลิต…');
+  try {
+    const result = await fetchStaffOrdersRemote(query);
+    if (!result?.success) throw new Error(result?.error || 'ค้นหาออร์เดอร์ไม่สำเร็จ');
+    renderWorkflowSearchResults(result.orders || []);
+    setWorkflowStatus(`พบ ${(result.orders || []).length} ออร์เดอร์`, 'ok');
+    return true;
+  } catch (error) {
+    renderWorkflowSearchResults([]);
+    setWorkflowStatus(error.message || String(error), 'warn');
+    return false;
+  } finally {
+    if (button) { button.disabled = false; button.textContent = 'ค้นหา'; }
+  }
+}
+
+async function handleWorkflowSearchAction(event) {
+  const cancel = event.target.closest('[data-workflow-cancel-order]');
+  if (cancel) {
+    await cancelWorkflowOrder(cancel.dataset.workflowCancelOrder);
+    return;
+  }
+  const select = event.target.closest('[data-workflow-select-order]');
+  if (!select) return;
+  const card = select.closest('[data-workflow-order]');
+  const identifier = select.dataset.workflowSelectOrder || '';
+  const ticketId = select.dataset.ticketId || '';
+  currentWorkflowReference = {
+    identifier, ticketId, quoteNo: card?.querySelector('strong')?.textContent || '',
+    customer: card?.querySelector('small')?.textContent?.split(' • ')[0] || ''
+  };
+  $('workflowTicketId').value = ticketId || identifier;
+  if (ticketId) await loadWorkflow();
+  else {
+    renderWorkflow(null);
+    $('cancelWorkflowOrder').hidden = false;
+    setWorkflowStatus('Ticket ใน Notion ไม่อยู่แล้ว แต่ยังยกเลิกคิวและคืนแต้มด้วย Order Key ได้', 'warn');
   }
 }
 
@@ -250,12 +321,15 @@ async function handleWorkflowAction(event) {
 
 function openWorkflow() {
   const reference = readLastOrder();
+  const staffSearch = document.querySelector('.workflow-staff-search');
+  if (staffSearch) staffSearch.hidden = document.body.dataset.accessRole !== 'staff';
   if (reference?.ticketId && !$('workflowTicketId').value) {
     $('workflowTicketId').value = reference.ticketId;
   }
   if (typeof showAppView === 'function') showAppView('workflow');
   renderWorkflow(null);
-  if ($('workflowTicketId').value) loadWorkflow();
+  if (document.body.dataset.accessRole === 'staff') searchWorkflowOrders();
+  else if ($('workflowTicketId').value) loadWorkflow();
 }
 
 function closeWorkflow() {
@@ -269,6 +343,9 @@ function bindWorkflow() {
   $('openWorkflow')?.addEventListener('click', openWorkflow);
   $('closeWorkflow').addEventListener('click', closeWorkflow);
   $('refreshWorkflow').addEventListener('click', loadWorkflow);
+  $('searchWorkflowOrders')?.addEventListener('click', searchWorkflowOrders);
+  $('workflowOrderSearch')?.addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); searchWorkflowOrders(); } });
+  $('workflowSearchResults')?.addEventListener('click', handleWorkflowSearchAction);
   $('workflowItemList').addEventListener('click', handleWorkflowAction);
-  $('cancelWorkflowOrder')?.addEventListener('click', cancelWorkflowOrder);
+  $('cancelWorkflowOrder')?.addEventListener('click', () => cancelWorkflowOrder());
 }

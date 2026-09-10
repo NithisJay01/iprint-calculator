@@ -23,6 +23,9 @@ node worker/catalog-contract-test.mjs
 - เปลี่ยนสถานะรายการผ่าน `PATCH /order-items/:itemId/status` พร้อมบันทึกประวัติและรวมสถานะกลับไปยัง Ticket
 - จัดคิวผลิตอัตโนมัติเมื่อสร้างออเดอร์ หากตั้งค่า Production Allocations พร้อม โดยคำนวณ Capacity Points, แบ่งงานใหญ่ข้ามวัน และตรวจวันส่ง
 - จัดการคิวจริงผ่าน `GET /staff/queue`, `PATCH /staff/queue/:allocationId` และ `DELETE /staff/queue/:allocationId`
+- ค้นหาออเดอร์สำหรับ Staff โดยไม่ต้องจำ Ticket ID ผ่าน `GET /staff/orders?query=`
+- อ่านวันว่างสำหรับลูกค้าโดยไม่เปิดเผยยอดจองภายในผ่าน `GET /public/capacity?from=&to=&points=`
+- งานที่เข้าเงื่อนไขสามารถเลือก Boost 1-4 วัน โดยเพิ่มราคา 50%, 100%, 150% หรือ 200% และใช้คิวแบบเร่งที่ยังไม่เกิน Capacity จริง
 
 เมื่อกด **ดาวน์โหลดภาพสรุปบรีฟงาน** หน้าเว็บจะดาวน์โหลด PNG และสร้าง Ticket ใน Notion หากตั้งค่า Worker ครบถ้วน
 

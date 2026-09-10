@@ -328,8 +328,8 @@ function briefReviewSheetSvg(calc,artworkUrl,side,x,y,width,height,shapeUrl='') 
   const gridW=(nx*pieceW+Math.max(0,nx-1)*gap)*scale,gridH=(ny*pieceH+Math.max(0,ny-1)*gap)*scale;
   const startX=usableX+(usableWidth-gridW)/2,startY=usableY+(usableHeight-gridH)/2;
   const maximum=Math.min(96,Math.max(1,Number(calc.b?.yield)||nx*ny));
-  const diecut=(calc.services||[]).some(service=>/ไดคัท|die.?cut/.test(String(service?.name||'').toLowerCase()));
-  const rounded=(calc.services||[]).some(service=>/ตัดมุม|rounded.?corner/.test(String(service?.name||'').toLowerCase()));
+  const diecut=(calc.services||[]).some(service=>typeof isDiecutService==='function'?isDiecutService(service):/ไดคัท|die.?cut/.test(String(service?.name||'').toLowerCase()));
+  const rounded=(calc.services||[]).some(service=>typeof isRoundedCornerService==='function'?isRoundedCornerService(service):/ตัดมุม|rounded.?corner/.test(String(service?.name||'').toLowerCase()));
   const bleed=Math.max(0,Number(calc.bleed)||3)/10;
   const cells=[];
   for(let index=0;index<maximum;index++) {
@@ -353,8 +353,8 @@ function briefReviewPieceSvg(calc,artworkUrl,x,y,width,height,shapeUrl='') {
   const scale=Math.min((width-80)/workW,(height-50)/workH);
   const pieceW=workW*scale,pieceH=workH*scale,pieceX=x+(width-pieceW)/2,pieceY=y+(height-pieceH)/2;
   const clipId='review-piece-'+Math.random().toString(36).slice(2);
-  const diecut=(calc.services||[]).some(service=>/ไดคัท|die.?cut/.test(String(service?.name||'').toLowerCase()));
-  const rounded=(calc.services||[]).some(service=>/ตัดมุม|rounded.?corner/.test(String(service?.name||'').toLowerCase()));
+  const diecut=(calc.services||[]).some(service=>typeof isDiecutService==='function'?isDiecutService(service):/ไดคัท|die.?cut/.test(String(service?.name||'').toLowerCase()));
+  const rounded=(calc.services||[]).some(service=>typeof isRoundedCornerService==='function'?isRoundedCornerService(service):/ตัดมุม|rounded.?corner/.test(String(service?.name||'').toLowerCase()));
   const bleed=Math.max(0,Number(calc.bleed)||3);
   const radiusX=rounded?Math.min(pieceW/2,4*scale):0,radiusY=rounded?Math.min(pieceH/2,4*scale):0;
   const maskId=`${clipId}-shape`;

@@ -161,10 +161,10 @@ function drawPreview(p,b,bleedMm,gapMm) {
     grid.style.gap=gapPx+'px';
     const artworkUrl=typeof getArtworkPreviewUrl==='function'?getArtworkPreviewUrl():'';
     const artworkSide=typeof activeArtworkSide==='string'?activeArtworkSide:'front';
-    const selectedServiceNames=services.filter(service=>selectedServiceIds[String(service.id)]).map(service=>String(service.name||'').toLowerCase());
+    const selectedServices=services.filter(service=>selectedServiceIds[String(service.id)]);
     const selectedMaterialName=String(materials.find(material=>String(material.id)===String(selectedMaterialId))?.name||'').toLowerCase();
-    const hasDiecut=selectedServiceNames.some(name=>/ไดคัท|die.?cut/.test(name));
-    const hasRoundedCorner=selectedServiceNames.some(name=>/ตัดมุม|rounded.?corner/.test(name));
+    const hasDiecut=selectedServices.some(service=>typeof isDiecutService==='function'?isDiecutService(service):/ไดคัท|die.?cut/.test(String(service.name||'').toLowerCase()));
+    const hasRoundedCorner=selectedServices.some(service=>typeof isRoundedCornerService==='function'?isRoundedCornerService(service):/ตัดมุม|rounded.?corner/.test(String(service.name||'').toLowerCase()));
     const materialEffect=/kraft|คราฟท์/.test(selectedMaterialName)?'is-kraft':/pvc|pp|sticker|สติกเกอร์/.test(selectedMaterialName)?'is-sticker':/art|อาร์ท/.test(selectedMaterialName)?'is-art-paper':'';
     for(let i=0;
     i<b.yield;
@@ -280,7 +280,7 @@ function quoteItems() {
     if (Array.isArray(cartItems) && cartItems.length) {
       return cartItems.map((item, index) => ({
         id: item.id,
-        name: item.name || `งานพิมพ์ ${index + 1}`,
+        name: `${item.name || `งานพิมพ์ ${index + 1}`}${item.boost?.days ? ` • Boost -${Number(item.boost.days)} วัน` : ''}`,
         size: [item.size, item.paper?.name, item.material?.name]
           .filter(Boolean)
           .join(' • '),

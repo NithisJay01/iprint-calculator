@@ -9,6 +9,7 @@ function notionCatalogItem(page, type) {
     type,
     name: properties.Name?.title?.[0]?.plain_text || properties.Name?.title?.[0]?.text?.content || '',
     category: properties.Catagory?.select?.name || properties.Category?.select?.name || '',
+    serviceRole: properties['Service Role']?.select?.name || '',
     material: properties.Material?.select?.name || '',
     cost: properties.Cost?.number ?? 0,
     price: properties.Price?.number ?? 0,
@@ -49,9 +50,15 @@ export class NotionCatalogRepository extends CatalogRepository {
 
   async ensureSchema(type) {
     const schema = await this.schema(type);
-    if (type !== 'service' || schema['Image URL']?.type === 'url') return schema;
+    if (type !== 'service') return schema;
+    const missingProperties = {};
+    if (schema['Image URL']?.type !== 'url') missingProperties['Image URL'] = { url: {} };
+    if (schema['Service Role']?.type !== 'select') {
+      missingProperties['Service Role'] = { select: { options: ['PRINT_SINGLE', 'PRINT_DOUBLE', 'LAMINATION', 'CUTTING', 'CUTTING_50', 'CUTTING_100', 'ROUNDED_CORNER', 'OTHER'].map(name => ({ name })) } };
+    }
+    if (!Object.keys(missingProperties).length) return schema;
     const response = await this.fetcher(`https://api.notion.com/v1/data_sources/${this.dataSourceIds[type]}`, {
-      method: 'PATCH', headers: this.headers, body: JSON.stringify({ properties: { 'Image URL': { url: {} } } })
+      method: 'PATCH', headers: this.headers, body: JSON.stringify({ properties: missingProperties })
     });
     const text = await response.text();
     if (!response.ok) throw Object.assign(new Error('Notion service image schema update failed'), { status: response.status, detail: text });
@@ -76,6 +83,7 @@ export class NotionCatalogRepository extends CatalogRepository {
     if (type === 'service') {
       const categoryName = schema.Category?.type === 'select' ? 'Category' : schema.Catagory?.type === 'select' ? 'Catagory' : '';
       if (categoryName) properties[categoryName] = { select: { name: item.category } };
+      set('Service Role', 'select', { select: item.serviceRole ? { name: item.serviceRole } : null });
       set('Capacity Points', 'number', { number: item.capacityPoints });
       set('Capacity Basis', 'select', { select: { name: item.capacityBasis } });
       set('Capacity Step', 'number', { number: item.capacityStep });

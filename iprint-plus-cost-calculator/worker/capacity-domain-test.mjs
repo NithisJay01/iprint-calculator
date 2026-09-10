@@ -5,6 +5,7 @@ import {
   calculateOrderCapacity,
   validateCapacityPolicy
 } from "./domain/capacity.js";
+import { buildPublicCapacityAvailability } from './services/public-capacity.js';
 
 const item = calculateItemCapacity({
   id: "item-1",
@@ -119,5 +120,19 @@ const unavailable = allocateOrderCapacity({
 assert.equal(unavailable.success, false);
 assert.equal(unavailable.code, "CAPACITY_UNAVAILABLE");
 assert.equal(unavailable.unallocatedPoints, 10);
+
+const publicAvailability = buildPublicCapacityAvailability({
+  from: '2026-09-04', to: '2026-09-10', points: 25,
+  now: new Date('2026-09-04T06:00:00.000Z'),
+  policy: { dailyCapacity: 20, cutoffTime: '15:00', businessDays: [1, 2, 3, 4, 5, 6], timeZone: 'Asia/Bangkok' },
+  capacityDays: [{ date: '2026-09-04', dailyCapacity: 20, reservedPoints: 3, closed: false }]
+});
+assert.equal(publicAvailability.recommendedDate, '2026-09-07');
+assert.equal(publicAvailability.days.find(day => day.date === '2026-09-05').bookable, false);
+assert.equal(publicAvailability.days.find(day => day.date === '2026-09-05').availability, 'BOOST');
+assert.equal(publicAvailability.days.find(day => day.date === '2026-09-05').boostDays, 1);
+assert.equal(publicAvailability.days.find(day => day.date === '2026-09-05').boostMultiplier, 0.5);
+assert.equal(publicAvailability.days.find(day => day.date === '2026-09-07').bookable, true);
+assert.equal(publicAvailability.days.find(day => day.date === '2026-09-06').availability, 'CLOSED');
 
 console.log("Capacity domain test passed");

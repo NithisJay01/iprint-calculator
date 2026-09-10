@@ -1,6 +1,7 @@
 export const CATALOG_TYPES = Object.freeze(['material', 'service']);
 export const CATALOG_UNITS = Object.freeze(['sheet', 'piece', 'job']);
 export const CAPACITY_BASES = Object.freeze(['job', 'sheet', 'piece']);
+export const SERVICE_ROLES = Object.freeze(['PRINT_SINGLE', 'PRINT_DOUBLE', 'LAMINATION', 'CUTTING', 'CUTTING_50', 'CUTTING_100', 'ROUNDED_CORNER', 'OTHER']);
 
 export function normalizeCatalogUnit(value) {
   const unit = String(value || '').trim().toLowerCase();
@@ -18,6 +19,9 @@ export function normalizeCatalogItem(input = {}) {
     type,
     name: String(input.name || '').trim(),
     category: type === 'service' ? String(input.category || 'บริการเพิ่มเติม').trim() : '',
+    serviceRole: type === 'service' && SERVICE_ROLES.includes(String(input.serviceRole || '').trim().toUpperCase())
+      ? String(input.serviceRole).trim().toUpperCase()
+      : '',
     material: String(input.material || '').trim(),
     cost: Number(input.cost) || 0,
     price: Number(input.price) || 0,
@@ -50,6 +54,9 @@ export function validateCatalogMutation(input = {}) {
   if (!Number.isFinite(Number(input.price)) || Number(input.price) < 0) errors.push('price must be zero or greater');
   if (!item.unit) errors.push('unit must be sheet, piece, or job');
   if (item.type === 'service' && !item.category) errors.push('service category is required');
+  if (item.type === 'service' && input.serviceRole !== undefined && input.serviceRole !== '' && !item.serviceRole) {
+    errors.push('serviceRole is invalid');
+  }
   if (item.imageUrl && !/^https:\/\//i.test(item.imageUrl)) errors.push('imageUrl must be a public HTTPS URL');
   if (item.type === 'service' && input.capacityPoints !== undefined && input.capacityPoints !== '' &&
       (!Number.isFinite(Number(input.capacityPoints)) || Number(input.capacityPoints) < 0)) {
@@ -79,6 +86,7 @@ export function compareCatalogSnapshot(snapshot = {}, currentInput = {}) {
     Math.abs((Number(snapshot.capacityStep) || 1) - current.capacityStep) > 0.0001
   );
   if (capacityChanged) reasons.push('capacity_changed');
+  if (current.type === 'service' && String(snapshot.serviceRole || '') !== current.serviceRole) reasons.push('service_role_changed');
   return {
     changed: reasons.length > 0,
     reasons,

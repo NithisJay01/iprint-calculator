@@ -604,6 +604,65 @@ async function cancelOrderProductionRemote(ticketId) {
   return data;
 }
 
+async function fetchStaffOrdersRemote(query = '') {
+  if (IPRINT_TEST_MODE) {
+    const jobs = typeof staffQueueJobs === 'object' && Array.isArray(staffQueueJobs) ? staffQueueJobs : [];
+    const value = String(query || '').trim().toLowerCase();
+    const groups = new Map();
+    jobs.forEach(job => {
+      const key = job.orderKey || job.ticketId || job.orderNo || job.id;
+      const current = groups.get(key) || {
+        identifier: job.orderKey || job.ticketId || key, ticketId: job.ticketId || '', orderKey: job.orderKey || '',
+        quoteNo: job.orderNo || job.quoteNo || '', customer: job.customer || '', title: job.title || '',
+        ticketUrl: job.ticketUrl || '', allocationCount: 0, activeAllocationCount: 0, reservedPoints: 0,
+        nextProductionDate: job.date || ''
+      };
+      current.allocationCount += 1;
+      if (!['COMPLETED', 'CANCELLED'].includes(String(job.taskStatus || job.status || '').toUpperCase())) {
+        current.activeAllocationCount += 1;
+        current.reservedPoints += Number(job.points) || 0;
+      }
+      groups.set(key, current);
+    });
+    return { success: true, orders: [...groups.values()].filter(order => !value || [order.quoteNo, order.customer, order.title, order.orderKey, order.ticketId].some(field => String(field).toLowerCase().includes(value))).slice(0, 15) };
+  }
+  const apiKey = getWriteApiKey();
+  if (!apiKey) return { success: false, error: 'กรุณาตั้ง API Key ก่อนค้นหาออร์เดอร์' };
+  const response = await fetch(`${API.staffOrders}?query=${encodeURIComponent(query)}&limit=15`, { headers: { 'X-API-Key': apiKey } });
+  const text = await response.text();
+  let data = {};
+  try { data = JSON.parse(text); } catch (error) {}
+  if (!response.ok) return { success: false, error: data.error || text || `GET /staff/orders HTTP ${response.status}` };
+  return data;
+}
+
+async function fetchPublicCapacityRemote({ from, to, points = 1 }) {
+  if (IPRINT_TEST_MODE) {
+    const days = [];
+    const cursor = new Date(`${from}T00:00:00Z`);
+    const end = new Date(`${to}T00:00:00Z`);
+    let remaining = Math.max(0.25, Number(points) || 1);
+    let recommendedDate = null;
+    while (cursor <= end) {
+      const date = cursor.toISOString().slice(0, 10);
+      const closed = cursor.getUTCDay() === 0;
+      if (!closed && remaining > 0) remaining = Math.max(0, remaining - Math.min(20, remaining));
+      if (!closed && remaining === 0 && !recommendedDate) recommendedDate = date;
+      const bookable = !closed && Boolean(recommendedDate) && date >= recommendedDate;
+      days.push({ date, availability: closed ? 'CLOSED' : bookable ? 'AVAILABLE' : 'TOO_SOON', bookable });
+      cursor.setUTCDate(cursor.getUTCDate() + 1);
+    }
+    return { success: true, requiredPoints: Number(points) || 1, recommendedDate, schedulable: Boolean(recommendedDate), days, testMode: true };
+  }
+  const query = new URLSearchParams({ from, to, points: String(points) });
+  const response = await fetch(`${API.publicCapacity}?${query}`);
+  const text = await response.text();
+  let data = {};
+  try { data = JSON.parse(text); } catch (error) {}
+  if (!response.ok) throw new Error(data.error || text || `GET /public/capacity HTTP ${response.status}`);
+  return data;
+}
+
 async function createCustomerRemote(customerData) {
     try {
       if (IPRINT_TEST_MODE) {

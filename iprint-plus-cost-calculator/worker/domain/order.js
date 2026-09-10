@@ -65,6 +65,17 @@ export function validateOrderFoundation(input) {
     if (!name || name.length > 300) errors.push(`${prefix}.name must contain 1-300 characters`);
     if (!Number.isFinite(quantity) || quantity <= 0) errors.push(`${prefix}.quantity must be greater than 0`);
     if (!Number.isFinite(price) || price < 0) errors.push(`${prefix}.price must be 0 or greater`);
+    if (item?.boost) {
+      const days = Number(item.boost.days);
+      const multiplier = Number(item.boost.multiplier);
+      const basePrice = Number(item.basePrice);
+      if (!Number.isInteger(days) || days < 1 || days > 4 || multiplier !== days * 0.5) {
+        errors.push(`${prefix}.boost must use 1-4 days and the configured multiplier`);
+      }
+      if (!finiteMoney(basePrice) || !nearlyEqual(price, basePrice * (1 + multiplier))) {
+        errors.push(`${prefix}.price must include the configured boost surcharge`);
+      }
+    }
   });
 
   if (!finiteMoney(order.total)) errors.push("total must be 0 or greater");

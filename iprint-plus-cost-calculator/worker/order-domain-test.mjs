@@ -30,6 +30,19 @@ assert.equal(valid.value.productionStatus, PRODUCTION_STATUS.WAITING);
 assert.equal(valid.value.customerStatus, CUSTOMER_STATUS.ORDER_RECEIVED);
 assert.equal(valid.value.createdAt, "2026-09-04T01:00:00.000Z");
 
+const validBoost = validateOrderFoundation({
+  orderKey: 'boost-1', quoteNo: 'BOOST-1', total: 150, vat: 10.5, grandTotal: 160.5,
+  orderItems: [{ id: 'boost-item', name: 'งานเร่ง', quantity: 1, basePrice: 100, price: 150, boost: { days: 1, multiplier: 0.5 } }]
+});
+assert.equal(validBoost.success, true, validBoost.errors.join('\n'));
+
+const invalidBoost = validateOrderFoundation({
+  orderKey: 'boost-2', quoteNo: 'BOOST-2', total: 120, vat: 8.4, grandTotal: 128.4,
+  orderItems: [{ id: 'boost-item', name: 'งานเร่ง', quantity: 1, basePrice: 100, price: 120, boost: { days: 1, multiplier: 0.5 } }]
+});
+assert.equal(invalidBoost.success, false);
+assert.ok(invalidBoost.errors.includes('orderItems[0].price must include the configured boost surcharge'));
+
 const invalid = validateOrderFoundation({
   orderKey: "order-1",
   quoteNo: "QT-1",

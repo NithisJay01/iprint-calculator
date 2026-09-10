@@ -8,6 +8,7 @@ import { createCapacityRepository } from './repositories/notion-capacity-reposit
 import { createQueueRepository } from './repositories/notion-queue-repository.js';
 import { createFlowSettingsRepository } from './repositories/notion-flow-settings-repository.js';
 import { cancelOrderProduction } from './services/order-cancellation.js';
+import { buildPublicCapacityAvailability } from './services/public-capacity.js';
 
 export default {
   async fetch(request, env) {
@@ -176,6 +177,8 @@ export default {
             "POST /tickets",
             "POST /orders",
             "POST /public/orders",
+            "GET /public/capacity",
+            "GET /staff/orders",
             "GET /staff/capacity",
             "PUT /staff/capacity/:date",
             "GET /staff/system-check",
@@ -533,6 +536,48 @@ export default {
       // STAFF DAILY CAPACITY
       // ================================
 
+      if (url.pathname === '/public/capacity' && request.method === 'GET') {
+        if (!env.NOTION_CAPACITY_DATA_SOURCE_ID) return json({ success: false, code: 'CAPACITY_NOT_CONFIGURED', error: 'Production capacity is not configured' }, 503);
+        const todayParts = new Intl.DateTimeFormat('en-CA', {
+          timeZone: env.CAPACITY_TIME_ZONE || 'Asia/Bangkok', year: 'numeric', month: '2-digit', day: '2-digit'
+        }).formatToParts(new Date()).reduce((result, part) => ({ ...result, [part.type]: part.value }), {});
+        const today = `${todayParts.year}-${todayParts.month}-${todayParts.day}`;
+        const from = String(url.searchParams.get('from') || today);
+        const to = String(url.searchParams.get('to') || (() => {
+          const value = new Date(`${from}T00:00:00Z`); value.setUTCDate(value.getUTCDate() + 60); return value.toISOString().slice(0, 10);
+        })());
+        const points = Number(url.searchParams.get('points') || 1);
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to) || to < from) {
+          return json({ success: false, error: 'from and to must be a valid YYYY-MM-DD range' }, 400);
+        }
+        const rangeDays = Math.round((new Date(`${to}T00:00:00Z`) - new Date(`${from}T00:00:00Z`)) / 86400000);
+        if (rangeDays > 93 || !Number.isFinite(points) || points <= 0 || points > 100000) {
+          return json({ success: false, error: 'Capacity query is outside the allowed range' }, 400);
+        }
+        try {
+          const horizon = new Date(`${from}T00:00:00Z`);
+          horizon.setUTCDate(horizon.getUTCDate() + 93);
+          const capacityDays = await createCapacityRepository(env, { headers: notionHeaders }).list({ from, to: horizon.toISOString().slice(0, 10) });
+          const availability = buildPublicCapacityAvailability({
+            from, to, points, capacityDays,
+            policy: {
+              dailyCapacity: Number(env.CAPACITY_DEFAULT_DAILY) || 20,
+              cutoffTime: env.CAPACITY_CUTOFF_TIME || '15:00',
+              businessDays: String(env.CAPACITY_BUSINESS_DAYS || '1,2,3,4,5,6').split(',').map(Number),
+              holidays: String(env.CAPACITY_HOLIDAYS || '').split(',').map(value => value.trim()).filter(Boolean),
+              timeZone: env.CAPACITY_TIME_ZONE || 'Asia/Bangkok',
+              maxSearchDays: Number(env.CAPACITY_MAX_SEARCH_DAYS) || 180,
+              largeJobDailyShare: Number(env.CAPACITY_LARGE_JOB_DAILY_SHARE) || 0.5
+            }
+          });
+          const response = json({ success: true, ...availability });
+          response.headers.set('Cache-Control', 'public, max-age=20, s-maxage=30, stale-while-revalidate=60');
+          return response;
+        } catch (error) {
+          return json({ success: false, error: error.message, detail: error.detail || null }, error.status || 502);
+        }
+      }
+
       if (url.pathname === '/staff/capacity' && request.method === 'GET') {
         const authError = requireAuth(request);
         if (authError) return authError;
@@ -566,6 +611,42 @@ export default {
       // ================================
       // STAFF PRODUCTION QUEUE
       // ================================
+
+      if (url.pathname === '/staff/orders' && request.method === 'GET') {
+        const authError = requireAuth(request);
+        if (authError) return authError;
+        if (!env.NOTION_PRODUCTION_ALLOCATIONS_DATA_SOURCE_ID) return json({ success: false, code: 'QUEUE_NOT_CONFIGURED', error: 'Production queue data source is missing' }, 503);
+        const query = String(url.searchParams.get('query') || '').trim().toLowerCase().slice(0, 100);
+        const limit = Math.max(1, Math.min(30, Number(url.searchParams.get('limit')) || 15));
+        try {
+          const jobs = await createQueueRepository(env, { headers: notionHeaders }).list({});
+          const groups = new Map();
+          for (const job of jobs) {
+            const key = job.orderKey || job.ticketId || job.quoteNo;
+            if (!key) continue;
+            const current = groups.get(key) || {
+              identifier: job.orderKey || job.ticketId, ticketId: job.ticketId || '', orderKey: job.orderKey || '',
+              quoteNo: job.quoteNo || '', customer: job.customer || '', title: job.title || '', ticketUrl: job.ticketUrl || '',
+              allocationCount: 0, activeAllocationCount: 0, reservedPoints: 0, nextProductionDate: '', updatedAt: ''
+            };
+            current.allocationCount += 1;
+            if (queueStatusAllowsReservation(job.status)) {
+              current.activeAllocationCount += 1;
+              current.reservedPoints = Math.round((current.reservedPoints + (Number(job.points) || 0)) * 100) / 100;
+            }
+            if (!current.nextProductionDate || (job.date && job.date < current.nextProductionDate)) current.nextProductionDate = job.date;
+            if (job.updatedAt > current.updatedAt) current.updatedAt = job.updatedAt;
+            groups.set(key, current);
+          }
+          const orders = [...groups.values()]
+            .filter(order => !query || [order.quoteNo, order.customer, order.title, order.orderKey, order.ticketId].some(value => String(value).toLowerCase().includes(query)))
+            .sort((a, b) => String(b.updatedAt || b.nextProductionDate).localeCompare(String(a.updatedAt || a.nextProductionDate)))
+            .slice(0, limit);
+          return json({ success: true, orders });
+        } catch (error) {
+          return json({ success: false, error: error.message, detail: error.detail || null }, error.status || 502);
+        }
+      }
 
       if (url.pathname === '/staff/queue' && request.method === 'GET') {
         const authError = requireAuth(request);
@@ -650,17 +731,21 @@ export default {
         if (!env.NOTION_PRODUCTION_ALLOCATIONS_DATA_SOURCE_ID || !env.NOTION_CAPACITY_DATA_SOURCE_ID) {
           return json({ success: false, code: 'QUEUE_NOT_CONFIGURED', error: 'Production queue data sources are missing' }, 503);
         }
-        const ticketId = decodeURIComponent(staffOrderCancelMatch[1] || '').trim();
-        if (!ticketId || ticketId.length > 100) return json({ success: false, error: 'Invalid ticket ID' }, 400);
+        const identifier = decodeURIComponent(staffOrderCancelMatch[1] || '').trim();
+        if (!identifier || identifier.length > 100) return json({ success: false, error: 'Invalid order identifier' }, 400);
         try {
-          let orderKey = '';
-          const ticketResponse = await fetch(`https://api.notion.com/v1/pages/${encodeURIComponent(ticketId)}`, {
-            method: 'GET', headers: notionHeaders
-          });
-          if (ticketResponse.ok) {
-            const ticketPage = await ticketResponse.json();
-            orderKey = (ticketPage?.properties?.['Order Key']?.rich_text || [])
-              .map(item => item?.plain_text || item?.text?.content || '').join('').trim();
+          const looksLikeTicketId = /^[0-9a-f-]{32,36}$/i.test(identifier);
+          let ticketId = looksLikeTicketId ? identifier : '';
+          let orderKey = looksLikeTicketId ? '' : identifier;
+          if (looksLikeTicketId) {
+            const ticketResponse = await fetch(`https://api.notion.com/v1/pages/${encodeURIComponent(ticketId)}`, {
+              method: 'GET', headers: notionHeaders
+            });
+            if (ticketResponse.ok) {
+              const ticketPage = await ticketResponse.json();
+              orderKey = (ticketPage?.properties?.['Order Key']?.rich_text || [])
+                .map(item => item?.plain_text || item?.text?.content || '').join('').trim();
+            }
           }
           const cancellation = await cancelOrderProduction({
             ticketId,
@@ -1547,6 +1632,9 @@ export default {
           setItem("Sheets", "number", { number: Number(item.sheets) || 0 });
           setItem("Yield", "number", { number: Number(item.yield) || 0 });
           setItem("Price", "number", { number: Number(item.price) || 0 });
+          setItem("Base Price", "number", { number: Number(item.basePrice ?? item.price) || 0 });
+          setItem("Boost Days", "number", { number: Number(item.boost?.days) || 0 });
+          setItem("Boost Multiplier", "number", { number: Number(item.boost?.multiplier) || 0 });
           setItem("Brief", "rich_text", { rich_text: richText(item.brief || "") });
           const itemSchedule = orderSchedule?.plans?.[index] || null;
           setItem("Capacity Points", "number", { number: Number(itemSchedule?.capacity?.points) || 0 });
@@ -1582,6 +1670,8 @@ export default {
                briefFileLink: item.briefFileLink || "",
                diecutShape: item.diecutShape || { active: false },
                price: item.price,
+               basePrice: item.basePrice,
+               boost: item.boost || null,
                brief: item.brief,
                briefDeadline: item.briefDeadline,
                deliveryDeadline: item.deliveryDeadline,
@@ -1665,7 +1755,7 @@ export default {
                 allocationIndex: entry.partIndex + 1,
                 allocationCount: entry.plan.allocations.length,
                 status: 'QUEUED',
-                priority: order.rush === true ? 'URGENT' : 'NORMAL',
+                priority: order.rush === true || Number(entry.item.boost?.days) > 0 ? 'URGENT' : 'NORMAL',
                 deliveryDeadline: entry.item.deliveryDeadline || ''
               });
               createdThisAttempt.push(allocation);
@@ -3041,10 +3131,12 @@ export default {
           "POST /quotes/:id/preview",
           "POST /orders",
           "POST /public/orders",
+          "GET /public/capacity",
           "GET /staff/capacity",
           "PUT /staff/capacity/:date",
           "GET /staff/system-check",
           "GET /staff/queue",
+          "GET /staff/orders",
           "PATCH /staff/queue/:allocationId",
           "DELETE /staff/queue/:allocationId",
           "POST /tickets"

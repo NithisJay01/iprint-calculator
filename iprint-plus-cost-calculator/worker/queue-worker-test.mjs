@@ -89,6 +89,13 @@ try {
   assert.equal(list.status, 200, JSON.stringify(listed));
   assert.equal(listed.jobs[0].date, '2026-09-09');
 
+  const orderSearch = await worker.fetch(new Request('https://worker.test/staff/orders?query=customer', { headers }), env);
+  const orderSearchResult = await orderSearch.json();
+  assert.equal(orderSearch.status, 200, JSON.stringify(orderSearchResult));
+  assert.equal(orderSearchResult.orders[0].quoteNo, 'QT-1');
+  assert.equal(orderSearchResult.orders[0].reservedPoints, 4);
+  assert.equal(orderSearchResult.orders[0].identifier, 'order-1');
+
   const moved = await worker.fetch(new Request('https://worker.test/staff/queue/allocation-1', {
     method: 'PATCH', headers,
     body: JSON.stringify({ date: '2026-09-10', expectedUpdatedAt: '2026-09-08T08:00:00.000Z' })

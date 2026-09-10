@@ -18,6 +18,7 @@ function staffServiceCategories() {
 function syncStaffCategoryControl() {
   const isService = staffCatalogType === 'services';
   $('staffCatalogCategoryWrap').hidden = !isService;
+  $('staffCatalogRoleWrap').hidden = !isService;
   $('staffCatalogCapacityWrap').hidden = !isService;
   $('staffCatalogImageWrap').hidden = !isService;
   $('staffCatalogCategory').required = isService;
@@ -30,6 +31,18 @@ function syncStaffCategoryControl() {
 function staffServiceImageUrl(value) {
   const url = String(value || '').trim();
   return /^https:\/\/[^\s]+$/i.test(url) ? url : '';
+}
+
+function inferStaffServiceRole(item = {}) {
+  const text = `${item.category || ''} ${item.name || ''}`;
+  if (/หน้าเดียว|single/i.test(text)) return 'PRINT_SINGLE';
+  if (/หน้า\s*[-–—/]?\s*หลัง|2\s*หน้า|สองหน้า|double/i.test(text)) return 'PRINT_DOUBLE';
+  if (/ตัดมุม|rounded.?corner/i.test(text)) return 'ROUNDED_CORNER';
+  if (/50|ครึ่ง|kiss|mimaki/i.test(text) && /ไดคัท|ไดคัต|die.?cut|cutting|ตัด/i.test(text)) return 'CUTTING_50';
+  if (/100|เต็ม|flatblade/i.test(text) && /ไดคัท|ไดคัต|die.?cut|cutting|ตัด/i.test(text)) return 'CUTTING_100';
+  if (/ไดคัท|ไดคัต|die.?cut|cutting/i.test(text)) return 'CUTTING';
+  if (/เคลือบ|laminat|film|hologram|foil/i.test(text)) return 'LAMINATION';
+  return 'OTHER';
 }
 
 function updateStaffServiceImagePreview() {
@@ -71,6 +84,7 @@ function staffCatalogResetForm() {
   $('staffCatalogPrice').value = '';
   $('staffCatalogUnit').value = staffCatalogType === 'materials' ? 'sheet' : 'job';
   $('staffCatalogActive').checked = true;
+  $('staffCatalogRole').value = 'OTHER';
   $('staffCapacityPoints').value = '0';
   $('staffCapacityBasis').value = 'job';
   $('staffCapacityStep').value = '1';
@@ -193,6 +207,7 @@ function showStaffCatalogEditor(item = null) {
     $('staffCatalogUnit').value = normalizeUnit(item.unit) || 'job';
     $('staffCatalogActive').checked = item.active !== false;
     $('staffCatalogCategory').value = item.category || 'บริการเพิ่มเติม';
+    $('staffCatalogRole').value = item.serviceRole || inferStaffServiceRole(item);
     $('staffCapacityPoints').value = Number(item.capacityPoints) || 0;
     $('staffCapacityBasis').value = ['job', 'sheet', 'piece'].includes(item.capacityBasis) ? item.capacityBasis : 'job';
     $('staffCapacityStep').value = Math.max(1, Number(item.capacityStep) || 1);
@@ -244,6 +259,7 @@ async function submitStaffCatalog(event) {
   const next = { id: id || `test-${staffCatalogType}-${Date.now()}`, name, price, unit: $('staffCatalogUnit').value, active: $('staffCatalogActive').checked, sortOrder: existing?.sortOrder ?? collection.length + 1, updatedAt: new Date().toISOString() };
   if (staffCatalogType === 'services') {
     next.category = category;
+    next.serviceRole = $('staffCatalogRole').value || inferStaffServiceRole({ name, category });
     next.capacityPoints = capacityPoints;
     next.capacityBasis = capacityBasis;
     next.capacityStep = capacityBasis === 'job' ? 1 : capacityStep;

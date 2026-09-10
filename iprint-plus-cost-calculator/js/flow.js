@@ -245,11 +245,11 @@ function flowPreviewMaterialClass() {
 }
 
 function flowPreviewHasDiecut() {
-  return (lastCalc?.services || []).some(service => /ไดคัท|die.?cut/.test(String(service?.name || '').toLowerCase()));
+  return (lastCalc?.services || []).some(service => typeof isDiecutService === 'function' ? isDiecutService(service) : /ไดคัท|die.?cut/.test(String(service?.name || '').toLowerCase()));
 }
 
 function flowPreviewHasRoundedCorner() {
-  return (lastCalc?.services || []).some(service => /ตัดมุม|rounded.?corner/.test(String(service?.name || '').toLowerCase()));
+  return (lastCalc?.services || []).some(service => typeof isRoundedCornerService === 'function' ? isRoundedCornerService(service) : /ตัดมุม|rounded.?corner/.test(String(service?.name || '').toLowerCase()));
 }
 
 function roundedCornerStyle(width, height) {
@@ -652,7 +652,7 @@ function focusQuickBriefField(field, message) {
   window.setTimeout(() => field.focus({ preventScroll: true }), 250);
 }
 
-function continueQuickBrief() {
+async function continueQuickBrief() {
   const name = $('quickJobName')?.value.trim() || 'งานพิมพ์ Quick Brief';
   const deliveryDate = normalizeFlowDateValue($('quickDeliveryDeadline')?.value);
   const sourceFileLink = $('quickBriefFileLink')?.value.trim() || '';
@@ -665,6 +665,14 @@ function continueQuickBrief() {
   if (!deliveryDate || deliveryDate < today) {
     focusQuickBriefField($('quickDeliveryDeadline'), 'กรุณาเลือกวันที่ต้องการรับงานตั้งแต่วันนี้เป็นต้นไป');
     return;
+  }
+  if (typeof verifySelectedCapacityDate === 'function') {
+    if ($('quickBriefStatus')) $('quickBriefStatus').textContent = 'กำลังตรวจสอบคิวล่าสุด…';
+    const availability = await verifySelectedCapacityDate('quickDeliveryDeadline');
+    if (!availability.success) {
+      focusQuickBriefField($('quickDeliveryDeadline'), availability.message);
+      return;
+    }
   }
   let validSourceFileLink = false;
   try {
@@ -939,6 +947,7 @@ function closeOrderSuccess() {
 
 function prepareNewPrintItem() {
   editingCartItemId = '';
+  if (typeof setSelectedAvailabilityBoost === 'function') setSelectedAvailabilityBoost(null);
   customServiceRequest = '';
   delete selectedServiceIds['ui-custom-request'];
   quickBriefMode = false;
@@ -1023,8 +1032,16 @@ function bindFlow() {
     showAppView(button.dataset.flowNext);
   }));
   document.querySelectorAll('[data-flow-back]').forEach(button => button.addEventListener('click', () => showAppView(button.dataset.flowBack)));
-  $('reviewBrief').addEventListener('click', () => {
+  $('reviewBrief').addEventListener('click', async () => {
     if (requestVariantQuantityConfirmation()) return;
+    if (typeof verifySelectedCapacityDate === 'function') {
+      $('briefFormStatus').textContent = 'กำลังตรวจสอบคิวล่าสุด…';
+      const availability = await verifySelectedCapacityDate('deliveryDeadline');
+      if (!availability.success) {
+        focusBriefField($('deliveryDeadline'), availability.message, 'deliveryDeadlineError');
+        return;
+      }
+    }
     if (renderBriefReview()) showAppView('review');
   });
   $('editVariantQuantity')?.addEventListener('click', () => closeVariantQuantityConfirmation(false));
@@ -1161,6 +1178,10 @@ function bindFlow() {
     const openDatePicker = event => {
       if (event?.type === 'keydown' && !['Enter', ' ', 'ArrowDown'].includes(event.key)) return;
       event?.preventDefault();
+      if (typeof openCapacityCalendar === 'function') {
+        openCapacityCalendar(id);
+        return;
+      }
       try { datePicker?.showPicker(); } catch { datePicker?.click(); }
     };
     $(id)?.addEventListener('click', openDatePicker);
@@ -1188,6 +1209,10 @@ function bindFlow() {
     const openDatePicker = event => {
       if (event?.type === 'keydown' && !['Enter', ' ', 'ArrowDown'].includes(event.key)) return;
       event?.preventDefault();
+      if (id !== 'briefDeadline' && typeof openCapacityCalendar === 'function') {
+        openCapacityCalendar(id);
+        return;
+      }
       try { datePicker?.showPicker(); } catch { datePicker?.click(); }
     };
     $(id).addEventListener('click', openDatePicker);
@@ -1252,9 +1277,9 @@ window.getJobVariants = getJobVariants;
 window.setJobVariants = setJobVariants;
 window.validateJobVariants = validateJobVariants;
 window.getSelectedPrintSide = () => {
-  const selected = services.filter(service => selectedServiceIds[String(service.id)]).map(service => String(service.name || '').toLowerCase());
-  if (selected.some(name => /2\s*หน้า|สองหน้า|double/.test(name))) return 'double';
-  if (selected.some(name => /หน้าเดียว|single/.test(name))) return 'single';
+  const selected = services.filter(service => selectedServiceIds[String(service.id)]);
+  if (selected.some(service => typeof isDoublePrintService === 'function' && isDoublePrintService(service))) return 'double';
+  if (selected.some(service => typeof isSinglePrintService === 'function' && isSinglePrintService(service))) return 'single';
   return 'unspecified';
 };
 window.getSelectedHomeService = () => selectedHomeService;

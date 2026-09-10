@@ -9,6 +9,7 @@ const rawPage = {
   properties: {
     Name: { title: [{ plain_text: 'เคลือบด้าน' }] },
     Category: { select: { name: 'การเคลือบ' } },
+    'Service Role': { select: { name: 'LAMINATION' } },
     Price: { number: 5 },
     Cost: { number: 3 },
     Unit: { select: { name: 'sheet' } },
@@ -25,7 +26,8 @@ const schema = {
   Name: { type: 'title' }, Category: { type: 'select' }, Price: { type: 'number' },
   Cost: { type: 'number' }, Unit: { type: 'select' }, Active: { type: 'checkbox' },
   'Sort Order': { type: 'number' }, 'Capacity Points': { type: 'number' },
-  'Capacity Basis': { type: 'select' }, 'Capacity Step': { type: 'number' }
+  'Capacity Basis': { type: 'select' }, 'Capacity Step': { type: 'number' },
+  'Service Role': { type: 'select' }
 };
 
 const fetcher = async (url, options = {}) => {
@@ -64,7 +66,7 @@ const repository = new NotionCatalogRepository({
 const item = await repository.getById('service', 'service-1');
 assert.deepEqual(item, normalizeCatalogItem({
   id: 'service-1', externalId: 'service-1', type: 'service', name: 'เคลือบด้าน',
-  category: 'การเคลือบ', price: 5, cost: 3, unit: 'sheet', active: true,
+  category: 'การเคลือบ', serviceRole: 'LAMINATION', price: 5, cost: 3, unit: 'sheet', active: true,
   sortOrder: 2, capacityPoints: 1.5, capacityBasis: 'piece', capacityStep: 100,
   imageUrl: 'https://cdn.example.com/matt-film.jpg',
   version: 1, createdAt: '2026-09-01T00:00:00.000Z',
@@ -77,17 +79,20 @@ assert.equal(listed[0].id, 'service-1');
 
 assert.equal(validateCatalogMutation({ type: 'service', name: '', price: -1, unit: 'bad' }).success, false);
 assert.equal(validateCatalogMutation({ type: 'service', name: 'ไดคัท', category: 'การตัด', price: 2, unit: 'piece' }).success, true);
+assert.equal(validateCatalogMutation({ type: 'service', name: 'เปลี่ยนชื่อได้', category: 'อะไรก็ได้', price: 2, unit: 'job', serviceRole: 'PRINT_DOUBLE' }).success, true);
+assert.equal(validateCatalogMutation({ type: 'service', name: 'ผิด', category: 'อื่น', price: 2, unit: 'job', serviceRole: 'NOT_A_ROLE' }).success, false);
 assert.equal(validateCatalogMutation({ type: 'service', name: 'ไดคัท', category: 'การตัด', price: 2, unit: 'piece', capacityPoints: 1, capacityBasis: 'piece', capacityStep: 100 }).success, true);
 assert.equal(validateCatalogMutation({ type: 'service', name: 'ไดคัท', category: 'การตัด', price: 2, unit: 'piece', capacityPoints: -1, capacityBasis: 'bad', capacityStep: 0 }).success, false);
 
-assert.equal(compareCatalogSnapshot({ price: 5, unit: 'sheet', capacityPoints: 1.5, capacityBasis: 'piece', capacityStep: 100, updatedAt: item.updatedAt }, item).changed, false);
-const conflict = compareCatalogSnapshot({ price: 4, unit: 'sheet', capacityPoints: 1.5, capacityBasis: 'piece', capacityStep: 100, updatedAt: item.updatedAt }, item);
+assert.equal(compareCatalogSnapshot({ price: 5, unit: 'sheet', serviceRole: 'LAMINATION', capacityPoints: 1.5, capacityBasis: 'piece', capacityStep: 100, updatedAt: item.updatedAt }, item).changed, false);
+const conflict = compareCatalogSnapshot({ price: 4, unit: 'sheet', serviceRole: 'LAMINATION', capacityPoints: 1.5, capacityBasis: 'piece', capacityStep: 100, updatedAt: item.updatedAt }, item);
 assert.equal(conflict.changed, true);
 assert.deepEqual(conflict.reasons, ['price_changed']);
 
-const created = await repository.create('service', { name: 'ไดคัท', category: 'การตัด', price: 2, cost: 1, unit: 'piece', active: true, sortOrder: 4, capacityPoints: 2, capacityBasis: 'piece', capacityStep: 250, imageUrl: 'https://cdn.example.com/diecut.jpg' });
+const created = await repository.create('service', { name: 'ไดคัท', category: 'การตัด', serviceRole: 'CUTTING', price: 2, cost: 1, unit: 'piece', active: true, sortOrder: 4, capacityPoints: 2, capacityBasis: 'piece', capacityStep: 250, imageUrl: 'https://cdn.example.com/diecut.jpg' });
 assert.equal(created.id, 'service-created');
 assert.equal(created.category, 'การตัด');
+assert.equal(created.serviceRole, 'CUTTING');
 assert.equal(created.price, 2);
 assert.equal(created.capacityPoints, 2);
 assert.equal(created.capacityBasis, 'piece');

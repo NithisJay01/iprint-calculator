@@ -29,6 +29,16 @@ serviceContext.getSelectedJobType = () => 'งานกระดาษ';
 assert.equal(serviceContext.isStickerQuizJob(), false);
 assert.equal(serviceContext.isSinglePrintService({ name: 'พิมพ์หน้าเดียว' }), true);
 assert.equal(serviceContext.isSinglePrintService({ name: 'พิมพ์ 2 หน้า' }), false);
+assert.equal(serviceContext.isDoublePrintService({ name: 'พิมพ์หน้า-หลัง' }), true);
+assert.equal(serviceContext.isDoublePrintService({ name: 'พิมพ์หน้า–หลัง' }), true);
+assert.equal(serviceContext.isDoublePrintService({ name: 'ชื่อใหม่ไม่เกี่ยวกับรูปแบบ', serviceRole: 'PRINT_DOUBLE' }), true);
+assert.equal(serviceContext.isSinglePrintService({ name: 'Renamed service', serviceRole: 'PRINT_SINGLE' }), true);
+assert.equal(serviceContext.isDoublePrintService({ name: 'พิมพ์หน้าเดียว' }), false);
+assert.equal(serviceContext.isLaminationService({ name: 'เปลี่ยนชื่อแล้ว', serviceRole: 'LAMINATION' }), true);
+assert.equal(serviceContext.isDiecutService({ name: 'เปลี่ยนชื่อแล้ว', serviceRole: 'CUTTING' }), true);
+assert.equal(serviceContext.isDiecutService({ name: 'ชื่อใหม่', serviceRole: 'CUTTING_50' }), true);
+assert.equal(serviceContext.isDiecutService({ name: 'ชื่อใหม่', serviceRole: 'CUTTING_100' }), true);
+assert.equal(serviceContext.isRoundedCornerService({ name: 'เปลี่ยนชื่อแล้ว', serviceRole: 'ROUNDED_CORNER' }), true);
 assert.equal(serviceContext.isDiecutService({ name: 'ไดคัทตัดมุม' }), false);
 assert.equal(serviceContext.isDiecutService({ name: 'ไดคัท All Sticker' }), true);
 serviceContext.services = [{ id: 'print-single', category: 'รูปแบบการพิมพ์', name: 'พิมพ์หน้าเดียว' }];
@@ -85,6 +95,9 @@ vm.runInContext(fs.readFileSync(new URL('../js/piece-preview.js', import.meta.ur
 assert.equal(piecePreviewContext.resolvePiecePreviewInitialSide('front', true), 'front');
 assert.equal(piecePreviewContext.resolvePiecePreviewInitialSide('back', true), 'back');
 assert.equal(piecePreviewContext.resolvePiecePreviewInitialSide('back', false), 'front');
+assert.equal(piecePreviewContext.piecePreviewUsesLayoutRotation({ b: { rotate: true } }), true);
+assert.equal(piecePreviewContext.piecePreviewUsesLayoutRotation({ b: { rotate: false } }), false);
+assert.equal(piecePreviewContext.piecePreviewUsesLayoutRotation({}), false);
 
 const capacityContext = scriptContext();
 vm.runInContext(fs.readFileSync(new URL('../js/staff-capacity.js', import.meta.url), 'utf8'), capacityContext);
@@ -95,6 +108,11 @@ assert.deepEqual(
   ]))),
   { total: 20, reserved: 4, available: 16 }
 );
+
+const availabilityContext = scriptContext();
+vm.runInContext(fs.readFileSync(new URL('../js/availability.js', import.meta.url), 'utf8'), availabilityContext);
+assert.equal(availabilityContext.availabilityCapacityComponent({ capacityPoints: 1, capacityBasis: 'piece', capacityStep: 100 }, { Q: 250 }), 3);
+assert.equal(availabilityContext.currentAvailabilityPoints({ Q: 250, sheets: 25, material: { capacityPoints: 0.5 }, services: [{ capacityPoints: 1, capacityBasis: 'sheet', capacityStep: 10 }] }), 4.5);
 
 const flowContext = scriptContext();
 vm.runInContext(fs.readFileSync(new URL('../js/flow.js', import.meta.url), 'utf8'), flowContext);

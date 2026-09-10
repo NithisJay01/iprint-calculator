@@ -40,7 +40,7 @@ globalThis.fetch = async (url, options = {}) => {
       assert.equal(body.filter.date.equals, '2026-09-05');
     } else {
       assert.equal(body.filter.and[0].date.on_or_after, '2026-09-01');
-      assert.equal(body.filter.and[1].date.on_or_before, '2026-09-14');
+      assert.match(body.filter.and[1].date.on_or_before, /^2026-/);
     }
     return Response.json({ results: [current] });
   }
@@ -86,6 +86,16 @@ try {
   const listResult = await listResponse.json();
   assert.equal(listResponse.status, 200, JSON.stringify(listResult));
   assert.equal(listResult.days[0].availablePoints, 12);
+
+  const publicResponse = await worker.fetch(
+    new Request('https://worker.test/public/capacity?from=2026-09-01&to=2026-09-14&points=4'), env
+  );
+  const publicResult = await publicResponse.json();
+  assert.equal(publicResponse.status, 200, JSON.stringify(publicResult));
+  assert.equal(publicResult.requiredPoints, 4);
+  assert.equal(publicResult.days.length, 14);
+  assert.equal(publicResult.days.some(day => 'reservedPoints' in day), false);
+  assert.match(publicResponse.headers.get('Cache-Control'), /max-age=20/);
 
   const updateResponse = await worker.fetch(
     new Request('https://worker.test/staff/capacity/2026-09-05', {

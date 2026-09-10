@@ -22,6 +22,10 @@ function resolvePiecePreviewInitialSide(side = 'front', doubleSided = piecePrevi
   return side === 'back' && doubleSided ? 'back' : 'front';
 }
 
+function piecePreviewUsesLayoutRotation(calc = lastCalc) {
+  return Boolean(calc?.b?.rotate);
+}
+
 function renderPiecePreviewSide(side = 'front') {
   const frame = $('piecePreviewFrame');
   const source = piecePreviewState.source;
@@ -50,7 +54,9 @@ function renderPiecePreviewSide(side = 'front') {
     }
     artwork.src = artworkUrl;
     artwork.alt = `ภาพงาน${nextSide === 'back' ? 'ด้านหลัง' : 'ด้านหน้า'}`;
-    if (typeof applyArtworkRotation === 'function') applyArtworkRotation(artwork, nextSide, lastCalc?.W, lastCalc?.H);
+    if (typeof applyArtworkRotation === 'function') {
+      applyArtworkRotation(artwork, nextSide, lastCalc?.W, lastCalc?.H, piecePreviewUsesLayoutRotation());
+    }
   } else {
     artwork?.remove();
     const empty = document.createElement('span');
@@ -138,3 +144,4 @@ else bindPiecePreview();
 
 window.openPiecePreview = openPiecePreview;
 window.resolvePiecePreviewInitialSide = resolvePiecePreviewInitialSide;
+window.piecePreviewUsesLayoutRotation = piecePreviewUsesLayoutRotation;

@@ -8,7 +8,13 @@ export function planOrderSchedule({ orderItems = [], now = new Date(), days = {}
 
   for (const [itemIndex, item] of orderItems.entries()) {
     const capacity = calculateItemCapacity(item);
-    const allocation = allocateOrderCapacity({ points: capacity.points, now, policy, days: workingDays });
+    const boostDays = Number(item?.boost?.days) || 0;
+    const allocation = allocateOrderCapacity({
+      points: capacity.points,
+      now,
+      policy: boostDays > 0 ? { ...policy, largeJobDailyShare: 1 } : policy,
+      days: workingDays
+    });
     if (!allocation.success) {
       return { success: false, code: allocation.code, itemIndex, itemKey: String(item?.id || ''), capacity, allocation, plans };
     }

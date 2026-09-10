@@ -1,26 +1,35 @@
 let cuttingDefaultSelectionPending = true;
 
+function serviceRole(service) {
+  return String(service?.serviceRole || '').trim().toUpperCase();
+}
+
 function isPrintSideService(service) {
+  if (['PRINT_SINGLE', 'PRINT_DOUBLE'].includes(serviceRole(service))) return true;
   const text = `${service?.category || ''} ${service?.name || ''}`;
   return /รูปแบบการพิมพ์/i.test(text) || (/พิม|พิพม์|print/i.test(text) && /หน้า|side/i.test(text));
 }
 
 function isLaminationService(service) {
+  if (serviceRole(service) === 'LAMINATION') return true;
   const text = `${service?.category || ''} ${service?.name || ''}`;
   return /เคลือบ|laminat|film|flim|hologram|holo|โฮโลแกรม|foil|ฟอยล์/i.test(text);
 }
 
 function isCuttingService(service) {
+  if (['CUTTING', 'CUTTING_50', 'CUTTING_100', 'ROUNDED_CORNER'].includes(serviceRole(service))) return true;
   const text = `${service?.category || ''} ${service?.name || ''}`;
   return /การตัด|ไดคัท|ไดคัต|ตัด\s*(?:50|100|ครึ่ง|เต็ม)|die.?cut|kiss.?cut|cutting/i.test(text);
 }
 
 function isRoundedCornerService(service) {
+  if (serviceRole(service) === 'ROUNDED_CORNER') return true;
   const text = `${service?.category || ''} ${service?.name || ''}`;
   return /ตัดมุม|rounded.?corner/i.test(text);
 }
 
 function isDiecutService(service) {
+  if (serviceRole(service)) return ['CUTTING', 'CUTTING_50', 'CUTTING_100'].includes(serviceRole(service));
   const text = `${service?.category || ''} ${service?.name || ''}`;
   return !isRoundedCornerService(service) && /ไดคัท|ไดคัต|die.?cut/i.test(text);
 }
@@ -36,7 +45,13 @@ function usesLegacyStickerSingleMode() {
 }
 
 function isSinglePrintService(service) {
+  if (serviceRole(service)) return serviceRole(service) === 'PRINT_SINGLE';
   return /หน้าเดียว|single/i.test(String(service?.name || ''));
+}
+
+function isDoublePrintService(service) {
+  if (serviceRole(service)) return serviceRole(service) === 'PRINT_DOUBLE';
+  return /หน้า\s*[-–—/]?\s*หลัง|2\s*หน้า|สองหน้า|double/i.test(String(service?.name || ''));
 }
 
 function hasSelectedPrintService() {
@@ -338,7 +353,8 @@ function renderServices() {
     const cutting = groups.find(group => group.definition.key === 'cutting');
     if (cutting) {
       cutting.services.forEach(service => delete selectedServiceIds[String(service.id)]);
-      const exact = cutting.services.find(service => lockedMode === '50'
+      const exactRole = lockedMode === '50' ? 'CUTTING_50' : 'CUTTING_100';
+      const exact = cutting.services.find(service => serviceRole(service) === exactRole) || cutting.services.find(service => lockedMode === '50'
         ? /50|ครึ่ง|kiss|mimaki/i.test(`${service.name || ''} ${service.material || ''}`)
         : /100|เต็ม|flatblade/i.test(`${service.name || ''} ${service.material || ''}`));
       const selected = exact || cutting.services.find(isDiecutService);
@@ -493,6 +509,8 @@ window.hasSelectedPrintService = hasSelectedPrintService;
 window.syncLayoutPreviewVisibility = syncLayoutPreviewVisibility;
 window.hasSelectedDiecutService = hasSelectedDiecutService;
 window.syncDiecutShapeAvailability = syncDiecutShapeAvailability;
+window.isSinglePrintService = isSinglePrintService;
+window.isDoublePrintService = isDoublePrintService;
 window.resetCuttingDefaultSelection = () => { cuttingDefaultSelectionPending = true; };
 window.isPendingPriceService = service => Boolean(service?.pricePending);
 window.availablePrintModeServices = availablePrintModeServices;

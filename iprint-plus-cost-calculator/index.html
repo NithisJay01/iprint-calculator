@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#eef6ff">
   <title>iPrint</title>
-  <link rel="stylesheet" href="css/app.css?v=20260909-clean-sheet-preview">
+  <link rel="stylesheet" href="css/app.css?v=20260910-public-capacity">
 </head>
 <body>
 <section class="login-gate" id="loginGate" aria-labelledby="loginTitle">
@@ -249,7 +249,8 @@
       <button class="view-back-button" data-flow-back="home" type="button"><img class="button-icon" src="image/arrow-left.svg" alt="">ย้อนกลับ</button>
       <div class="workflow-customer" id="workflowCustomer"></div>
       <div class="page-intro"><h1>ติดตามสถานะงาน</h1><p id="workflowOrderNumber"></p></div>
-      <div class="workflow-lookup"><div class="field"><label class="label" for="workflowTicketId">Order / Ticket ID</label><input id="workflowTicketId" autocomplete="off" placeholder="ใส่ Ticket ID"></div><button class="secondary-action" id="refreshWorkflow" type="button">โหลดสถานะ</button></div>
+      <div class="workflow-staff-search" data-staff-only hidden><div class="workflow-lookup"><div class="field"><label class="label" for="workflowOrderSearch">ค้นหาออร์เดอร์</label><input id="workflowOrderSearch" autocomplete="off" placeholder="เลขออร์เดอร์ ชื่อลูกค้า หรือชื่องาน"></div><button class="secondary-action" id="searchWorkflowOrders" type="button">ค้นหา</button></div><div class="workflow-search-results" id="workflowSearchResults" aria-live="polite"></div></div>
+      <details class="workflow-advanced"><summary>ค้นหาด้วย Ticket ID</summary><div class="workflow-lookup"><div class="field"><label class="label" for="workflowTicketId">Ticket ID / Order Key</label><input id="workflowTicketId" autocomplete="off" placeholder="ใช้สำหรับตรวจสอบขั้นสูง"></div><button class="secondary-action" id="refreshWorkflow" type="button">โหลดสถานะ</button></div></details>
       <div class="workflow-status status" id="workflowStatus" aria-live="polite"></div><section class="workflow-ticket" id="workflowTicketSummary" hidden></section><button class="secondary-action workflow-cancel-order" id="cancelWorkflowOrder" type="button" data-staff-only hidden>ยกเลิกคิวผลิตและคืนกำลังผลิต</button><div class="workflow-list" id="workflowItemList"></div>
       <button class="primary-action" id="workflowNewOrder" type="button">ออเดอร์งานพิมพ์เพิ่ม</button>
       <button id="closeWorkflow" type="button" hidden></button>
@@ -270,6 +271,7 @@
           <input id="staffCatalogEditId" type="hidden">
           <div class="field"><label class="label" for="staffCatalogName">ชื่อรายการ</label><input id="staffCatalogName" maxlength="120" required></div>
           <div class="field staff-catalog-category" id="staffCatalogCategoryWrap" hidden><label class="label" for="staffCatalogCategory">หมวดหมู่บริการ</label><input id="staffCatalogCategory" list="staffCatalogCategoryList" maxlength="80" placeholder="เลือกหรือพิมพ์ชื่อหมวดใหม่"><datalist id="staffCatalogCategoryList"></datalist><p class="hint">เปลี่ยนหมวดแล้วบริการจะย้ายกลุ่มในหน้าคำนวณทันที</p></div>
+          <div class="field" id="staffCatalogRoleWrap" hidden><label class="label" for="staffCatalogRole">หน้าที่ของบริการในระบบ</label><select id="staffCatalogRole"><option value="OTHER">บริการทั่วไป</option><option value="PRINT_SINGLE">พิมพ์หน้าเดียว</option><option value="PRINT_DOUBLE">พิมพ์หน้า–หลัง</option><option value="LAMINATION">เคลือบ</option><option value="CUTTING">ไดคัท/ตัดทั่วไป</option><option value="CUTTING_50">ไดคัท 50%</option><option value="CUTTING_100">ไดคัท 100%</option><option value="ROUNDED_CORNER">ตัดมุมมน</option></select><p class="hint">ระบบใช้ค่านี้ควบคุม UI และ Preview จึงเปลี่ยนชื่อบริการได้โดยฟีเจอร์ไม่หาย</p></div>
           <div class="field staff-catalog-image-field" id="staffCatalogImageWrap" hidden><label class="label" for="staffCatalogImageUrl">ภาพบริการ</label><input id="staffCatalogImageUrl" type="url" maxlength="2000" placeholder="https://example.com/service-image.jpg"><div class="staff-catalog-image-preview" id="staffCatalogImagePreview"><span>ยังไม่ได้กำหนดภาพ</span></div><p class="hint">ใช้ URL รูปภาพสาธารณะแบบ HTTPS ภาพจะแสดงในตัวเลือกบริการของลูกค้า</p></div>
           <div class="row2"><div class="field"><label class="label" for="staffCatalogPrice">ราคา</label><input id="staffCatalogPrice" type="number" min="0" step="0.01" required></div><div class="field"><label class="label" for="staffCatalogUnit">หน่วย</label><select id="staffCatalogUnit"><option value="sheet">ต่อแผ่น</option><option value="piece">ต่อชิ้น</option><option value="job">ต่องาน</option></select></div></div>
           <section class="staff-capacity-fields" id="staffCatalogCapacityWrap" hidden><div class="staff-capacity-heading"><div><small>PRODUCTION CAPACITY</small><h3>กำลังผลิตของบริการ</h3></div><span>ใช้จัดคิวรายวัน</span></div><div class="row3"><div class="field"><label class="label" for="staffCapacityPoints">แต้มต่อช่วง</label><input id="staffCapacityPoints" type="number" min="0" step="0.25" value="0"></div><div class="field"><label class="label" for="staffCapacityBasis">วิธีคิด</label><select id="staffCapacityBasis"><option value="job">ต่องาน</option><option value="sheet">ตามจำนวนแผ่น</option><option value="piece">ตามจำนวนชิ้น</option></select></div><div class="field"><label class="label" for="staffCapacityStep">จำนวนต่อช่วง</label><input id="staffCapacityStep" type="number" min="1" step="1" value="1"></div></div><p class="staff-capacity-preview" id="staffCapacityPreview">บริการนี้ยังไม่เพิ่มภาระในคิว</p></section>
@@ -339,6 +341,8 @@
 
 <div class="modal quantity-change-modal" id="quantityChangeModal" aria-hidden="true"><div class="modal-card"><div class="modal-head"><h2>จำนวนชิ้นงานมีการเปลี่ยนแปลง</h2></div><div class="modal-body"><p>จำนวนรวมของทุกแบบไม่ตรงกับจำนวนที่ใช้คำนวณราคา กรุณาตรวจสอบราคาใหม่ก่อนยืนยัน</p><dl class="quantity-change-comparison"><div><dt>เดิม</dt><dd><strong id="oldQuantitySummary">—</strong><span id="oldPriceSummary">—</span></dd></div><div><dt>ใหม่</dt><dd><strong id="newQuantitySummary">—</strong><span id="newPriceSummary">—</span></dd></div></dl><section class="quantity-price-breakdown" aria-label="รายละเอียดราคาใหม่"><dl><div><dt>จำนวนแผ่น</dt><dd id="newSheetSummary">—</dd></div><div><dt>จำนวนชิ้นงาน</dt><dd id="newPieceSummary">—</dd></div></dl><div class="quantity-service-prices"><strong>บริการที่เลือก</strong><div id="newServicePriceList">—</div></div><div class="quantity-price-total"><span>ราคารวมทั้งหมด</span><strong id="newTotalPriceSummary">—</strong></div></section><div class="modal-actions"><button class="secondary-action" id="editVariantQuantity" type="button">แก้ไขจำนวน</button><button class="primary-action" id="confirmVariantPrice" type="button">ยืนยันราคาใหม่</button></div></div></div></div>
 
+<div class="modal availability-modal" id="availabilityModal" aria-hidden="true"><div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="availabilityTitle"><div class="modal-head"><div><small>คิวผลิตแบบเรียลไทม์</small><h2 id="availabilityTitle">เลือกวันที่รับงานได้</h2></div><button class="close-sheet" id="closeAvailability" type="button" aria-label="ปิดปฏิทิน">×</button></div><div class="availability-summary" id="availabilitySummary">กำลังตรวจสอบกำลังผลิต…</div><div class="availability-month-head"><button id="availabilityPrevious" type="button" aria-label="เดือนก่อนหน้า">‹</button><strong id="availabilityMonth"></strong><button id="availabilityNext" type="button" aria-label="เดือนถัดไป">›</button></div><div class="availability-weekdays" aria-hidden="true"><span>จ.</span><span>อ.</span><span>พ.</span><span>พฤ.</span><span>ศ.</span><span>ส.</span><span>อา.</span></div><div class="availability-grid" id="availabilityGrid" aria-live="polite"></div><section class="availability-boost-offer" id="availabilityBoostOffer" hidden><div><small>BOOST PRODUCTION</small><strong id="availabilityBoostTitle">เร่งวันผลิต</strong><span id="availabilityBoostPrice"></span></div><button id="confirmAvailabilityBoost" type="button">Boost</button></section><div class="availability-legend"><span class="is-available">รับงานได้</span><span class="is-limited">คิวใกล้เต็ม</span><span class="is-boost">Boost ได้</span><span class="is-too-soon">เร็วเกินไป</span><span class="is-closed">เต็ม/ปิด</span></div><p class="availability-note">Boost เพิ่มราคา: -1 วัน +50% • -2 วัน +100% • -3 วัน +150% • -4 วัน +200% ระบบจะตรวจคิวอีกครั้งตอนยืนยัน</p></div></div>
+
 <div class="modal piece-preview-modal" id="piecePreviewModal" aria-hidden="true"><div class="modal-card"><div class="modal-head"><div><small>PREVIEW รายชิ้น</small><h2 id="piecePreviewTitle">ตัวอย่างชิ้นงาน</h2></div><button class="close-sheet" id="closePiecePreview" type="button" aria-label="ปิด Preview รายชิ้น">×</button></div><div class="piece-preview-body"><div class="piece-preview-frame" id="piecePreviewFrame"></div><div class="piece-preview-side-toggle" id="piecePreviewSideToggle" role="group" aria-label="เลือกด้านของ Preview รายชิ้น"><button class="is-selected" id="piecePreviewFront" type="button" data-piece-preview-side="front" aria-pressed="true">ด้านหน้า</button><button id="piecePreviewBack" type="button" data-piece-preview-side="back" aria-pressed="false">ด้านหลัง</button></div><p id="piecePreviewStatus">กำลังแสดงด้านหน้า</p></div></div></div>
 
 <div class="modal print-mode-modal" id="printModeModal" aria-hidden="true"><div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="printModeTitle"><div class="print-mode-head"><small>ก่อนเริ่ม STEP 1</small><h2 id="printModeTitle">เลือกรูปแบบการพิมพ์</h2><p>เลือกให้ตรงกับไฟล์งาน เพื่อให้ระบบเตรียม Preview และคำนวณราคาได้ถูกต้อง</p></div><div class="print-mode-choices" id="printModeChoices"></div><button class="secondary-action print-mode-back" id="printModeBack" type="button"><img class="button-icon" src="image/arrow-left.svg" alt="">กลับไปแก้ข้อมูล</button></div></div>
@@ -348,25 +352,26 @@
 
 <script src="js/config.js?v=20260908-public-order-enabled"></script>
 <script src="js/core.js?v=20260909-print-mode-prompt"></script>
-<script src="js/api.js?v=20260909-flow-controller"></script>
+<script src="js/api.js?v=20260910-public-capacity"></script>
 <script src="js/flow-settings.js?v=20260909-material-flow"></script>
 <script src="js/presets.js?v=20260909-preset-copy"></script>
 <script src="js/materials.js?v=20260909-material-cta"></script>
-<script src="js/services.js?v=20260909-print-mode-prompt"></script>
+<script src="js/services.js?v=20260910-service-role"></script>
 <script src="js/artwork.js?v=20260907-responsive-artwork-module"></script>
 <script src="js/shape-mask.js?v=20260906-flow-refresh"></script>
 <script src="js/material-preview.js?v=20260906-flow-refresh"></script>
-<script src="js/piece-preview.js?v=20260909-print-mode-prompt"></script>
-<script src="js/calculator.js?v=20260909-clean-sheet-preview"></script>
-<script src="js/brief.js?v=20260909-print-mode-prompt"></script>
-<script src="js/cart.js?v=20260908-production-queue"></script>
+<script src="js/piece-preview.js?v=20260910-preview-rotation"></script>
+<script src="js/calculator.js?v=20260910-service-role"></script>
+<script src="js/brief.js?v=20260910-service-role"></script>
+<script src="js/cart.js?v=20260910-service-role"></script>
 <script src="js/customer.js?v=20260831-material-preview"></script>
-<script src="js/workflow.js?v=20260908-order-cancellation"></script>
+<script src="js/workflow.js?v=20260910-order-search"></script>
+<script src="js/availability.js?v=20260910-public-capacity"></script>
 <script src="js/quote.js?v=20260904-public-order"></script>
 <script src="js/staff-flow-settings.js?v=20260909-material-flow"></script>
-<script src="js/staff-catalog.js?v=20260909-service-images"></script>
+<script src="js/staff-catalog.js?v=20260910-service-role"></script>
 <script src="js/staff-capacity.js?v=20260908-capacity-summary"></script>
-<script src="js/app.js?v=20260909-print-mode-prompt"></script>
-<script src="js/flow.js?v=20260909-shared-bleed-yield"></script>
+<script src="js/app.js?v=20260910-public-capacity"></script>
+<script src="js/flow.js?v=20260910-public-capacity"></script>
 </body>
 </html>

@@ -118,6 +118,9 @@ function snapshotCartItem(calc, id) {
         shaderPreset: String(calc.material.shaderPreset || ''),
         textureUrl: String(calc.material.textureUrl || '')
         ,updatedAt: String(calc.material.updatedAt || '')
+        ,capacityPoints: Number(calc.material.capacityPoints) || 0
+        ,capacityBasis: String(calc.material.capacityBasis || 'job')
+        ,capacityStep: Number(calc.material.capacityStep) || 1
       }
     : null;
   const selectedServices = (Array.isArray(calc.services) ? calc.services : []).map(service => ({
@@ -134,10 +137,14 @@ function snapshotCartItem(calc, id) {
     ,pricePending: Boolean(service.pricePending)
     ,requestText: String(service.requestText || '')
     ,capacityPoints: Number(service.capacityPoints) || 0
+    ,serviceRole: String(service.serviceRole || '')
     ,capacityBasis: String(service.capacityBasis || 'job')
     ,capacityStep: Number(service.capacityStep) || 1
   }));
 
+  const boost = typeof getSelectedAvailabilityBoost === 'function' ? getSelectedAvailabilityBoost() : null;
+  const basePrice = Number(calc.sale) || 0;
+  const boostMultiplier = boost ? Number(boost.multiplier) || 0 : 0;
   return {
     id,
     name: cartItemName(calc),
@@ -157,7 +164,9 @@ function snapshotCartItem(calc, id) {
     bleed: Number(calc.bleed) || 0,
     material,
     services: selectedServices,
-    price: Number(calc.sale) || 0,
+    basePrice,
+    price: Math.round((basePrice * (1 + boostMultiplier)) * 100) / 100,
+    boost: boost ? { days: Number(boost.days), multiplier: boostMultiplier, date: String(boost.date || '') } : null,
     variants: typeof getJobVariants === 'function' ? getJobVariants() : [],
     jobType: typeof getSelectedJobType === 'function' ? getSelectedJobType() : '',
     jobNickname: String($('jobNickname')?.value || '').trim(),
@@ -290,7 +299,7 @@ function renderCart() {
     const detailsId = `cart-details-${cartEscape(item.id)}`;
 
     return `<article class="cart-item" data-cart-id="${cartEscape(item.id)}">
-      <div class="cart-item-head"><div><small>รายการที่ ${index + 1}</small><strong>${cartEscape(item.name)}</strong><div class="cart-item-details" id="${detailsId}"><div><b>พิมพ์</b><span>${cartEscape(cartProductionLabel(item.productionService))}</span></div><div><b>ขนาด</b><span>${cartEscape(item.size)}</span></div><div><b>กระดาษ</b><span>${cartEscape(item.paper?.name || 'ยังไม่ระบุ')}</span></div><div><b>วัสดุ</b><span>${cartEscape(item.material?.name || 'ยังไม่ระบุ')}</span></div><div><b>บริการ</b><span>${cartEscape(services || 'ไม่มีบริการเพิ่มเติม')}</span></div><div><b>รายละเอียด</b><span>${cartEscape(item.brief || 'ไม่มีรายละเอียดเพิ่มเติม')}</span></div></div><button class="cart-details-toggle" type="button" data-cart-action="details" aria-expanded="false" aria-controls="${detailsId}">อ่านเพิ่ม</button><div class="cart-item-deadline"><b>วันที่ต้องการรับงาน</b><span>${cartEscape(cartDeliveryLabel(item.deliveryDeadline))}</span></div></div><button class="cart-item-remove" type="button" data-cart-action="remove" aria-label="ลบรายการ" title="ลบรายการ"></button></div>
+      <div class="cart-item-head"><div><small>รายการที่ ${index + 1}</small><strong>${cartEscape(item.name)}</strong><div class="cart-item-details" id="${detailsId}"><div><b>พิมพ์</b><span>${cartEscape(cartProductionLabel(item.productionService))}</span></div><div><b>ขนาด</b><span>${cartEscape(item.size)}</span></div><div><b>กระดาษ</b><span>${cartEscape(item.paper?.name || 'ยังไม่ระบุ')}</span></div><div><b>วัสดุ</b><span>${cartEscape(item.material?.name || 'ยังไม่ระบุ')}</span></div><div><b>บริการ</b><span>${cartEscape(services || 'ไม่มีบริการเพิ่มเติม')}</span></div><div><b>รายละเอียด</b><span>${cartEscape(item.brief || 'ไม่มีรายละเอียดเพิ่มเติม')}</span></div></div><button class="cart-details-toggle" type="button" data-cart-action="details" aria-expanded="false" aria-controls="${detailsId}">อ่านเพิ่ม</button><div class="cart-item-deadline"><b>วันที่ต้องการรับงาน</b><span>${cartEscape(cartDeliveryLabel(item.deliveryDeadline))}${item.boost?.days ? ` • Boost -${Number(item.boost.days)} วัน (+${Number(item.boost.multiplier) * 100}%)` : ''}</span></div></div><button class="cart-item-remove" type="button" data-cart-action="remove" aria-label="ลบรายการ" title="ลบรายการ"></button></div>
       <div class="cart-variant-list">${variants.map((variant, variantIndex) => `<div class="cart-variant-row"><b>แบบที่ ${variantIndex + 1}</b><span>${cartEscape(variant.name || '-')}</span><strong>${Number(variant.quantity || 0).toLocaleString('th-TH')} ชิ้น</strong></div>`).join('')}</div>
       <div class="cart-production-row"><span>จัดวาง ${Number(item.yield || 0).toLocaleString('th-TH')} ชิ้น/แผ่น</span><span>ใช้ ${Number(item.sheets || 0).toLocaleString('th-TH')} แผ่น</span><span>รวม ${Number(item.quantity || 0).toLocaleString('th-TH')} ชิ้น</span><strong>฿${money(item.price)}</strong></div>
       <div class="cart-item-actions"><button type="button" data-cart-action="edit">แก้ไขรายการ</button></div>
@@ -337,6 +346,7 @@ async function restoreCartItem(item) {
   const deliveryDatePicker = document.querySelector('[data-date-for="deliveryDeadline"]');
   if (briefDatePicker) briefDatePicker.value = item.briefDeadline || '';
   if (deliveryDatePicker) deliveryDatePicker.value = item.deliveryDeadline || '';
+  if (typeof setSelectedAvailabilityBoost === 'function') setSelectedAvailabilityBoost(item.boost || null);
   if ($('jobName')) $('jobName').value = item.name || '';
   if (typeof setJobType === 'function') setJobType(item.jobType || '', { preserveName: true });
   if (typeof setJobNickname === 'function') setJobNickname(item.jobNickname || '', { preserveName: true });
@@ -417,7 +427,9 @@ function publicOrderItems() {
     yield: item.yield,
     material: item.material,
     services: item.services,
+    basePrice: Number(item.basePrice ?? item.price) || 0,
     price: item.price,
+    boost: item.boost || null,
     brief: item.brief,
     briefDeadline: item.briefDeadline || '',
     deliveryDeadline: item.deliveryDeadline || ''
