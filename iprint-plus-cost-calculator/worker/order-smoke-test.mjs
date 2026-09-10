@@ -146,6 +146,7 @@ globalThis.fetch = async (url, options = {}) => {
     assert.ok(text.includes('8 ดวง/แผ่น • ใช้ 63 แผ่น'));
     assert.ok(text.includes('รับ: 2026-09-03'));
     assert.ok(text.includes('อธิบายเพิ่ม: เว้นพื้นที่โลโก้'));
+    assert.ok(text.includes('ลิงก์ Google Drive: https://drive.google.com/file/d/test'));
     assert.ok(text.includes('Art Card'));
     assert.equal(text.includes('Brief งานพิมพ์ QT-TEST'), false);
     assert.equal(text.includes('ลูกค้า:'), false);

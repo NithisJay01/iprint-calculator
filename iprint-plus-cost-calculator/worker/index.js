@@ -1875,6 +1875,9 @@ export default {
             if (String(item.brief || "").trim()) {
               children.push(paragraph(`อธิบายเพิ่ม: ${shortText(String(item.brief).trim())}`));
             }
+            if (String(item.briefFileLink || "").trim()) {
+              children.push(paragraph(`ลิงก์ Google Drive: ${shortText(String(item.briefFileLink).trim())}`));
+            }
             const previewMetadata = Array.isArray(item.previewImages) ? item.previewImages.slice(0, 4) : [];
             let attachedPreviewCount = 0;
             for (const [previewIndex, preview] of previewMetadata.entries()) {
