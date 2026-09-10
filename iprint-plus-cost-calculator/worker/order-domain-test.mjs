@@ -4,8 +4,35 @@ import {
   ORDER_STATUS,
   PAYMENT_STATUS,
   PRODUCTION_STATUS,
+  buildTicketJobName,
   validateOrderFoundation
 } from "./domain/order.js";
+
+assert.equal(
+  buildTicketJobName({
+    customer: "Bdms",
+    quoteNo: "QT-1",
+    orderItems: [{
+      name: "Coupon-150Baht-V1",
+      size: "8.00 × 20.00 cm",
+      material: { name: "PVC 130g" },
+      sheets: 5
+    }]
+  }),
+  "(Bdms)Coupon-150Baht-V1(8x20cm)PVC-130g(5s)"
+);
+
+assert.equal(
+  buildTicketJobName({
+    customer: "ACME / Bangkok",
+    quoteNo: "QT-2",
+    orderItems: [
+      { name: "Poster V3", width: 9, height: 5.4, paper: { name: "Art Card 300g" }, sheets: 12.2 },
+      { name: "Second job", size: "10 × 10 cm", material: { name: "PP" }, sheets: 2 }
+    ]
+  }),
+  "(ACME-Bangkok)Poster-V3(9x5.4cm)Art-Card-300g(13s)(+1jobs)"
+);
 
 const valid = validateOrderFoundation({
   orderKey: "order-1",

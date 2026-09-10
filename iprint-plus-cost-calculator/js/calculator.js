@@ -67,6 +67,38 @@ function formatMillimeters(value) {
     return Number(value||0).toLocaleString('th-TH',{maximumFractionDigits:1})
   }
 
+const PREVIEW_GUIDELINE_OPACITY_KEY='iprint_preview_guideline_opacity_v1';
+
+function normalizePreviewGuidelineOpacity(value) {
+    const number=Number(value);
+    return Number.isFinite(number)?Math.max(0,Math.min(100,Math.round(number/5)*5)):100
+  }
+
+function applyPreviewGuidelineOpacity(value,{persist=false}={}) {
+    const normalized=normalizePreviewGuidelineOpacity(value);
+    const input=$('previewGuidelineOpacity');
+    const output=$('previewGuidelineOpacityValue');
+    const preview=$('previewDropZone');
+    if(input&&Number(input.value)!==normalized)input.value=String(normalized);
+    if(output)output.textContent=normalized+'%';
+    if(preview)preview.style.setProperty('--preview-guideline-opacity',String(normalized/100));
+    if(persist) {
+      try { localStorage.setItem(PREVIEW_GUIDELINE_OPACITY_KEY,String(normalized)) } catch {}
+    }
+    return normalized
+  }
+
+function bindPreviewGuidelineOpacity() {
+    const input=$('previewGuidelineOpacity');
+    if(!input||input.dataset.opacityBound)return;
+    input.dataset.opacityBound='true';
+    let saved=100;
+    try { saved=localStorage.getItem(PREVIEW_GUIDELINE_OPACITY_KEY)??100 } catch {}
+    applyPreviewGuidelineOpacity(saved);
+    input.addEventListener('input',event=>applyPreviewGuidelineOpacity(event.target.value,{persist:true}));
+    input.addEventListener('change',event=>applyPreviewGuidelineOpacity(event.target.value,{persist:true}))
+  }
+
 function syncPreviewSliderValues() {
     const gap=previewGap();
     const bleed=previewBleed();
@@ -367,3 +399,6 @@ function quotePriceSummary() {
       grandTotal
     };
   }
+
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bindPreviewGuidelineOpacity,{once:true});
+else bindPreviewGuidelineOpacity();

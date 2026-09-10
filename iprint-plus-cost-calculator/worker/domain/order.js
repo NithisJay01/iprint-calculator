@@ -40,6 +40,66 @@ export const CUSTOMER_STATUS = Object.freeze({
 const finiteMoney = value => Number.isFinite(Number(value)) && Number(value) >= 0;
 const nearlyEqual = (left, right) => Math.abs(Number(left) - Number(right)) <= 0.01;
 
+function ticketNameSegment(value, fallback) {
+  const cleaned = String(value ?? "")
+    .normalize("NFKC")
+    .trim()
+    .replace(/[<>:"/\\|?*\u0000-\u001f]/g, "-")
+    .replace(/[•\s]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+  return cleaned || fallback;
+}
+
+function compactDimension(value) {
+  const number = Number(String(value ?? "").replace(",", "."));
+  if (!Number.isFinite(number) || number <= 0) return "";
+  return String(Number(number.toFixed(2)));
+}
+
+function ticketSize(item) {
+  const width = compactDimension(item?.width);
+  const height = compactDimension(item?.height);
+  if (width && height) return `${width}x${height}cm`;
+
+  const match = String(item?.size || "").match(
+    /(\d+(?:[.,]\d+)?)\s*(?:×|x)\s*(\d+(?:[.,]\d+)?)/i
+  );
+  if (!match) return "ไม่ระบุขนาด";
+  return `${compactDimension(match[1])}x${compactDimension(match[2])}cm`;
+}
+
+function ticketVersion(item, rawJobName) {
+  const explicit = String(item?.version || "").trim();
+  if (explicit) {
+    const normalized = ticketNameSegment(explicit, "V1");
+    return /^v/i.test(normalized) ? `V${normalized.slice(1)}` : `V${normalized}`;
+  }
+  const match = rawJobName.match(/(?:^|[\s_-])(v\d+(?:\.\d+)?)$/i);
+  return match ? `V${match[1].slice(1)}` : "V1";
+}
+
+export function buildTicketJobName({ customer, quoteNo, orderItems } = {}) {
+  const items = Array.isArray(orderItems) ? orderItems : [];
+  const primary = items[0] || {};
+  const rawJobName = String(primary.name || quoteNo || "Job").trim();
+  const version = ticketVersion(primary, rawJobName);
+  const jobWithoutVersion = rawJobName.replace(/(?:^|[\s_-])v\d+(?:\.\d+)?$/i, "");
+  const customerName = ticketNameSegment(
+    String(customer || "").replace(/^\(+|\)+$/g, ""),
+    "ไม่ระบุลูกค้า"
+  );
+  const jobName = ticketNameSegment(jobWithoutVersion, ticketNameSegment(quoteNo, "Job"));
+  const materialName = ticketNameSegment(primary.material?.name || primary.paper?.name, "ไม่ระบุวัสดุ");
+  const sheetsValue = Number(primary.sheets);
+  const sheets = Number.isFinite(sheetsValue) && sheetsValue > 0
+    ? Math.ceil(sheetsValue)
+    : Math.max(0, Math.ceil(Number(primary.quantity) || 0));
+  const extraItems = items.length > 1 ? `(+${items.length - 1}jobs)` : "";
+
+  return `(${customerName})${jobName}-${version}(${ticketSize(primary)})${materialName}(${sheets}s)${extraItems}`;
+}
+
 export function validateOrderFoundation(input) {
   const order = input && typeof input === "object" ? input : {};
   const items = Array.isArray(order.orderItems) ? order.orderItems : [];

@@ -91,6 +91,10 @@ globalThis.fetch = async (url, options = {}) => {
     const payload = JSON.parse(options.body);
 
     if (payload.parent.data_source_id === 'tickets-id') {
+      assert.equal(
+        payload.properties['ชื่องาน'].title[0].text.content,
+        '(ลูกค้าทดสอบ)Sticker-PP-V1(10x15cm)Sticker-PP(63s)(+1jobs)'
+      );
       assert.equal(payload.properties['Order Key'].rich_text[0].text.content, 'order-test-1');
       assert.equal(payload.properties['Item Count'].number, 2);
       assert.equal(payload.properties['Order Total'].number, 1500);
@@ -130,9 +134,22 @@ globalThis.fetch = async (url, options = {}) => {
     const text = payload.children
       .map(block => block[block.type]?.rich_text?.[0]?.text?.content || '')
       .join('\n');
-    assert.ok(text.includes('Brief งานพิมพ์ QT-TEST'));
-    assert.ok(text.includes('#1 Sticker PP'));
-    assert.ok(text.includes('#2 Art Card'));
+    assert.ok(text.includes('Sticker PP'));
+    assert.ok(text.includes('บริการพิมพ์: laser'));
+    assert.ok(text.includes('ขนาด 10.00 × 15.00 cm'));
+    assert.ok(text.includes('จำนวน 500 ชิ้น'));
+    assert.ok(text.includes('จำนวนแบบ:'));
+    assert.ok(text.includes('วัสดุ: Sticker PP'));
+    assert.ok(text.includes('บริการ: พิมพ์หน้า–หลัง,เคลือบด้าน'));
+    assert.ok(text.includes('Preset: SRA3'));
+    assert.ok(text.includes('8 ดวง/แผ่น • ใช้ 63 แผ่น'));
+    assert.ok(text.includes('รับ: 2026-09-03'));
+    assert.ok(text.includes('อธิบายเพิ่ม: เว้นพื้นที่โลโก้'));
+    assert.ok(text.includes('Art Card'));
+    assert.equal(text.includes('Brief งานพิมพ์ QT-TEST'), false);
+    assert.equal(text.includes('ลูกค้า:'), false);
+    assert.equal(text.includes('Artwork:'), false);
+    assert.equal(text.includes('Deadline กราฟิก:'), false);
     assert.equal(text.includes('Gap'), false);
     assert.equal(text.includes('Bleed'), false);
     assert.equal(text.includes('ต้นทุนต่อแผ่น'), false);
@@ -176,9 +193,9 @@ try {
         printSide: 'double',
         artworkSides: { hasFront: true, hasBack: true, useFrontForBack: false },
         previewImages: [
-          { kind: 'sheet', side: 'front-back', label: 'Preview รายแผ่น • หน้า–หลัง', filename: 'sheet-front-back.png' },
-          { kind: 'piece', side: 'front', label: 'Preview รายชิ้น • ด้านหน้า', filename: 'piece-front.png' },
-          { kind: 'piece', side: 'back', label: 'Preview รายชิ้น • ด้านหลัง', filename: 'piece-back.png' }
+          { kind: 'artwork', side: 'front', label: 'ภาพบรีฟเต็ม • ด้านหน้า', filename: 'artwork-front.png' },
+          { kind: 'artwork', side: 'back', label: 'ภาพบรีฟเต็ม • ด้านหลัง', filename: 'artwork-back.png' },
+          { kind: 'template', side: 'front-back', label: 'Template การผลิต • Layout + รายชิ้น หน้า–หลัง', filename: 'template-front-back.png' }
         ],
         price: 900,
         brief: 'เว้นพื้นที่โลโก้',
@@ -208,9 +225,9 @@ try {
   const form = new FormData();
   form.append('order', JSON.stringify(order));
   form.append('quotePreview', new Blob(['quote'], { type: 'image/png' }), 'quote.png');
-  form.append('brief_0_0', new Blob(['sheet'], { type: 'image/png' }), 'sheet-front-back.png');
-  form.append('brief_0_1', new Blob(['front'], { type: 'image/png' }), 'piece-front.png');
-  form.append('brief_0_2', new Blob(['back'], { type: 'image/png' }), 'piece-back.png');
+  form.append('brief_0_0', new Blob(['front'], { type: 'image/png' }), 'artwork-front.png');
+  form.append('brief_0_1', new Blob(['back'], { type: 'image/png' }), 'artwork-back.png');
+  form.append('brief_0_2', new Blob(['template'], { type: 'image/png' }), 'template-front-back.png');
 
   const response = await workerModule.default.fetch(
     new Request('https://worker.test/orders', {
@@ -253,9 +270,9 @@ try {
     .filter(call => call.url.endsWith('/v1/blocks/ticket-page-id/children') && (call.options.method || 'GET') === 'PATCH')
     .flatMap(call => JSON.parse(call.options.body).children);
   const ticketText = ticketBlocks.map(block => block[block.type]?.rich_text?.[0]?.text?.content || '').join('\n');
-  assert.ok(ticketText.includes('Preview รายแผ่น • หน้า–หลัง'));
-  assert.ok(ticketText.includes('Preview รายชิ้น • ด้านหน้า'));
-  assert.ok(ticketText.includes('Preview รายชิ้น • ด้านหลัง'));
+  assert.ok(ticketText.includes('ภาพบรีฟเต็ม • ด้านหน้า'));
+  assert.ok(ticketText.includes('ภาพบรีฟเต็ม • ด้านหลัง'));
+  assert.ok(ticketText.includes('Template การผลิต • Layout + รายชิ้น หน้า–หลัง'));
   assert.ok(ticketText.includes('กรุณาตรวจรายละเอียดจากลิงก์ไฟล์ต้นฉบับใน Drive'));
 
   const changedOrder = structuredClone(order);

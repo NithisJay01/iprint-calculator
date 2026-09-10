@@ -128,6 +128,7 @@ const quickBriefSource = fs.readFileSync(new URL('../js/flow.js', import.meta.ur
 const presetSource = fs.readFileSync(new URL('../js/presets.js', import.meta.url), 'utf8');
 const materialSource = fs.readFileSync(new URL('../js/materials.js', import.meta.url), 'utf8');
 const calculatorSource = fs.readFileSync(new URL('../js/calculator.js', import.meta.url), 'utf8');
+const briefSource = fs.readFileSync(new URL('../js/brief.js', import.meta.url), 'utf8');
 const coreSource = fs.readFileSync(new URL('../js/core.js', import.meta.url), 'utf8');
 const calculatorContext = scriptContext();
 vm.runInContext(calculatorSource, calculatorContext);
@@ -135,6 +136,15 @@ assert.equal(calculatorContext.findBest({ usableW: 8.5, usableH: 8.5 }, 4, 4, 0,
 assert.equal(calculatorContext.findBest({ usableW: 8.5, usableH: 8.5 }, 4, 4, 0, 3).yield, 4);
 assert.equal(calculatorContext.findBest({ usableW: 8.5, usableH: 8.5 }, 4, 4, 0, 3).pieceW, 46);
 assert.equal(calculatorContext.findBest({ usableW: 31.5, usableH: 46.7 }, 9, 5.4, 0, 3).yield, 25);
+assert.equal(calculatorContext.normalizePreviewGuidelineOpacity(-10), 0);
+assert.equal(calculatorContext.normalizePreviewGuidelineOpacity(52), 50);
+assert.equal(calculatorContext.normalizePreviewGuidelineOpacity(110), 100);
+assert.match(quickBriefHtml, /id="previewGuidelineOpacity"[^>]+min="0"[^>]+max="100"[^>]+step="5"/);
+assert.match(quickBriefHtml, /js\/brief\.js\?v=20260911-ticket-preview/);
+assert.match(quickBriefHtml, /js\/artwork\.js\?v=20260911-ticket-preview/);
+assert.match(briefSource, /kind:'artwork'.+ภาพบรีฟเต็ม/);
+assert.match(briefSource, /kind:'template'[\s\S]+?Template การผลิต • Layout \+ รายชิ้น/);
+assert.doesNotMatch(briefSource, /kind:'piece'/);
 assert.equal((quickBriefHtml.match(/data-quick-step="[1-6]"/g) || []).length, 6);
 assert.match(quickBriefHtml, /คำถาม 4 จาก 4/);
 assert.match(quickBriefHtml, /ข้อมูลสำคัญครบ พร้อมส่งต่อเพื่อคำนวณและสร้างออร์เดอร์/);

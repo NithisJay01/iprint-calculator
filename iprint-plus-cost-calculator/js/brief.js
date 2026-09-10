@@ -400,19 +400,20 @@ function ticketPreviewDocumentSvg(title, body, height) {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="2160" height="${height*2}" viewBox="0 0 1080 ${height}"><defs><linearGradient id="reviewShine" x1="0" y1="0" x2="1" y2="1"><stop offset="18%" stop-color="#fff" stop-opacity="0"/><stop offset="50%" stop-color="#fff" stop-opacity=".9"/><stop offset="82%" stop-color="#fff" stop-opacity="0"/></linearGradient><linearGradient id="reviewHolo" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#45dcff" stop-opacity=".2"/><stop offset=".45" stop-color="#ff58dd" stop-opacity=".55"/><stop offset=".72" stop-color="#ffe85c" stop-opacity=".38"/><stop offset="1" stop-color="#45dcff" stop-opacity=".18"/></linearGradient></defs><style>text{font-family:Arial,Tahoma,sans-serif;fill:#111315}.title{font-size:26px;font-weight:700}.small{font-size:15px;fill:#61788d}.card-title{font-size:18px;font-weight:700;fill:#063b70}</style><rect width="1080" height="${height}" fill="#eef6ff"/><rect x="32" y="32" width="1016" height="${height-64}" rx="28" fill="#fff" stroke="#063b70" stroke-width="2"/><text x="60" y="78" class="title">${briefEscapeSvg(title)}</text>${body}</svg>`;
 }
 
-function ticketSheetPreviewSvg(calc, artworkUrls, sides, shapeUrl='') {
-  const panelHeight=500;
-  const body=sides.map((side,index)=>{
-    const top=104+index*panelHeight;
-    return `<text x="60" y="${top+24}" class="card-title">${side==='back'?'ด้านหลัง':'ด้านหน้า'}</text>${briefReviewSheetSvg(calc,artworkUrls[side]||'',side,60,top+40,960,430,shapeUrl)}`;
+function ticketProductionTemplateSvg(calc, artworkUrls, sides, shapeUrl='') {
+  const gap=20;
+  const cardWidth=(960-gap*Math.max(0,sides.length-1))/Math.max(1,sides.length);
+  const sideLabel=side=>side==='back'?'ด้านหลัง':'ด้านหน้า';
+  const layout=sides.map((side,index)=>{
+    const x=60+index*(cardWidth+gap);
+    return `<text x="${x}" y="160" class="card-title">${sideLabel(side)}</text>${briefReviewSheetSvg(calc,artworkUrls[side]||'',side,x,175,cardWidth,390,shapeUrl)}`;
   }).join('');
-  return ticketPreviewDocumentSvg(`Preview รายแผ่น${sides.length>1?' • หน้า–หลัง':''}`,body,144+sides.length*panelHeight);
-}
-
-function ticketPiecePreviewSvg(calc, artworkUrl, side, shapeUrl='') {
-  const label=side==='back'?'ด้านหลัง':'ด้านหน้า';
-  const body=`<text x="60" y="128" class="card-title">Preview รายชิ้น • ${label}</text>${briefReviewPieceSvg(calc,artworkUrl,60,150,960,410,shapeUrl)}`;
-  return ticketPreviewDocumentSvg(`Preview รายชิ้น • ${label}`,body,620);
+  const pieces=sides.map((side,index)=>{
+    const x=60+index*(cardWidth+gap);
+    return `<text x="${x}" y="640" class="card-title">${sideLabel(side)}</text>${briefReviewPieceSvg(calc,artworkUrls[side]||'',x,655,cardWidth,280,shapeUrl)}`;
+  }).join('');
+  const body=`<text x="60" y="128" class="card-title">Layout รายแผ่น</text>${layout}<text x="60" y="608" class="card-title">Preview รายชิ้น</text>${pieces}`;
+  return ticketPreviewDocumentSvg(`Template การผลิต • Layout + รายชิ้น${sides.length>1?' หน้า–หลัง':''}`,body,990);
 }
 
 async function briefSvgToPngBlob(svg, fallbackHeight=1440) {
@@ -432,9 +433,21 @@ async function briefSvgToPngBlob(svg, fallbackHeight=1440) {
   }
 }
 
+async function briefArtworkToPngBlob(artworkUrl) {
+  const image=await new Promise((resolve,reject)=>{const preview=new Image();preview.onload=()=>resolve(preview);preview.onerror=()=>reject(new Error('สร้างภาพบรีฟไม่สำเร็จ'));preview.src=artworkUrl;});
+  const canvas=document.createElement('canvas');
+  canvas.width=Math.max(1,image.naturalWidth||image.width||1);
+  canvas.height=Math.max(1,image.naturalHeight||image.height||1);
+  const context=canvas.getContext('2d');
+  context.fillStyle='#ffffff';
+  context.fillRect(0,0,canvas.width,canvas.height);
+  context.drawImage(image,0,0,canvas.width,canvas.height);
+  return await new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('แปลงภาพบรีฟเป็น PNG ไม่สำเร็จ')),'image/png'));
+}
+
 async function captureTicketPreviewImages(calc=lastCalc) {
   if(!calc)throw new Error('ไม่พบข้อมูลสำหรับสร้างภาพ Preview');
-  const artworkUrls=typeof getArtworkPreviewDataUrls==='function'?await getArtworkPreviewDataUrls():{front:'',back:''};
+  const artworkUrls=typeof getArtworkPreviewDataUrls==='function'?await getArtworkPreviewDataUrls(1600):{front:'',back:''};
   const doubleSided=typeof getSelectedPrintSide==='function'&&getSelectedPrintSide()==='double';
   const sides=[];
   if(artworkUrls.front)sides.push('front');
@@ -442,16 +455,17 @@ async function captureTicketPreviewImages(calc=lastCalc) {
   if(!sides.length&&artworkUrls.back)sides.push('back');
   if(!sides.length)return [];
   const shapeUrl=typeof getDiecutShapeDataUrl==='function'?await getDiecutShapeDataUrl():'';
-  const previews=[{
-    kind:'sheet',
-    side:sides.length>1?'front-back':sides[0],
-    label:`Preview รายแผ่น${sides.length>1?' • หน้า–หลัง':''}`,
-    blob:await briefSvgToPngBlob(ticketSheetPreviewSvg(calc,artworkUrls,sides,shapeUrl))
-  }];
+  const previews=[];
   for(const side of sides) {
     const sideLabel=side==='back'?'ด้านหลัง':'ด้านหน้า';
-    previews.push({kind:'piece',side,label:`Preview รายชิ้น • ${sideLabel}`,blob:await briefSvgToPngBlob(ticketPiecePreviewSvg(calc,artworkUrls[side],side,shapeUrl),1240)});
+    previews.push({kind:'artwork',side,label:`ภาพบรีฟเต็ม • ${sideLabel}`,blob:await briefArtworkToPngBlob(artworkUrls[side])});
   }
+  previews.push({
+    kind:'template',
+    side:sides.length>1?'front-back':sides[0],
+    label:`Template การผลิต • Layout + รายชิ้น${sides.length>1?' หน้า–หลัง':''}`,
+    blob:await briefSvgToPngBlob(ticketProductionTemplateSvg(calc,artworkUrls,sides,shapeUrl),1980)
+  });
   return previews;
 }
 

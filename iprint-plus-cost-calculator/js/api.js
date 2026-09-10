@@ -655,11 +655,14 @@ async function fetchPublicCapacityRemote({ from, to, points = 1 }) {
     return { success: true, requiredPoints: Number(points) || 1, recommendedDate, schedulable: Boolean(recommendedDate), days, testMode: true };
   }
   const query = new URLSearchParams({ from, to, points: String(points) });
-  const response = await fetch(`${API.publicCapacity}?${query}`);
+  // Older cached core.js builds do not define API.publicCapacity. Keep the
+  // endpoint resolvable while cache-busted assets roll out across browsers.
+  const endpoint = API.publicCapacity || `${API_ROOT}/public/capacity`;
+  const response = await fetch(`${endpoint}?${query}`);
   const text = await response.text();
   let data = {};
   try { data = JSON.parse(text); } catch (error) {}
-  if (!response.ok) throw new Error(data.error || text || `GET /public/capacity HTTP ${response.status}`);
+  if (!response.ok) throw new Error(data.error || `โหลดข้อมูลกำลังผลิตไม่สำเร็จ (HTTP ${response.status})`);
   return data;
 }
 

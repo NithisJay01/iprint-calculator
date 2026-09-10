@@ -459,10 +459,11 @@ function getArtworkPreviewDataUrl() {
   return createBriefImageDataUrl(artworkImage, 520, getArtworkRotation('front'));
 }
 
-async function getArtworkPreviewDataUrls() {
-  const front = await createBriefImageDataUrl(artworkImage, 520, getArtworkRotation('front'));
+async function getArtworkPreviewDataUrls(maximum = 520) {
+  const previewMaximum = Math.max(320, Math.min(2000, Number(maximum) || 520));
+  const front = await createBriefImageDataUrl(artworkImage, previewMaximum, getArtworkRotation('front'));
   const backFile = useFrontArtworkForBack ? artworkImage : artworkBackImage;
-  const back = await createBriefImageDataUrl(backFile, 520, getArtworkRotation('back'));
+  const back = await createBriefImageDataUrl(backFile, previewMaximum, getArtworkRotation('back'));
   return { front, back };
 }
 

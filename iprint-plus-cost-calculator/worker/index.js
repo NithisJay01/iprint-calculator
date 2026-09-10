@@ -1,5 +1,5 @@
 import { compareCatalogSnapshot, validateCatalogMutation } from './domain/catalog.js';
-import { validateOrderFoundation } from './domain/order.js';
+import { buildTicketJobName, validateOrderFoundation } from './domain/order.js';
 import { normalizeCapacityDay } from './domain/capacity.js';
 import { QUEUE_STATUSES, canMoveQueueAllocation, queueStatusAllowsReservation } from './domain/queue.js';
 import { planOrderSchedule } from './domain/scheduling.js';
@@ -1518,7 +1518,11 @@ export default {
         if (!ticketPage) {
           const ticketProperties = {
             [ticketTitleProperty]: {
-              title: richText(`${quoteNo} • ${order.customer || "ไม่ระบุลูกค้า"} • ${orderItems.length} รายการ`)
+              title: richText(buildTicketJobName({
+                customer: order.customer,
+                quoteNo,
+                orderItems
+              }))
             }
           };
           const setTicket = (name, type, value) => {
@@ -1824,6 +1828,11 @@ export default {
           type: "paragraph",
           paragraph: { rich_text: richText(text) }
         });
+        const bullet = text => ({
+          object: "block",
+          type: "bulleted_list_item",
+          bulleted_list_item: { rich_text: richText(text) }
+        });
         const heading = (text, level = 2) => ({
           object: "block",
           type: `heading_${level}`,
@@ -1834,32 +1843,38 @@ export default {
           type: "image",
           image: { type: "file_upload", file_upload: { id: uploadId } }
         });
-        const children = [
-          heading(`Brief งานพิมพ์ ${quoteNo}`, 1),
-          paragraph(`ลูกค้า: ${shortText(order.customer || "-")} • ${orderItems.length} รายการ`),
-          paragraph(`ผู้รับ: ${shortText(order.recipient || "-")} • ติดต่อ: ${shortText(order.contact || "-")}`),
-          paragraph(`ที่อยู่จัดส่ง: ${shortText(order.address || "-")}`)
-        ];
+        const children = [];
 
         try {
-          children.push(heading("Brief รายการชิ้นงาน"));
           for (const [index, item] of orderItems.entries()) {
+            const variants = Array.isArray(item.variants) && item.variants.length
+              ? item.variants
+              : [{ name: item.name, quantity: item.quantity }];
+            const printSideService = item.printSide === "double"
+              ? "พิมพ์หน้า–หลัง"
+              : item.printSide === "single" ? "พิมพ์หน้าเดียว" : "";
+            const serviceNames = [
+              printSideService,
+              ...(Array.isArray(item.services) ? item.services : [])
+                .filter(service => !["PRINT_SINGLE", "PRINT_DOUBLE"].includes(String(service?.serviceRole || "").toUpperCase()))
+                .map(service => shortText(service?.name || ""))
+            ].filter(Boolean).filter((name, serviceIndex, all) => all.indexOf(name) === serviceIndex);
             children.push(
-              heading(`#${index + 1} ${item.name}`),
-              paragraph(`ขนาด ${shortText(item.size || "-")} • จำนวน ${Number(item.quantity || 0).toLocaleString("th-TH")} ${shortText(item.unit || "ดวง")}`),
-              paragraph(`Preset: ${shortText(item.paper?.name || "-")} • ${Number(item.yield || 0).toLocaleString("th-TH")} ดวง/แผ่น • ใช้ ${Number(item.sheets || 0).toLocaleString("th-TH")} แผ่น`),
-              paragraph(`วัสดุ: ${shortText(item.material?.name || "-")} • บริการ: ${(item.services || []).map(service => shortText(service.name)).join(", ") || "-"}`),
-              paragraph(`Artwork: หน้า ${item.artworkSides?.hasFront ? "พร้อม" : "ไม่มี"} • หลัง ${item.artworkSides?.hasBack ? "พร้อม" : "ไม่มี"}${item.artworkSides?.useFrontForBack ? " • ใช้ภาพเดียวกัน" : ""}`),
-              paragraph(`Deadline กราฟิก: ${shortText(item.briefDeadline || "-")} • ส่งมอบ: ${shortText(item.deliveryDeadline || "-")}`)
+              heading(shortText(item.name || `รายการที่ ${index + 1}`)),
+              paragraph(`บริการพิมพ์: ${shortText(item.productionService || "laser")}`),
+              bullet(`ขนาด ${shortText(item.size || "-")}`),
+              bullet(`จำนวน ${Number(item.quantity || 0).toLocaleString("th-TH")} ชิ้น`),
+              paragraph("จำนวนแบบ:"),
+              ...variants.map((variant, variantIndex) => bullet(`แบบที่ ${variantIndex + 1} ${shortText(variant.name || item.name || "-")} ${Number(variant.quantity || 0).toLocaleString("th-TH")} ชิ้น`)),
+              paragraph(`วัสดุ: ${shortText(item.material?.name || "-")}`),
+              paragraph(`บริการ: ${serviceNames.join(",") || "-"}`),
+              paragraph(`Preset: ${shortText(item.paper?.name || "-")}`),
+              bullet(`${Number(item.yield || 0).toLocaleString("th-TH")} ดวง/แผ่น • ใช้ ${Number(item.sheets || 0).toLocaleString("th-TH")} แผ่น`),
+              paragraph(`รับ: ${shortText(item.deliveryDeadline || "-")}`)
             );
-            const variants = Array.isArray(item.variants) ? item.variants : [];
-            if (variants.length) {
-              children.push(paragraph(`จำนวนแบบ: ${variants.map((variant, variantIndex) => `แบบที่ ${variantIndex + 1} ${shortText(variant.name || "-")} ${Number(variant.quantity || 0).toLocaleString("th-TH")} ชิ้น`).join(" • ")}`));
+            if (String(item.brief || "").trim()) {
+              children.push(paragraph(`อธิบายเพิ่ม: ${shortText(String(item.brief).trim())}`));
             }
-            const printSideLabel = item.printSide === "double" ? "หน้า-หลัง" : item.printSide === "single" ? "หน้าเดียว" : "ไม่ระบุ";
-            children.push(paragraph(`บริการพิมพ์: ${shortText(item.productionService || "laser")} • รูปแบบ: ${printSideLabel}`));
-            if (item.briefFileLink) children.push(paragraph(`ไฟล์ต้นฉบับ: ${shortText(item.briefFileLink)}`));
-            if (item.brief) children.push(paragraph(`บรีฟ: ${shortText(item.brief)}`));
             const previewMetadata = Array.isArray(item.previewImages) ? item.previewImages.slice(0, 3) : [];
             let attachedPreviewCount = 0;
             for (const [previewIndex, preview] of previewMetadata.entries()) {
