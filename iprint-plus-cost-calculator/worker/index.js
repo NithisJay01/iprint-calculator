@@ -1655,40 +1655,6 @@ export default {
             relation: item.material?.id ? [{ id: String(item.material.id) }] : []
           });
           setItem("Services", "relation", { relation: serviceIds.map(id => ({ id })) });
-          setItem("Snapshot", "rich_text", {
-            rich_text: richTextLong(JSON.stringify({
-              id: item.id,
-              size: item.size,
-              quantity: item.quantity,
-              unit: item.unit,
-              paper: item.paper,
-              sheets: item.sheets,
-              yield: item.yield,
-              material: item.material,
-               services: item.services,
-               variants: Array.isArray(item.variants) ? item.variants : [],
-               printSide: item.printSide || "unspecified",
-               productionService: item.productionService || "laser",
-               artworkSides: item.artworkSides || { hasFront: false, hasBack: false, useFrontForBack: false },
-               previewImages: Array.isArray(item.previewImages) ? item.previewImages.slice(0, 4) : [],
-               briefFileLink: item.briefFileLink || "",
-               diecutShape: item.diecutShape || { active: false },
-               price: item.price,
-               basePrice: item.basePrice,
-               boost: item.boost || null,
-               brief: item.brief,
-               briefDeadline: item.briefDeadline,
-               deliveryDeadline: item.deliveryDeadline,
-               capacity: itemSchedule ? {
-                 points: itemSchedule.capacity.points,
-                 startDate: itemSchedule.startDate,
-                 estimatedCompletionDate: itemSchedule.estimatedCompletionDate,
-                 allocationCount: itemSchedule.allocations.length
-               } : null,
-               status: "NEW"
-             }))
-          });
-
           const response = await fetch("https://api.notion.com/v1/pages", {
             method: "POST",
             headers: notionHeaders,

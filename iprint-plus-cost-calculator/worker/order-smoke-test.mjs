@@ -114,9 +114,7 @@ globalThis.fetch = async (url, options = {}) => {
     assert.ok(payload.properties['Item Key'].rich_text[0].text.content.startsWith('item-'));
     assert.equal('Gap' in payload.properties, false);
     assert.equal('Bleed' in payload.properties, false);
-    const snapshot = payload.properties.Snapshot.rich_text[0].text.content;
-    assert.equal(snapshot.includes('costPerSheet'), false);
-    assert.equal(snapshot.includes('profitPercent'), false);
+    assert.equal('Snapshot' in payload.properties, false);
     assert.equal(payload.properties.Status.select.name, 'NEW');
     assert.equal(payload.properties['Workflow Phase'].select.name, 'GRAPHIC');
     createdItems.push(payload);
@@ -266,10 +264,7 @@ try {
   assert.deepEqual(createdItems[0].properties.Services.relation, [{ id: 'service-1' }]);
   assert.equal(createdItems[0].properties['Brief Deadline'].date.start, '2026-09-01');
   assert.equal(createdItems[0].properties['Delivery Deadline'].date.start, '2026-09-03');
-  const firstSnapshot = JSON.parse(createdItems[0].properties.Snapshot.rich_text.map(entry => entry.text.content).join(''));
-  assert.equal(firstSnapshot.printSide, 'double');
-  assert.deepEqual(firstSnapshot.artworkSides, { hasFront: true, hasBack: true, useFrontForBack: false });
-  assert.equal(firstSnapshot.previewImages.length, 4);
+  assert.equal('Snapshot' in createdItems[0].properties, false);
   assert.equal(uploadSequence, 4);
   const ticketBlocks = calls
     .filter(call => call.url.endsWith('/v1/blocks/ticket-page-id/children') && (call.options.method || 'GET') === 'PATCH')
