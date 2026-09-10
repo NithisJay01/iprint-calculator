@@ -460,7 +460,8 @@ html{background:#dce9f5}body{padding:0;background:#dce9f5;color:#080808}.mobile-
 .has-rounded-corner .piece-material-effect{border-radius:0}
 .cost-sheet-preview.is-piece-preview.has-rounded-preview{border-radius:0}
 .cost-sheet-preview.is-piece-preview .piece-artwork:not(.piece-artwork-trim),.piece-preview-large .piece-artwork:not(.piece-artwork-trim),.preview-gallery-piece-frame .preview-gallery-artwork:not(.piece-artwork-trim){opacity:.25}
-.cost-sheet-preview.is-piece-preview .piece-artwork-trim,.piece-preview-large .piece-artwork-trim,.preview-gallery-piece-frame .piece-artwork-trim{position:absolute;inset:0;z-index:2;opacity:1;clip-path:inset(var(--trim-inset-y,0) var(--trim-inset-x,0))}
+.piece-artwork-trim-mask{position:absolute;inset:0;z-index:2;overflow:hidden;clip-path:inset(var(--trim-inset-y,0) var(--trim-inset-x,0));pointer-events:none}
+.piece-artwork-trim-mask .piece-artwork-trim{position:absolute;top:50%;left:50%;display:block;width:var(--artwork-box-width,100%);height:var(--artwork-box-height,100%);max-width:none;max-height:none;object-fit:cover;background:#fff;opacity:1;transform:translate(-50%,-50%) rotate(var(--artwork-rotation,0deg));transform-origin:center}
 .preview-finished-size{display:block;margin-top:7px;color:var(--flow-muted);font-size:9px;font-weight:700;text-align:center}
 .preview-zone-legend{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 12px;margin-top:10px;color:var(--flow-muted);font-size:9px;font-weight:700}
 .preview-zone-legend span{display:inline-flex;align-items:center;gap:5px}

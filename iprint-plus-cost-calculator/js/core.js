@@ -324,7 +324,7 @@ window.syncPieceMarginLine = syncPieceMarginLine;
 
 function syncPieceBleedArtwork(piece, widthMm, heightMm) {
   if (!piece) return;
-  piece.querySelectorAll('.piece-artwork-trim').forEach(node => node.remove());
+  piece.querySelectorAll('.piece-artwork-trim-mask,.piece-artwork-trim').forEach(node => node.remove());
   const artwork = piece.querySelector('.piece-artwork');
   if (!artwork) return;
   const bleedMm = Math.max(0, Number(lastCalc?.bleed) || 3);
@@ -335,7 +335,11 @@ function syncPieceBleedArtwork(piece, widthMm, heightMm) {
   const trimArtwork = artwork.cloneNode(true);
   trimArtwork.classList.add('piece-artwork-trim');
   trimArtwork.setAttribute('aria-hidden', 'true');
-  artwork.after(trimArtwork);
+  const trimMask = document.createElement('span');
+  trimMask.className = 'piece-artwork-trim-mask';
+  trimMask.setAttribute('aria-hidden', 'true');
+  trimMask.appendChild(trimArtwork);
+  artwork.after(trimMask);
 }
 
 window.syncPieceBleedArtwork = syncPieceBleedArtwork;

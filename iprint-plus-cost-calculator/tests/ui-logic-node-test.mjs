@@ -130,6 +130,7 @@ const materialSource = fs.readFileSync(new URL('../js/materials.js', import.meta
 const calculatorSource = fs.readFileSync(new URL('../js/calculator.js', import.meta.url), 'utf8');
 const briefSource = fs.readFileSync(new URL('../js/brief.js', import.meta.url), 'utf8');
 const coreSource = fs.readFileSync(new URL('../js/core.js', import.meta.url), 'utf8');
+const appCssSource = fs.readFileSync(new URL('../css/app.css', import.meta.url), 'utf8');
 const calculatorContext = scriptContext();
 vm.runInContext(calculatorSource, calculatorContext);
 assert.equal(calculatorContext.findBest({ usableW: 8.5, usableH: 8.5 }, 4, 4, 0, 0).yield, 4);
@@ -180,6 +181,10 @@ assert.match(quickBriefHtml, /เครื่องจะตัดงานต�
 assert.match(quickBriefHtml, /วางข้อความ โลโก้ และข้อมูลสำคัญไว้ภายในเส้นนี้/);
 assert.match(quickBriefHtml, /ขนาดที่กรอกคือขนาดจริงของงานที่ต้องการ/);
 assert.match(coreSource, /✓ ลิงก์ถูกต้อง/);
+assert.match(coreSource, /trimMask\.className = 'piece-artwork-trim-mask'/);
+assert.match(quickBriefSource, /class="piece-artwork-trim-mask"/);
+assert.match(appCssSource, /\.piece-artwork-trim-mask\{[^}]+clip-path:inset/);
+assert.match(appCssSource, /\.piece-artwork-trim-mask \.piece-artwork-trim\{[^}]+translate\(-50%,-50%\) rotate/);
 assert.match(quickBriefHtml, /id="printModeModal"/);
 assert.match(serviceSource, /image\/print-single-side\.png/);
 assert.match(serviceSource, /image\/print-double-side\.png/);

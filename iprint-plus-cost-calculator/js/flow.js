@@ -289,11 +289,12 @@ function previewGalleryPieceMarkup(side, width, height, emphasizeFinishedSize = 
   const trimArtwork = emphasizeFinishedSize && artwork.startsWith('<img ')
     ? artwork.replace('class="preview-gallery-artwork"', 'class="preview-gallery-artwork piece-artwork-trim"').replace(' alt=', ' aria-hidden="true" alt=')
     : '';
+  const trimMask = trimArtwork ? `<span class="piece-artwork-trim-mask" aria-hidden="true">${trimArtwork}</span>` : '';
   const bleed = Math.max(0, Number(lastCalc?.bleed) || 3);
   const trimX = Math.min(49, bleed / Math.max(1, width) * 100);
   const trimY = Math.min(49, bleed / Math.max(1, height) * 100);
   const trimStyle = emphasizeFinishedSize ? ` style="--trim-inset-x:${trimX}%;--trim-inset-y:${trimY}%;${cornerClass ? roundedCornerStyle(width, height) : ''}"` : cornerStyle;
-  return `<span class="preview-gallery-piece${diecutClass}${cornerClass}"${trimStyle}>${artwork}${trimArtwork}${materialClass ? `<i class="piece-material-effect ${materialClass}" aria-hidden="true"></i>` : ''}${previewZoneMarkup(width, height)}</span>`;
+  return `<span class="preview-gallery-piece${diecutClass}${cornerClass}"${trimStyle}>${artwork}${trimMask}${materialClass ? `<i class="piece-material-effect ${materialClass}" aria-hidden="true"></i>` : ''}${previewZoneMarkup(width, height)}</span>`;
 }
 
 function imposedPieceDimensions() {
