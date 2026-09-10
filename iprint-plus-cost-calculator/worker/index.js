@@ -1670,7 +1670,7 @@ export default {
                printSide: item.printSide || "unspecified",
                productionService: item.productionService || "laser",
                artworkSides: item.artworkSides || { hasFront: false, hasBack: false, useFrontForBack: false },
-               previewImages: Array.isArray(item.previewImages) ? item.previewImages.slice(0, 3) : [],
+               previewImages: Array.isArray(item.previewImages) ? item.previewImages.slice(0, 4) : [],
                briefFileLink: item.briefFileLink || "",
                diecutShape: item.diecutShape || { active: false },
                price: item.price,
@@ -1875,7 +1875,7 @@ export default {
             if (String(item.brief || "").trim()) {
               children.push(paragraph(`อธิบายเพิ่ม: ${shortText(String(item.brief).trim())}`));
             }
-            const previewMetadata = Array.isArray(item.previewImages) ? item.previewImages.slice(0, 3) : [];
+            const previewMetadata = Array.isArray(item.previewImages) ? item.previewImages.slice(0, 4) : [];
             let attachedPreviewCount = 0;
             for (const [previewIndex, preview] of previewMetadata.entries()) {
               const fallbackName = `${quoteNo}-item-${index + 1}-preview-${previewIndex + 1}.png`;

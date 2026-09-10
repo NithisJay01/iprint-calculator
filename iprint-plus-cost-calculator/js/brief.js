@@ -400,20 +400,65 @@ function ticketPreviewDocumentSvg(title, body, height) {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="2160" height="${height*2}" viewBox="0 0 1080 ${height}"><defs><linearGradient id="reviewShine" x1="0" y1="0" x2="1" y2="1"><stop offset="18%" stop-color="#fff" stop-opacity="0"/><stop offset="50%" stop-color="#fff" stop-opacity=".9"/><stop offset="82%" stop-color="#fff" stop-opacity="0"/></linearGradient><linearGradient id="reviewHolo" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#45dcff" stop-opacity=".2"/><stop offset=".45" stop-color="#ff58dd" stop-opacity=".55"/><stop offset=".72" stop-color="#ffe85c" stop-opacity=".38"/><stop offset="1" stop-color="#45dcff" stop-opacity=".18"/></linearGradient></defs><style>text{font-family:Arial,Tahoma,sans-serif;fill:#111315}.title{font-size:26px;font-weight:700}.small{font-size:15px;fill:#61788d}.card-title{font-size:18px;font-weight:700;fill:#063b70}</style><rect width="1080" height="${height}" fill="#eef6ff"/><rect x="32" y="32" width="1016" height="${height-64}" rx="28" fill="#fff" stroke="#063b70" stroke-width="2"/><text x="60" y="78" class="title">${briefEscapeSvg(title)}</text>${body}</svg>`;
 }
 
-function ticketProductionTemplateSvg(calc, artworkUrls, sides, shapeUrl='') {
-  const gap=20;
-  const cardWidth=(960-gap*Math.max(0,sides.length-1))/Math.max(1,sides.length);
-  const sideLabel=side=>side==='back'?'ด้านหลัง':'ด้านหน้า';
-  const layout=sides.map((side,index)=>{
-    const x=60+index*(cardWidth+gap);
-    return `<text x="${x}" y="160" class="card-title">${sideLabel(side)}</text>${briefReviewSheetSvg(calc,artworkUrls[side]||'',side,x,175,cardWidth,390,shapeUrl)}`;
-  }).join('');
-  const pieces=sides.map((side,index)=>{
-    const x=60+index*(cardWidth+gap);
-    return `<text x="${x}" y="640" class="card-title">${sideLabel(side)}</text>${briefReviewPieceSvg(calc,artworkUrls[side]||'',x,655,cardWidth,280,shapeUrl)}`;
-  }).join('');
-  const body=`<text x="60" y="128" class="card-title">Layout รายแผ่น</text>${layout}<text x="60" y="608" class="card-title">Preview รายชิ้น</text>${pieces}`;
-  return ticketPreviewDocumentSvg(`Template การผลิต • Layout + รายชิ้น${sides.length>1?' หน้า–หลัง':''}`,body,990);
+function ticketBriefComparisonSvg(calc,artworkUrl,side,top) {
+  const bleed=Math.max(0,Number(calc.bleed)||3);
+  const outerW=Math.max(1,Number(calc.b?.pieceW)||Number(calc.W)*10+bleed*2);
+  const outerH=Math.max(1,Number(calc.b?.pieceH)||Number(calc.H)*10+bleed*2);
+  const trimW=Math.max(1,Number(calc.b?.trimW)||outerW-bleed*2);
+  const trimH=Math.max(1,Number(calc.b?.trimH)||outerH-bleed*2);
+  const label=side==='back'?'ด้านหลัง':'ด้านหน้า';
+  const stageX=60,stageY=top+38,stageW=960,stageH=355;
+  const panelW=420,panelH=270,gap=58;
+  const leftX=stageX+31,rightX=leftX+panelW+gap,panelY=stageY+36;
+  const outerScale=Math.min((panelW-36)/outerW,(panelH-46)/outerH);
+  const originalW=outerW*outerScale,originalH=outerH*outerScale;
+  const originalX=leftX+(panelW-originalW)/2,originalY=panelY+(panelH-originalH)/2;
+  const trimScale=Math.min((panelW-36)/trimW,(panelH-46)/trimH);
+  const cutW=trimW*trimScale,cutH=trimH*trimScale;
+  const cutX=rightX+(panelW-cutW)/2,cutY=panelY+(panelH-cutH)/2;
+  const originalClip=`ticket-original-${side}`;
+  const originalImage=briefReviewArtworkSvg(artworkUrl,originalX,originalY,originalW,originalH,originalClip,'',Boolean(calc.b?.rotate));
+  const sourceCenterX=outerW/2,sourceCenterY=outerH/2;
+  const sourceImageW=calc.b?.rotate?outerH:outerW,sourceImageH=calc.b?.rotate?outerW:outerH;
+  const sourceImageX=sourceCenterX-sourceImageW/2,sourceImageY=sourceCenterY-sourceImageH/2;
+  const sourceTransform=calc.b?.rotate?` transform="rotate(90 ${sourceCenterX} ${sourceCenterY})"`:'';
+  const safeInset=Math.min(originalW/3,originalH/3,bleed*2*outerScale);
+  return `<text x="60" y="${top+24}" class="side-title">${label}</text>
+    <rect x="${stageX}" y="${stageY}" width="${stageW}" height="${stageH}" rx="18" fill="#f5f9fd" stroke="#b8d6ee"/>
+    <defs><clipPath id="${originalClip}"><rect x="${originalX}" y="${originalY}" width="${originalW}" height="${originalH}"/></clipPath></defs>
+    <rect x="${originalX}" y="${originalY}" width="${originalW}" height="${originalH}" fill="#fff" stroke="#1677ff" stroke-width="3"/>
+    ${originalImage}
+    <rect x="${originalX+bleed*outerScale}" y="${originalY+bleed*outerScale}" width="${Math.max(1,originalW-bleed*outerScale*2)}" height="${Math.max(1,originalH-bleed*outerScale*2)}" fill="none" stroke="#ff4055" stroke-width="3"/>
+    <rect x="${originalX+safeInset}" y="${originalY+safeInset}" width="${Math.max(1,originalW-safeInset*2)}" height="${Math.max(1,originalH-safeInset*2)}" fill="none" stroke="#00a86b" stroke-width="2"/>
+    <rect x="${cutX}" y="${cutY}" width="${cutW}" height="${cutH}" fill="#fff" stroke="#ff4055" stroke-width="3"/>
+    <svg x="${cutX}" y="${cutY}" width="${cutW}" height="${cutH}" viewBox="${bleed} ${bleed} ${trimW} ${trimH}" preserveAspectRatio="none" overflow="hidden"><image href="${briefEscapeSvg(artworkUrl)}" x="${sourceImageX}" y="${sourceImageY}" width="${sourceImageW}" height="${sourceImageH}" preserveAspectRatio="xMidYMid slice"${sourceTransform}/></svg>
+    <text x="${leftX+panelW/2}" y="${stageY+326}" text-anchor="middle" class="comparison-label original-label">ภาพเดิม • ตัดตก + ไกด์</text>
+    <text x="${rightX+panelW/2}" y="${stageY+326}" text-anchor="middle" class="comparison-label cut-label">งานที่ตัดแล้ว • ${briefEscapeSvg(Number(calc.W).toLocaleString('th-TH'))}×${briefEscapeSvg(Number(calc.H).toLocaleString('th-TH'))} cm</text>`;
+}
+
+function ticketBriefPreviewSvg(calc,artworkUrls,sides) {
+  const variants=typeof getJobVariants==='function'?getJobVariants():[];
+  const rows=variants.length?variants:[{name:String($('jobName')?.value||'-'),quantity:Number(calc.Q)||0}];
+  const jobName=String($('jobName')?.value||'').trim()||'-';
+  const services=(calc.services||[]).map(service=>service.name).filter(Boolean).join(', ')||'-';
+  const description=graphicBriefDescription()||'ไม่มีคำอธิบายเพิ่ม';
+  const size=`${Number(calc.W).toLocaleString('th-TH')}×${Number(calc.H).toLocaleString('th-TH')} cm`;
+  const variantsHeight=54+rows.length*34;
+  const metricsTop=170+variantsHeight;
+  const noteTop=metricsTop+92;
+  const previewsTop=noteTop+92;
+  const sideBlockHeight=430;
+  const height=previewsTop+sides.length*sideBlockHeight+42;
+  const metric=(x,label,value)=>`<rect x="${x}" y="${metricsTop}" width="232" height="76" rx="12" fill="#eaf4ff"/><text x="${x+14}" y="${metricsTop+25}" class="small">${briefEscapeSvg(label)}</text><text x="${x+14}" y="${metricsTop+54}" class="metric">${briefEscapeSvg(value)}</text>`;
+  const comparisons=sides.map((side,index)=>ticketBriefComparisonSvg(calc,artworkUrls[side]||'',side,previewsTop+index*sideBlockHeight)).join('');
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="2160" height="${height*2}" viewBox="0 0 1080 ${height}"><style>text{font-family:Arial,Tahoma,sans-serif;fill:#111315}.title{font-size:24px;font-weight:700}.body{font-size:16px}.small{font-size:13px;fill:#61788d}.metric{font-size:17px;font-weight:700}.side-title{font-size:20px;font-weight:700;fill:#1677ff}.comparison-label{font-size:16px;font-weight:700}.original-label{fill:#1677ff}.cut-label{fill:#ff4055}</style>
+    <rect width="1080" height="${height}" fill="#fff"/><rect x="28" y="28" width="1024" height="${height-56}" rx="18" fill="#fff" stroke="#063b70" stroke-width="2"/>
+    <text x="50" y="72" class="title">■ iPrint Brief — ${briefEscapeSvg(size)}</text><text x="1028" y="72" text-anchor="end" class="small">Preview</text>
+    <line x1="50" y1="92" x2="1030" y2="92" stroke="#b8d6ee"/><text x="50" y="126" class="body"><tspan font-weight="700">ชื่องาน :</tspan> ${briefEscapeSvg(jobName)}</text>
+    <text x="50" y="166" class="title">จำนวนแบบ : ${rows.length} แบบ</text>${rows.map((variant,index)=>`<text x="50" y="${198+index*34}" class="body"><tspan font-weight="700">แบบที่ ${index+1}</tspan><tspan x="190">${briefEscapeSvg(briefShorten(variant.name||'-',48))}</tspan><tspan x="1028" text-anchor="end" font-weight="700">${Number(variant.quantity||0).toLocaleString('th-TH')} ชิ้น</tspan></text>`).join('')}
+    ${metric(50,'ขนาด / จำนวน',`${size} (${Number(calc.Q).toLocaleString('th-TH')} ชิ้น)`)}${metric(297,'การจัดวางชิ้นงาน',`${Number(calc.b?.yield||0).toLocaleString('th-TH')} ชิ้น/แผ่น (${Number(calc.sheets||0).toLocaleString('th-TH')} แผ่น)`)}${metric(544,'วัสดุ / การผลิต',String(calc.material?.name||calc.paper?.name||'-'))}${metric(791,'กำหนดส่งงาน',typeof formatGregorianDate==='function'?formatGregorianDate($('deliveryDeadline')?.value):'-')}
+    <rect x="50" y="${noteTop}" width="480" height="68" rx="12" fill="#eef6ff" stroke="#8fc6ef"/><text x="66" y="${noteTop+25}" class="small">บริการที่เลือก</text><text x="66" y="${noteTop+50}" class="body">${briefEscapeSvg(briefShorten(services,56))}</text>
+    <rect x="550" y="${noteTop}" width="480" height="68" rx="12" fill="#f8fbff" stroke="#b8d6ee"/><text x="566" y="${noteTop+25}" class="small">อธิบายเพิ่มเติม</text><text x="566" y="${noteTop+50}" class="body">${briefEscapeSvg(briefShorten(description,56))}</text>${comparisons}</svg>`;
 }
 
 async function briefSvgToPngBlob(svg, fallbackHeight=1440) {
@@ -433,18 +478,6 @@ async function briefSvgToPngBlob(svg, fallbackHeight=1440) {
   }
 }
 
-async function briefArtworkToPngBlob(artworkUrl) {
-  const image=await new Promise((resolve,reject)=>{const preview=new Image();preview.onload=()=>resolve(preview);preview.onerror=()=>reject(new Error('สร้างภาพบรีฟไม่สำเร็จ'));preview.src=artworkUrl;});
-  const canvas=document.createElement('canvas');
-  canvas.width=Math.max(1,image.naturalWidth||image.width||1);
-  canvas.height=Math.max(1,image.naturalHeight||image.height||1);
-  const context=canvas.getContext('2d');
-  context.fillStyle='#ffffff';
-  context.fillRect(0,0,canvas.width,canvas.height);
-  context.drawImage(image,0,0,canvas.width,canvas.height);
-  return await new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('แปลงภาพบรีฟเป็น PNG ไม่สำเร็จ')),'image/png'));
-}
-
 async function captureTicketPreviewImages(calc=lastCalc) {
   if(!calc)throw new Error('ไม่พบข้อมูลสำหรับสร้างภาพ Preview');
   const artworkUrls=typeof getArtworkPreviewDataUrls==='function'?await getArtworkPreviewDataUrls(1600):{front:'',back:''};
@@ -454,18 +487,14 @@ async function captureTicketPreviewImages(calc=lastCalc) {
   if(doubleSided&&artworkUrls.back)sides.push('back');
   if(!sides.length&&artworkUrls.back)sides.push('back');
   if(!sides.length)return [];
-  const shapeUrl=typeof getDiecutShapeDataUrl==='function'?await getDiecutShapeDataUrl():'';
-  const previews=[];
-  for(const side of sides) {
-    const sideLabel=side==='back'?'ด้านหลัง':'ด้านหน้า';
-    previews.push({kind:'artwork',side,label:`ภาพบรีฟเต็ม • ${sideLabel}`,blob:await briefArtworkToPngBlob(artworkUrls[side])});
-  }
-  previews.push({
-    kind:'template',
+  const previews=[{
+    kind:'brief',
     side:sides.length>1?'front-back':sides[0],
-    label:`Template การผลิต • Layout + รายชิ้น${sides.length>1?' หน้า–หลัง':''}`,
-    blob:await briefSvgToPngBlob(ticketProductionTemplateSvg(calc,artworkUrls,sides,shapeUrl),1980)
-  });
+    label:'ภาพบรีฟงานพิมพ์',
+    blob:await briefSvgToPngBlob(ticketBriefPreviewSvg(calc,artworkUrls,sides),2200)
+  }];
+  const references=typeof getBriefReferenceFiles==='function'?getBriefReferenceFiles():[];
+  references.slice(0,3).forEach((file,index)=>previews.push({kind:'reference',side:String(index+1),label:`ภาพ Ref ${index+1}`,filename:file.name,blob:file}));
   return previews;
 }
 

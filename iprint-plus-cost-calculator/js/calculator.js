@@ -67,11 +67,11 @@ function formatMillimeters(value) {
     return Number(value||0).toLocaleString('th-TH',{maximumFractionDigits:1})
   }
 
-const PREVIEW_GUIDELINE_OPACITY_KEY='iprint_preview_guideline_opacity_v1';
+const PREVIEW_GUIDELINE_OPACITY_KEY='iprint_preview_guideline_opacity_v2';
 
 function normalizePreviewGuidelineOpacity(value) {
     const number=Number(value);
-    return Number.isFinite(number)?Math.max(0,Math.min(100,Math.round(number/5)*5)):100
+    return Number.isFinite(number)?Math.max(0,Math.min(100,Math.round(number/5)*5)):30
   }
 
 function applyPreviewGuidelineOpacity(value,{persist=false}={}) {
@@ -92,8 +92,8 @@ function bindPreviewGuidelineOpacity() {
     const input=$('previewGuidelineOpacity');
     if(!input||input.dataset.opacityBound)return;
     input.dataset.opacityBound='true';
-    let saved=100;
-    try { saved=localStorage.getItem(PREVIEW_GUIDELINE_OPACITY_KEY)??100 } catch {}
+    let saved=30;
+    try { saved=localStorage.getItem(PREVIEW_GUIDELINE_OPACITY_KEY)??30 } catch {}
     applyPreviewGuidelineOpacity(saved);
     input.addEventListener('input',event=>applyPreviewGuidelineOpacity(event.target.value,{persist:true}));
     input.addEventListener('change',event=>applyPreviewGuidelineOpacity(event.target.value,{persist:true}))

@@ -12,7 +12,7 @@ assert.doesNotMatch(config, /TURNSTILE_SECRET_KEY|turnstileSecret/i);
 assert.match(index, /css\/app\.css\?v=20260910-guideline-opacity/);
 assert.match(index, /js\/core\.js\?v=20260910-capacity-cache-fix/);
 assert.match(index, /js\/api\.js\?v=20260910-capacity-cache-fix/);
-assert.match(index, /js\/calculator\.js\?v=20260910-guideline-opacity/);
+assert.match(index, /js\/calculator\.js\?v=20260911-single-brief/);
 assert.match(index, /js\/availability\.js\?v=20260910-public-capacity/);
 assert.match(index, /js\/flow\.js\?v=20260910-public-capacity/);
 assert.match(index, /class="quick-narrator">\s*<img[^>]+width="145"/);

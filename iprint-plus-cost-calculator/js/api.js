@@ -463,7 +463,7 @@ async function createOrderRemote(order, quotePreview, briefImages) {
         if (images[0] instanceof Blob) form.append(`brief_${itemIndex}`, images[0], `${order.quoteNo || 'order'}-item-${itemIndex + 1}.png`);
         return;
       }
-      images.slice(0, 3).forEach((image, previewIndex) => {
+      images.slice(0, 4).forEach((image, previewIndex) => {
         if (!(image instanceof Blob)) return;
         const metadata = previewMetadata[previewIndex] || {};
         const filename = String(metadata.filename || `${order.quoteNo || 'order'}-item-${itemIndex + 1}-preview-${previewIndex + 1}.png`).replace(/[^a-zA-Z0-9._-]/g, '-');

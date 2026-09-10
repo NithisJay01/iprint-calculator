@@ -193,9 +193,10 @@ try {
         printSide: 'double',
         artworkSides: { hasFront: true, hasBack: true, useFrontForBack: false },
         previewImages: [
-          { kind: 'artwork', side: 'front', label: 'ภาพบรีฟเต็ม • ด้านหน้า', filename: 'artwork-front.png' },
-          { kind: 'artwork', side: 'back', label: 'ภาพบรีฟเต็ม • ด้านหลัง', filename: 'artwork-back.png' },
-          { kind: 'template', side: 'front-back', label: 'Template การผลิต • Layout + รายชิ้น หน้า–หลัง', filename: 'template-front-back.png' }
+          { kind: 'brief', side: 'front-back', label: 'ภาพบรีฟงานพิมพ์', filename: 'brief-front-back.png' },
+          { kind: 'reference', side: '1', label: 'ภาพ Ref 1', filename: 'reference-1.png' },
+          { kind: 'reference', side: '2', label: 'ภาพ Ref 2', filename: 'reference-2.png' },
+          { kind: 'reference', side: '3', label: 'ภาพ Ref 3', filename: 'reference-3.png' }
         ],
         price: 900,
         brief: 'เว้นพื้นที่โลโก้',
@@ -225,9 +226,10 @@ try {
   const form = new FormData();
   form.append('order', JSON.stringify(order));
   form.append('quotePreview', new Blob(['quote'], { type: 'image/png' }), 'quote.png');
-  form.append('brief_0_0', new Blob(['front'], { type: 'image/png' }), 'artwork-front.png');
-  form.append('brief_0_1', new Blob(['back'], { type: 'image/png' }), 'artwork-back.png');
-  form.append('brief_0_2', new Blob(['template'], { type: 'image/png' }), 'template-front-back.png');
+  form.append('brief_0_0', new Blob(['brief'], { type: 'image/png' }), 'brief-front-back.png');
+  form.append('brief_0_1', new Blob(['reference-1'], { type: 'image/png' }), 'reference-1.png');
+  form.append('brief_0_2', new Blob(['reference-2'], { type: 'image/png' }), 'reference-2.png');
+  form.append('brief_0_3', new Blob(['reference-3'], { type: 'image/png' }), 'reference-3.png');
 
   const response = await workerModule.default.fetch(
     new Request('https://worker.test/orders', {
@@ -264,15 +266,16 @@ try {
   const firstSnapshot = JSON.parse(createdItems[0].properties.Snapshot.rich_text.map(entry => entry.text.content).join(''));
   assert.equal(firstSnapshot.printSide, 'double');
   assert.deepEqual(firstSnapshot.artworkSides, { hasFront: true, hasBack: true, useFrontForBack: false });
-  assert.equal(firstSnapshot.previewImages.length, 3);
-  assert.equal(uploadSequence, 3);
+  assert.equal(firstSnapshot.previewImages.length, 4);
+  assert.equal(uploadSequence, 4);
   const ticketBlocks = calls
     .filter(call => call.url.endsWith('/v1/blocks/ticket-page-id/children') && (call.options.method || 'GET') === 'PATCH')
     .flatMap(call => JSON.parse(call.options.body).children);
   const ticketText = ticketBlocks.map(block => block[block.type]?.rich_text?.[0]?.text?.content || '').join('\n');
-  assert.ok(ticketText.includes('ภาพบรีฟเต็ม • ด้านหน้า'));
-  assert.ok(ticketText.includes('ภาพบรีฟเต็ม • ด้านหลัง'));
-  assert.ok(ticketText.includes('Template การผลิต • Layout + รายชิ้น หน้า–หลัง'));
+  assert.ok(ticketText.includes('ภาพบรีฟงานพิมพ์'));
+  assert.ok(ticketText.includes('ภาพ Ref 1'));
+  assert.ok(ticketText.includes('ภาพ Ref 2'));
+  assert.ok(ticketText.includes('ภาพ Ref 3'));
   assert.ok(ticketText.includes('กรุณาตรวจรายละเอียดจากลิงก์ไฟล์ต้นฉบับใน Drive'));
 
   const changedOrder = structuredClone(order);

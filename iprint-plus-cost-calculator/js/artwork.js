@@ -467,8 +467,12 @@ async function getArtworkPreviewDataUrls(maximum = 520) {
   return { front, back };
 }
 
-function getBriefReferenceDataUrls() {
-  return Promise.all(referenceImages.map(reference => createBriefImageDataUrl(reference.file, 300)));
+function getBriefReferenceDataUrls(maximum = 300) {
+  return Promise.all(referenceImages.map(reference => createBriefImageDataUrl(reference.file, maximum)));
+}
+
+function getBriefReferenceFiles() {
+  return referenceImages.map(reference => reference.file).filter(Boolean).slice(0, MAX_REFERENCE_IMAGES);
 }
 
 function bindPreviewArtworkDrop() {

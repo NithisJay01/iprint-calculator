@@ -228,7 +228,7 @@ async function addCurrentJobToCart() {
       kind: preview.kind,
       side: preview.side,
       label: preview.label,
-      filename: `${itemId}-${preview.kind}-${preview.side || index + 1}.png`
+      filename: preview.filename || `${itemId}-${preview.kind}-${preview.side || index + 1}.png`
     }));
     const existingIndex = cartItems.findIndex(entry => entry.id === itemId);
 
@@ -407,7 +407,7 @@ async function handleCartAction(event) {
 async function cartBriefImages() {
   const stored = await Promise.all(cartItems.map(item => cartAsset('get', item.id)));
   return stored.map(asset => {
-    if (Array.isArray(asset?.briefImages)) return asset.briefImages.filter(image => image instanceof Blob).slice(0, 3);
+    if (Array.isArray(asset?.briefImages)) return asset.briefImages.filter(image => image instanceof Blob).slice(0, 4);
     if (asset?.briefImage instanceof Blob) return [asset.briefImage];
     if (asset instanceof Blob) return [asset];
     return [];
@@ -437,7 +437,7 @@ function publicOrderItems() {
     ,printSide: item.printSide || 'unspecified'
     ,productionService: item.productionService || 'laser'
     ,artworkSides: item.artworkSides || { hasFront: false, hasBack: false, useFrontForBack: false }
-    ,previewImages: Array.isArray(item.previewImages) ? item.previewImages.slice(0, 3) : []
+    ,previewImages: Array.isArray(item.previewImages) ? item.previewImages.slice(0, 4) : []
     ,briefFileLink: item.briefFileLink || ''
     ,diecutShape: item.diecutShape || { active: false }
   }));
