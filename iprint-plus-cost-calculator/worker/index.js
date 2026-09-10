@@ -1843,7 +1843,7 @@ export default {
           type: "image",
           image: { type: "file_upload", file_upload: { id: uploadId } }
         });
-        const children = [];
+        const children = [paragraph(`รหัส Ticket: ${ticketId}`)];
 
         try {
           for (const [index, item] of orderItems.entries()) {

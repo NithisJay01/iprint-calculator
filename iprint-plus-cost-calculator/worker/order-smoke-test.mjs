@@ -135,6 +135,7 @@ globalThis.fetch = async (url, options = {}) => {
       .map(block => block[block.type]?.rich_text?.[0]?.text?.content || '')
       .join('\n');
     assert.ok(text.includes('Sticker PP'));
+    assert.ok(text.includes('รหัส Ticket: ticket-page-id'));
     assert.ok(text.includes('บริการพิมพ์: laser'));
     assert.ok(text.includes('ขนาด 10.00 × 15.00 cm'));
     assert.ok(text.includes('จำนวน 500 ชิ้น'));
