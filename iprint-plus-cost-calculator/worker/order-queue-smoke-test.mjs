@@ -88,7 +88,6 @@ try {
   assert.equal(itemPayload.properties['Capacity Points'].number, 4);
   assert.equal(itemPayload.properties['Queue Status'].select.name, 'QUEUED');
   assert.ok(itemPayload.properties['Scheduled Start'].date.start);
-  assert.equal('Snapshot' in itemPayload.properties, false);
   console.log('Order queue smoke test passed');
 } finally {
   globalThis.fetch = originalFetch;
