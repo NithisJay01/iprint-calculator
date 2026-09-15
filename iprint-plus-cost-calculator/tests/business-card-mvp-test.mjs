@@ -1,5 +1,12 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { buildOrderPayload, calculateBusinessCardQuote, findBestLayout } from '../business-card/logic.js';
+
+const landingPage = readFileSync(new URL('../business-card/index.html', import.meta.url), 'utf8');
+for (const content of ['01 / DIMENSIONS', '02 / PAPERS & MATERIALS', '03 / SPECIAL TECHNIQUES', '04 / SELECTION GUIDE', 'MATERIAL × FINISH SYNERGY', '05 / WORK PROCESS', 'PRODUCT SPECIFICATIONS SUMMARY']) {
+  assert.match(landingPage, new RegExp(content.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+}
+assert.match(landingPage, /id="order" class="builder"/);
 
 const preset = { id:'paper-1', name:'13×19 กระดาษมาตรฐาน', usableW:31.02, usableH:47.26 };
 const material = { id:'material-1', name:'Art Paper 300g', price:1.2, unit:'sheet', updatedAt:'2026-09-15T00:00:00.000Z' };

@@ -6,9 +6,9 @@ const $ = id => document.getElementById(id);
 const money = value => Number(value || 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const esc = value => String(value ?? '').replace(/[&<>'"]/g, character => ({ '&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;' }[character]));
 const PACKAGES = [
-  { id:'essential', name:'Essential', tagline:'เริ่มต้นธุรกิจอย่างมั่นใจ', quantity:100, print:'single', laminate:'none', bullets:['Art Paper 300g','พิมพ์หน้าเดียว','เหมาะกับงานเริ่มต้น'] },
-  { id:'corporate', name:'Corporate', tagline:'ครบสำหรับทีมและองค์กร', quantity:500, print:'double', laminate:'matte', recommended:true, bullets:['Art Paper 300g','พิมพ์หน้า–หลัง','เคลือบด้าน ลดรอยนิ้วมือ'] },
-  { id:'signature', name:'Signature', tagline:'โดดเด่นสำหรับแบรนด์ที่ต้องการภาพจำ', quantity:1000, print:'double', laminate:'gloss', bullets:['Art Paper 300g','พิมพ์หน้า–หลัง','เคลือบเงา สีสดเด่น'] }
+  { id:'essential', level:'LEVEL 01', name:'Essential', tagline:'เรียบง่าย แต่ดูเป็นมืออาชีพ', quantity:100, print:'single', laminate:'none', bullets:['กระดาษอาร์ตด้าน 300 แกรม','พิมพ์ 4 สี','ขนาดมาตรฐานยอดนิยม'], suitable:'SME / Freelancer / Startup ทั่วไป' },
+  { id:'corporate', level:'LEVEL 02', name:'Corporate', tagline:'น่าเชื่อถือ เหมาะกับองค์กร', quantity:500, print:'double', laminate:'matte', recommended:true, bullets:['กระดาษอาร์ตด้าน 300 แกรม','พิมพ์ 4 สี 2 ด้าน','เคลือบด้าน / ผิวสัมผัสเรียบหรู'], suitable:'บริษัทจำกัด / องค์กรขนาดใหญ่ / ฝ่ายขาย' },
+  { id:'signature', level:'LEVEL 03', name:'Signature', tagline:'สร้างความต่างสูงสุดตั้งแต่แรกสัมผัส', quantity:1000, print:'double', laminate:'gloss', bullets:['กระดาษพรีเมียม','พิมพ์ 4 สี 2 ด้าน','เคลือบเงา สีสดเด่น'], suitable:'ผู้บริหาร / Creative Studio / Luxury Brand' }
 ];
 const LOCAL_CATALOG = {
   presets:{presets:[{id:'3c91a0ce-e8bd-8032-bb21-f6553f6f4ce2',name:'13×19" กระดาษมาตรฐาน (ประมาณ A3)',usableW:31.02,usableH:47.26,active:true}]},
@@ -19,7 +19,7 @@ const LOCAL_CATALOG = {
 const state = { step:1, packageId:'corporate', packageName:'Corporate', catalogs:null, preset:null, material:null, services:[], quantity:500, quote:null, availability:null, deliveryDate:'', boost:null, frontFile:null, backFile:null, references:[], ticketId:'', jobName:'', version:'V1', driveLink:'', note:'', customerName:'', phone:'', email:'', lineId:'', address:'', paymentMethod:'รอใบแจ้งชำระ' };
 
 function renderPackages() {
-  const markup = PACKAGES.map(item => `<article class="package-card ${item.recommended?'recommended':''}">${item.recommended?'<span class="tag">แนะนำ</span>':''}<h3>${item.name}</h3><p>${item.tagline}</p><strong>${item.quantity.toLocaleString('th-TH')} ใบ</strong><ul>${item.bullets.map(value=>`<li>${value}</li>`).join('')}</ul><button class="button" data-package="${item.id}">เลือกแพ็กเกจนี้</button></article>`).join('');
+  const markup = PACKAGES.map(item => `<article class="package-card ${item.recommended?'recommended':''}"><small class="level">${item.level}</small>${item.recommended?'<span class="tag">แนะนำ</span>':''}<h3>${item.name}</h3><p>${item.tagline}</p><strong>${item.quantity.toLocaleString('th-TH')} ใบ</strong><b>สเปกแนะนำ</b><ul>${item.bullets.map(value=>`<li>${value}</li>`).join('')}</ul><p class="suitable"><b>เหมาะสำหรับ</b><br>${item.suitable}</p><button class="button" data-package="${item.id}">เลือกแพ็กเกจนี้</button></article>`).join('');
   $('packageCards').innerHTML = markup;
   $('builderPackages').innerHTML = PACKAGES.map(item => `<button type="button" class="choice ${item.id===state.packageId?'selected':''}" data-builder-package="${item.id}"><b>${item.name}${item.recommended?' • แนะนำ':''}</b><small>${item.quantity.toLocaleString('th-TH')} ใบ • ${item.tagline}</small></button>`).join('');
 }
@@ -63,7 +63,17 @@ async function loadCatalogs() {
   $('printChoices').innerHTML = printServices.map(item => `<button type="button" class="choice" data-service-print="${esc(item.id)}"><b>${esc(item.name)}</b><small>฿${money(item.price)} / ${esc(item.unit)}</small></button>`).join('');
   $('laminationChoices').innerHTML = `<button type="button" class="choice" data-service-laminate="none"><b>ไม่เคลือบ</b><small>ประหยัดและเขียนบนผิวได้ง่าย</small></button>${laminates.map(item => `<button type="button" class="choice" data-service-laminate="${esc(item.id)}"><b>${esc(item.name)}</b><small>฿${money(item.price)} / ${esc(item.unit)}</small></button>`).join('')}`;
   applyPackage(state.packageId);
-  $('heroPrice').textContent = `เริ่มต้น ฿${money(state.quote?.price || 0)}`;
+  renderMarketingPrices();
+}
+
+function renderMarketingPrices() {
+  for (const item of PACKAGES) {
+    const print = state.catalogs.services.find(entry => item.print === 'double' ? isDouble(entry) : isPrintService(entry) && !isDouble(entry));
+    const laminate = item.laminate === 'none' ? null : state.catalogs.services.find(entry => new RegExp(item.laminate === 'matte' ? 'ด้าน' : 'เงา').test(entry.name));
+    const quote = calculateBusinessCardQuote({ preset:state.preset, material:state.material, services:[print,laminate].filter(Boolean), quantity:item.quantity });
+    const target = $(`price${item.quantity}`);
+    if (target) target.textContent = `฿${money(quote.price)}`;
+  }
 }
 
 function isPrintService(item) { return ['PRINT_SINGLE','PRINT_DOUBLE'].includes(String(item.serviceRole || '').toUpperCase()) || /พิมพ์.*หน้า|print/i.test(`${item.name} ${item.category}`); }
@@ -194,4 +204,4 @@ $('quantity').addEventListener('change',event=>{state.quantity=Number(event.targ
 $('frontFile').addEventListener('change',renderArtworkPreview);$('backFile').addEventListener('change',renderArtworkPreview);$('referenceFiles').addEventListener('change',event=>{if(event.target.files.length>3){alert('แนบภาพ Ref ได้สูงสุด 3 ภาพ');event.target.value=''}});
 $('nextStep').addEventListener('click',()=>{const error=validateStep();if(error){alert(error);return}showStep(state.step+1)});$('backStep').addEventListener('click',()=>showStep(state.step-1));$('closeBuilder').addEventListener('click',()=>{$('order').hidden=true});$('orderForm').addEventListener('submit',submitOrder);$('checkStatus').addEventListener('click',checkStatus);$('newOrder').addEventListener('click',()=>openBuilder('corporate'));
 
-renderPackages(); loadTurnstile(); loadCatalogs().catch(error=>{$('heroPrice').textContent='โหลดราคาไม่สำเร็จ';$('priceSummary').textContent=error.message});
+renderPackages(); loadTurnstile(); loadCatalogs().catch(error=>{['price100','price500','price1000'].forEach(id=>{if($(id))$(id).textContent='โหลดราคาไม่สำเร็จ'});$('priceSummary').textContent=error.message});
