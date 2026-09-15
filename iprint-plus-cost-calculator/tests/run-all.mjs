@@ -2,6 +2,7 @@ import { spawnSync } from 'node:child_process';
 
 const tests = [
   'tests/deployment-config-test.mjs',
+  'tests/business-card-mvp-test.mjs',
   'tests/ui-logic-node-test.mjs',
   'worker/catalog-contract-test.mjs',
   'worker/flow-settings-test.mjs',

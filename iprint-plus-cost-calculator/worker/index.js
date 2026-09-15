@@ -177,6 +177,7 @@ export default {
             "POST /tickets",
             "POST /orders",
             "POST /public/orders",
+            "GET /public/orders/:ticketId",
             "GET /public/capacity",
             "GET /staff/orders",
             "GET /staff/capacity",
@@ -2097,12 +2098,15 @@ export default {
         return "NEW";
       };
 
-      const orderDetailMatch = url.pathname.match(/^\/orders\/([^/]+)$/);
+      const orderDetailMatch = url.pathname.match(/^\/(public\/)?orders\/([^/]+)$/);
       if (orderDetailMatch && request.method === "GET") {
-        const authError = requireAuth(request);
-        if (authError) return authError;
+        const isPublicTracking = Boolean(orderDetailMatch[1]);
+        if (!isPublicTracking) {
+          const authError = requireAuth(request);
+          if (authError) return authError;
+        }
 
-        const ticketId = decodeURIComponent(orderDetailMatch[1] || "").trim();
+        const ticketId = decodeURIComponent(orderDetailMatch[2] || "").trim();
         if (!ticketId || ticketId.length > 100) {
           return json({ success: false, error: "Invalid ticket ID" }, 400);
         }
@@ -2167,6 +2171,7 @@ export default {
             brief: String(workflowValue(properties, ["Brief", "บรีฟ"]) || ""),
             briefDeadline: String(workflowValue(properties, ["Brief Deadline", "Graphic Deadline", "กำหนดส่งกราฟิก"]) || ""),
             deliveryDeadline: String(workflowValue(properties, ["Delivery Deadline", "Due Date", "กำหนดส่ง"]) || ""),
+            estimatedCompletion: String(workflowValue(properties, ["Estimated Completion", "กำหนดผลิตเสร็จ"]) || ""),
             paper: snapshot.paper || String(workflowValue(properties, ["Paper", "กระดาษ"]) || ""),
             sheets: Number(snapshot.sheets) || Number(workflowValue(properties, ["Sheets", "จำนวนแผ่น"])) || 0,
             yield: Number(snapshot.yield) || Number(workflowValue(properties, ["Yield", "ชิ้นต่อแผ่น"])) || 0,
@@ -2184,23 +2189,50 @@ export default {
         }).sort((a, b) => a.lineNo - b.lineNo || a.title.localeCompare(b.title));
 
         const ticketProperties = ticketPage.properties || {};
+        const ticketResult = {
+          id: ticketPage.id,
+          url: ticketPage.url || null,
+          title: workflowTitle(ticketProperties),
+          status: String(workflowValue(ticketProperties, ["Workflow Status", "สถานะ", "Status"]) || aggregateTicketStatus(items.map(item => item.status))),
+          paymentStatus: String(workflowValue(ticketProperties, ["Payment Status", "สถานะชำระเงิน"]) || "WAITING_PAYMENT"),
+          productionStatus: String(workflowValue(ticketProperties, ["Production Status", "สถานะ Production"]) || "WAITING"),
+          customerStatus: String(workflowValue(ticketProperties, ["Customer Status", "สถานะลูกค้า"]) || "ORDER_RECEIVED"),
+          total: Number(workflowValue(ticketProperties, ["Order Total"])) || 0,
+          vat: Number(workflowValue(ticketProperties, ["VAT"])) || 0,
+          grandTotal: Number(workflowValue(ticketProperties, ["Grand Total"])) || 0,
+          currency: String(workflowValue(ticketProperties, ["Currency"]) || "THB"),
+          createdAt: String(workflowValue(ticketProperties, ["Order Created At"]) || ticketPage.created_time || ""),
+          updatedAt: ticketPage.last_edited_time || ""
+        };
+        if (isPublicTracking) {
+          const response = json({
+            success: true,
+            ticket: {
+              id: ticketResult.id,
+              title: ticketResult.title,
+              status: ticketResult.status,
+              paymentStatus: ticketResult.paymentStatus,
+              productionStatus: ticketResult.productionStatus,
+              customerStatus: ticketResult.customerStatus,
+              createdAt: ticketResult.createdAt,
+              updatedAt: ticketResult.updatedAt
+            },
+            items: items.map(item => ({
+              title: item.title,
+              status: item.status,
+              phase: item.phase,
+              proofStatus: item.proofStatus,
+              productionStatus: item.productionStatus,
+              estimatedCompletion: item.estimatedCompletion || item.deliveryDeadline,
+              updatedAt: item.updatedAt
+            }))
+          });
+          response.headers.set("Cache-Control", "private, no-store");
+          return response;
+        }
         return json({
           success: true,
-          ticket: {
-            id: ticketPage.id,
-            url: ticketPage.url || null,
-            title: workflowTitle(ticketProperties),
-            status: String(workflowValue(ticketProperties, ["Workflow Status", "สถานะ", "Status"]) || aggregateTicketStatus(items.map(item => item.status))),
-            paymentStatus: String(workflowValue(ticketProperties, ["Payment Status", "สถานะชำระเงิน"]) || "WAITING_PAYMENT"),
-            productionStatus: String(workflowValue(ticketProperties, ["Production Status", "สถานะ Production"]) || "WAITING"),
-            customerStatus: String(workflowValue(ticketProperties, ["Customer Status", "สถานะลูกค้า"]) || "ORDER_RECEIVED"),
-            total: Number(workflowValue(ticketProperties, ["Order Total"])) || 0,
-            vat: Number(workflowValue(ticketProperties, ["VAT"])) || 0,
-            grandTotal: Number(workflowValue(ticketProperties, ["Grand Total"])) || 0,
-            currency: String(workflowValue(ticketProperties, ["Currency"]) || "THB"),
-            createdAt: String(workflowValue(ticketProperties, ["Order Created At"]) || ticketPage.created_time || ""),
-            updatedAt: ticketPage.last_edited_time || ""
-          },
+          ticket: ticketResult,
           items
         });
       }
@@ -3150,6 +3182,7 @@ export default {
           "POST /quotes/:id/preview",
           "POST /orders",
           "POST /public/orders",
+          "GET /public/orders/:ticketId",
           "GET /public/capacity",
           "GET /staff/capacity",
           "PUT /staff/capacity/:date",

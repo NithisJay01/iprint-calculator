@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="สั่งพิมพ์นามบัตร iPrint เลือกแพ็กเกจ เห็นราคาและวันรับงานก่อนยืนยัน">
+  <title>นามบัตร iPrint — เลือกให้เหมาะกับภาพลักษณ์ของคุณ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=1">
+</head>
+<body>
+  <header class="nav"><a class="brand" href="#top" aria-label="iPrint">ip</a><nav><a href="#sizes">ขนาด & วัสดุ</a><a href="#packages">แพ็กเกจแนะนำ</a><a href="#how">ขั้นตอนการสั่ง</a></nav><button class="button small" data-start>เริ่มสั่งนามบัตร</button></header>
+  <main id="top">
+    <section class="hero"><div class="hero-copy"><span class="eyebrow">I PRINT STUDIO</span><h1>นามบัตร</h1><h2>ความประทับใจแรกของธุรกิจคุณ</h2><p>เลือกแพ็กเกจที่เหมาะกับภาพลักษณ์ เห็นราคาจริงและวันรับงานก่อนส่งออร์เดอร์</p><div class="actions"><button class="button" data-start>เลือกแพ็กเกจ</button><a class="button ghost" href="../">เครื่องมือแบบละเอียด</a></div></div><aside class="hero-card"><span>ราคาเริ่มต้นคำนวณจาก Catalog จริง</span><strong id="heroPrice">กำลังโหลดราคา…</strong><p>ขนาดมาตรฐาน 9 × 5.4 ซม. • ขั้นต่ำ 100 ใบ</p></aside></section>
+    <section id="sizes" class="section"><div class="section-head"><span>01 / PRODUCT GUIDE</span><h2>เลือกง่ายจากสิ่งที่เหมาะกับธุรกิจ</h2></div><div class="feature-grid"><article><img src="assets/size-us.png" alt="ตัวอย่างนามบัตร iPrint"><h3>ขนาดมาตรฐานไทย</h3><p>9 × 5.4 ซม. พอดีกับซองและกล่องนามบัตรทั่วไป</p></article><article><img src="assets/material-art.jpeg" alt="พื้นผิวกระดาษนามบัตร"><h3>กระดาษสำหรับงานธุรกิจ</h3><p>Art Paper 300g ให้สีคมชัดและดูเป็นมืออาชีพ</p></article><article><img src="assets/material-natural.png" alt="ตัวอย่างวัสดุนามบัตร"><h3>เพิ่มบุคลิกด้วยผิวสัมผัส</h3><p>เลือกเคลือบด้านหรือเงาตามภาพลักษณ์ที่ต้องการ</p></article></div></section>
+    <section id="packages" class="section alt"><div class="section-head"><span>02 / RECOMMENDED PACKAGES</span><h2>แพ็กเกจที่ช่วยตัดสินใจได้เร็วขึ้น</h2></div><div id="packageCards" class="package-grid"></div></section>
+    <section id="how" class="section"><div class="section-head"><span>03 / HOW IT WORKS</span><h2>จากเลือกแบบถึงรับ Ticket ใน 4 ขั้นตอน</h2></div><ol class="steps"><li><b>1</b>เลือกแพ็กเกจ</li><li><b>2</b>แนบไฟล์และบรีฟ</li><li><b>3</b>เลือกวันรับงาน</li><li><b>4</b>ตรวจราคาและยืนยัน</li></ol></section>
+
+    <section id="order" class="builder" hidden>
+      <div class="builder-head"><div><span class="eyebrow">BUSINESS CARD BUILDER</span><h2>สร้างออร์เดอร์นามบัตร</h2></div><button class="icon-button" id="closeBuilder" aria-label="ปิด">×</button></div>
+      <div class="progress" id="progress"></div>
+      <form id="orderForm" novalidate>
+        <section class="panel" data-step="1"><h3>1. เลือกแพ็กเกจและสเปก</h3><div id="builderPackages" class="choice-grid"></div><label>จำนวน<select id="quantity"><option>100</option><option selected>500</option><option>1000</option></select></label><label>วัสดุ<select id="material"></select></label><fieldset><legend>รูปแบบการพิมพ์</legend><div id="printChoices" class="choice-grid compact"></div></fieldset><fieldset><legend>การเคลือบที่แนะนำ</legend><div id="laminationChoices" class="choice-grid compact"></div></fieldset><div class="live-summary" id="priceSummary"></div></section>
+        <section class="panel" data-step="2" hidden><h3>2. ส่งไฟล์และรายละเอียดงาน</h3><div class="two"><label>ชื่องาน<input id="jobName" maxlength="80" placeholder="เช่น นามบัตรฝ่ายขาย" required></label><label>Version<input id="version" value="V1" maxlength="12"></label></div><div class="two"><label>ไฟล์ด้านหน้า<input id="frontFile" type="file" accept="image/png,image/jpeg,image/webp" required></label><label id="backFileWrap">ไฟล์ด้านหลัง<input id="backFile" type="file" accept="image/png,image/jpeg,image/webp"></label></div><div id="artworkPreview" class="artwork-preview"></div><label>ภาพอ้างอิง สูงสุด 3 ภาพ<input id="referenceFiles" type="file" accept="image/png,image/jpeg,image/webp" multiple></label><label>Google Drive<input id="driveLink" type="url" placeholder="https://drive.google.com/…"></label><label>คำอธิบายเพิ่มเติม<textarea id="note" rows="3" placeholder="สี ตำแหน่ง หรือข้อควรระวัง"></textarea></label></section>
+        <section class="panel" data-step="3" hidden><h3>3. เลือกวันรับงานที่ว่างจริง</h3><p id="capacitySummary">กำลังโหลดกำลังผลิต…</p><div class="calendar-head"><b>เลือกวันรับงาน</b><span><i class="available"></i>ว่าง <i class="closed"></i>ปิด/เร็วเกินไป</span></div><div id="calendar" class="calendar"></div><div id="boostOffer" class="boost" hidden></div></section>
+        <section class="panel" data-step="4" hidden><h3>4. ตรวจสอบและยืนยัน</h3><div class="review-layout"><div><div class="two"><label>ชื่อ/บริษัท<input id="customerName" required></label><label>เบอร์โทร<input id="phone" inputmode="tel" required></label></div><div class="two"><label>อีเมล<input id="email" type="email"></label><label>Line ID<input id="lineId"></label></div><label>ที่อยู่จัดส่ง<textarea id="address" rows="2" required></textarea></label><fieldset><legend>การชำระเงิน</legend><label class="radio-row"><input type="radio" name="payment" value="รอใบแจ้งชำระ" checked> รับใบแจ้งชำระจากทีมงาน</label><p class="muted">MVP จะสร้างออร์เดอร์ในสถานะรอชำระเงิน ทีมงานยืนยันยอดก่อนผลิต</p></fieldset><label class="check"><input id="consent" type="checkbox" required> ยืนยันว่าข้อมูลและไฟล์ถูกต้อง</label><div class="cf-turnstile" data-sitekey="0x4AAAAAAEsjKgPkaJZ-diT2" data-action="create_order" data-theme="dark"></div></div><aside id="finalSummary" class="final-summary"></aside></div><p id="submitStatus" class="status" role="status"></p></section>
+        <div class="form-actions"><button type="button" class="button ghost" id="backStep" hidden>ย้อนกลับ</button><button type="button" class="button" id="nextStep">ถัดไป</button><button type="submit" class="button" id="submitOrder" hidden>ยืนยันและสร้าง Ticket</button></div>
+      </form>
+    </section>
+
+    <section id="success" class="success" hidden><span class="eyebrow">ORDER RECEIVED</span><h2>รับออร์เดอร์เรียบร้อยแล้ว</h2><p>เก็บรหัสนี้ไว้สำหรับติดตามสถานะงาน</p><strong id="ticketId"></strong><div class="actions"><button class="button" id="checkStatus">ตรวจสถานะล่าสุด</button><button class="button ghost" id="newOrder">สั่งนามบัตรเพิ่ม</button></div><div id="trackingResult" class="tracking"></div></section>
+  </main>
+  <footer><b>SEE IT FIRST. PRINT IT RIGHT.</b><span>iPrint® Business Card MVP</span></footer>
+  <script type="module" src="app.js?v=1"></script>
+</body>
+</html>

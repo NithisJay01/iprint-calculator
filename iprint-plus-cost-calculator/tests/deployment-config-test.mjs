@@ -9,7 +9,7 @@ const index = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 assert.match(config, /publicOrdersEnabled:\s*true/);
 assert.match(config, /turnstileSiteKey:\s*'0x[\w-]+'/);
 assert.doesNotMatch(config, /TURNSTILE_SECRET_KEY|turnstileSecret/i);
-assert.match(index, /css\/app\.css\?v=20260911-piece-mask/);
+assert.match(index, /css\/app\.css\?v=20260915-business-card-mvp/);
 assert.match(index, /js\/core\.js\?v=20260911-piece-mask/);
 assert.match(index, /js\/api\.js\?v=20260910-capacity-cache-fix/);
 assert.match(index, /js\/calculator\.js\?v=20260911-single-brief/);

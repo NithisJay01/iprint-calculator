@@ -138,6 +138,20 @@ try {
   assert.deepEqual(order.items[0].allowedTransitions, ['GRAPHIC_ACCEPTED']);
   assert.equal(order.items[0].briefDeadline, '2026-09-01');
 
+  const publicReadResponse = await workerModule.default.fetch(
+    new Request('https://worker.test/public/orders/ticket-page-id'),
+    env
+  );
+  const publicOrder = await publicReadResponse.json();
+  assert.equal(publicReadResponse.status, 200);
+  assert.equal(publicOrder.success, true);
+  assert.equal(publicOrder.ticket.id, 'ticket-page-id');
+  assert.equal('url' in publicOrder.ticket, false);
+  assert.equal(publicOrder.items.length, 1);
+  assert.equal(publicOrder.items[0].status, 'NEW');
+  assert.equal('brief' in publicOrder.items[0], false);
+  assert.equal('briefFileLink' in publicOrder.items[0], false);
+
   const updateResponse = await workerModule.default.fetch(
     new Request('https://worker.test/order-items/item-page-id/status', {
       method: 'PATCH',

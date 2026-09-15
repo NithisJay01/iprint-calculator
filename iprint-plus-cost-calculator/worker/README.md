@@ -20,6 +20,7 @@ node worker/catalog-contract-test.mjs
 - ส่งบรีฟชิ้นงานเดียวผ่าน `POST /tickets`
 - สร้างออเดอร์หลายชิ้นงานผ่าน `POST /orders` โดยสร้าง Ticket หลัก 1 หน้าใน `Iprint Jobs` และสร้าง Order Item แยกตามจำนวนรายการใน `Iprint Order Items`
 - อ่านสถานะ Ticket และรายการผ่าน `GET /orders/:ticketId`
+- ลูกค้าติดตามสถานะด้วย Ticket ID ผ่าน `GET /public/orders/:ticketId` โดยผลลัพธ์ตัดข้อมูลส่วนตัว ราคา ลิงก์ Notion บรีฟ และลิงก์ Drive ออก
 - เปลี่ยนสถานะรายการผ่าน `PATCH /order-items/:itemId/status` พร้อมบันทึกประวัติและรวมสถานะกลับไปยัง Ticket
 - จัดคิวผลิตอัตโนมัติเมื่อสร้างออเดอร์ หากตั้งค่า Production Allocations พร้อม โดยคำนวณ Capacity Points, แบ่งงานใหญ่ข้ามวัน และตรวจวันส่ง
 - จัดการคิวจริงผ่าน `GET /staff/queue`, `PATCH /staff/queue/:allocationId` และ `DELETE /staff/queue/:allocationId`
