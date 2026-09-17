@@ -1,6 +1,9 @@
 import { spawnSync } from 'node:child_process';
 
 const tests = [
+  'tests/product-pricing-test.mjs',
+  'tests/pricing-settings-test.mjs',
+  'tests/catalog-page-test.mjs',
   'tests/deployment-config-test.mjs',
   'tests/business-card-mvp-test.mjs',
   'tests/ui-logic-node-test.mjs',

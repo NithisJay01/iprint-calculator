@@ -3,10 +3,21 @@ import { readFileSync } from 'node:fs';
 import { buildOrderPayload, calculateBusinessCardQuote, findBestLayout } from '../business-card/logic.js';
 
 const landingPage = readFileSync(new URL('../business-card/index.html', import.meta.url), 'utf8');
-for (const content of ['01 / DIMENSIONS', '02 / PAPERS & MATERIALS', '03 / SPECIAL TECHNIQUES', '04 / SELECTION GUIDE', 'MATERIAL × FINISH SYNERGY', '05 / WORK PROCESS', 'PRODUCT SPECIFICATIONS SUMMARY']) {
+const styles = readFileSync(new URL('../business-card/styles.css', import.meta.url), 'utf8');
+const orderPage = readFileSync(new URL('../business-card/order.html', import.meta.url), 'utf8');
+for (const content of ['PRODUCT CATALOG', '01 / DIMENSIONS', '02 / PAPERS & MATERIALS', '03 / SPECIAL TECHNIQUES', 'MATERIAL × FINISH SYNERGY', '05 / WORK PROCESS', 'PRODUCT SPECIFICATIONS SUMMARY']) {
   assert.match(landingPage, new RegExp(content.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
 }
 assert.match(landingPage, /id="order" class="builder"/);
+assert.match(landingPage, /href="\.\.\/catalog\/"/);
+assert.match(landingPage, /class="hero-back"[^>]+href="\.\.\/catalog\/"/);
+assert.match(styles, /--page:\s*#eef6ff/);
+assert.match(styles, /--blue:\s*#0a8cff/);
+assert.match(styles, /color-scheme:\s*light/);
+assert.match(styles, /@media \(max-width:\s*760px\)/);
+assert.match(styles, /\.catalog-grid/);
+assert.match(landingPage, /id="catalogCount"/);
+for (const content of ['สร้างออร์เดอร์นามบัตร', 'ตะกร้าสินค้าของคุณ', 'เลือกวันที่ต้องการส่งสินค้า', 'ชำระเงินและระบุที่อยู่จัดส่ง', 'ส่งหลักฐานชำระเงิน']) assert.match(orderPage, new RegExp(content));
 
 const preset = { id:'paper-1', name:'13×19 กระดาษมาตรฐาน', usableW:31.02, usableH:47.26 };
 const material = { id:'material-1', name:'Art Paper 300g', price:1.2, unit:'sheet', updatedAt:'2026-09-15T00:00:00.000Z' };

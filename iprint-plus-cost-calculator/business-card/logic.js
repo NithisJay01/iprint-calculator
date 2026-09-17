@@ -1,3 +1,4 @@
+import { calculateProductPrice } from '../shared/product-pricing.js';
 export const BUSINESS_CARD_SIZE = Object.freeze({ width: 9, height: 5.4, bleed: 3, gap: 0 });
 export const PRICING = Object.freeze({ panelCost: 2.5, marginPercent: 30, vatPercent: 7 });
 
@@ -42,7 +43,7 @@ export function capacityPoints(component, sheets, pieces) {
   return points * Math.ceil(amount / Math.max(1, Number(component?.capacityStep) || 1));
 }
 
-export function calculateBusinessCardQuote({ preset, material, services = [], quantity, boost = null }) {
+export function calculateBusinessCardQuote({ preset, material, services = [], quantity, boost = null, pricingSettings = null, packageId = '', code = '' }) {
   const pieces = Math.max(1, Math.floor(Number(quantity) || 0));
   const layout = findBestLayout(preset, BUSINESS_CARD_SIZE.width, BUSINESS_CARD_SIZE.height, BUSINESS_CARD_SIZE.gap);
   if (!layout) throw new Error('ขนาดนามบัตรไม่สามารถจัดวางบนกระดาษที่เลือกได้');
@@ -50,11 +51,13 @@ export function calculateBusinessCardQuote({ preset, material, services = [], qu
   const materialCost = componentCost(material, sheets, pieces);
   const serviceCost = services.reduce((sum, service) => sum + componentCost(service, sheets, pieces), 0);
   const productionCost = sheets * PRICING.panelCost;
-  const basePrice = roundMoney((productionCost + materialCost + serviceCost) * (1 + PRICING.marginPercent / 100));
+  const product = pricingSettings?.products?.find(item => item.id === 'business-card');
+  const pricing = product ? calculateProductPrice({ product, version: pricingSettings.version, quantity: pieces, sheets, baseCost: productionCost + materialCost, services, materialId: material?.id, packageId, code }) : null;
+  const basePrice = pricing ? pricing.total : roundMoney((productionCost + materialCost + serviceCost) * (1 + PRICING.marginPercent / 100));
   const multiplier = boost ? Number(boost.multiplier) || 0 : 0;
   const price = roundMoney(basePrice * (1 + multiplier));
   const points = roundMoney(1 + capacityPoints(material, sheets, pieces) + services.reduce((sum, service) => sum + capacityPoints(service, sheets, pieces), 0));
-  return { pieces, sheets, layout, productionCost, materialCost, serviceCost, basePrice, price, points };
+  return { pieces, sheets, layout, productionCost, materialCost, serviceCost, basePrice, price, points, pricing };
 }
 
 export function catalogSnapshot(item) {
@@ -82,6 +85,7 @@ export function buildOrderPayload({ state, quote, now = new Date(), orderKey, qu
     paper: { key: String(state.preset.id || ''), id: String(state.preset.id || ''), name: String(state.preset.name || '') },
     sheets: quote.sheets, yield: quote.layout.yield, gap: 0, bleed: 3,
     material, services, basePrice: quote.basePrice, price: quote.price,
+    productId: 'business-card', pricingSnapshot: quote.pricing ? structuredClone(quote.pricing) : null,
     boost: state.boost ? { days: Number(state.boost.days), multiplier: Number(state.boost.multiplier), date: state.deliveryDate } : null,
     variants: [{ id: `${itemId}-variant-1`, name: state.jobName, quantity: quote.pieces }],
     jobType: 'งานกระดาษ', jobNickname: state.jobName, printSide, productionService: 'laser',

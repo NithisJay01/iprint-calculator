@@ -5,15 +5,23 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="description" content="สั่งพิมพ์นามบัตร iPrint เลือกแพ็กเกจ เห็นราคาและวันรับงานก่อนยืนยัน">
   <title>นามบัตร iPrint — เลือกให้เหมาะกับภาพลักษณ์ของคุณ</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Noto+Sans+Thai:wght@300;400;600;700&family=Prompt:wght@600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=7">
+  <meta name="theme-color" content="#eef6ff">
+  <link rel="stylesheet" href="styles.css?v=9">
+  <link rel="stylesheet" href="../shared/typography.css?v=1">
 </head>
 <body>
-  <header class="nav"><a class="brand" href="#top" aria-label="iPrint">ip</a><nav><a href="#top">ภาพลักษณ์</a><a href="#sizes">ขนาด & วัสดุ</a><a href="#techniques">เทคนิคพิเศษ</a><a href="#packages">แพ็กเกจแนะนำ</a><a href="#how">ขั้นตอนการสั่ง</a></nav><button class="button small" data-start>ขอใบเสนอราคา</button></header>
+  <header class="nav"><a class="brand" href="../catalog/" aria-label="กลับไป Catalog iPrint"><strong>iPrint</strong><span>สั่งพิมพ์ง่าย เห็นราคาก่อนยืนยัน</span></a><nav><a href="#sizes">ขนาด & วัสดุ</a><a href="#techniques">เทคนิคพิเศษ</a><a href="#packages">Catalog นามบัตร</a><a href="#how">ขั้นตอนการสั่ง</a></nav><div class="nav-actions"><a class="all-catalog-link" href="../catalog/"><span aria-hidden="true">⌂</span> Catalog รวม</a><a class="cart-button" href="order.html?cart=1" aria-label="เปิดตะกร้าสินค้า"><img src="../catalog/assets/cart.svg" alt=""><b id="cartCount">0</b></a></div></header>
   <main id="top">
-    <section class="hero"><div class="hero-copy"><span class="eyebrow">I PRINT STUDIO</span><h1>นามบัตร</h1><h2>ความประทับใจแรกของธุรกิจคุณ</h2><p>นามบัตรไม่ได้บอกแค่ “คุณคือใคร” แต่ยังสะท้อนว่า คุณใส่ใจกับธุรกิจของคุณแค่ไหน เลือกขนาด วัสดุ และเทคนิคการพิมพ์ให้สร้างภาพลักษณ์ที่น่าจดจำตั้งแต่การสัมผัสแรก</p><div class="hero-statement"><b>กระดาษใบเล็ก<br>ที่สะท้อนภาพลักษณ์ของแบรนด์</b><small>A Small Card That Reflects Your Brand Image.</small></div></div><aside class="hero-card"><span class="eyebrow">PRICE MOCKUP</span><h3>ราคา</h3><p class="price-intro">ข้อมูลตัวอย่างโดยประมาณสำหรับงานนามบัตร</p><div class="price-table"><b>จำนวน</b><b>ราคาโดยประมาณ</b><span>100 ใบ</span><strong id="price100">—</strong><span>500 ใบ</span><strong id="price500">—</strong><span>1,000 ใบ</span><strong id="price1000">—</strong></div><small>ราคาจริงขึ้นอยู่กับวัสดุและเทคนิคที่เลือก</small><div class="actions"><button class="button" data-start>ขอใบเสนอราคา</button><a class="button ghost" href="../">โปรแกรมคำนวณราคา</a></div></aside></section>
+    <section class="hero simplified"><a class="hero-back" href="../catalog/" aria-label="ย้อนกลับไปหน้า Catalog"><span aria-hidden="true">←</span>ย้อนกลับ</a><div class="hero-copy"><span class="eyebrow">I PRINT STUDIO</span><h1>นามบัตร</h1><h2>ความประทับใจแรกของธุรกิจคุณ</h2><p>นามบัตรไม่ได้บอกแค่ “คุณคือใคร” แต่ยังสะท้อนว่า คุณใส่ใจกับธุรกิจของคุณแค่ไหน เลือกเซตที่ Admin จัดไว้ แล้วปรับวัสดุ จำนวน และเทคนิคการพิมพ์ก่อนสั่งได้ทันที</p><div class="hero-statement"><b>กระดาษใบเล็ก<br>ที่สะท้อนภาพลักษณ์ของแบรนด์</b><small>A Small Card That Reflects Your Brand Image.</small></div><div class="actions"><a class="button" href="#packages">ดู Catalog นามบัตร</a></div></div></section>
+
+    <section id="packages" class="section alt catalog-section">
+      <div class="section-head split catalog-heading">
+        <div><span>PRODUCT CATALOG</span><h2>เลือกเซตนามบัตร แล้วปรับให้เป็นแบบของคุณ</h2></div>
+        <p>แต่ละเซตจัดสเปกและราคาเริ่มต้นไว้แล้ว เลือกแบบที่ใกล้เคียง จากนั้นเปลี่ยนจำนวน วัสดุ และบริการเสริมได้ก่อนสั่ง</p>
+      </div>
+      <div class="catalog-toolbar"><div><b>เซตนามบัตรทั้งหมด</b><span id="catalogCount" aria-live="polite"></span></div><small>รายการใหม่จาก Admin จะแสดงในหมวดนี้อัตโนมัติ</small></div>
+      <div id="packageCards" class="package-grid catalog-grid"></div>
+    </section>
 
     <section id="sizes" class="section"><div class="section-head split"><div><span>01 / DIMENSIONS</span><h2>ขนาดมาตรฐานและขอบทรงพิเศษ</h2></div><p>เราออกแบบบล็อกตัดขนาดให้ตรงความต้องการ ตั้งแต่ขนาดคลาสสิกสากลไปจนถึงขนาดบัตรเครดิต</p></div><div class="info-grid sizes-grid">
       <article><img src="assets/size-us.png" alt="นามบัตรขนาดมาตรฐานไทย"><h3>ไซส์ไทยยอดนิยม</h3><p>9.0 × 5.4 ซม. — ไซส์ยอดนิยมที่ใช้กันในไทย</p></article>
@@ -36,8 +44,6 @@
       <article><i>◉</i><div><h3>SPOT UV</h3><p>สร้างระดับความเงาเฉพาะจุดตัดกับเนื้อกระดาษเคลือบด้านอย่างหรูหรา</p></div></article>
     </div></section>
 
-    <section id="packages" class="section alt"><div class="section-head"><span>04 / SELECTION GUIDE</span><h2>นามบัตรที่เหมาะกับระดับธุรกิจของคุณ</h2></div><div id="packageCards" class="package-grid"></div></section>
-
     <section class="section combinations"><div class="section-head"><span>MATERIAL × FINISH SYNERGY</span><h2>คู่ผสมยอดนิยมที่ตอบโจทย์</h2></div><div class="combo-grid"><figure><img src="assets/hero.png" alt="กระดาษอาร์ตด้านกับปั๊มฟอยล์"><figcaption>กระดาษอาร์ตด้าน + ปั๊มฟอยล์</figcaption></figure><figure><img src="assets/material-natural.png" alt="กระดาษอัดลายกับปั๊มนูน"><figcaption>กระดาษอัดลาย + ปั๊มนูน</figcaption></figure><figure><img src="assets/technique.png" alt="กระดาษอัดลายกับปั๊มจม"><figcaption>กระดาษอัดลาย + ปั๊มจม</figcaption></figure><figure><img src="assets/size-us.png" alt="พื้นด้านกับ Spot UV"><figcaption>พื้นด้าน + Spot UV</figcaption></figure><figure><img src="assets/size-jp.png" alt="PET กับ Metallic"><figcaption>PET + Metallic</figcaption></figure></div></section>
 
     <section id="how" class="section"><div class="section-head"><span>05 / WORK PROCESS</span><h2>จากไอเดียออกแบบ สู่ความประทับใจจริง</h2></div><ol class="process-grid"><li><b>01</b><h3>บอกความต้องการแบรนด์</h3><p>พูดคุยกับทีมงาน iPrint ถึงสไตล์ของบริษัท โทนสี โลโก้ และภาพลักษณ์โดยรวมที่คุณต้องการสื่อสาร</p></li><li><b>02</b><h3>เลือกกระดาษและเทคนิคพิเศษ</h3><p>รับคำแนะนำชนิดกระดาษ ระดับแกรม และเทคนิคอย่างปั๊มนูนหรือ Spot UV ที่เข้ากับดีไซน์</p></li><li><b>03</b><h3>การจัดพิมพ์จริงแบบมั่นใจ</h3><p>ระบบแท่นพิมพ์ทันสมัย ดับเบิลเช็กระดับสี กระดาษ และแรงอัดปั๊ม เพื่อให้ชิ้นงานสมบูรณ์แบบ</p></li></ol></section>
@@ -59,6 +65,6 @@
     <section id="success" class="success" hidden><span class="eyebrow">ORDER RECEIVED</span><h2>รับออร์เดอร์เรียบร้อยแล้ว</h2><p>เก็บรหัสนี้ไว้สำหรับติดตามสถานะงาน</p><strong id="ticketId"></strong><div class="actions"><button class="button" id="checkStatus">ตรวจสถานะล่าสุด</button><button class="button ghost" id="newOrder">สั่งนามบัตรเพิ่ม</button></div><div id="trackingResult" class="tracking"></div></section>
   </main>
   <footer><b>SEE IT FIRST. PRINT IT RIGHT.</b><span>iPrint® Business Card Series</span><small>© 2026 iPrint® Design System. All rights reserved.</small></footer>
-  <script type="module" src="app.js?v=2"></script>
+  <script type="module" src="app.js?v=3"></script>
 </body>
 </html>

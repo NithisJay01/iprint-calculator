@@ -205,6 +205,10 @@ function bindLogin() {
   $('loginForm').addEventListener('submit',submitLogin);
   $('toggleLoginKey').addEventListener('click',toggleLoginKeyVisibility);
   $('continueAsGuest').addEventListener('click',continueAsGuest);
+  $('homePortalBack')?.addEventListener('click', () => {
+    showLoginGate();
+    window.scrollTo({ top:0, behavior:'smooth' });
+  });
 }
 
 function bind() {

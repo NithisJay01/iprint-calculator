@@ -16,6 +16,7 @@ assert.match(index, /js\/calculator\.js\?v=20260911-single-brief/);
 assert.match(index, /js\/availability\.js\?v=20260910-public-capacity/);
 assert.match(index, /js\/flow\.js\?v=20260911-piece-mask/);
 assert.match(index, /class="quick-narrator">\s*<img[^>]+width="145"/);
+assert.match(index, /id="homePortalBack"[^>]*>[^<]*<img[^>]*>ย้อนกลับ<\/button>/);
 assert.match(api, /API\.publicCapacity \|\| `\$\{API_ROOT\}\/public\/capacity`/);
 assert.doesNotMatch(api, /data\.error \|\| text \|\| `GET \/public\/capacity/);
 

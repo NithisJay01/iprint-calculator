@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ครัวกลางจัดเซตสินค้า · iPrint</title>
+  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="../shared/typography.css?v=1">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/staff/" aria-label="กลับหน้าพนักงาน"><b>iPrint</b><span>SET STUDIO</span></a>
+    <div class="topbar-title"><strong>ครัวกลางจัดเซตสินค้า</strong><small id="environment"></small></div>
+    <div class="top-actions">
+      <label id="keyWrap" class="api-key">API Key<input id="key" type="password" autocomplete="off"></label>
+      <a class="button ghost" href="/business-card/">ดูหน้าขาย ↗</a>
+      <button class="button primary" id="save">บันทึกและเผยแพร่</button>
+    </div>
+  </header>
+  <main class="workspace">
+    <aside class="product-rail">
+      <div class="rail-heading"><div><small>PRODUCTS</small><h1>สินค้า</h1></div><button id="add" class="icon-button" title="เพิ่มสินค้า">＋</button></div>
+      <div id="productList" class="product-list"></div>
+      <p class="rail-help">ครัวเดียวใช้จัดเซตได้ทุกหมวด สินค้าที่สร้างใหม่จะใช้วัตถุดิบและบริการจาก Catalog กลาง</p>
+    </aside>
+    <section class="editor-column">
+      <div id="status" class="status" role="status"></div>
+      <form id="editor" autocomplete="off"></form>
+    </section>
+    <aside class="preview-column">
+      <div class="preview-sticky">
+        <div class="preview-heading"><div><small>CUSTOMER VIEW</small><h2>ตัวอย่างเซต</h2></div><span class="live-dot">● LIVE</span></div>
+        <div id="customerPreview"></div>
+        <details class="calculator" open>
+          <summary>ทดลองคำนวณราคา</summary>
+          <label>จำนวน<input id="quantity" type="number" min="1" value="500"></label>
+          <label>จำนวนแผ่น<input id="sheets" type="number" min="0" value="20"></label>
+          <label>ต้นทุนวัสดุและผลิต<input id="cost" type="number" min="0" value="74"></label>
+          <label>แพ็กเกจ<select id="previewPackage"></select></label>
+          <label>วัสดุ<select id="previewMaterial"></select></label>
+          <fieldset id="previewServices"><legend>บริการเสริมที่ทดลอง</legend></fieldset>
+          <label>โค้ดส่วนลด<input id="code"></label>
+          <label>วันที่ทดลอง<input id="date" type="date"></label>
+          <div id="result" aria-live="polite"></div>
+        </details>
+      </div>
+    </aside>
+  </main>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+const data = {
+  presets:{presets:[{id:'3c91a0ce-e8bd-8032-bb21-f6553f6f4ce2',name:'13×19" กระดาษมาตรฐาน (ประมาณ A3)',usableW:31.02,usableH:47.26,active:true}]},
+  materials:{materials:[{id:'3c91a0ce-e8bd-807e-8583-dde326de7701',name:'Art Paper 300g',price:1.2,unit:'sheet',active:true,updatedAt:'local-preview'}]},
+  services:{services:[{id:'3c91a0ce-e8bd-808d-ba83-dcc59ed24df1',name:'พิมพ์หน้าเดียว',price:20,unit:'sheet',active:true,serviceRole:'PRINT_SINGLE',capacityPoints:1,capacityBasis:'job',capacityStep:1,updatedAt:'local-preview'},{id:'3c91a0ce-e8bd-806d-ab92-fe7578812e11',name:'พิมพ์หน้า-หลัง',price:30,unit:'sheet',active:true,serviceRole:'PRINT_DOUBLE',capacityPoints:2,capacityBasis:'job',capacityStep:1,updatedAt:'local-preview'},{id:'3c91a0ce-e8bd-8048-9fbc-e01e72ea68cf',name:'เคลือบด้าน',price:20,unit:'sheet',active:true,capacityPoints:.25,capacityBasis:'sheet',capacityStep:1,updatedAt:'local-preview'},{id:'3c91a0ce-e8bd-80c0-b1d6-d57614292391',name:'เคลือบเงา',price:20,unit:'sheet',active:true,capacityPoints:.25,capacityBasis:'sheet',capacityStep:1,updatedAt:'local-preview'}]}
+};
+export const catalog = { materials: data.materials.materials, services: data.services.services };

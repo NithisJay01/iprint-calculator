@@ -1,0 +1,18 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&family=Sora:wght@600;700&display=swap');
+
+:root {
+  --font-body: Inter, "Noto Sans Thai", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-heading: Sora, "Noto Sans Thai", system-ui, sans-serif;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+}
+
+html, body, button, input, select, textarea { font-family: var(--font-body) !important; }
+body { font-weight: var(--weight-regular); }
+h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading) !important; font-weight: var(--weight-bold) !important; }
+button, .button, [role="button"] { font-weight: var(--weight-semibold) !important; }
+label { font-weight: var(--weight-medium); }
+strong, b { font-weight: var(--weight-bold); }
+.eyebrow, .kicker, [class*="-kicker"] { font-family: var(--font-heading) !important; font-weight: var(--weight-bold) !important; }

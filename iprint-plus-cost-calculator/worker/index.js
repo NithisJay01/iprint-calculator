@@ -1,3 +1,5 @@
+import { verifyConfiguredPrice } from './domain/product-pricing.js';
+import { createPricingSettingsRepository } from './repositories/notion-pricing-settings-repository.js';
 import { compareCatalogSnapshot, validateCatalogMutation } from './domain/catalog.js';
 import { buildTicketJobName, validateOrderFoundation } from './domain/order.js';
 import { normalizeCapacityDay } from './domain/capacity.js';
@@ -198,6 +200,19 @@ export default {
       // PAPER PRESETS - GET
       // ================================
 
+      if ((url.pathname === '/pricing-settings' && request.method === 'GET') || (url.pathname === '/staff/pricing-settings' && request.method === 'PUT')) {
+        if (request.method === 'PUT') {
+          const authError = requireAuth(request);
+          if (authError) return authError;
+        }
+        try {
+          const repository = createPricingSettingsRepository(env, { headers: notionHeaders });
+          const settings = request.method === 'GET' ? await repository.get() : await repository.save(await request.json());
+          return json({ success: true, settings });
+        } catch (error) {
+          return json({ success: false, error: error.message, errors: error.errors || [] }, error.status || (error instanceof SyntaxError ? 400 : 502));
+        }
+      }
       if (url.pathname === "/flow-settings" && request.method === "GET") {
         try {
           const repository = createFlowSettingsRepository(env, { headers: notionHeaders });
@@ -1355,6 +1370,16 @@ export default {
           }, 409);
         }
 
+        const configuredItems = orderItems.filter(item => item.productId === 'business-card');
+        if (configuredItems.length) {
+          try {
+            const pricingSettings = await createPricingSettingsRepository(env, { headers: notionHeaders }).get();
+            for (const item of configuredItems) item.pricingSnapshot = verifyConfiguredPrice(item, pricingSettings);
+          } catch (error) {
+            return json({ success: false, code: 'PRICING_CHANGED', error: error.message }, error.status || 409);
+          }
+        }
+
         let orderSchedule = null;
         let capacityDaysByDate = {};
         const queueConfigured = Boolean(env.NOTION_CAPACITY_DATA_SOURCE_ID && env.NOTION_PRODUCTION_ALLOCATIONS_DATA_SOURCE_ID);
@@ -1676,6 +1701,8 @@ export default {
                diecutShape: item.diecutShape || { active: false },
                price: item.price,
                basePrice: item.basePrice,
+               productId: item.productId || null,
+               pricingSnapshot: item.pricingSnapshot || null,
                boost: item.boost || null,
                brief: item.brief,
                briefDeadline: item.briefDeadline,

@@ -7,6 +7,7 @@
   <meta name="theme-color" content="#eef6ff">
   <title>iPrint</title>
   <link rel="stylesheet" href="css/app.css?v=20260915-business-card-mvp">
+  <link rel="stylesheet" href="shared/typography.css?v=1">
 </head>
 <body>
 <section class="login-gate" id="loginGate" aria-labelledby="loginTitle">
@@ -14,8 +15,8 @@
     <div class="login-brand"><img src="image/iprint-logo.svg" alt=""><div><strong>iPrint</strong><small>FLOW</small></div></div>
     <div class="login-copy"><span>IPRINT ORDERING</span><h1 id="loginTitle">เริ่มต้นใช้งาน iPrint</h1><p>ลูกค้าสามารถออกแบบรายการและคำนวณราคาเบื้องต้นได้โดยไม่ต้องเข้าสู่ระบบ</p></div>
     <div class="login-choice">
-      <a class="guest-entry product-entry" href="business-card/"><strong>สั่งนามบัตร — Flow ใหม่</strong><span>เลือกแพ็กเกจ เห็นราคาและวันรับงานก่อนยืนยัน</span></a>
-      <button class="guest-entry" id="continueAsGuest" type="button"><strong>เริ่มต้นใช้งาน</strong><span>เลือกสินค้า คำนวณ และเตรียมรายการสั่งซื้อ</span></button>
+      <a class="guest-entry product-entry" href="catalog/"><strong>เลือกสินค้าและแพ็กเกจงานพิมพ์</strong><span>ดู Catalog ราคาเริ่มต้น และเข้าสู่หน้าสั่งซื้อ</span></a>
+      <button class="guest-entry" id="continueAsGuest" type="button"><strong>บรีฟงานแบบเฉพาะเจาะจง</strong><span>คำนวณจำนวนชิ้นงาน แนบพรีวิว และสั่งเป็นชุด (Advance Custom)</span></button>
       <a class="staff-entry" id="showStaffLogin" href="staff/">เข้าสู่ระบบสำหรับพนักงาน</a>
     </div>
     <form class="login-form" id="loginForm" novalidate hidden>
@@ -58,6 +59,7 @@
 
   <main class="app-views">
     <section class="app-view is-active home-view" data-app-view="home">
+      <button class="view-back-button home-portal-back" id="homePortalBack" data-customer-only type="button"><img class="button-icon" src="image/arrow-left.svg" alt="">ย้อนกลับ</button>
       <div class="page-intro"><h1>พิมพ์ กับ iPrint+</h1><p>พิมพ์กับทีมงานหลังบ้านที่เข้าใจคุณ</p></div>
       <div class="home-hero" id="serviceHero" data-selected-service="laser" aria-label="กำลังเลือกบริการพิมพ์ Laser"><div class="service-art laser hero-service-art"><img src="image/service-laser.svg" alt=""></div><div><small>บริการที่เลือก</small><strong id="serviceHeroTitle">พิมพ์ Laser เครื่อง Konica</strong><span id="serviceHeroDescription">งานสีคมชัด เหมาะกับงานที่ขนาดเล็กกว่าหรือเท่ากับ Size A3</span></div></div>
       <div class="home-actions"><button class="primary-action" id="startPrintOrder" type="button">สั่งพิมพ์</button><button class="secondary-action" id="startQuickBrief" type="button">Quick Brief</button></div>
@@ -264,7 +266,7 @@
     <section class="app-view staff-catalog-view" data-app-view="staff-catalog" data-staff-only>
       <button class="view-back-button" data-flow-back="home" type="button"><img class="button-icon" src="image/arrow-left.svg" alt="">ย้อนกลับ</button>
       <div class="page-intro"><span class="staff-eyebrow">STAFF CATALOG</span><h1>ตั้งค่ารายการและการแสดงผล</h1><p>กำหนดราคา รายละเอียด และบริการที่ลูกค้าจะเห็นในระบบคำนวณ</p></div>
-      <div class="staff-catalog-notice" id="staffCatalogNotice" role="status"></div>
+      <p><a href="/pricing/">ตั้งค่าราคาสินค้าและโปรโมชัน →</a></p><div class="staff-catalog-notice" id="staffCatalogNotice" role="status"></div>
       <div class="staff-catalog-tabs" id="staffCatalogTabs" role="tablist" aria-label="ประเภทข้อมูล"><button class="is-selected" type="button" data-catalog-tab="materials" role="tab" aria-selected="true">วัสดุ</button><button type="button" data-catalog-tab="services" role="tab" aria-selected="false">บริการ</button></div>
       <section class="staff-catalog-list-panel" id="staffCatalogListPanel">
         <div class="staff-catalog-toolbar"><div class="staff-catalog-view-toggle" id="staffCatalogViewToggle" role="group" aria-label="รูปแบบการจัดการรายการ"><button class="is-selected" type="button" data-catalog-view="cards" aria-pressed="true">การ์ด</button><button type="button" data-catalog-view="table" aria-pressed="false">ตาราง</button><button type="button" data-catalog-view="visibility" aria-pressed="false">แสดง/ซ่อน</button><button type="button" data-catalog-view="flow" aria-pressed="false">Flow</button></div><button class="primary-action staff-catalog-add" id="addStaffCatalogItem" type="button"><img class="button-icon" src="image/plus.svg" alt="">เพิ่มรายการ</button></div>
@@ -291,7 +293,7 @@
     <section class="app-view staff-capacity-view" data-app-view="staff-capacity" data-staff-only>
       <button class="view-back-button" data-flow-back="home" type="button"><img class="button-icon" src="image/arrow-left.svg" alt="">ย้อนกลับ</button>
       <div class="page-intro"><span class="staff-eyebrow">DAILY CAPACITY</span><h1>กำลังผลิตรายวัน</h1><p>กำหนดแต้มสูงสุด วันหยุด และเวลาตัดรอบสำหรับระบบจัดคิว</p></div>
-      <div class="staff-catalog-notice" id="staffCapacityNotice" role="status"></div>
+      <p><a href="/pricing/">ตั้งค่าราคาสินค้าและโปรโมชัน →</a></p><div class="staff-catalog-notice" id="staffCapacityNotice" role="status"></div>
       <section class="capacity-summary"><div><small>กำลังผลิตรวม</small><strong id="capacityTotalPoints">0.00</strong><span>แต้ม</span></div><div><small>จองแล้ว</small><strong id="capacityReservedPoints">0.00</strong><span>แต้ม</span></div><div><small>คงเหลือ</small><strong id="capacityAvailablePoints">0.00</strong><span>แต้ม</span></div></section>
       <section id="staffCapacityListPanel" class="capacity-calendar-panel">
         <div class="capacity-range-head"><button id="previousCapacityRange" type="button" aria-label="เดือนก่อนหน้า">‹</button><strong id="staffCapacityRange"></strong><button id="nextCapacityRange" type="button" aria-label="เดือนถัดไป">›</button></div>

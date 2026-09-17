@@ -1,3 +1,6 @@
+import { loadPricing } from '../shared/pricing-client.js';
+import { cartCount, readCart } from '../shared/cart.js';
+let pricingSettings = null;
 import { BUSINESS_CARD_SIZE, buildOrderPayload, calculateBusinessCardQuote, isoDate, safeFilename } from './logic.js';
 
 const API_ROOT = 'https://iprint-flow-api.iprint-garphic1.workers.dev';
@@ -5,10 +8,10 @@ const IS_LOCAL_PREVIEW = ['127.0.0.1', 'localhost'].includes(location.hostname);
 const $ = id => document.getElementById(id);
 const money = value => Number(value || 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const esc = value => String(value ?? '').replace(/[&<>'"]/g, character => ({ '&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;' }[character]));
-const PACKAGES = [
-  { id:'essential', level:'LEVEL 01', name:'Essential', tagline:'เรียบง่าย แต่ดูเป็นมืออาชีพ', quantity:100, print:'single', laminate:'none', bullets:['กระดาษอาร์ตด้าน 300 แกรม','พิมพ์ 4 สี','ขนาดมาตรฐานยอดนิยม'], suitable:'SME / Freelancer / Startup ทั่วไป' },
-  { id:'corporate', level:'LEVEL 02', name:'Corporate', tagline:'น่าเชื่อถือ เหมาะกับองค์กร', quantity:500, print:'double', laminate:'matte', recommended:true, bullets:['กระดาษอาร์ตด้าน 300 แกรม','พิมพ์ 4 สี 2 ด้าน','เคลือบด้าน / ผิวสัมผัสเรียบหรู'], suitable:'บริษัทจำกัด / องค์กรขนาดใหญ่ / ฝ่ายขาย' },
-  { id:'signature', level:'LEVEL 03', name:'Signature', tagline:'สร้างความต่างสูงสุดตั้งแต่แรกสัมผัส', quantity:1000, print:'double', laminate:'gloss', bullets:['กระดาษพรีเมียม','พิมพ์ 4 สี 2 ด้าน','เคลือบเงา สีสดเด่น'], suitable:'ผู้บริหาร / Creative Studio / Luxury Brand' }
+let PACKAGES = [
+  { id:'essential', name:'Essential', tagline:'เรียบง่าย แต่ดูเป็นมืออาชีพ', quantity:100, print:'single', laminate:'none', bullets:['กระดาษอาร์ตด้าน 300 แกรม','พิมพ์ 4 สี','ขนาดมาตรฐานยอดนิยม'], suitable:'SME / Freelancer / Startup ทั่วไป' },
+  { id:'corporate', name:'Corporate', tagline:'น่าเชื่อถือ เหมาะกับองค์กร', quantity:500, print:'double', laminate:'matte', recommended:true, bullets:['กระดาษอาร์ตด้าน 300 แกรม','พิมพ์ 4 สี 2 ด้าน','เคลือบด้าน / ผิวสัมผัสเรียบหรู'], suitable:'บริษัทจำกัด / องค์กรขนาดใหญ่ / ฝ่ายขาย' },
+  { id:'signature', name:'Signature', tagline:'สร้างความต่างสูงสุดตั้งแต่แรกสัมผัส', quantity:1000, print:'double', laminate:'gloss', bullets:['กระดาษพรีเมียม','พิมพ์ 4 สี 2 ด้าน','เคลือบเงา สีสดเด่น'], suitable:'ผู้บริหาร / Creative Studio / Luxury Brand' }
 ];
 const LOCAL_CATALOG = {
   presets:{presets:[{id:'3c91a0ce-e8bd-8032-bb21-f6553f6f4ce2',name:'13×19" กระดาษมาตรฐาน (ประมาณ A3)',usableW:31.02,usableH:47.26,active:true}]},
@@ -19,9 +22,23 @@ const LOCAL_CATALOG = {
 const state = { step:1, packageId:'corporate', packageName:'Corporate', catalogs:null, preset:null, material:null, services:[], quantity:500, quote:null, availability:null, deliveryDate:'', boost:null, frontFile:null, backFile:null, references:[], ticketId:'', jobName:'', version:'V1', driveLink:'', note:'', customerName:'', phone:'', email:'', lineId:'', address:'', paymentMethod:'รอใบแจ้งชำระ' };
 
 function renderPackages() {
-  const markup = PACKAGES.map(item => `<article class="package-card ${item.recommended?'recommended':''}"><small class="level">${item.level}</small>${item.recommended?'<span class="tag">แนะนำ</span>':''}<h3>${item.name}</h3><p>${item.tagline}</p><strong>${item.quantity.toLocaleString('th-TH')} ใบ</strong><b>สเปกแนะนำ</b><ul>${item.bullets.map(value=>`<li>${value}</li>`).join('')}</ul><p class="suitable"><b>เหมาะสำหรับ</b><br>${item.suitable}</p><button class="button" data-package="${item.id}">เลือกแพ็กเกจนี้</button></article>`).join('');
+  const fallbackImages = ['assets/hero.png', 'assets/material-professional.png', 'assets/technique.png', 'assets/material-textured.png', 'assets/material-special.png'];
+  const markup = PACKAGES.map((item, index) => {
+    const specs = Array.isArray(item.bullets) && item.bullets.length ? item.bullets : ['เลือกวัสดุและบริการเสริมได้', 'ปรับจำนวนก่อนสั่งซื้อ'];
+    const price = Number(item.price);
+    const priceLabel = Number.isFinite(price) && price >= 0 ? `฿${money(price)}` : 'ดูราคาเมื่อเลือก';
+    const image = item.image ? esc(item.image) : fallbackImages[index % fallbackImages.length];
+    return `<article class="package-card catalog-card ${item.recommended?'recommended':''}">
+      <div class="catalog-media"><img src="${image}" alt="ตัวอย่าง${esc(item.name)}"><span class="catalog-type">เซตนามบัตร</span>${item.recommended?'<span class="tag">แนะนำ</span>':''}</div>
+      <div class="catalog-card-body"><span class="catalog-kicker">BUSINESS CARD SET</span><h3>${esc(item.name)}</h3><p>${esc(item.tagline || 'เซตพร้อมสั่งที่จัด Spec ไว้แล้ว')}</p>
+      <div class="catalog-facts"><span><small>จำนวนเริ่มต้น</small><b>${Number(item.quantity || 0).toLocaleString('th-TH')} ใบ</b></span><span><small>ราคาเริ่มต้น</small><b data-catalog-price="${esc(item.id)}">${priceLabel}</b></span></div>
+      <ul>${specs.slice(0, 3).map(value=>`<li>${esc(value)}</li>`).join('')}</ul>
+      <button class="button" data-package="${esc(item.id)}">เลือกเซตและปรับออปชัน</button></div>
+    </article>`;
+  }).join('');
   $('packageCards').innerHTML = markup;
-  $('builderPackages').innerHTML = PACKAGES.map(item => `<button type="button" class="choice ${item.id===state.packageId?'selected':''}" data-builder-package="${item.id}"><b>${item.name}${item.recommended?' • แนะนำ':''}</b><small>${item.quantity.toLocaleString('th-TH')} ใบ • ${item.tagline}</small></button>`).join('');
+  if ($('catalogCount')) $('catalogCount').textContent = `${PACKAGES.length.toLocaleString('th-TH')} เซต`;
+  $('builderPackages').innerHTML = PACKAGES.map(item => `<button type="button" class="choice ${item.id===state.packageId?'selected':''}" data-builder-package="${esc(item.id)}"><b>${esc(item.name)}${item.recommended?' • แนะนำ':''}</b><small>${item.quantity.toLocaleString('th-TH')} ใบ • ${item.tagline}</small></button>`).join('');
 }
 
 async function getJSON(path) {
@@ -51,15 +68,22 @@ function loadTurnstile() {
 }
 
 async function loadCatalogs() {
+  pricingSettings = await loadPricing();
   const [presetData, materialData, serviceData] = await Promise.all([getJSON('/presets'), getJSON('/materials'), getJSON('/services')]);
   const presets = (presetData.presets || []).filter(item => item.active !== false);
   const materials = (materialData.materials || []).filter(item => item.active !== false);
   const services = (serviceData.services || []).filter(item => item.active !== false);
   state.catalogs = { presets, materials, services };
+  const product = pricingSettings?.products?.find(p => p.id === 'business-card');
+  if (product?.mode === 'packages') {
+    PACKAGES = product.packages.map(p => ({ ...(PACKAGES.find(old => old.id === p.id) || { print:'double', laminate:'none', tagline:'แพ็กเกจตามการตั้งค่า', bullets:[], suitable:'งานตามสเปกที่เลือก' }), ...p }));
+    if (!PACKAGES.some(p => p.id === state.packageId)) state.packageId = PACKAGES[0]?.id;
+    renderPackages();
+  }
   state.preset = presets.find(item => /13.?19.*กระดาษมาตรฐาน/i.test(item.name)) || presets[0];
   $('material').innerHTML = materials.filter(item => /art|อาร์ต|card|pvc/i.test(item.name)).map(item => `<option value="${esc(item.id)}">${esc(item.name)}</option>`).join('');
   const printServices = services.filter(isPrintService);
-  const laminates = services.filter(item => /เคลือบ|laminat/i.test(`${item.name} ${item.category}`));
+  const laminates = services.filter(item => /เคลือบ|laminat/i.test(`${esc(item.name)} ${item.category}`));
   $('printChoices').innerHTML = printServices.map(item => `<button type="button" class="choice" data-service-print="${esc(item.id)}"><b>${esc(item.name)}</b><small>฿${money(item.price)} / ${esc(item.unit)}</small></button>`).join('');
   $('laminationChoices').innerHTML = `<button type="button" class="choice" data-service-laminate="none"><b>ไม่เคลือบ</b><small>ประหยัดและเขียนบนผิวได้ง่าย</small></button>${laminates.map(item => `<button type="button" class="choice" data-service-laminate="${esc(item.id)}"><b>${esc(item.name)}</b><small>฿${money(item.price)} / ${esc(item.unit)}</small></button>`).join('')}`;
   applyPackage(state.packageId);
@@ -70,18 +94,21 @@ function renderMarketingPrices() {
   for (const item of PACKAGES) {
     const print = state.catalogs.services.find(entry => item.print === 'double' ? isDouble(entry) : isPrintService(entry) && !isDouble(entry));
     const laminate = item.laminate === 'none' ? null : state.catalogs.services.find(entry => new RegExp(item.laminate === 'matte' ? 'ด้าน' : 'เงา').test(entry.name));
-    const quote = calculateBusinessCardQuote({ preset:state.preset, material:state.material, services:[print,laminate].filter(Boolean), quantity:item.quantity });
+    try { const quote = calculateBusinessCardQuote({ preset:state.preset, material:state.material, services:[print,laminate].filter(Boolean), quantity:item.quantity, pricingSettings, packageId:item.id });
     const target = $(`price${item.quantity}`);
     if (target) target.textContent = `฿${money(quote.price)}`;
+    const catalogPrice = document.querySelector(`[data-catalog-price="${CSS.escape(item.id)}"]`);
+    if (catalogPrice) catalogPrice.textContent = `฿${money(quote.price)}`;
+    } catch { const target = $(`price${item.quantity}`); if(target) target.textContent = 'ตรวจสอบเงื่อนไขราคา'; }
   }
 }
 
-function isPrintService(item) { return ['PRINT_SINGLE','PRINT_DOUBLE'].includes(String(item.serviceRole || '').toUpperCase()) || /พิมพ์.*หน้า|print/i.test(`${item.name} ${item.category}`); }
+function isPrintService(item) { return ['PRINT_SINGLE','PRINT_DOUBLE'].includes(String(item.serviceRole || '').toUpperCase()) || /พิมพ์.*หน้า|print/i.test(`${esc(item.name)} ${item.category}`); }
 function isDouble(item) { return String(item?.serviceRole || '').toUpperCase() === 'PRINT_DOUBLE' || /หน้า\s*[-–—/]?\s*หลัง|2\s*หน้า/.test(item?.name || ''); }
 
 function applyPackage(id) {
-  const item = PACKAGES.find(entry => entry.id === id) || PACKAGES[1];
-  state.packageId = item.id; state.packageName = item.name; state.quantity = item.quantity; state.boost = null; state.deliveryDate = '';
+  const item = PACKAGES.find(entry => entry.id === id) || PACKAGES[0];
+  state.packageId = item.id; state.packageName = item.name; state.quantity = pricingSettings?.products?.find(p => p.id === 'business-card' && p.mode === 'packages')?.packages.find(p => p.id === item.id)?.quantity || item.quantity; state.boost = null; state.deliveryDate = '';
   if (state.catalogs) {
     state.material = state.catalogs.materials.find(entry => /art paper 300|อาร์ต.*300/i.test(entry.name)) || state.catalogs.materials[0];
     const print = state.catalogs.services.find(entry => item.print === 'double' ? isDouble(entry) : isPrintService(entry) && !isDouble(entry));
@@ -89,7 +116,7 @@ function applyPackage(id) {
     state.services = [print, laminate].filter(Boolean);
     $('quantity').value = String(item.quantity); $('material').value = state.material?.id || '';
   }
-  renderPackages(); syncSelections(); recalculate();
+  syncSelections(); recalculate();
 }
 
 function syncSelections() {
@@ -102,9 +129,16 @@ function syncSelections() {
 
 function recalculate() {
   if (!state.preset || !state.material) return;
-  state.quote = calculateBusinessCardQuote({ preset:state.preset, material:state.material, services:state.services, quantity:state.quantity, boost:state.boost });
+  try {
+    state.quote = calculateBusinessCardQuote({ preset:state.preset, material:state.material, services:state.services, quantity:state.quantity, boost:state.boost, pricingSettings, packageId:state.packageId, code:$('promoCode')?.value || '' });
+  } catch(error) {
+    state.quote = null; $('priceSummary').textContent = error.message;
+    if (state.step === 4) $('finalSummary').textContent = error.message;
+    return;
+  }
   const q = state.quote;
   $('priceSummary').innerHTML = `<div class="summary-line"><span>${q.pieces.toLocaleString('th-TH')} ใบ • ${q.layout.yield} ใบ/แผ่น</span><b>${q.sheets} แผ่น</b></div><div class="summary-line"><span>กำลังผลิตโดยประมาณ</span><b>${q.points} แต้ม</b></div>${state.boost?`<div class="summary-line"><span>Boost เร็วขึ้น ${state.boost.days} วัน</span><b>+${state.boost.multiplier*100}%</b></div>`:''}<div class="summary-line summary-total"><span>ราคา</span><b>฿${money(q.price)}</b></div>`;
+  if(q.pricing) $('priceSummary').insertAdjacentHTML('afterbegin', `<div class="summary-line"><span>ราคาฐาน</span><b>฿${money(q.pricing.base)}</b></div><div class="summary-line"><span>บริการเสริม</span><b>฿${money(q.pricing.extras)}</b></div><div class="summary-line"><span>ส่วนลด ${esc(q.pricing.promotion?.name || '')}</span><b>−฿${money(q.pricing.discount)}</b></div>`);
   if (!state.deliveryDate) loadAvailability().catch(showCapacityError);
   if (state.step === 4) renderFinalSummary();
 }
@@ -161,12 +195,13 @@ function renderArtworkPreview() {
 }
 
 function renderFinalSummary() {
-  const q=state.quote; const vat=q.price*.07;
+  const q=state.quote; if(!q) return; const vat=q.price*.07;
   $('finalSummary').innerHTML = `<span class="eyebrow">ORDER SUMMARY</span><h3>${esc(state.packageName)}</h3><div class="summary-line"><span>งาน</span><b>${esc(state.jobName||'-')}</b></div><div class="summary-line"><span>จำนวน</span><b>${q.pieces.toLocaleString('th-TH')} ใบ</b></div><div class="summary-line"><span>วัสดุ</span><b>${esc(state.material?.name||'-')}</b></div><div class="summary-line"><span>บริการ</span><b>${state.services.map(item=>esc(item.name)).join(', ')}</b></div><div class="summary-line"><span>วันรับ</span><b>${formatDate(state.deliveryDate)}</b></div><div class="summary-line"><span>ราคา</span><b>฿${money(q.price)}</b></div><div class="summary-line"><span>VAT 7%</span><b>฿${money(vat)}</b></div><div class="summary-line summary-total"><span>รวม</span><b>฿${money(q.price+vat)}</b></div>`;
 }
 
 async function submitOrder(event) {
-  event.preventDefault(); collectInputs();
+  event.preventDefault(); collectInputs(); recalculate();
+  if (!state.quote) { setSubmitStatus('กรุณาตรวจสอบเงื่อนไขราคา', true); return; }
   if (!state.customerName || !state.phone || !state.address || !$('consent').checked) { setSubmitStatus('กรุณากรอกชื่อ เบอร์โทร ที่อยู่ และยืนยันข้อมูล', true); return; }
   const token = document.querySelector('[name="cf-turnstile-response"]')?.value || '';
   if (!token) { setSubmitStatus('กรุณาผ่านการตรวจสอบความปลอดภัย', true); return; }
@@ -199,9 +234,12 @@ function statusLabel(value){return({NEW:'รับออร์เดอร์แ
 function formatDate(value){if(!value)return'-';return new Date(value+'T00:00:00').toLocaleDateString('th-TH-u-ca-gregory',{day:'numeric',month:'short',year:'numeric'})}
 function setSubmitStatus(message,error=false){$('submitStatus').textContent=message;$('submitStatus').classList.toggle('error',error)}
 
-document.addEventListener('click',event=>{const start=event.target.closest('[data-start]');if(start)openBuilder();const packageButton=event.target.closest('[data-package]');if(packageButton)openBuilder(packageButton.dataset.package);const builderPackage=event.target.closest('[data-builder-package]');if(builderPackage)applyPackage(builderPackage.dataset.builderPackage);const print=event.target.closest('[data-service-print]');if(print){state.services=state.services.filter(item=>!isPrintService(item));const service=state.catalogs.services.find(item=>item.id===print.dataset.servicePrint);if(service)state.services.unshift(service);syncSelections();recalculate()}const laminate=event.target.closest('[data-service-laminate]');if(laminate){state.services=state.services.filter(isPrintService);const service=state.catalogs.services.find(item=>item.id===laminate.dataset.serviceLaminate);if(service)state.services.push(service);syncSelections();recalculate()}const day=event.target.closest('[data-date]');if(day)selectDate(day.dataset.date)});
+document.addEventListener('click',event=>{const start=event.target.closest('[data-start]');if(start)location.href=`order.html?package=${encodeURIComponent(state.packageId||PACKAGES[0]?.id||'')}`;const packageButton=event.target.closest('[data-package]');if(packageButton)location.href=`order.html?package=${encodeURIComponent(packageButton.dataset.package)}`;const builderPackage=event.target.closest('[data-builder-package]');if(builderPackage)applyPackage(builderPackage.dataset.builderPackage);const print=event.target.closest('[data-service-print]');if(print){state.services=state.services.filter(item=>!isPrintService(item));const service=state.catalogs.services.find(item=>item.id===print.dataset.servicePrint);if(service)state.services.unshift(service);syncSelections();recalculate()}const laminate=event.target.closest('[data-service-laminate]');if(laminate){state.services=state.services.filter(isPrintService);const service=state.catalogs.services.find(item=>item.id===laminate.dataset.serviceLaminate);if(service)state.services.push(service);syncSelections();recalculate()}const day=event.target.closest('[data-date]');if(day)selectDate(day.dataset.date)});
 $('quantity').addEventListener('change',event=>{state.quantity=Number(event.target.value);state.deliveryDate='';state.boost=null;recalculate()});$('material').addEventListener('change',event=>{state.material=state.catalogs.materials.find(item=>item.id===event.target.value);state.deliveryDate='';state.boost=null;recalculate()});
 $('frontFile').addEventListener('change',renderArtworkPreview);$('backFile').addEventListener('change',renderArtworkPreview);$('referenceFiles').addEventListener('change',event=>{if(event.target.files.length>3){alert('แนบภาพ Ref ได้สูงสุด 3 ภาพ');event.target.value=''}});
 $('nextStep').addEventListener('click',()=>{const error=validateStep();if(error){alert(error);return}showStep(state.step+1)});$('backStep').addEventListener('click',()=>showStep(state.step-1));$('closeBuilder').addEventListener('click',()=>{$('order').hidden=true});$('orderForm').addEventListener('submit',submitOrder);$('checkStatus').addEventListener('click',checkStatus);$('newOrder').addEventListener('click',()=>openBuilder('corporate'));
 
+$('priceSummary').insertAdjacentHTML('beforebegin', '<label for="promoCode">โค้ดส่วนลด</label><input id="promoCode" type="text" maxlength="80" placeholder="กรอกโค้ด (ถ้ามี)"><small id="promoHint"></small>');
+$('promoCode').addEventListener('input',()=>{recalculate();$('promoHint').textContent=$('promoCode').value && !state.quote?.pricing?.promotion ? 'ไม่พบโปรโมชันที่เข้าเงื่อนไข' : ''});
 renderPackages(); loadTurnstile(); loadCatalogs().catch(error=>{['price100','price500','price1000'].forEach(id=>{if($(id))$(id).textContent='โหลดราคาไม่สำเร็จ'});$('priceSummary').textContent=error.message});
+if ($('cartCount')) $('cartCount').textContent = String(cartCount(readCart()));

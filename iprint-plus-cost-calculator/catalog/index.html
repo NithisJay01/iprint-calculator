@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#eef6ff">
+  <title>เลือกงานพิมพ์ | iPrint</title>
+  <meta name="description" content="เลือกสินค้าและแพ็กเกจงานพิมพ์ พร้อมดูราคาเริ่มต้นก่อนสั่งผลิต">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="../shared/typography.css?v=1">
+</head>
+<body>
+  <header class="catalog-header">
+    <a class="catalog-brand" href="./" aria-label="iPrint Catalog">
+      <strong>iPrint</strong>
+      <span>สั่งพิมพ์ง่าย เห็นราคาก่อนยืนยัน</span>
+    </a>
+    <a class="cart-link" id="cartLink" href="../business-card/order.html?cart=1" aria-label="เปิดตะกร้าสินค้า" title="เปิดตะกร้าสินค้า">
+      <img src="assets/cart.svg" alt="">
+      <span class="cart-count" aria-label="สินค้าในตะกร้า 0 รายการ">0</span>
+    </a>
+  </header>
+
+  <main>
+    <section class="catalog-hero" aria-labelledby="catalogHeroTitle">
+      <img src="assets/hero.png" alt="ตัวอย่างงานพิมพ์คุณภาพสูง">
+      <div class="catalog-hero-overlay"></div>
+      <div class="catalog-hero-content">
+        <span>PRINT ORDERING, SIMPLIFIED</span>
+        <h1 id="catalogHeroTitle">เลือกสเปก เห็นราคา<br>ก่อนยืนยันงานพิมพ์</h1>
+        <p>เริ่มจากสินค้าที่ต้องการ แล้วปรับจำนวนและบริการเพิ่มเติมได้</p>
+      </div>
+    </section>
+
+    <section class="catalog-section" aria-labelledby="catalogTitle">
+      <div class="catalog-heading">
+        <div>
+          <span>PRODUCT CATALOG</span>
+          <h2 id="catalogTitle">เลือกบริการงานพิมพ์</h2>
+        </div>
+        <p>สินค้าที่พร้อมสั่งจะแสดงราคาเริ่มต้นและพาไปตั้งค่าสเปกต่อ</p>
+      </div>
+
+      <div class="product-grid">
+        <article class="product-card" data-product-id="business-card">
+          <div class="product-image">
+            <img src="assets/business-cards.png" alt="ตัวอย่างนามบัตรพรีเมียม">
+            <span class="availability is-ready">พร้อมสั่ง</span>
+          </div>
+          <div class="product-content">
+            <span class="product-category">BUSINESS</span>
+            <h3>Business Cards <small>(นามบัตร)</small></h3>
+            <p>นามบัตรสำหรับบริษัท ทีมขาย และงานอีเวนต์ เลือกวัสดุและการเคลือบได้</p>
+            <a class="product-action" href="../business-card/">
+              <span data-price-label>ดูแพ็กเกจและราคา</span>
+              <b aria-hidden="true">→</b>
+            </a>
+          </div>
+        </article>
+
+        <article class="product-card is-coming-soon" data-product-id="postcard">
+          <div class="product-image">
+            <img src="assets/postcards.png" alt="ตัวอย่างโปสการ์ดสีสันสดใส">
+            <span class="availability">เร็ว ๆ นี้</span>
+          </div>
+          <div class="product-content">
+            <span class="product-category">ART PRINT</span>
+            <h3>Postcards <small>(โปสการ์ด)</small></h3>
+            <p>โปสการ์ดและการ์ดประชาสัมพันธ์สำหรับศิลปิน แบรนด์ และกิจกรรมต่าง ๆ</p>
+            <button class="product-action" type="button" disabled>
+              <span>กำลังเตรียมสินค้า</span>
+              <b aria-hidden="true">→</b>
+            </button>
+          </div>
+        </article>
+
+        <article class="product-card is-coming-soon" data-product-id="sticker">
+          <div class="product-image">
+            <img src="assets/stickers.png" alt="ตัวอย่างสติกเกอร์ไดคัท">
+            <span class="availability">เร็ว ๆ นี้</span>
+          </div>
+          <div class="product-content">
+            <span class="product-category">PACKAGING</span>
+            <h3>Stickers <small>(สติกเกอร์)</small></h3>
+            <p>สติกเกอร์สำหรับสินค้า บรรจุภัณฑ์ และงานตกแต่ง พร้อมตัวเลือกไดคัท</p>
+            <button class="product-action" type="button" disabled>
+              <span>กำลังเตรียมสินค้า</span>
+              <b aria-hidden="true">→</b>
+            </button>
+          </div>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <strong>iPrint</strong>
+    <span>งานพิมพ์ที่เลือกง่ายและตรวจสอบราคาได้ก่อนสั่ง</span>
+    <a href="../">เครื่องมือคำนวณแบบ Advanced</a>
+  </footer>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

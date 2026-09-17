@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>สร้างออร์เดอร์นามบัตร — iPrint</title>
+  <link rel="stylesheet" href="order.css">
+  <link rel="stylesheet" href="../shared/typography.css?v=1">
+</head>
+<body>
+  <header class="order-nav"><a href="./#packages" aria-label="กลับไป Catalog">‹</a><b id="pageTitle">สร้างออร์เดอร์นามบัตร</b><span id="stepLabel">1 / 5</span></header>
+  <main class="order-shell">
+    <div class="progress" id="progress"></div>
+    <p id="status" class="status" role="status"></p>
+
+    <section class="step" data-step="1">
+      <div class="product-hero"><img id="productImage" src="assets/hero.png" alt="ตัวอย่างเซตนามบัตร"><button type="button" class="upload-look" id="changeImage">ลองแบบของคุณ / เปลี่ยนภาพ</button></div>
+      <div class="sheet"><span class="eyebrow">BUSINESS CARD SET</span><h1 id="productName">กำลังโหลดเซต…</h1><p id="productTagline"></p><strong class="start-price" id="startPrice"></strong>
+        <h2>สเปกในเซต</h2><ul class="spec-list" id="specList"></ul>
+        <label>ใส่ลิงก์ไฟล์ของท่าน <input id="driveLink" type="url" placeholder="https://drive.google.com/design/…"><small>รองรับลิงก์ Google Drive, Dropbox หรือไฟล์บน Cloud</small></label>
+        <h2>จำนวน</h2><div id="quantityChoices" class="choice-grid"></div>
+        <h2>เลือกวัสดุ</h2><div id="materialChoices" class="choice-grid"></div>
+        <h2>รูปแบบการพิมพ์</h2><div id="printChoices" class="choice-grid"></div>
+        <h2>ออปชันเพิ่มเติม</h2><div id="extraChoices" class="choice-grid"></div>
+        <div id="priceBreakdown" class="price-box"></div>
+      </div>
+    </section>
+
+    <section class="step" data-step="2" hidden>
+      <div class="sheet"><h1>ตะกร้าสินค้าของคุณ <small>(1)</small></h1><article class="cart-item"><div><b id="cartName"></b><p id="cartSpec"></p><strong id="cartPrice"></strong></div><div class="counter"><button type="button" id="minus">−</button><b id="cartQty">1</b><button type="button" id="plus">+</button></div></article><label>โค้ดส่วนลด <input id="promoCode" placeholder="ใส่โค้ดส่วนลด (Promo Code)"></label><a class="add-more" href="./#packages"><span aria-hidden="true">＋</span> สั่งสินค้าเพิ่ม</a></div>
+    </section>
+
+    <section class="step" data-step="3" hidden>
+      <div class="sheet"><h1>เลือกวันที่ต้องการส่งสินค้า</h1><div class="calendar-head"><button type="button" disabled>‹</button><b id="monthTitle"></b><button type="button" disabled>›</button></div><div class="week"><span>อา</span><span>จ</span><span>อ</span><span>พ</span><span>พฤ</span><span>ศ</span><span>ส</span></div><div id="calendar" class="calendar"></div></div>
+      <div class="sheet selection-summary"><h2>กำหนดการที่เลือก</h2><p id="dateSummary">กรุณาเลือกวันที่</p><small>วันรับงานขึ้นอยู่กับการยืนยันจากทีมงาน</small></div>
+    </section>
+
+    <section class="step" data-step="4" hidden>
+      <div class="sheet"><h1>ชำระเงินและระบุที่อยู่จัดส่ง</h1><div class="two"><label>ชื่อผู้รับ<input id="customerName" required></label><label>เบอร์โทร<input id="phone" inputmode="tel" required></label></div><label>ที่อยู่ในการจัดส่ง<textarea id="address" rows="3" required></textarea></label></div>
+      <div class="sheet"><h2>วิธีการจัดส่ง</h2><label class="select-row"><input type="radio" name="shipping" value="pickup" checked><span><b>รับสินค้าที่หน้าร้าน</b><small>ไม่มีค่าจัดส่ง</small></span><strong>ฟรี</strong></label><label class="select-row"><input type="radio" name="shipping" value="ems"><span><b>ส่ง EMS ไปรษณีย์</b><small>จัดส่งหลังผลิตเสร็จ</small></span><strong>฿50</strong></label></div>
+      <div class="sheet"><h2>วิธีการชำระเงิน</h2><label class="select-row"><input type="radio" name="payment" value="Thai QR / โอนผ่านธนาคาร" checked><span><b>Thai QR Payment / โอนผ่านธนาคาร</b></span></label><label class="select-row"><input type="radio" name="payment" value="เงินสด"><span><b>เงินสด</b><small>เฉพาะรับที่หน้าร้าน</small></span></label></div>
+    </section>
+
+    <section class="step" data-step="5" hidden>
+      <h1>ส่งหลักฐานชำระเงิน</h1>
+      <div class="sheet"><div class="bank-head"><div><span>ข้อมูลการโอนเงิน</span><b>ธนาคารกสิกรไทย (KBANK)</b><small>ชื่อบัญชี: บจก. ไอพรินท์ กรุ๊ป</small><strong>123-4-56789-0</strong></div><span id="quoteNo"></span></div><div class="pay-total"><span>ยอดเงินที่ต้องโอน</span><strong id="transferTotal"></strong></div></div>
+      <div class="sheet upload-slip"><input id="paymentSlip" type="file" accept="image/jpeg,image/png" hidden><button type="button" id="pickSlip"><span>▣</span><b>กดเพื่ออัปโหลดสลิปการโอนเงิน</b><small>เลือกไฟล์ JPG หรือ PNG</small></button><div id="slipPreview" hidden></div></div>
+      <p class="final-note">ระบบจะสร้างหมายเลขออร์เดอร์เมื่อยืนยันแจ้งชำระเงิน</p>
+    </section>
+  </main>
+  <dialog id="removeDialog" class="confirm-dialog" aria-labelledby="removeTitle">
+    <form method="dialog"><span class="dialog-icon" aria-hidden="true">🗑</span><h2 id="removeTitle">ลบสินค้านี้ออกจากตะกร้า?</h2><p>นามบัตรที่เลือกและออปชันทั้งหมดจะถูกนำออกจากตะกร้า</p><div><button value="cancel" class="dialog-cancel">ยกเลิก</button><button value="confirm" id="confirmRemove" class="dialog-delete">ลบสินค้า</button></div></form>
+  </dialog>
+  <footer class="checkout-bar"><div><small id="totalLabel">ยอดรวม</small><strong id="grandTotal">฿0.00</strong></div><button type="button" class="ghost" id="back" hidden>ย้อนกลับ</button><button type="button" id="next">ขั้นตอนถัดไป</button></footer>
+  <script type="module" src="order.js"></script>
+</body>
+</html>
