@@ -335,6 +335,7 @@ function startApplication() {
     rememberOrder,
     openApiSettings
   };
+  if (typeof openStaffCatalogFromQuery === 'function') openStaffCatalogFromQuery();
 }
 
 async function init() {

@@ -373,10 +373,14 @@ async function deleteStaffCatalogItem() {
 function selectStaffCatalogTab(event) {
   const button = event.target.closest('[data-catalog-tab]');
   if (!button) return;
-  staffCatalogType = button.dataset.catalogTab;
+  setStaffCatalogType(button.dataset.catalogTab);
+}
+
+function setStaffCatalogType(type) {
+  staffCatalogType = type === 'services' ? 'services' : 'materials';
   if (staffCatalogView === 'flow' || (staffCatalogType === 'materials' && staffCatalogView === 'visibility')) staffCatalogView = 'cards';
   document.querySelectorAll('[data-catalog-tab]').forEach(tab => {
-    const selected = tab === button;
+    const selected = tab.dataset.catalogTab === staffCatalogType;
     tab.classList.toggle('is-selected', selected);
     tab.setAttribute('aria-selected', String(selected));
   });
@@ -411,8 +415,9 @@ function selectStaffCatalogView(event) {
   renderStaffCatalog();
 }
 
-async function openStaffCatalog() {
+async function openStaffCatalog(requestedType = staffCatalogType) {
   if (activeAccessRole !== 'staff') return;
+  setStaffCatalogType(typeof requestedType === 'string' ? requestedType : staffCatalogType);
   if (!IPRINT_TEST_MODE) {
     try {
       staffCatalogCollections.materials = await fetchStaffCatalogRemote('materials');
@@ -424,6 +429,12 @@ async function openStaffCatalog() {
   showStaffCatalogList();
   setStaffCatalogNotice(IPRINT_TEST_MODE ? 'Test Mode • เปลี่ยนเฉพาะ Mock data ในเบราว์เซอร์' : 'Production • เชื่อมต่อ Staff Catalog แล้ว', 'ok');
   showAppView('staff-catalog');
+}
+
+function openStaffCatalogFromQuery() {
+  const requestedType = new URLSearchParams(window.location.search).get('catalog');
+  if (!['materials', 'services'].includes(requestedType)) return;
+  openStaffCatalog(requestedType);
 }
 
 function bindStaffCatalog() {

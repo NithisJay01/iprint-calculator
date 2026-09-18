@@ -70,7 +70,7 @@ function renderGroups(product, pack) {
     const groupItems = group.itemIds.map(id => items.get(id)).filter(Boolean);
     return `<section class="option-group ${group.enabled ? '' : 'disabled'}" data-group-index="${index}">
       <div class="group-head"><div><h3>${esc(group.name)}</h3><small>${group.enabled ? `${groupItems.length} วัตถุดิบจาก Catalog กลาง` : 'ปิดอยู่ ลูกค้าจะไม่เห็นชุดตัวเลือกนี้'}</small></div><label class="switch"><input type="checkbox" data-group-toggle="${index}" ${group.enabled ? 'checked' : ''}><span></span><b>${group.enabled ? 'เปิดใช้งาน' : 'ปิดใช้งาน'}</b></label></div>
-      ${group.enabled ? `<div class="ingredient-grid">${groupItems.map(item => { const active = pack.optionIds.includes(item.id); return `<button type="button" class="ingredient ${active ? 'selected' : ''}" data-option-id="${esc(item.id)}"><span>${esc(item.name)}</span><small>${item.price ? `+฿${fmt(item.price)} / ${esc(item.unit || 'งาน')}` : 'รวมในเซตได้'}</small></button>`; }).join('')}<button type="button" class="ingredient manage" data-manage-catalog>＋ จัดการวัตถุดิบ</button></div>` : ''}
+      ${group.enabled ? `<div class="ingredient-grid">${groupItems.map(item => { const active = pack.optionIds.includes(item.id); return `<button type="button" class="ingredient ${active ? 'selected' : ''}" data-option-id="${esc(item.id)}"><span>${esc(item.name)}</span><small>${item.price ? `+฿${fmt(item.price)} / ${esc(item.unit || 'งาน')}` : 'รวมในเซตได้'}</small></button>`; }).join('')}<button type="button" class="ingredient manage" data-manage-catalog="${group.source === 'material' ? 'materials' : 'services'}">＋ จัดการวัตถุดิบ</button></div>` : ''}
     </section>`;
   }).join('');
 }
@@ -186,7 +186,12 @@ $('editor').addEventListener('click', event => {
     pack.optionIds = pack.optionIds.includes(id) ? pack.optionIds.filter(value => value !== id) : [...pack.optionIds, id];
     render(); dirty(); return;
   }
-  if (event.target.closest('[data-manage-catalog]')) { setStatus('วัตถุดิบมาจาก Catalog กลาง หากต้องเพิ่มรายการใหม่ให้เพิ่มในระบบ Materials / Services'); return; }
+  const manageCatalog = event.target.closest('[data-manage-catalog]');
+  if (manageCatalog) {
+    const type = manageCatalog.dataset.manageCatalog === 'materials' ? 'materials' : 'services';
+    window.location.href = `/staff/?catalog=${type}`;
+    return;
+  }
   if (event.target.closest('[data-add-promo]')) {
     product.promotions.push({ id: crypto.randomUUID(), name: 'โปรโมชันใหม่', enabled: true, type: 'percent', scope: 'base', value: 10, minQuantity: 0, minSpend: 0, code: '', start: '', end: '' });
     render(); dirty(); return;

@@ -6,6 +6,9 @@ import { defaultBusinessCardPackages, newBusinessCardProduct } from '../shared/b
 const landingPage = readFileSync(new URL('../business-card/index.html', import.meta.url), 'utf8');
 const styles = readFileSync(new URL('../business-card/styles.css', import.meta.url), 'utf8');
 const orderPage = readFileSync(new URL('../business-card/order.html', import.meta.url), 'utf8');
+const pricingApp = readFileSync(new URL('../pricing/app.js', import.meta.url), 'utf8');
+const staffCatalogApp = readFileSync(new URL('../js/staff-catalog.js', import.meta.url), 'utf8');
+const mainApp = readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
 for (const content of ['PRODUCT CATALOG', '01 / DIMENSIONS', '02 / PAPERS & MATERIALS', '03 / SPECIAL TECHNIQUES', 'MATERIAL × FINISH SYNERGY', '05 / WORK PROCESS', 'PRODUCT SPECIFICATIONS SUMMARY']) {
   assert.match(landingPage, new RegExp(content.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
 }
@@ -26,6 +29,11 @@ assert.equal(configuredBusinessCard.mode, 'packages');
 assert.equal(configuredBusinessCard.packages.length, 3);
 configuredBusinessCard.packages.splice(0, 1);
 assert.deepEqual(configuredBusinessCard.packages.map(item => item.id), ['corporate', 'signature']);
+assert.match(pricingApp, /data-manage-catalog="\$\{group\.source === 'material' \? 'materials' : 'services'\}"/);
+assert.match(pricingApp, /\/staff\/\?catalog=\$\{type\}/);
+assert.match(staffCatalogApp, /function openStaffCatalogFromQuery\(\)/);
+assert.match(staffCatalogApp, /openStaffCatalog\(requestedType\)/);
+assert.match(mainApp, /openStaffCatalogFromQuery\(\)/);
 for (const content of ['สร้างออร์เดอร์นามบัตร', 'ตะกร้าสินค้าของคุณ', 'เลือกวันที่ต้องการส่งสินค้า', 'ชำระเงินและระบุที่อยู่จัดส่ง', 'ส่งหลักฐานชำระเงิน']) assert.match(orderPage, new RegExp(content));
 
 const preset = { id:'paper-1', name:'13×19 กระดาษมาตรฐาน', usableW:31.02, usableH:47.26 };
