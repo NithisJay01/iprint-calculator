@@ -1,5 +1,6 @@
 export class QueueRepository {
   async list() { throw new Error('QueueRepository.list must be implemented'); }
+  async searchOrderAllocations() { throw new Error('QueueRepository.searchOrderAllocations must be implemented'); }
   async listByTicketId() { throw new Error('QueueRepository.listByTicketId must be implemented'); }
   async listByOrderKey() { throw new Error('QueueRepository.listByOrderKey must be implemented'); }
   async findByKey() { throw new Error('QueueRepository.findByKey must be implemented'); }

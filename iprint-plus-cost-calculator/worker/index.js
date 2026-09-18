@@ -635,7 +635,7 @@ export default {
         const query = String(url.searchParams.get('query') || '').trim().toLowerCase().slice(0, 100);
         const limit = Math.max(1, Math.min(30, Number(url.searchParams.get('limit')) || 15));
         try {
-          const jobs = await createQueueRepository(env, { headers: notionHeaders }).list({});
+          const jobs = await createQueueRepository(env, { headers: notionHeaders }).searchOrderAllocations({ query, limit });
           const groups = new Map();
           for (const job of jobs) {
             const key = job.orderKey || job.ticketId || job.quoteNo;
@@ -655,7 +655,6 @@ export default {
             groups.set(key, current);
           }
           const orders = [...groups.values()]
-            .filter(order => !query || [order.quoteNo, order.customer, order.title, order.orderKey, order.ticketId].some(value => String(value).toLowerCase().includes(query)))
             .sort((a, b) => String(b.updatedAt || b.nextProductionDate).localeCompare(String(a.updatedAt || a.nextProductionDate)))
             .slice(0, limit);
           return json({ success: true, orders });

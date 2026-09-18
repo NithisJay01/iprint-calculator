@@ -4,6 +4,10 @@ import { QueueRepository } from './queue-repository.js';
 const textValue = property => (property?.rich_text || property?.title || [])
   .map(item => item?.plain_text || item?.text?.content || '').join('');
 
+const DEFAULT_SORTS = [{ property: 'Production Date', direction: 'ascending' }];
+// Bounds the discovery step of an order search to 500 allocations (5 Notion pages).
+const ORDER_SEARCH_MAX_PAGES = 5;
+
 function selectValue(property) {
   return property?.status?.name || property?.select?.name || textValue(property);
 }
@@ -68,10 +72,11 @@ export class NotionQueueRepository extends QueueRepository {
     return (await this.resolveDataSource()).properties;
   }
 
-  async query(filter = undefined) {
+  async query(filter = undefined, { sorts = DEFAULT_SORTS, maxPages = Infinity, enough = null } = {}) {
     const dataSourceId = (await this.resolveDataSource()).id;
     const results = [];
     let cursor = '';
+    let pages = 0;
     do {
       const response = await this.fetcher(`https://api.notion.com/v1/data_sources/${dataSourceId}/query`, {
         method: 'POST', headers: this.headers,
@@ -79,16 +84,66 @@ export class NotionQueueRepository extends QueueRepository {
           page_size: 100,
           ...(cursor ? { start_cursor: cursor } : {}),
           ...(filter ? { filter } : {}),
-          sorts: [{ property: 'Production Date', direction: 'ascending' }]
+          sorts
         })
       });
       const text = await response.text();
       if (!response.ok) throw Object.assign(new Error('Notion queue query failed'), { status: response.status, detail: text });
       const page = JSON.parse(text);
       results.push(...(page.results || []));
+      pages += 1;
       cursor = page.has_more && page.next_cursor ? page.next_cursor : '';
+      if (cursor && (pages >= maxPages || (enough && enough(results.map(notionQueueAllocation))))) break;
     } while (cursor);
     return results.map(notionQueueAllocation);
+  }
+
+  searchFilter(term, schema) {
+    const conditions = [];
+    for (const name of ['Quote No', 'Order Key', 'Customer']) {
+      if (schema[name]?.type === 'rich_text') conditions.push({ property: name, rich_text: { contains: term } });
+    }
+    const titleName = Object.entries(schema).find(([, property]) => property?.type === 'title')?.[0];
+    if (titleName) conditions.push({ property: titleName, title: { contains: term } });
+    // A Notion page URL embeds the page ID without dashes, so a pasted ticket ID can be matched there.
+    const compactId = term.replace(/-/g, '').toLowerCase();
+    if (/^[0-9a-f]{8,32}$/.test(compactId) && schema['Ticket URL']?.type === 'url') {
+      conditions.push({ property: 'Ticket URL', url: { contains: compactId } });
+    }
+    if (!conditions.length) return undefined;
+    return conditions.length === 1 ? conditions[0] : { or: conditions };
+  }
+
+  // Allocations of the most recently edited orders matching `query`, without reading the whole queue.
+  // Step 1 finds up to `limit` matching orders (newest first, bounded page count); step 2 loads every
+  // allocation of those orders so totals stay correct even when only some allocations matched.
+  async searchOrderAllocations({ query = '', limit = 15 } = {}) {
+    const term = String(query || '').trim().slice(0, 100);
+    const schema = await this.schema();
+    const groupKey = allocation => allocation.orderKey || allocation.ticketId || allocation.quoteNo;
+    const distinctOrders = rows => new Set(rows.map(groupKey).filter(Boolean)).size;
+
+    const matched = await this.query(term ? this.searchFilter(term, schema) : undefined, {
+      sorts: [{ timestamp: 'last_edited_time', direction: 'descending' }],
+      maxPages: ORDER_SEARCH_MAX_PAGES,
+      enough: rows => distinctOrders(rows) >= limit
+    });
+
+    const chosen = [];
+    for (const allocation of matched) {
+      const key = groupKey(allocation);
+      if (key && !chosen.includes(key)) chosen.push(key);
+      if (chosen.length >= limit) break;
+    }
+
+    const orderKeys = chosen.filter(key => matched.some(allocation => allocation.orderKey === key));
+    const partial = matched.filter(allocation => chosen.includes(groupKey(allocation)));
+    if (!orderKeys.length || schema['Order Key']?.type !== 'rich_text') return partial;
+
+    const conditions = orderKeys.map(key => ({ property: 'Order Key', rich_text: { equals: key } }));
+    const complete = await this.query(conditions.length === 1 ? conditions[0] : { or: conditions });
+    // Allocations without an Order Key (legacy rows) cannot be re-queried by key; keep what matched.
+    return [...complete, ...partial.filter(allocation => !allocation.orderKey)];
   }
 
   async list({ from = '', to = '' } = {}) {
