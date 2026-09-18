@@ -294,3 +294,4 @@ footer small { flex-basis: 100%; margin-top: 8px; padding-top: 20px; border-top:
   .calendar { grid-template-columns: repeat(3, 1fr); }
   .artwork-preview { grid-template-columns: 1fr; }
 }
+.customer-option-groups{display:grid;gap:18px;margin-top:18px}.customer-option-group{margin:0;padding:16px;border:1px solid #c1d9f1;border-radius:14px}.customer-option-group legend{padding:0 8px;font-weight:800;color:#0a1a2d}.customer-option-group .choice{min-height:64px;text-align:left}

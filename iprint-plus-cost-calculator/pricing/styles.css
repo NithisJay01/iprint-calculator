@@ -13,3 +13,4 @@ label{font-weight:500}
 .button,.product-tab,.package-card,.ingredient,.remove,.customer-card>button{font-weight:600}
 .brand b,.brand span,.eyebrow,.rail-heading small,.preview-heading small,.set-label,.step,.product-icon,.live-dot{font-weight:700}
 .package-card span,.ingredient span,.calculator summary{font-weight:600}
+.group-actions,.group-settings{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.group-settings{margin:14px 0}.group-settings label{min-width:150px;flex:1}.group-settings .check{flex:0 0 auto}.text-button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 10px;color:var(--blue);font-weight:800}.text-button:disabled{opacity:.35}

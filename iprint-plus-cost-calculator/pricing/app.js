@@ -23,10 +23,10 @@ function groupSeed() {
   const used = new Set([...print, ...finishing]);
   const extras = catalog.services.filter(item => !used.has(item.id)).map(item => item.id);
   return [
-    { id: 'materials', name: 'วัสดุหลัก', enabled: true, source: 'material', itemIds: materials },
-    { id: 'printing', name: 'รูปแบบการพิมพ์', enabled: true, source: 'service', itemIds: print },
-    { id: 'finishing', name: 'เทคนิคและการเคลือบ', enabled: true, source: 'service', itemIds: finishing },
-    { id: 'extras', name: 'บริการเสริม', enabled: extras.length > 0, source: 'service', itemIds: extras }
+    { id: 'materials', name: 'วัสดุหลัก', enabled: true, source: 'material', selectionMode: 'single', required: true, itemIds: materials },
+    { id: 'printing', name: 'รูปแบบการพิมพ์', enabled: true, source: 'service', selectionMode: 'single', required: true, itemIds: print },
+    { id: 'finishing', name: 'เทคนิคและการเคลือบ', enabled: true, source: 'service', selectionMode: 'single', required: false, itemIds: finishing },
+    { id: 'extras', name: 'บริการเสริม', enabled: extras.length > 0, source: 'service', selectionMode: 'multiple', required: false, itemIds: extras }
   ];
 }
 
@@ -41,6 +41,8 @@ function ensureKitchen(product) {
   const available = new Set(catalogItems().map(item => item.id));
   product.optionGroups.forEach(group => {
     group.enabled = group.enabled !== false;
+    group.selectionMode = group.selectionMode === 'multiple' ? 'multiple' : 'single';
+    group.required = group.required === true;
     group.itemIds = Array.isArray(group.itemIds) ? group.itemIds.filter(id => available.has(id)) : [];
   });
   product.packages.forEach(pack => {
@@ -69,7 +71,8 @@ function renderGroups(product, pack) {
   return product.optionGroups.map((group, index) => {
     const groupItems = group.itemIds.map(id => items.get(id)).filter(Boolean);
     return `<section class="option-group ${group.enabled ? '' : 'disabled'}" data-group-index="${index}">
-      <div class="group-head"><div><h3>${esc(group.name)}</h3><small>${group.enabled ? `${groupItems.length} วัตถุดิบจาก Catalog กลาง` : 'ปิดอยู่ ลูกค้าจะไม่เห็นชุดตัวเลือกนี้'}</small></div><label class="switch"><input type="checkbox" data-group-toggle="${index}" ${group.enabled ? 'checked' : ''}><span></span><b>${group.enabled ? 'เปิดใช้งาน' : 'ปิดใช้งาน'}</b></label></div>
+      <div class="group-head"><div><h3>${esc(group.name)}</h3><small>${group.enabled ? `${groupItems.length} วัตถุดิบจาก Catalog กลาง` : 'ปิดอยู่ ลูกค้าจะไม่เห็นชุดตัวเลือกนี้'}</small></div><div class="group-actions"><button type="button" class="text-button" data-move-group="up" data-group-index="${index}" ${index === 0 ? 'disabled' : ''}>↑</button><button type="button" class="text-button" data-move-group="down" data-group-index="${index}" ${index === product.optionGroups.length - 1 ? 'disabled' : ''}>↓</button><button type="button" class="remove" data-remove-group="${index}">ลบ</button><label class="switch"><input type="checkbox" data-group-toggle="${index}" ${group.enabled ? 'checked' : ''}><span></span><b>${group.enabled ? 'เปิดใช้งาน' : 'ปิดใช้งาน'}</b></label></div></div>
+      <div class="group-settings"><label>ชื่อหมวด<input data-group-field="name" data-group-index="${index}" value="${esc(group.name)}"></label><label>ข้อมูลจาก<select data-group-field="source" data-group-index="${index}">${option('material','วัสดุ',group.source==='material')}${option('service','บริการ',group.source==='service')}</select></label><label>การเลือก<select data-group-field="selectionMode" data-group-index="${index}">${option('single','เลือกได้ 1 รายการ',group.selectionMode==='single')}${option('multiple','เลือกได้หลายรายการ',group.selectionMode==='multiple')}</select></label><label class="check"><input type="checkbox" data-group-field="required" data-group-index="${index}" ${group.required ? 'checked' : ''}> บังคับเลือก</label></div>
       ${group.enabled ? `<div class="ingredient-grid">${groupItems.map(item => { const active = pack.optionIds.includes(item.id); return `<button type="button" class="ingredient ${active ? 'selected' : ''}" data-option-id="${esc(item.id)}"><span>${esc(item.name)}</span><small>${item.price ? `+฿${fmt(item.price)} / ${esc(item.unit || 'งาน')}` : 'รวมในเซตได้'}</small></button>`; }).join('')}<button type="button" class="ingredient manage" data-manage-catalog="${group.source === 'material' ? 'materials' : 'services'}">＋ จัดการวัตถุดิบ</button></div>` : ''}
     </section>`;
   }).join('');
@@ -96,7 +99,7 @@ function render() {
         <div class="two-fields"><label>ชื่อเซต<input data-package-field="name" value="${esc(pack.name)}"></label><label>คำอธิบาย<input data-package-field="description" value="${esc(pack.description)}"></label><label>จำนวนเริ่มต้น<input data-package-field="quantity" type="number" min="1" value="${pack.quantity}"></label><label>ราคาเริ่มต้น (บาท)<input data-package-field="price" type="number" min="0" step="0.01" value="${pack.price}"></label></div>
       </div>
     </section>
-    <section class="panel"><div class="section-title"><div><span class="step">3</span><div><h2>ชุดตัวเลือกของลูกค้า</h2><p>ปิด Toggle เพื่อซ่อนทั้งชุด หรือกดวัตถุดิบเพื่อเลือกเข้า–ออกจากเซต</p></div></div></div>${renderGroups(product, pack)}</section>
+    <section class="panel"><div class="section-title"><div><span class="step">3</span><div><h2>ชุดตัวเลือกของลูกค้า</h2><p>หมวดที่เปิดและมีรายการในเซต จะปรากฏในหน้าลูกค้าตามลำดับนี้</p></div></div><button type="button" class="button soft" data-add-group>＋ เพิ่มหมวด</button></div>${renderGroups(product, pack)}</section>
     <details class="panel advanced"><summary><span><b>สูตรราคาและกติกาขั้นสูง</b><small>ใช้เมื่อจำเป็น สูตรหลักยังคงทำงานเหมือนเดิม</small></span><span>แก้ไข ›</span></summary><div class="advanced-body"><div class="two-fields"><label>รูปแบบราคา<select data-product-field="mode">${option('packages','แพ็กเกจสำเร็จรูป',product.mode==='packages')}${option('tiers','ราคาตามจำนวน',product.mode==='tiers')}${option('formula','ต้นทุน + กำไร',product.mode==='formula')}</select></label>${field('กำไรจากบริการเสริม (%)','markup',product.markup,'number','min="0" step="any"')}${field('ราคาขั้นต่ำ','minimum',product.minimum,'number','min="0" step="any"')}${field('ปัดราคาขึ้นทีละ','rounding',product.rounding,'number','min="0.01" step="any"')}</div></div></details>
     <details class="panel advanced"><summary><span><b>โปรโมชัน</b><small>${product.promotions.length} รายการ · ระบบเลือกส่วนลดที่ดีที่สุดหนึ่งรายการ</small></span><span>จัดการ ›</span></summary><div class="advanced-body"><div class="promo-list">${renderPromotions(product)}</div><button type="button" class="button soft" data-add-promo>＋ เพิ่มโปรโมชัน</button></div></details>`;
   syncPreviewControls(product);
@@ -159,6 +162,15 @@ $('editor').addEventListener('input', event => {
   } else if (input.dataset.groupToggle != null) {
     product.optionGroups[Number(input.dataset.groupToggle)].enabled = input.checked;
     render();
+  } else if (input.dataset.groupField) {
+    const group = product.optionGroups[Number(input.dataset.groupIndex)];
+    const key = input.dataset.groupField;
+    group[key] = input.type === 'checkbox' ? input.checked : input.value;
+    if (key === 'source') { group.itemIds = []; render(); }
+    else if (key === 'name') {
+      input.closest('.option-group').querySelector('h3').textContent = group.name;
+      renderCustomerPreview();
+    } else render();
   } else if (input.dataset.promoField) {
     const promo = product.promotions[Number(input.closest('[data-promo]').dataset.promo)];
     promo[input.dataset.promoField] = input.type === 'checkbox' ? input.checked : input.type === 'number' ? Number(input.value) : input.value;
@@ -179,6 +191,18 @@ $('editor').addEventListener('click', event => {
   if (event.target.closest('[data-remove-package]') && product.packages.length > 1) {
     product.packages = product.packages.filter(pack => pack.id !== selectedPackageId);
     selectedPackageId = product.packages[0].id; render(); dirty(); return;
+  }
+  if (event.target.closest('[data-add-group]')) {
+    product.optionGroups.push({ id:`group-${crypto.randomUUID().slice(0,8)}`, name:'หมวดใหม่', enabled:true, source:'service', selectionMode:'single', required:false, itemIds:[] });
+    render(); dirty(); return;
+  }
+  const removeGroup = event.target.closest('[data-remove-group]');
+  if (removeGroup) { product.optionGroups.splice(Number(removeGroup.dataset.removeGroup), 1); render(); dirty(); return; }
+  const moveGroup = event.target.closest('[data-move-group]');
+  if (moveGroup) {
+    const from = Number(moveGroup.dataset.groupIndex), to = from + (moveGroup.dataset.moveGroup === 'up' ? -1 : 1);
+    if (to >= 0 && to < product.optionGroups.length) [product.optionGroups[from], product.optionGroups[to]] = [product.optionGroups[to], product.optionGroups[from]];
+    render(); dirty(); return;
   }
   const ingredient = event.target.closest('[data-option-id]');
   if (ingredient) {

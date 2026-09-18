@@ -81,11 +81,6 @@ async function loadCatalogs() {
     renderPackages();
   }
   state.preset = presets.find(item => /13.?19.*กระดาษมาตรฐาน/i.test(item.name)) || presets[0];
-  $('material').innerHTML = materials.filter(item => /art|อาร์ต|card|pvc/i.test(item.name)).map(item => `<option value="${esc(item.id)}">${esc(item.name)}</option>`).join('');
-  const printServices = services.filter(isPrintService);
-  const laminates = services.filter(item => /เคลือบ|laminat/i.test(`${esc(item.name)} ${item.category}`));
-  $('printChoices').innerHTML = printServices.map(item => `<button type="button" class="choice" data-service-print="${esc(item.id)}"><b>${esc(item.name)}</b><small>฿${money(item.price)} / ${esc(item.unit)}</small></button>`).join('');
-  $('laminationChoices').innerHTML = `<button type="button" class="choice" data-service-laminate="none"><b>ไม่เคลือบ</b><small>ประหยัดและเขียนบนผิวได้ง่าย</small></button>${laminates.map(item => `<button type="button" class="choice" data-service-laminate="${esc(item.id)}"><b>${esc(item.name)}</b><small>฿${money(item.price)} / ${esc(item.unit)}</small></button>`).join('')}`;
   applyPackage(state.packageId);
   renderMarketingPrices();
 }
@@ -106,6 +101,24 @@ function renderMarketingPrices() {
 function isPrintService(item) { return ['PRINT_SINGLE','PRINT_DOUBLE'].includes(String(item.serviceRole || '').toUpperCase()) || /พิมพ์.*หน้า|print/i.test(`${esc(item.name)} ${item.category}`); }
 function isDouble(item) { return String(item?.serviceRole || '').toUpperCase() === 'PRINT_DOUBLE' || /หน้า\s*[-–—/]?\s*หลัง|2\s*หน้า/.test(item?.name || ''); }
 
+function activeOptionGroups() {
+  const product = pricingSettings?.products?.find(p => p.id === 'business-card');
+  const pack = product?.packages?.find(p => p.id === state.packageId);
+  if (!product?.optionGroups?.length) return [];
+  const allowed = new Set(pack?.optionIds || []);
+  return product.optionGroups.filter(group => group.enabled !== false).map(group => {
+    const source = group.source === 'material' ? state.catalogs.materials : state.catalogs.services;
+    const choices = source.filter(item => group.itemIds?.includes(item.id) && (!allowed.size || allowed.has(item.id)));
+    return { ...group, selectionMode:group.selectionMode === 'multiple' ? 'multiple' : 'single', choices };
+  }).filter(group => group.choices.length);
+}
+
+function renderOptionGroups() {
+  const groups = activeOptionGroups();
+  $('dynamicOptionGroups').innerHTML = groups.map((group, index) => `<fieldset class="customer-option-group"><legend>${index + 1}. ${esc(group.name)}${group.required ? ' *' : ''}</legend><div class="choice-grid compact">${group.choices.map(item => `<button type="button" class="choice" data-option-group="${esc(group.id)}" data-option-source="${esc(group.source)}" data-option-id="${esc(item.id)}"><b>${esc(item.name)}</b><small>${Number(item.price) ? `+฿${money(item.price)} / ${esc(item.unit || 'งาน')}` : 'รวมในเซต'}</small></button>`).join('')}</div></fieldset>`).join('') || '<p class="muted">เซตนี้ยังไม่มีตัวเลือกเพิ่มเติม</p>';
+  syncSelections();
+}
+
 function applyPackage(id) {
   const item = PACKAGES.find(entry => entry.id === id) || PACKAGES[0];
   state.packageId = item.id; state.packageName = item.name; state.quantity = pricingSettings?.products?.find(p => p.id === 'business-card' && p.mode === 'packages')?.packages.find(p => p.id === item.id)?.quantity || item.quantity; state.boost = null; state.deliveryDate = '';
@@ -114,9 +127,9 @@ function applyPackage(id) {
     const print = state.catalogs.services.find(entry => item.print === 'double' ? isDouble(entry) : isPrintService(entry) && !isDouble(entry));
     const laminate = item.laminate === 'none' ? null : state.catalogs.services.find(entry => new RegExp(item.laminate === 'matte' ? 'ด้าน' : 'เงา').test(entry.name));
     state.services = [print, laminate].filter(Boolean);
-    $('quantity').value = String(item.quantity); $('material').value = state.material?.id || '';
+    $('quantity').value = String(item.quantity);
   }
-  syncSelections(); recalculate();
+  renderOptionGroups(); recalculate();
 }
 
 function syncSelections() {
@@ -124,6 +137,7 @@ function syncSelections() {
   const selectedLaminate = state.services.find(item => !isPrintService(item));
   document.querySelectorAll('[data-service-laminate]').forEach(button => button.classList.toggle('selected', (selectedLaminate?.id || 'none') === button.dataset.serviceLaminate));
   document.querySelectorAll('[data-builder-package]').forEach(button => button.classList.toggle('selected', button.dataset.builderPackage === state.packageId));
+  document.querySelectorAll('[data-option-id]').forEach(button => button.classList.toggle('selected', button.dataset.optionSource === 'material' ? state.material?.id === button.dataset.optionId : state.services.some(item => item.id === button.dataset.optionId)));
   $('backFileWrap').hidden = !state.services.some(isDouble);
 }
 
@@ -234,8 +248,8 @@ function statusLabel(value){return({NEW:'รับออร์เดอร์แ
 function formatDate(value){if(!value)return'-';return new Date(value+'T00:00:00').toLocaleDateString('th-TH-u-ca-gregory',{day:'numeric',month:'short',year:'numeric'})}
 function setSubmitStatus(message,error=false){$('submitStatus').textContent=message;$('submitStatus').classList.toggle('error',error)}
 
-document.addEventListener('click',event=>{const start=event.target.closest('[data-start]');if(start)location.href=`order.html?package=${encodeURIComponent(state.packageId||PACKAGES[0]?.id||'')}`;const packageButton=event.target.closest('[data-package]');if(packageButton)location.href=`order.html?package=${encodeURIComponent(packageButton.dataset.package)}`;const builderPackage=event.target.closest('[data-builder-package]');if(builderPackage)applyPackage(builderPackage.dataset.builderPackage);const print=event.target.closest('[data-service-print]');if(print){state.services=state.services.filter(item=>!isPrintService(item));const service=state.catalogs.services.find(item=>item.id===print.dataset.servicePrint);if(service)state.services.unshift(service);syncSelections();recalculate()}const laminate=event.target.closest('[data-service-laminate]');if(laminate){state.services=state.services.filter(isPrintService);const service=state.catalogs.services.find(item=>item.id===laminate.dataset.serviceLaminate);if(service)state.services.push(service);syncSelections();recalculate()}const day=event.target.closest('[data-date]');if(day)selectDate(day.dataset.date)});
-$('quantity').addEventListener('change',event=>{state.quantity=Number(event.target.value);state.deliveryDate='';state.boost=null;recalculate()});$('material').addEventListener('change',event=>{state.material=state.catalogs.materials.find(item=>item.id===event.target.value);state.deliveryDate='';state.boost=null;recalculate()});
+document.addEventListener('click',event=>{const start=event.target.closest('[data-start]');if(start)location.href=`order.html?package=${encodeURIComponent(state.packageId||PACKAGES[0]?.id||'')}`;const packageButton=event.target.closest('[data-package]');if(packageButton)location.href=`order.html?package=${encodeURIComponent(packageButton.dataset.package)}`;const builderPackage=event.target.closest('[data-builder-package]');if(builderPackage)applyPackage(builderPackage.dataset.builderPackage);const optionButton=event.target.closest('[data-option-id]');if(optionButton){const id=optionButton.dataset.optionId;if(optionButton.dataset.optionSource==='material'){state.material=state.catalogs.materials.find(item=>item.id===id)}else{const service=state.catalogs.services.find(item=>item.id===id);const group=activeOptionGroups().find(item=>item.id===optionButton.dataset.optionGroup);if(group?.selectionMode==='single')state.services=state.services.filter(item=>!group.itemIds.includes(item.id));if(service&&!state.services.some(item=>item.id===id))state.services.push(service);else if(group?.selectionMode==='multiple')state.services=state.services.filter(item=>item.id!==id)}state.deliveryDate='';state.boost=null;syncSelections();recalculate()}const day=event.target.closest('[data-date]');if(day)selectDate(day.dataset.date)});
+$('quantity').addEventListener('change',event=>{state.quantity=Number(event.target.value);state.deliveryDate='';state.boost=null;recalculate()});
 $('frontFile').addEventListener('change',renderArtworkPreview);$('backFile').addEventListener('change',renderArtworkPreview);$('referenceFiles').addEventListener('change',event=>{if(event.target.files.length>3){alert('แนบภาพ Ref ได้สูงสุด 3 ภาพ');event.target.value=''}});
 $('nextStep').addEventListener('click',()=>{const error=validateStep();if(error){alert(error);return}showStep(state.step+1)});$('backStep').addEventListener('click',()=>showStep(state.step-1));$('closeBuilder').addEventListener('click',()=>{$('order').hidden=true});$('orderForm').addEventListener('submit',submitOrder);$('checkStatus').addEventListener('click',checkStatus);$('newOrder').addEventListener('click',()=>openBuilder('corporate'));
 
