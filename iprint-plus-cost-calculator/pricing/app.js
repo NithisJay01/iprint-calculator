@@ -1,5 +1,6 @@
 import { newProduct, calculateProductPrice } from '../shared/product-pricing.js';
 import { LOCAL, loadPricing, savePricing, loadCatalog } from '../shared/pricing-client.js';
+import { newBusinessCardProduct } from '../shared/business-card-product.js';
 
 const $ = id => document.getElementById(id);
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -33,7 +34,9 @@ function ensureKitchen(product) {
   if (!Array.isArray(product.optionGroups)) product.optionGroups = groupSeed();
   if (!Array.isArray(product.packages)) product.packages = [];
   if (!product.packages.length) {
-    product.packages.push({ id: 'starter', name: 'เซตเริ่มต้น', quantity: 100, price: 0, description: 'เซตพร้อมขาย ปรับตัวเลือกได้', optionIds: [] });
+    const packages = product.id === 'business-card' ? newBusinessCardProduct().packages : [{ id: 'starter', name: 'เซตเริ่มต้น', quantity: 100, price: 0, description: 'เซตพร้อมขาย ปรับตัวเลือกได้', optionIds: [] }];
+    product.packages.push(...packages);
+    if (product.id === 'business-card') product.mode = 'packages';
   }
   const available = new Set(catalogItems().map(item => item.id));
   product.optionGroups.forEach(group => {
@@ -213,7 +216,7 @@ $('date').value = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Bangk
 $('save').disabled = true; $('add').disabled = true;
 try {
   [settings, catalog] = await Promise.all([loadPricing(), loadCatalog()]);
-  if (!settings.products.length) settings.products.push(newProduct());
+  if (!settings.products.length) settings.products.push(newBusinessCardProduct());
   settings.products.forEach(ensureKitchen);
   selectedProductId = settings.products[0].id;
   selectedPackageId = settings.products[0].packages[0].id;

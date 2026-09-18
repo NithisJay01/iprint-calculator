@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { buildOrderPayload, calculateBusinessCardQuote, findBestLayout } from '../business-card/logic.js';
+import { defaultBusinessCardPackages, newBusinessCardProduct } from '../shared/business-card-product.js';
 
 const landingPage = readFileSync(new URL('../business-card/index.html', import.meta.url), 'utf8');
 const styles = readFileSync(new URL('../business-card/styles.css', import.meta.url), 'utf8');
@@ -17,6 +18,14 @@ assert.match(styles, /color-scheme:\s*light/);
 assert.match(styles, /@media \(max-width:\s*760px\)/);
 assert.match(styles, /\.catalog-grid/);
 assert.match(landingPage, /id="catalogCount"/);
+assert.match(readFileSync(new URL('../business-card/app.js', import.meta.url), 'utf8'), /p\.description \|\| p\.tagline/);
+const defaultSets = defaultBusinessCardPackages();
+assert.deepEqual(defaultSets.map(item => item.id), ['essential', 'corporate', 'signature']);
+const configuredBusinessCard = newBusinessCardProduct();
+assert.equal(configuredBusinessCard.mode, 'packages');
+assert.equal(configuredBusinessCard.packages.length, 3);
+configuredBusinessCard.packages.splice(0, 1);
+assert.deepEqual(configuredBusinessCard.packages.map(item => item.id), ['corporate', 'signature']);
 for (const content of ['สร้างออร์เดอร์นามบัตร', 'ตะกร้าสินค้าของคุณ', 'เลือกวันที่ต้องการส่งสินค้า', 'ชำระเงินและระบุที่อยู่จัดส่ง', 'ส่งหลักฐานชำระเงิน']) assert.match(orderPage, new RegExp(content));
 
 const preset = { id:'paper-1', name:'13×19 กระดาษมาตรฐาน', usableW:31.02, usableH:47.26 };

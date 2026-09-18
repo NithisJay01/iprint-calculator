@@ -1,5 +1,6 @@
 import { loadPricing } from '../shared/pricing-client.js';
 import { cartCount, readCart } from '../shared/cart.js';
+import { defaultBusinessCardPackages } from '../shared/business-card-product.js';
 let pricingSettings = null;
 import { BUSINESS_CARD_SIZE, buildOrderPayload, calculateBusinessCardQuote, isoDate, safeFilename } from './logic.js';
 
@@ -8,11 +9,7 @@ const IS_LOCAL_PREVIEW = ['127.0.0.1', 'localhost'].includes(location.hostname);
 const $ = id => document.getElementById(id);
 const money = value => Number(value || 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const esc = value => String(value ?? '').replace(/[&<>'"]/g, character => ({ '&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;' }[character]));
-let PACKAGES = [
-  { id:'essential', name:'Essential', tagline:'เรียบง่าย แต่ดูเป็นมืออาชีพ', quantity:100, print:'single', laminate:'none', bullets:['กระดาษอาร์ตด้าน 300 แกรม','พิมพ์ 4 สี','ขนาดมาตรฐานยอดนิยม'], suitable:'SME / Freelancer / Startup ทั่วไป' },
-  { id:'corporate', name:'Corporate', tagline:'น่าเชื่อถือ เหมาะกับองค์กร', quantity:500, print:'double', laminate:'matte', recommended:true, bullets:['กระดาษอาร์ตด้าน 300 แกรม','พิมพ์ 4 สี 2 ด้าน','เคลือบด้าน / ผิวสัมผัสเรียบหรู'], suitable:'บริษัทจำกัด / องค์กรขนาดใหญ่ / ฝ่ายขาย' },
-  { id:'signature', name:'Signature', tagline:'สร้างความต่างสูงสุดตั้งแต่แรกสัมผัส', quantity:1000, print:'double', laminate:'gloss', bullets:['กระดาษพรีเมียม','พิมพ์ 4 สี 2 ด้าน','เคลือบเงา สีสดเด่น'], suitable:'ผู้บริหาร / Creative Studio / Luxury Brand' }
-];
+let PACKAGES = defaultBusinessCardPackages();
 const LOCAL_CATALOG = {
   presets:{presets:[{id:'3c91a0ce-e8bd-8032-bb21-f6553f6f4ce2',name:'13×19" กระดาษมาตรฐาน (ประมาณ A3)',usableW:31.02,usableH:47.26,active:true}]},
   materials:{materials:[{id:'3c91a0ce-e8bd-807e-8583-dde326de7701',name:'Art Paper 300g',price:1.2,unit:'sheet',active:true,updatedAt:'local-preview'}]},
@@ -76,7 +73,10 @@ async function loadCatalogs() {
   state.catalogs = { presets, materials, services };
   const product = pricingSettings?.products?.find(p => p.id === 'business-card');
   if (product?.mode === 'packages') {
-    PACKAGES = product.packages.map(p => ({ ...(PACKAGES.find(old => old.id === p.id) || { print:'double', laminate:'none', tagline:'แพ็กเกจตามการตั้งค่า', bullets:[], suitable:'งานตามสเปกที่เลือก' }), ...p }));
+    PACKAGES = product.packages.map(p => {
+      const fallback = defaultBusinessCardPackages().find(old => old.id === p.id) || { print:'double', laminate:'none', tagline:'แพ็กเกจตามการตั้งค่า', bullets:[], suitable:'งานตามสเปกที่เลือก' };
+      return { ...fallback, ...p, tagline:p.description || p.tagline || fallback.tagline };
+    });
     if (!PACKAGES.some(p => p.id === state.packageId)) state.packageId = PACKAGES[0]?.id;
     renderPackages();
   }

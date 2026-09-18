@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { NotionPricingSettingsRepository } from '../worker/repositories/notion-pricing-settings-repository.js';
 import { newProduct } from '../shared/product-pricing.js';
+import { newBusinessCardProduct } from '../shared/business-card-product.js';
 import worker from '../worker/index.js';
 let schema={Name:{type:'title'},Active:{type:'checkbox'},Type:{type:'select'}}, page=null;
 const fetcher=async(url,options={})=>{
@@ -13,6 +14,8 @@ const fetcher=async(url,options={})=>{
   throw new Error(`Unexpected ${url}`);
 };
 const repository=new NotionPricingSettingsRepository({fetcher,headers:{},dataSourceId:'presets'});
+const seeded = newBusinessCardProduct();
+assert.deepEqual(seeded.packages.map(item => item.id), ['essential', 'corporate', 'signature']);
 assert.deepEqual((await repository.get()).products,[]);
 const saved=await repository.save({products:[newProduct()]});
 assert.ok(saved.version);assert.deepEqual(await repository.get(),saved);
