@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
   UNIT_OPTIONS, formatUnit, inferServiceRole, newCatalogItemPayload, catalogListFor, filterCatalogItems,
-  itemUsage, describeUsage, setGroupItem, removeItemEverywhere, groupSummary, saveStateLabel
+  itemUsage, describeUsage, setGroupItem, removeItemEverywhere, groupSummary, saveStateLabel, toggleOffered, setIncluded, includedIdsOf
 } from '../shared/set-studio.js';
 import { validateCatalogMutation } from '../worker/domain/catalog.js';
 
@@ -127,7 +127,8 @@ assert.equal(groupSummary({ ...product.optionGroups[0], itemIds: [] }, itemsById
 assert.equal(groupSummary({ ...product.optionGroups[0], itemIds: ['gone'] }, itemsById, product.packages[0]).tone, 'empty', 'unknown ids do not count');
 let summary = groupSummary({ ...product.optionGroups[0], required: true }, itemsById, product.packages[0]);
 assert.equal(summary.tone, 'ok');
-assert.equal(summary.text, '2 รายการ · ใช้ในเซตนี้ 2 · เลือกได้ 1 รายการ · บังคับเลือก');
+assert.equal(summary.text, '2 รายการ · เปิดให้เลือก 2 · เลือกได้ 1 รายการ · บังคับเลือก');
+assert.equal(groupSummary({ ...product.optionGroups[0], required: true }, itemsById, product.packages[0], ['s1']).text, '2 รายการ · เปิดให้เลือก 2 · รวมในเซต 1 · เลือกได้ 1 รายการ · บังคับเลือก');
 summary = groupSummary(product.optionGroups[1], itemsById, { optionIds: [] });
 assert.equal(summary.tone, 'warn', 'items exist but none is used in this set');
 assert.match(summary.text, /เลือกได้หลายรายการ/);

@@ -65,3 +65,13 @@ label{font-weight:500}
 .picker-capacity small{display:block;margin-top:7px;color:var(--muted);font-size:12px}
 .picker .two-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 @media(max-width:560px){.picker .two-fields{grid-template-columns:1fr}.draft-banner{flex-direction:column;align-items:flex-start}}
+
+/* ---- Services included in a set ---- */
+.group-hint{margin:10px 0 0;font-size:12px;color:var(--muted)}
+.ingredient-cell{display:grid;gap:6px;align-content:start;min-width:0}
+.ingredient-cell .ingredient{width:100%;height:100%}
+.included-badge{display:inline-block;margin-top:5px;padding:1px 8px;border-radius:99px;font-style:normal;font-size:11px;font-weight:700;background:#dff6e8;color:#17753b}
+.ingredient.selected .included-badge{background:#fff;color:#0b6e3c}
+.included-toggle{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;color:var(--ink);cursor:pointer}
+.included-toggle input{width:17px;height:17px;accent-color:#12a879;flex:0 0 auto}
+.preview-group span.inc small{display:block;font-size:10px;font-weight:700;color:#17753b}

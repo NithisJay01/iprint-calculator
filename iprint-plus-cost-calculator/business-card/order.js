@@ -1,23 +1,176 @@
 import { loadPricing, loadCatalog } from '../shared/pricing-client.js';
-import { productCartItem, removeCartItem, upsertCartItem } from '../shared/cart.js';
-import { calculateBusinessCardQuote } from './logic.js';
+import { includedIdsFor } from '../shared/product-pricing.js';
+import { addCartItem, updateCartItem, getCartItem, cartCount, CART_MAX_ITEMS } from '../shared/cart.js';
+import { money, esc } from '../shared/format.js';
 import { optionPrice, buildPriceBreakdown, fallbackPricingModel } from './breakdown.js';
-const $=id=>document.getElementById(id), money=v=>Number(v||0).toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2});
-const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const defaults=[{id:'essential',name:'Essential',tagline:'เรียบง่าย แต่ดูเป็นมืออาชีพ',quantity:100,price:0,bullets:['กระดาษอาร์ตด้าน 300 แกรม','พิมพ์ 4 สี','ขนาดมาตรฐานยอดนิยม']},{id:'corporate',name:'Corporate',tagline:'น่าเชื่อถือ เหมาะกับองค์กร',quantity:500,price:0,bullets:['กระดาษอาร์ตด้าน 300 แกรม','พิมพ์ 4 สี 2 ด้าน','เคลือบด้าน']},{id:'signature',name:'Signature',tagline:'สร้างความต่างตั้งแต่แรกสัมผัส',quantity:1000,price:0,bullets:['กระดาษพรีเมียม','พิมพ์ 4 สี 2 ด้าน','เคลือบเงา']}];
-const preset={id:'13x19',name:'13×19 กระดาษมาตรฐาน',usableW:31.02,usableH:47.26};
-const state={step:1,cartQty:1,settings:null,product:null,pack:null,catalog:null,material:null,services:[],quantity:100,quote:null,date:'',shipping:0,slip:null};
-const isPrint=s=>['PRINT_SINGLE','PRINT_DOUBLE'].includes(String(s.serviceRole||'').toUpperCase())||/พิมพ์.*หน้า|print/i.test(s.name||'');
-const isCoat=s=>/เคลือบ|laminat/i.test(`${s.name} ${s.category||''}`);
-function options(list,selected,kind){return list.map(x=>`<button type="button" class="choice ${selected===x.id?'selected':''}" data-${kind}="${esc(x.id)}"><b>${esc(x.name)}</b><small></small></button>`).join('')}
-const pricingModel=()=>state.product||fallbackPricingModel();
-function updatePrices(){const q=state.quote;if(!q||!state.catalog)return;document.querySelectorAll('[data-material],[data-print],[data-extra]').forEach(button=>{const isMaterial=button.dataset.material!==undefined,id=button.dataset.material??button.dataset.print??button.dataset.extra,item=(isMaterial?state.catalog.materials:state.catalog.services).find(v=>v.id===id),tag=button.querySelector('small');if(!item||!tag)return;const info=optionPrice({product:pricingModel(),item,sheets:q.sheets,quantity:q.pieces,isMaterial});tag.innerHTML=`<span class="${info.included?'opt-included':'opt-total'}">${esc(info.text)}</span>`})}
-async function init(){try{const params=new URLSearchParams(location.search),cartMode=params.get('cart')==='1',saved=productCartItem('business-card');const [settings,catalog]=await Promise.all([loadPricing(),loadCatalog()]);state.settings=settings;state.catalog=catalog;state.product=settings.products.find(p=>p.id==='business-card');let packs=state.product?.mode==='packages'?state.product.packages.map(p=>({...defaults.find(d=>d.id===p.id),...p})):defaults;const id=cartMode&&saved?saved.packageId:params.get('package');state.pack=packs.find(p=>p.id===id)||packs[0];state.quantity=cartMode&&saved?Number(saved.quantity)||state.pack.quantity:state.pack.quantity;const materials=(state.product?.materialIds?.length?catalog.materials.filter(m=>state.product.materialIds.includes(m.id)):catalog.materials);state.material=materials.find(m=>m.id===saved?.materialId)||materials[0]||catalog.materials[0];const prints=catalog.services.filter(isPrint),coats=catalog.services.filter(isCoat),extras=catalog.services.filter(s=>!isPrint(s)&&!isCoat(s));const included=new Set(state.product?.includedServiceIds||[]);state.services=cartMode&&saved?catalog.services.filter(s=>saved.serviceIds?.includes(s.id)):[prints.find(s=>included.has(s.id))||prints[0],...coats.filter(s=>included.has(s.id))].filter(Boolean);state.cartQty=cartMode&&saved?Number(saved.cartQty)||1:1;state.step=cartMode&&saved?2:1;$('productName').textContent=`นามบัตร ${state.pack.name}`;$('productTagline').textContent=state.pack.tagline||'เซตพร้อมสั่งที่ Admin จัดไว้';$('specList').innerHTML=(state.pack.bullets||['เลือกสเปกและบริการเสริมได้']).map(x=>`<li>${esc(x)}</li>`).join('');const quantities=state.product?.mode==='packages'?[state.pack.quantity]:[state.pack.quantity,state.pack.quantity*2,state.pack.quantity*4];$('quantityChoices').innerHTML=quantities.map(q=>`<button class="choice ${q===state.quantity?'selected':''}" data-quantity="${q}"><b>${q.toLocaleString('th-TH')} ใบ</b><small>${q===state.pack.quantity?'จำนวนในเซต':'เพิ่มจำนวน'}</small></button>`).join('');$('materialChoices').innerHTML=options(materials,state.material?.id,'material');$('printChoices').innerHTML=options(prints,state.services.find(isPrint)?.id,'print');$('extraChoices').innerHTML=options([...coats,...extras],null,'extra')||'<p>เซตนี้ไม่มีออปชันเพิ่มเติม</p>';recalc();renderStep()}catch(e){$('status').textContent=e.message}}
-function saveCart(){upsertCartItem({productId:'business-card',packageId:state.pack.id,quantity:state.quantity,materialId:state.material?.id,serviceIds:state.services.map(s=>s.id),cartQty:state.cartQty})}
-function recalc(){try{state.quote=calculateBusinessCardQuote({preset,material:state.material,services:state.services,quantity:state.quantity,pricingSettings:state.settings,packageId:state.pack.id,code:$('promoCode')?.value||''});const subtotal=state.quote.price*state.cartQty,grand=subtotal+state.shipping;$('startPrice').textContent=`เริ่มต้นที่ ฿${money(state.quote.price)}`;$('priceBreakdown').innerHTML=buildPriceBreakdown({product:pricingModel(),quote:state.quote,packName:state.pack.name,quantity:state.quantity,material:state.material,services:state.services}).map(line=>`<div class="price-line ${line.kind==='total'?'total':''} ${line.kind}"><span>${esc(line.label)}${line.basis?`<small>${esc(line.basis)}</small>`:''}</span><b>${esc(line.text)}</b></div>`).join('');updatePrices();$('grandTotal').textContent=`฿${money(grand)}`;$('transferTotal').textContent=`฿${money(grand)}`;$('cartName').textContent=`นามบัตร ${state.pack.name}`;$('cartSpec').textContent=`${state.quantity.toLocaleString('th-TH')} ใบ • ${state.material?.name||''} • ${state.services.map(s=>s.name).join(' • ')}`;$('cartPrice').textContent=`฿${money(subtotal)}`;$('cartQty').textContent=state.cartQty}catch(e){$('status').textContent=e.message}}
-function renderStep(){document.querySelectorAll('.step').forEach(x=>x.hidden=Number(x.dataset.step)!==state.step);$('progress').innerHTML=[1,2,3,4,5].map(n=>`<span class="${n<=state.step?'active':''}"></span>`).join('');$('stepLabel').textContent=`${state.step} / 5`;$('back').hidden=state.step===1;$('pageTitle').textContent=['สร้างออร์เดอร์นามบัตร','ตะกร้าสินค้าของคุณ','เลือกวันที่รับงานพิมพ์','ชำระเงินและระบุที่อยู่จัดส่ง','ส่งหลักฐานชำระเงิน'][state.step-1];$('next').textContent=['เพิ่มสินค้าลงตะกร้า','เลือกวันส่งสินค้า','เลือกวิธีจัดส่ง','ยืนยันและไปชำระเงิน','ยืนยันการแจ้งชำระเงิน'][state.step-1];$('totalLabel').textContent=state.step===4?'ยอดชำระสุทธิ':'ยอดรวมในตะกร้า';if(state.step===3)renderCalendar();if(state.step===5)$('quoteNo').textContent=`เลขอ้างอิง: #IP-${Date.now().toString().slice(-5)}`;scrollTo({top:0,behavior:'smooth'})}
-function renderCalendar(){const now=new Date(),year=now.getFullYear(),month=now.getMonth();$('monthTitle').textContent=now.toLocaleDateString('th-TH',{month:'long',year:'numeric'});const first=new Date(year,month,1).getDay(),days=new Date(year,month+1,0).getDate();let html='<span></span>'.repeat(first);for(let d=1;d<=days;d++){const date=new Date(year,month,d),iso=date.toLocaleDateString('sv-SE'),available=date>=new Date(year,month,now.getDate()+2)&&date.getDay()!==0,classes=[available?'available':'',state.date===iso?'selected':''].filter(Boolean).join(' ');html+=`<button type="button" class="${classes}" ${available?'':'disabled'} data-date="${iso}">${d}</button>`}$('calendar').innerHTML=html}
-function validate(){if(state.step===3&&!state.date)return'กรุณาเลือกวันที่ต้องการส่งสินค้า';if(state.step===4&&(!$('customerName').value.trim()||!$('phone').value.trim()||!$('address').value.trim()))return'กรุณากรอกชื่อ เบอร์โทร และที่อยู่';if(state.step===5&&!state.slip)return'กรุณาแนบหลักฐานการชำระเงิน';return''}
-document.addEventListener('click',e=>{const q=e.target.closest('[data-quantity]'),m=e.target.closest('[data-material]'),p=e.target.closest('[data-print]'),x=e.target.closest('[data-extra]'),d=e.target.closest('[data-date]');if(q){state.quantity=Number(q.dataset.quantity);document.querySelectorAll('[data-quantity]').forEach(b=>b.classList.toggle('selected',b===q));recalc()}if(m){state.material=state.catalog.materials.find(v=>v.id===m.dataset.material);document.querySelectorAll('[data-material]').forEach(b=>b.classList.toggle('selected',b===m));recalc()}if(p){state.services=state.services.filter(s=>!isPrint(s));const s=state.catalog.services.find(v=>v.id===p.dataset.print);if(s)state.services.unshift(s);document.querySelectorAll('[data-print]').forEach(b=>b.classList.toggle('selected',b===p));recalc()}if(x){const s=state.catalog.services.find(v=>v.id===x.dataset.extra),has=state.services.some(v=>v.id===s?.id);state.services=has?state.services.filter(v=>v.id!==s.id):[...state.services,s].filter(Boolean);x.classList.toggle('selected',!has);recalc()}if(d){state.date=d.dataset.date;document.querySelectorAll('[data-date]').forEach(b=>b.classList.toggle('selected',b===d));$('dateSummary').textContent=new Date(`${state.date}T00:00:00`).toLocaleDateString('th-TH',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}});
-$('next').onclick=()=>{const error=validate();if(error){$('status').textContent=error;return}$('status').textContent='';if(state.step<5){if(state.step===1)saveCart();state.step++;renderStep()}else{const id=`IP-${Date.now().toString().slice(-6)}`;localStorage.setItem('iprint-last-order',JSON.stringify({id,packageId:state.pack.id,total:$('grandTotal').textContent,date:state.date}));removeCartItem('business-card');document.querySelector('[data-step="5"]').innerHTML=`<div class="sheet"><span class="eyebrow">ORDER RECEIVED</span><h1>รับแจ้งชำระเงินแล้ว</h1><p>ทีมงานจะตรวจสอบหลักฐานและยืนยันออร์เดอร์</p><div class="price-box"><span>หมายเลขออร์เดอร์</span><strong>${id}</strong></div><a class="upload-look" href="./#packages">กลับไป Catalog นามบัตร</a></div>`;$('next').hidden=true;$('back').hidden=true}}
-$('back').onclick=()=>{if(state.step>1){state.step--;renderStep()}};$('minus').onclick=()=>{if(state.cartQty===1){$('removeDialog').showModal();return}state.cartQty--;saveCart();recalc()};$('confirmRemove').onclick=()=>{removeCartItem('business-card');location.href='./#packages'};$('plus').onclick=()=>{state.cartQty++;saveCart();recalc()};$('promoCode').oninput=recalc;document.querySelectorAll('[name="shipping"]').forEach(r=>r.onchange=()=>{state.shipping=r.value==='ems'?50:0;recalc()});$('pickSlip').onclick=()=>$('paymentSlip').click();$('paymentSlip').onchange=e=>{state.slip=e.target.files[0];if(!state.slip)return;const url=URL.createObjectURL(state.slip);$('slipPreview').hidden=false;$('slipPreview').innerHTML=`<img src="${url}" alt="หลักฐานการชำระเงิน"><b>${esc(state.slip.name)}</b>`;$('pickSlip').hidden=true};$('changeImage').onclick=()=>alert('สามารถเชื่อมเครื่องมือ Mockup ในขั้นต่อไปได้');init();
+import {
+  findProduct, resolveSets, allowedMaterials, quantityChoices, defaultSelection, selectionFromItem, quoteSelection,
+  cartItemFromSelection, isPrintService, isCoatService
+} from './product.js';
+
+// Configure ONE business card item and put it in the cart (the cart itself lives in /cart/).
+const $ = id => document.getElementById(id);
+const params = new URLSearchParams(location.search);
+if (params.get('cart') === '1') location.replace('../cart/'); // old link: the cart moved to its own page
+
+const state = { settings: null, product: null, pack: null, catalog: null, material: null, services: [], quantity: 0, quote: null, editingId: '' };
+const pricingModel = () => state.product || fallbackPricingModel();
+const includedNow = () => includedIdsFor(state.product, state.pack);
+
+function setStatus(message = '', isError = true) {
+  $('status').textContent = message;
+  $('status').style.color = isError ? '' : 'var(--green)';
+}
+
+function choiceButtons(list, kind) {
+  return list.map(item => `<button type="button" class="choice" data-${kind}="${esc(item.id)}"><b>${esc(item.name)}</b><small></small></button>`).join('');
+}
+
+const isSelected = (button, kind) => {
+  const id = button.dataset[kind];
+  if (kind === 'material') return state.material?.id === id;
+  return state.services.some(service => service.id === id);
+};
+
+function syncSelected() {
+  document.querySelectorAll('[data-quantity]').forEach(button => button.classList.toggle('selected', Number(button.dataset.quantity) === state.quantity));
+  for (const kind of ['material', 'print', 'extra']) {
+    document.querySelectorAll(`[data-${kind}]`).forEach(button => button.classList.toggle('selected', isSelected(button, kind)));
+  }
+}
+
+// Price tag on every choice: the total it adds for the current quantity, or "รวมในเซต".
+function updatePrices() {
+  const quote = state.quote;
+  if (!quote || !state.catalog) return;
+  document.querySelectorAll('[data-material],[data-print],[data-extra]').forEach(button => {
+    const isMaterial = button.dataset.material !== undefined;
+    const id = button.dataset.material ?? button.dataset.print ?? button.dataset.extra;
+    const item = (isMaterial ? state.catalog.materials : state.catalog.services).find(entry => entry.id === id);
+    const tag = button.querySelector('small');
+    if (!item || !tag) return;
+    const info = optionPrice({ product: pricingModel(), item, sheets: quote.sheets, quantity: quote.pieces, isMaterial, includedIds: includedNow() });
+    tag.innerHTML = `<span class="${info.included ? 'opt-included' : 'opt-total'}">${esc(info.text)}</span>`;
+  });
+}
+
+function recalc() {
+  try {
+    state.quote = quoteSelection({
+      settings: state.settings, pack: state.pack, material: state.material, services: state.services,
+      quantity: state.quantity, code: $('promoCode').value.trim()
+    });
+    setStatus('');
+    $('next').disabled = false;
+    $('startPrice').textContent = `เริ่มต้นที่ ฿${money(state.quote.price)}`;
+    $('priceBreakdown').innerHTML = buildPriceBreakdown({
+      product: pricingModel(), quote: state.quote, packName: state.pack.name, quantity: state.quantity,
+      material: state.material, services: state.services, includedIds: includedNow()
+    }).map(line => `<div class="price-line ${line.kind === 'total' ? 'total' : ''} ${line.kind}"><span>${esc(line.label)}${line.basis ? `<small>${esc(line.basis)}</small>` : ''}</span><b>${esc(line.text)}</b></div>`).join('');
+    $('grandTotal').textContent = `฿${money(state.quote.price)}`;
+    const code = $('promoCode').value.trim();
+    $('promoHint').textContent = code && !state.quote.pricing?.promotion ? 'ไม่พบโปรโมชันที่เข้าเงื่อนไขของรายการนี้' : code ? `ใช้โปรโมชัน “${state.quote.pricing.promotion.name}” แล้ว` : '';
+    updatePrices();
+    syncSelected();
+  } catch (error) {
+    state.quote = null;
+    $('next').disabled = true;
+    setStatus(error.message);
+  }
+}
+
+function renderChoices() {
+  const { product, pack, catalog } = state;
+  const materials = allowedMaterials(product, catalog);
+  const prints = catalog.services.filter(isPrintService);
+  const coats = catalog.services.filter(isCoatService);
+  const extras = catalog.services.filter(service => !isPrintService(service) && !isCoatService(service));
+  $('productName').textContent = `นามบัตร ${pack.name}`;
+  $('productTagline').textContent = pack.tagline || 'เซตพร้อมสั่งที่ Admin จัดไว้';
+  $('specList').innerHTML = (pack.bullets || ['เลือกสเปกและบริการเสริมได้']).map(text => `<li>${esc(text)}</li>`).join('');
+  $('quantityChoices').innerHTML = quantityChoices(product, pack).map(quantity => `<button type="button" class="choice" data-quantity="${quantity}"><b>${quantity.toLocaleString('th-TH')} ใบ</b><small>${quantity === pack.quantity ? 'จำนวนในเซต' : 'เพิ่มจำนวน'}</small></button>`).join('');
+  $('materialChoices').innerHTML = choiceButtons(materials, 'material');
+  $('printChoices').innerHTML = choiceButtons(prints, 'print');
+  $('extraChoices').innerHTML = choiceButtons([...coats, ...extras], 'extra') || '<p>เซตนี้ไม่มีออปชันเพิ่มเติม</p>';
+}
+
+async function init() {
+  try {
+    const [settings, catalog] = await Promise.all([loadPricing(), loadCatalog()]);
+    Object.assign(state, { settings, catalog, product: findProduct(settings) });
+    const sets = resolveSets(state.product);
+
+    const saved = params.get('edit') ? getCartItem(params.get('edit')) : null;
+    state.editingId = saved?.id || '';
+    state.pack = sets.find(set => set.id === (saved ? saved.packageId : params.get('package'))) || sets[0];
+    const start = defaultSelection({ product: state.product, catalog, pack: state.pack });
+    Object.assign(state, { quantity: start.quantity, material: start.material, services: start.services });
+
+    let notice = '';
+    if (params.get('edit') && !saved) {
+      notice = 'ไม่พบรายการนี้ในตะกร้า จึงเริ่มรายการใหม่แทน';
+    } else if (saved) {
+      const chosen = selectionFromItem({ item: saved, settings, catalog });
+      if (quantityChoices(state.product, state.pack).includes(Number(saved.quantity))) state.quantity = Number(saved.quantity);
+      if (chosen.material) state.material = chosen.material;
+      if (chosen.pack) state.services = chosen.services;
+      $('promoCode').value = saved.promoCode || '';
+      $('driveLink').value = saved.driveLink || '';
+      $('pageTitle').textContent = 'แก้ไขรายการในตะกร้า';
+      $('next').textContent = 'บันทึกการแก้ไข';
+      notice = chosen.problems.length ? 'ตัวเลือกบางอย่างที่เคยเลือกไว้ไม่มีขายแล้ว กรุณาตรวจสอบก่อนบันทึก' : '';
+    }
+    renderChoices();
+    recalc();
+    if (notice) setStatus(notice);
+  } catch (error) {
+    setStatus(error.message);
+  }
+}
+
+function saveToCart() {
+  if (!state.quote) return;
+  if (!$('driveLink').checkValidity()) { setStatus('ลิงก์ไฟล์ต้องขึ้นต้นด้วย https://'); $('driveLink').focus(); return; }
+  const item = cartItemFromSelection({
+    pack: state.pack, quantity: state.quantity, material: state.material, services: state.services,
+    promoCode: $('promoCode').value, driveLink: $('driveLink').value
+  });
+  if (state.editingId) {
+    if (!updateCartItem(state.editingId, item)) { setStatus('บันทึกลงตะกร้าไม่ได้ (เบราว์เซอร์ไม่อนุญาตให้เก็บข้อมูล)'); return; }
+  } else {
+    const result = addCartItem(item);
+    if (!result.ok) {
+      setStatus(result.reason === 'CART_FULL' ? `ตะกร้าเต็มแล้ว (สูงสุด ${CART_MAX_ITEMS} รายการ)` : 'บันทึกลงตะกร้าไม่ได้ (เบราว์เซอร์ไม่อนุญาตให้เก็บข้อมูล)');
+      return;
+    }
+  }
+  location.href = '../cart/';
+}
+
+document.addEventListener('click', event => {
+  const quantity = event.target.closest('[data-quantity]');
+  const material = event.target.closest('[data-material]');
+  const print = event.target.closest('[data-print]');
+  const extra = event.target.closest('[data-extra]');
+  if (quantity) {
+    state.quantity = Number(quantity.dataset.quantity);
+  } else if (material) {
+    state.material = state.catalog.materials.find(item => item.id === material.dataset.material) || state.material;
+  } else if (print) {
+    const service = state.catalog.services.find(item => item.id === print.dataset.print);
+    if (service) state.services = [service, ...state.services.filter(item => !isPrintService(item))];
+  } else if (extra) {
+    const service = state.catalog.services.find(item => item.id === extra.dataset.extra);
+    if (service) state.services = state.services.some(item => item.id === service.id) ? state.services.filter(item => item.id !== service.id) : [...state.services, service];
+  } else {
+    return;
+  }
+  recalc();
+});
+
+$('promoCode').addEventListener('input', recalc);
+$('next').addEventListener('click', saveToCart);
+$('changeImage').addEventListener('click', () => alert('สามารถเชื่อมเครื่องมือ Mockup ในขั้นต่อไปได้'));
+$('cartCount').textContent = String(cartCount());
+addEventListener('pageshow', () => { $('cartCount').textContent = String(cartCount()); });
+init();

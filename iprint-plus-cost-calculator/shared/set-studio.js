@@ -1,4 +1,5 @@
 // Pure helpers for the set studio (pricing page). No DOM access, so they can be unit tested in Node.
+import { includedIdsFor } from './product-pricing.js';
 
 export const UNIT_OPTIONS = Object.freeze([
   { value: 'sheet', label: 'ต่อแผ่น' },
@@ -90,6 +91,41 @@ export function describeUsage(usage) {
   return `ใช้ใน ${usage.length} หมวด (${places}${more}) และ ${packages.size} เซต`;
 }
 
+function dropFromPackage(pack, itemId) {
+  pack.optionIds = (pack.optionIds || []).filter(id => id !== itemId);
+  if (Array.isArray(pack.includedIds)) pack.includedIds = pack.includedIds.filter(id => id !== itemId);
+}
+
+// Switches an item on/off as a choice of one set. Turning it off also removes it from what the set includes.
+export function toggleOffered(pack, itemId) {
+  const on = !(pack.optionIds || []).includes(itemId);
+  if (on) pack.optionIds = [...(pack.optionIds || []), itemId];
+  else dropFromPackage(pack, itemId);
+  return on;
+}
+
+// Services a set includes at no extra charge (the set's own list, else the product-wide one).
+export const includedIdsOf = (product, pack) => includedIdsFor(product, pack);
+
+// Marks a service as included in / charged extra for one set. An included service is also offered in that set.
+// A "choose one" group may include several services: the customer then picks any of them at no extra charge.
+// Only services can be included (a package price always covers its material). Returns false when nothing changed.
+export function setIncluded(product, packageId, groupIndex, itemId, included) {
+  const pack = product.packages.find(item => item.id === packageId);
+  const group = product.optionGroups[groupIndex];
+  if (!pack || !group || group.source !== 'service' || !(group.itemIds || []).includes(itemId)) return false;
+  // The first change copies the product-wide list so that sets keep their current prices.
+  let list = [...includedIdsOf(product, pack)];
+  if (included) {
+    if (!list.includes(itemId)) list.push(itemId);
+    if (!(pack.optionIds || []).includes(itemId)) pack.optionIds = [...(pack.optionIds || []), itemId];
+  } else {
+    list = list.filter(id => id !== itemId);
+  }
+  pack.includedIds = list;
+  return true;
+}
+
 // Adds/removes an item in one option group. A newly added item is switched on in `selectInPackageId`;
 // removing it also switches it off in every set unless another group of the same product still lists it.
 export function setGroupItem(product, groupIndex, itemId, included, { selectInPackageId = '' } = {}) {
@@ -104,7 +140,7 @@ export function setGroupItem(product, groupIndex, itemId, included, { selectInPa
   }
   group.itemIds = group.itemIds.filter(id => id !== itemId);
   const stillListed = product.optionGroups.some(other => (other.itemIds || []).includes(itemId));
-  if (!stillListed) product.packages.forEach(pack => { pack.optionIds = (pack.optionIds || []).filter(id => id !== itemId); });
+  if (!stillListed) product.packages.forEach(pack => dropFromPackage(pack, itemId));
   return true;
 }
 
@@ -112,17 +148,20 @@ export function setGroupItem(product, groupIndex, itemId, included, { selectInPa
 export function removeItemEverywhere(settings, itemId) {
   for (const product of settings?.products || []) {
     for (const group of product.optionGroups || []) group.itemIds = (group.itemIds || []).filter(id => id !== itemId);
-    for (const pack of product.packages || []) pack.optionIds = (pack.optionIds || []).filter(id => id !== itemId);
+    for (const pack of product.packages || []) dropFromPackage(pack, itemId);
     for (const key of ['includedServiceIds', 'materialIds']) if (Array.isArray(product[key])) product[key] = product[key].filter(id => id !== itemId);
   }
 }
 
-export function groupSummary(group, itemsById, pack) {
+export function groupSummary(group, itemsById, pack, includedIds = null) {
   if (group.enabled === false) return { tone: 'off', text: 'ปิดอยู่ · ลูกค้าจะไม่เห็นหมวดนี้' };
   const items = (group.itemIds || []).map(id => itemsById.get(id)).filter(Boolean);
   if (!items.length) return { tone: 'empty', text: 'ยังไม่มีรายการ · กด “เพิ่ม/แก้ไขรายการ” เพื่อเลือก' };
   const selected = items.filter(item => (pack?.optionIds || []).includes(item.id)).length;
-  const parts = [`${items.length} รายการ`, `ใช้ในเซตนี้ ${selected}`, group.selectionMode === 'multiple' ? 'เลือกได้หลายรายการ' : 'เลือกได้ 1 รายการ'];
+  const parts = [`${items.length} รายการ`, `เปิดให้เลือก ${selected}`];
+  const included = includedIds ? items.filter(item => includedIds.includes(item.id)).length : 0;
+  if (included) parts.push(`รวมในเซต ${included}`);
+  parts.push(group.selectionMode === 'multiple' ? 'เลือกได้หลายรายการ' : 'เลือกได้ 1 รายการ');
   if (group.required) parts.push('บังคับเลือก');
   return { tone: selected ? 'ok' : 'warn', text: parts.join(' · ') };
 }

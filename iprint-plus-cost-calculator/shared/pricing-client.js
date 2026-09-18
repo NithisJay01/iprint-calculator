@@ -1,7 +1,8 @@
 import { emptySettings, newProduct, validateSettings } from './product-pricing.js';
 export const LOCAL = ['localhost', '127.0.0.1'].includes(location.hostname);
 export const STORAGE_KEY = 'iprint-product-pricing-preview-v1';
-const API = 'https://iprint-flow-api.iprint-garphic1.workers.dev';
+export const API_ROOT = 'https://iprint-flow-api.iprint-garphic1.workers.dev';
+const API = API_ROOT;
 export async function loadPricing() {
   if (LOCAL) {
     const raw = localStorage.getItem(STORAGE_KEY);

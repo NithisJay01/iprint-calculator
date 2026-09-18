@@ -1,7 +1,7 @@
 import { newProduct, calculateProductPrice } from '../shared/product-pricing.js';
 import { LOCAL, loadPricing, savePricing, loadCatalog, storedWriteKey, loadDraft, saveDraft, discardDraft, createCatalogItem, deactivateCatalogItem } from '../shared/pricing-client.js';
 import { newBusinessCardProduct } from '../shared/business-card-product.js';
-import { UNIT_OPTIONS, CAPACITY_BASIS_OPTIONS, formatUnit, newCatalogItemPayload, catalogListFor, filterCatalogItems, itemUsage, describeUsage, setGroupItem, removeItemEverywhere, groupSummary, saveStateLabel } from '../shared/set-studio.js';
+import { UNIT_OPTIONS, CAPACITY_BASIS_OPTIONS, formatUnit, newCatalogItemPayload, catalogListFor, filterCatalogItems, itemUsage, describeUsage, setGroupItem, removeItemEverywhere, groupSummary, saveStateLabel, toggleOffered, setIncluded, includedIdsOf } from '../shared/set-studio.js';
 
 const $ = id => document.getElementById(id);
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -72,17 +72,27 @@ function renderPackageCards(product) {
   return `<div class="package-grid">${product.packages.map(pack => `<button type="button" class="package-card ${pack.id === selectedPackageId ? 'active' : ''}" data-package="${esc(pack.id)}"><span>${pack.id === selectedPackageId ? 'กำลังจัดเซต' : 'เลือกแก้ไข'}</span><b>${esc(pack.name)}</b><small>${Number(pack.quantity).toLocaleString('th-TH')} ชิ้น · ฿${fmt(pack.price)}</small></button>`).join('')}<button type="button" class="package-card add-card" data-add-package>＋<b>สร้างเซตใหม่</b><small>เพิ่มแพ็กเกจพร้อมขาย</small></button></div>`;
 }
 
+function includeHint(packagesMode, group) {
+  if (!packagesMode) return group.source === 'service' ? '<p class="group-hint">กำหนดว่ารายการไหน “รวมในเซต” ได้เมื่อรูปแบบราคาเป็น “แพ็กเกจสำเร็จรูป” (ตั้งที่ “สูตรราคาและกติกาขั้นสูง” ด้านล่าง)</p>' : '';
+  return group.source === 'service'
+    ? '<p class="group-hint">ติ๊ก “รวมในเซต” ที่รายการซึ่งไม่คิดเงินเพิ่มในเซตนี้ รายการอื่นที่เปิดให้เลือกจะคิดเงินเพิ่มเมื่อลูกค้าเลือก (หมวดที่เลือกได้ 1 รายการ ติ๊กได้หลายรายการ ลูกค้าจะเลือกอย่างใดอย่างหนึ่งโดยไม่คิดเพิ่ม)</p>'
+    : '<p class="group-hint">วัสดุรวมอยู่ในราคาเซตเสมอ</p>';
+}
+
 function renderGroups(product, pack) {
   const items = new Map(catalogItems().map(item => [item.id, item]));
+  const packagesMode = product.mode === 'packages';
+  const includedIds = includedIdsOf(product, pack);
   return product.optionGroups.map((group, index) => {
+    const canInclude = packagesMode && group.source === 'service';
     const groupItems = group.itemIds.map(id => items.get(id)).filter(Boolean);
-    const summary = groupSummary(group, items, pack);
+    const summary = groupSummary(group, items, pack, canInclude ? includedIds : null);
     const open = openGroups.has(group.id);
     return `<section class="option-group ${group.enabled ? '' : 'disabled'} ${open ? 'open' : ''}" data-group-index="${index}">
       <div class="group-head"><button type="button" class="group-toggle" data-toggle-group="${index}" aria-expanded="${open}"><span class="chevron" aria-hidden="true">›</span><span class="group-title"><h3>${esc(group.name)}</h3><small class="tone-${summary.tone}">${esc(summary.text)}</small></span></button><div class="group-actions"><button type="button" class="text-button" data-move-group="up" data-group-index="${index}" aria-label="เลื่อนหมวดขึ้น" ${index === 0 ? 'disabled' : ''}>↑</button><button type="button" class="text-button" data-move-group="down" data-group-index="${index}" aria-label="เลื่อนหมวดลง" ${index === product.optionGroups.length - 1 ? 'disabled' : ''}>↓</button><button type="button" class="remove" data-remove-group="${index}">ลบหมวด</button><label class="switch"><input type="checkbox" data-group-toggle="${index}" ${group.enabled ? 'checked' : ''}><span></span><b>${group.enabled ? 'เปิดใช้งาน' : 'ปิดใช้งาน'}</b></label></div></div>
       ${open ? `<div class="group-body">
       <div class="group-settings"><label>ชื่อหมวด<input data-group-field="name" data-group-index="${index}" value="${esc(group.name)}"></label><label>ประเภทรายการ<select data-group-field="source" data-group-index="${index}">${option('material','วัสดุ',group.source==='material')}${option('service','บริการ',group.source==='service')}</select></label><label>การเลือก<select data-group-field="selectionMode" data-group-index="${index}">${option('single','เลือกได้ 1 รายการ',group.selectionMode==='single')}${option('multiple','เลือกได้หลายรายการ',group.selectionMode==='multiple')}</select></label><label class="check"><input type="checkbox" data-group-field="required" data-group-index="${index}" ${group.required ? 'checked' : ''}> บังคับเลือก</label></div>
-      ${group.enabled ? `<div class="ingredient-grid">${groupItems.map(item => { const active = pack.optionIds.includes(item.id); return `<button type="button" class="ingredient ${active ? 'selected' : ''}" data-option-id="${esc(item.id)}" aria-pressed="${active}"><span>${esc(item.name)}</span><small>${item.price ? `+฿${fmt(item.price)} / ${esc(formatUnit(item.unit))}` : 'รวมในเซตได้'}</small></button>`; }).join('')}<button type="button" class="ingredient manage" data-open-picker="${index}">＋ เพิ่ม/แก้ไขรายการ</button></div>` : ''}
+      ${group.enabled ? `${includeHint(packagesMode, group)}<div class="ingredient-grid">${groupItems.map(item => { const active = pack.optionIds.includes(item.id); const included = canInclude && includedIds.includes(item.id); return `<div class="ingredient-cell"><button type="button" class="ingredient ${active ? 'selected' : ''} ${included ? 'included' : ''}" data-option-id="${esc(item.id)}" aria-pressed="${active}"><span>${esc(item.name)}</span><small>${item.price ? `+฿${fmt(item.price)} / ${esc(formatUnit(item.unit))}` : 'ไม่มีราคา'}</small>${included ? '<em class="included-badge">รวมในเซต</em>' : ''}</button>${canInclude && active ? `<label class="included-toggle"><input type="checkbox" data-included-id="${esc(item.id)}" data-group-index="${index}" ${included ? 'checked' : ''}> รวมในเซต (ไม่คิดเพิ่ม)</label>` : ''}</div>`; }).join('')}<button type="button" class="ingredient manage" data-open-picker="${index}">＋ เพิ่ม/แก้ไขรายการ</button></div>` : ''}
       </div>` : ''}
     </section>`;
   }).join('');
@@ -130,7 +140,7 @@ function renderCustomerPreview() {
   const product = currentProduct(), pack = currentPackage();
   const items = new Map(catalogItems().map(item => [item.id, item]));
   const groups = product.optionGroups.filter(group => group.enabled).map(group => ({ ...group, choices: group.itemIds.filter(id => pack.optionIds.includes(id)).map(id => items.get(id)).filter(Boolean) })).filter(group => group.choices.length);
-  $('customerPreview').innerHTML = `<article class="customer-card"><div class="mockup">${esc(product.name.trim().charAt(0) || 'P')}</div><span class="set-label">${esc(product.name)}</span><h3>${esc(pack.name)}</h3><p>${esc(pack.description || 'เซตพร้อมสั่งที่ Admin จัดไว้')}</p><div class="price-block"><span>เริ่มต้น ${Number(pack.quantity).toLocaleString('th-TH')} ชิ้น</span><b>฿${fmt(pack.price)}</b></div>${groups.map(group => `<div class="preview-group"><b>${esc(group.name)}</b><div>${group.choices.map(item => `<span>${esc(item.name)}</span>`).join('')}</div></div>`).join('')}<button type="button">เลือกเซตนี้</button></article>`;
+  $('customerPreview').innerHTML = `<article class="customer-card"><div class="mockup">${esc(product.name.trim().charAt(0) || 'P')}</div><span class="set-label">${esc(product.name)}</span><h3>${esc(pack.name)}</h3><p>${esc(pack.description || 'เซตพร้อมสั่งที่ Admin จัดไว้')}</p><div class="price-block"><span>เริ่มต้น ${Number(pack.quantity).toLocaleString('th-TH')} ชิ้น</span><b>฿${fmt(pack.price)}</b></div>${groups.map(group => `<div class="preview-group"><b>${esc(group.name)}</b><div>${group.choices.map(item => { const inc = product.mode === 'packages' && group.source === 'service' && includedIdsOf(product, pack).includes(item.id); return `<span class="${inc ? 'inc' : ''}">${esc(item.name)}${inc ? '<small>รวมในเซต</small>' : ''}</span>`; }).join('')}</div></div>`).join('')}<button type="button">เลือกเซตนี้</button></article>`;
 }
 
 function previewPrice() {
@@ -226,6 +236,9 @@ $('editor').addEventListener('input', event => {
       input.closest('.option-group').querySelector('h3').textContent = group.name;
       renderCustomerPreview();
     } else render();
+  } else if (input.dataset.includedId != null) {
+    setIncluded(product, selectedPackageId, Number(input.dataset.groupIndex), input.dataset.includedId, input.checked);
+    render();
   } else if (input.dataset.promoField) {
     const promo = product.promotions[Number(input.closest('[data-promo]').dataset.promo)];
     promo[input.dataset.promoField] = input.type === 'checkbox' ? input.checked : input.type === 'number' ? Number(input.value) : input.value;
@@ -248,7 +261,7 @@ $('editor').addEventListener('click', event => {
   if (packageButton) { selectedPackageId = packageButton.dataset.package; render(); return; }
   if (event.target.closest('[data-add-package]')) {
     const id = `set-${crypto.randomUUID().slice(0, 8)}`;
-    product.packages.push({ id, name: 'เซตใหม่', description: 'พร้อมจัดรายการและตัวเลือก', quantity: 100, price: 0, optionIds: [] });
+    product.packages.push({ id, name: 'เซตใหม่', description: 'พร้อมจัดรายการและตัวเลือก', quantity: 100, price: 0, optionIds: [], includedIds: [] });
     product.mode = 'packages'; selectedPackageId = id; render(); dirty(); return;
   }
   if (event.target.closest('[data-remove-package]') && product.packages.length > 1) {
@@ -275,7 +288,7 @@ $('editor').addEventListener('click', event => {
   const ingredient = event.target.closest('[data-option-id]');
   if (ingredient) {
     const pack = currentPackage(), id = ingredient.dataset.optionId;
-    pack.optionIds = pack.optionIds.includes(id) ? pack.optionIds.filter(value => value !== id) : [...pack.optionIds, id];
+    toggleOffered(pack, id);
     render(); dirty(); return;
   }
   if (event.target.closest('[data-add-promo]')) {
@@ -310,7 +323,7 @@ function renderPicker() {
   const rows = filterCatalogItems(all, $('pickerSearch').value);
   $('pickerList').innerHTML = rows.length ? rows.map(item => {
     const inGroup = group.itemIds.includes(item.id);
-    const price = item.price ? `฿${fmt(item.price)} / ${esc(formatUnit(item.unit))}` : 'รวมในเซตได้';
+    const price = item.price ? `฿${fmt(item.price)} / ${esc(formatUnit(item.unit))}` : 'ไม่มีราคา';
     const action = pickerConfirmId === item.id
       ? `<div class="picker-confirm"><p>${esc(describeUsage(itemUsage(settings, item.id)))}<br>ปิดแล้วรายการจะหายจากหมวดและเซตเหล่านี้ และลูกค้าจะไม่เห็นในเครื่องคิดราคา (เก็บประวัติเดิมไว้)</p><div><button type="button" class="remove" data-picker-confirm="${esc(item.id)}">ยืนยันปิดใช้งาน</button> <button type="button" class="text-button" data-picker-cancel>ยกเลิก</button></div></div>`
       : `<button type="button" class="text-danger" data-picker-deactivate="${esc(item.id)}">ปิดใช้งาน</button>`;

@@ -138,7 +138,7 @@ assert.ok(orderSource.includes("from './breakdown.js'"));
 assert.ok(!orderSource.includes('รวมในราคา'), 'the old "included in the price" line hides what an extra costs');
 assert.ok(!/\/ \$\{esc\(x\.unit\)\}/.test(orderSource), 'option buttons must not show the per-unit "/ sheet" text again');
 assert.ok(orderSource.includes('updatePrices()'));
-assert.ok(!orderSource.includes('opt-basis') && !/tag\.innerHTML=[^;]*info\.basis/.test(orderSource), 'option buttons show only the total, the formula belongs to the summary');
-assert.ok(/line\.basis\?`<small>/.test(orderSource), 'the summary shows the formula under each item');
+assert.ok(!orderSource.includes('opt-basis') && !/tag\.innerHTML\s*=[^;]*info\.basis/.test(orderSource), 'option buttons show only the total, the formula belongs to the summary');
+assert.ok(/line\.basis\s*\?\s*`<small>/.test(orderSource), 'the summary shows the formula under each item');
 
 console.log('Business card breakdown test passed');

@@ -126,7 +126,8 @@ function applyPackage(id) {
     state.material = state.catalogs.materials.find(entry => /art paper 300|อาร์ต.*300/i.test(entry.name)) || state.catalogs.materials[0];
     const print = state.catalogs.services.find(entry => item.print === 'double' ? isDouble(entry) : isPrintService(entry) && !isDouble(entry));
     const laminate = item.laminate === 'none' ? null : state.catalogs.services.find(entry => new RegExp(item.laminate === 'matte' ? 'ด้าน' : 'เงา').test(entry.name));
-    state.services = [print, laminate].filter(Boolean);
+    // A set configured in the set studio lists exactly which services it includes; older sets use the fixed print/laminate fields.
+    state.services = Array.isArray(item.includedIds) ? state.catalogs.services.filter(entry => item.includedIds.includes(entry.id)) : [print, laminate].filter(Boolean);
     $('quantity').value = String(item.quantity);
   }
   renderOptionGroups(); recalculate();

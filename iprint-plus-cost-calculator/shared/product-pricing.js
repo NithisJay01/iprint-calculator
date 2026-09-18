@@ -33,6 +33,7 @@ export function validateSettings(input) {
       if (!t || typeof t !== 'object') { errors.push('แพ็กเกจไม่ถูกต้อง'); continue; }
       if (typeof t.id !== 'string' || !/^[a-z0-9-]{1,80}$/.test(t.id) || packageIds.has(t.id) || typeof t.name !== 'string' || !t.name.trim()) errors.push('รหัสแพ็กเกจต้องไม่ซ้ำและมีชื่อ'); packageIds.add(t.id);
       number(t.quantity, 'จำนวนแพ็กเกจไม่ถูกต้อง', 1); number(t.price, 'ราคาแพ็กเกจไม่ถูกต้อง');
+      if (t.includedIds !== undefined && (!Array.isArray(t.includedIds) || t.includedIds.length > 100 || t.includedIds.some(id => typeof id !== 'string' || !id || id.length > 100))) errors.push('รายการที่รวมในเซตไม่ถูกต้อง');
       if (!Number.isInteger(t.quantity)) errors.push('จำนวนต้องเป็นจำนวนเต็ม');
     }
     if (p.mode === 'tiers' && !p.tiers.length) errors.push('เพิ่มช่วงราคาอย่างน้อยหนึ่งช่วง');
@@ -55,17 +56,19 @@ export function validateSettings(input) {
 export const SHEET_UNITS = Object.freeze(['sheet', 'sheets', 'แผ่น']);
 export const PIECE_UNITS = Object.freeze(['piece', 'pieces', 'ชิ้น', 'ดวง']);
 export const unitKind = unit => (SHEET_UNITS.includes(unit) ? 'sheet' : PIECE_UNITS.includes(unit) ? 'piece' : 'job');
+// Services included (free) in a set: the package's own list when it has one, otherwise the product-wide list.
+export const includedIdsFor = (product, pack) => (Array.isArray(pack?.includedIds) ? pack.includedIds : product?.includedServiceIds || []);
 // What one catalog item costs for a job and how much of it is charged to the customer.
 // `charge` is not rounded; it is exactly what calculateProductPrice adds to the subtotal.
 //  - service: included services of a package/tier product are free, otherwise cost x markup
 //  - material (isMaterial): only formula pricing charges it (it is part of the base cost x markup)
-export function itemCost({ product, item, sheets = 0, quantity = 1, isMaterial = false }) {
+export function itemCost({ product, item, sheets = 0, quantity = 1, isMaterial = false, includedIds = product.includedServiceIds }) {
   const kind = unitKind(item.unit);
   const amount = kind === 'sheet' ? sheets : kind === 'piece' ? quantity : 1;
   const unitPrice = Number(item.price) || 0;
   const cost = unitPrice * amount;
   const factor = 1 + product.markup / 100;
-  const included = isMaterial ? product.mode !== 'formula' : product.mode !== 'formula' && product.includedServiceIds.includes(item.id);
+  const included = isMaterial ? product.mode !== 'formula' : product.mode !== 'formula' && includedIds.includes(item.id);
   return { kind, amount, unitPrice, factor, cost, included, charge: included ? 0 : cost * factor };
 }
 export function calculateProductPrice({ product, version = '', quantity, sheets = 0, baseCost = 0, services = [], materialId = '', packageId = '', code = '', date = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Bangkok' }) }) {
@@ -87,10 +90,11 @@ export function calculateProductPrice({ product, version = '', quantity, sheets 
     if (!selectedPackage) throw new Error('กรุณาเลือกแพ็กเกจและจำนวนให้ตรงกัน');
     base = selectedPackage.price;
   }
+  const includedIds = includedIdsFor(product, selectedPackage);
   let cost = baseCost, extras = 0;
   for (const service of services) {
     if (!Number.isFinite(Number(service.price)) || Number(service.price) < 0) throw new Error('ราคาบริการไม่ถูกต้อง');
-    const line = itemCost({ product, item: service, sheets, quantity });
+    const line = itemCost({ product, item: service, sheets, quantity, includedIds });
     cost += line.cost;
     extras += line.charge;
   }

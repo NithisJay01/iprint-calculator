@@ -23,22 +23,22 @@ function chargeBasis(cost) {
 }
 
 // Price tag for one selectable material/service.
-export function optionPrice({ product, item, sheets, quantity, isMaterial = false }) {
-  const cost = itemCost({ product, item, sheets, quantity, isMaterial });
+export function optionPrice({ product, item, sheets, quantity, isMaterial = false, includedIds }) {
+  const cost = itemCost({ product, item, sheets, quantity, isMaterial, includedIds });
   const charge = money(cost.charge);
   const included = cost.included || charge === 0;
   return { included, charge, text: included ? 'รวมในเซต' : `+฿${formatBaht(charge)}`, basis: included ? '' : chargeBasis(cost) };
 }
 
 // Lines of the price summary. baseLine + material + services - discount + adjustment always equals the total.
-export function buildPriceBreakdown({ product, quote, packName, quantity, material, services }) {
+export function buildPriceBreakdown({ product, quote, packName, quantity, material, services, includedIds }) {
   const { sheets, pieces, pricing } = quote;
   const model = product || fallbackPricingModel();
   const factor = 1 + model.markup / 100;
   const lines = [];
 
   const materialTag = material ? optionPrice({ product: model, item: material, sheets, quantity: pieces, isMaterial: true }) : null;
-  const serviceTags = services.map(service => ({ service, tag: optionPrice({ product: model, item: service, sheets, quantity: pieces }) }));
+  const serviceTags = services.map(service => ({ service, tag: optionPrice({ product: model, item: service, sheets, quantity: pieces, includedIds }) }));
   const baseValue = pricing ? money(pricing.base - (materialTag?.charge || 0)) : money(quote.productionCost * factor);
   lines.push({ kind: 'base', label: `${packName} (${count(quantity)} ใบ)`, value: baseValue, text: `฿${formatBaht(baseValue)}` });
   if (material) lines.push({ kind: 'material', label: material.name, value: materialTag.charge, included: materialTag.included, text: materialTag.text, basis: materialTag.basis });

@@ -39,7 +39,11 @@ assert.match(readFileSync(new URL('../pricing/index.html', import.meta.url), 'ut
 assert.match(staffCatalogApp, /function openStaffCatalogFromQuery\(\)/);
 assert.match(staffCatalogApp, /openStaffCatalog\(requestedType\)/);
 assert.match(mainApp, /openStaffCatalogFromQuery\(\)/);
-for (const content of ['สร้างออร์เดอร์นามบัตร', 'ตะกร้าสินค้าของคุณ', 'เลือกวันที่ต้องการส่งสินค้า', 'ชำระเงินและระบุที่อยู่จัดส่ง', 'ส่งหลักฐานชำระเงิน']) assert.match(orderPage, new RegExp(content));
+// The order page configures one item; the shared cart page (cart/) holds the checkout steps.
+const cartPage = readFileSync(new URL('../cart/index.html', import.meta.url), 'utf8');
+assert.match(orderPage, /สร้างออร์เดอร์นามบัตร/);
+assert.match(orderPage, /href="\.\.\/cart\/"/, 'the order page links to the shared cart');
+for (const content of ['ตะกร้าสินค้าของคุณ', 'เลือกวันที่ต้องการรับงาน', 'ชำระเงินและระบุที่อยู่จัดส่ง', 'ส่งหลักฐานชำระเงิน']) assert.match(cartPage, new RegExp(content));
 
 const preset = { id:'paper-1', name:'13×19 กระดาษมาตรฐาน', usableW:31.02, usableH:47.26 };
 const material = { id:'material-1', name:'Art Paper 300g', price:1.2, unit:'sheet', updatedAt:'2026-09-15T00:00:00.000Z' };
