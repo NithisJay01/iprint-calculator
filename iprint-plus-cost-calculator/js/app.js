@@ -82,7 +82,8 @@ async function downloadBrief() {
 
 let applicationBound = false;
 let activeAccessRole = 'none';
-const activePortal = /^\/staff(?:\/|$)/i.test(window.location.pathname) ? 'staff' : 'customer';
+const requestedPortal = new URLSearchParams(window.location.search).get('portal');
+const activePortal = /^\/staff(?:\/|$)/i.test(window.location.pathname) || requestedPortal === 'staff' ? 'staff' : 'customer';
 document.body.dataset.portal = activePortal;
 
 function setAccessRole(role) {
