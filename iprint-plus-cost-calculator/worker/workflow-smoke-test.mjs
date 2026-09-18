@@ -54,8 +54,10 @@ const itemPage = status => ({
     'Delivery Deadline': { type: 'date', date: { start: '2026-09-03' } }
   }
 });
+const TICKET_UUID = '3cc1a0ce-e8bd-8068-acd1-000bcaea0f4a';
 const ticketPage = {
   id: 'ticket-page-id',
+  parent: { type: 'data_source_id', data_source_id: 'tickets-id' },
   url: 'https://notion.test/ticket-page-id',
   last_edited_time: '2026-08-30T10:00:00.000Z',
   properties: {
@@ -79,7 +81,7 @@ globalThis.fetch = async (url, options = {}) => {
   if (requestUrl.endsWith('/v1/data_sources/tickets-id') && method === 'GET') {
     return Response.json(ticketSchema);
   }
-  if (requestUrl.endsWith('/v1/pages/ticket-page-id') && method === 'GET') {
+  if ((requestUrl.endsWith('/v1/pages/ticket-page-id') || requestUrl.endsWith(`/v1/pages/${TICKET_UUID}`)) && method === 'GET') {
     return Response.json(ticketPage);
   }
   if (requestUrl.endsWith('/v1/pages/item-page-id') && method === 'GET') {
@@ -88,7 +90,7 @@ globalThis.fetch = async (url, options = {}) => {
   if (requestUrl.endsWith('/v1/data_sources/items-id/query') && method === 'POST') {
     const payload = JSON.parse(options.body);
     assert.equal(payload.filter.property, 'Order Ticket');
-    assert.equal(payload.filter.relation.contains, 'ticket-page-id');
+    assert.ok(['ticket-page-id', TICKET_UUID].includes(payload.filter.relation.contains));
     return Response.json({ results: [itemPage(itemStatus)] });
   }
   if (requestUrl.endsWith('/v1/pages/item-page-id') && method === 'PATCH') {
@@ -123,7 +125,7 @@ const env = {
 
 try {
   const readResponse = await workerModule.default.fetch(
-    new Request('https://worker.test/orders/ticket-page-id', {
+    new Request(`https://worker.test/orders/${TICKET_UUID}`, {
       headers: { 'X-API-Key': 'test-key' }
     }),
     env
@@ -139,7 +141,7 @@ try {
   assert.equal(order.items[0].briefDeadline, '2026-09-01');
 
   const publicReadResponse = await workerModule.default.fetch(
-    new Request('https://worker.test/public/orders/ticket-page-id'),
+    new Request(`https://worker.test/public/orders/${TICKET_UUID}`),
     env
   );
   const publicOrder = await publicReadResponse.json();

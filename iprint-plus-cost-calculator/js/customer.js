@@ -5,7 +5,7 @@ async function syncCustomers() {
     if (!input || !list) return;
 
     try {
-      const data = await getJSON(API.customers);
+      const data = await getJSON(API.customers, { 'X-API-Key': getWriteApiKey() });
 
       customers = Array.isArray(data.customers)
         ? data.customers

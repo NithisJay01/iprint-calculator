@@ -69,10 +69,10 @@ function readTestWorkflowOrder() {
   }
 }
 
-async function getJSON(url) {
+async function getJSON(url, headers) {
     if (IPRINT_TEST_MODE) return getTestApiFixture(url);
     const r=await fetch(url, {
-      method:'GET',cache:'no-store'
+      method:'GET',cache:'no-store',headers
     }
     );
     const t=await r.text();

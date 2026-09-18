@@ -784,6 +784,8 @@ export default {
         url.pathname === "/customers" &&
         request.method === "GET"
       ) {
+        const authError = requireAuth(request);
+        if (authError) return authError;
 
         const response = await fetch(
           `https://api.notion.com/v1/data_sources/${env.NOTION_CUSTOMERS_DATA_SOURCE_ID}/query`,
@@ -2133,15 +2135,26 @@ export default {
           if (authError) return authError;
         }
 
-        const ticketId = decodeURIComponent(orderDetailMatch[2] || "").trim();
-        if (!ticketId || ticketId.length > 100) {
+        // ticketId is interpolated into a Notion API path, so it must be a bare
+        // Notion UUID; anything else (e.g. "../users?x=1") could reach other endpoints.
+        let ticketId = "";
+        try {
+          ticketId = decodeURIComponent(orderDetailMatch[2] || "").trim();
+        } catch (error) {
+          ticketId = "";
+        }
+        if (!/^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/i.test(ticketId)) {
           return json({ success: false, error: "Invalid ticket ID" }, 400);
         }
 
+        // Public callers never receive raw Notion error bodies.
         let itemsSource;
         try {
           itemsSource = await resolveWorkflowDataSource(env.NOTION_ORDER_ITEMS_DATA_SOURCE_ID);
         } catch (error) {
+          if (isPublicTracking) {
+            return json({ success: false, error: "Order tracking is temporarily unavailable" }, 502);
+          }
           return json({ success: false, error: error.message, detail: error.detail }, error.status || 502);
         }
 
@@ -2151,9 +2164,35 @@ export default {
         });
         const ticketText = await ticketResponse.text();
         if (!ticketResponse.ok) {
+          if (isPublicTracking) {
+            return json(
+              { success: false, error: "Ticket not found" },
+              [400, 404].includes(ticketResponse.status) ? 404 : 502
+            );
+          }
           return json({ success: false, error: "Notion Ticket not found", detail: ticketText }, ticketResponse.status);
         }
         const ticketPage = JSON.parse(ticketText);
+
+        // The page must belong to the Tickets data source, otherwise any Notion page
+        // shared with the integration (customers, quotes, ...) could be read by ID.
+        const compactNotionId = value => String(value || "").replace(/-/g, "").toLowerCase();
+        const parentIds = [ticketPage.parent?.data_source_id, ticketPage.parent?.database_id]
+          .map(compactNotionId)
+          .filter(Boolean);
+        let belongsToTickets = parentIds.includes(compactNotionId(env.NOTION_TICKETS_DATA_SOURCE_ID));
+        if (!belongsToTickets && env.NOTION_TICKETS_DATA_SOURCE_ID) {
+          // The configured ID may be a database ID; compare with its resolved data source.
+          try {
+            const ticketsSource = await resolveWorkflowDataSource(env.NOTION_TICKETS_DATA_SOURCE_ID);
+            belongsToTickets = parentIds.includes(compactNotionId(ticketsSource.id));
+          } catch (error) {
+            belongsToTickets = false;
+          }
+        }
+        if (!belongsToTickets) {
+          return json({ success: false, error: "Ticket not found" }, 404);
+        }
         const itemSchema = itemsSource.data.properties || {};
         const relationEntry = findWorkflowSchema(itemSchema, ["Order Ticket", "Ticket", "Order"], ["relation"]);
         if (!relationEntry) {
@@ -2170,6 +2209,9 @@ export default {
         });
         const itemsText = await itemsResponse.text();
         if (!itemsResponse.ok) {
+          if (isPublicTracking) {
+            return json({ success: false, error: "Order tracking is temporarily unavailable" }, 502);
+          }
           return json({ success: false, error: "Notion GET Order Items error", detail: itemsText }, itemsResponse.status);
         }
 

@@ -12,6 +12,7 @@ const tests = [
   'worker/order-domain-test.mjs',
   'worker/order-smoke-test.mjs',
   'worker/public-order-security-test.mjs',
+  'worker/customers-and-tracking-security-test.mjs',
   'worker/ticket-smoke-test.mjs',
   'worker/workflow-smoke-test.mjs',
   'worker/capacity-domain-test.mjs',
