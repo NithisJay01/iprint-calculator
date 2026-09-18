@@ -7,6 +7,7 @@ const tests = [
   'tests/catalog-page-test.mjs',
   'tests/deployment-config-test.mjs',
   'tests/business-card-mvp-test.mjs',
+  'tests/business-card-breakdown-test.mjs',
   'tests/ui-logic-node-test.mjs',
   'worker/catalog-contract-test.mjs',
   'worker/flow-settings-test.mjs',

@@ -6,3 +6,10 @@
 .confirm-dialog form{padding:26px;text-align:center}.dialog-icon{width:52px;height:52px;margin:0 auto 12px;display:grid;place-items:center;border-radius:50%;background:#fff0f0;font-size:23px}
 .confirm-dialog h2{margin:0 0 8px}.confirm-dialog p{margin:0;color:var(--muted);line-height:1.6}.confirm-dialog form>div{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:22px}
 .confirm-dialog button{min-height:46px;border-radius:10px;font-weight:800}.dialog-cancel{border:1px solid var(--line);background:#fff;color:var(--ink)}.dialog-delete{border:1px solid #df4545;background:#df4545;color:#fff}
+
+/* Per-item totals on the option buttons and in the price summary */
+.choice small{font-size:12px;line-height:1.35}
+.choice .opt-total{display:block;color:var(--ink);font-size:15px;font-weight:800}
+.choice .opt-included{color:var(--green);font-weight:700}
+.price-line>span small{display:block;color:var(--muted);font-size:12px;font-weight:400}
+.price-line.discount b{color:var(--green)}

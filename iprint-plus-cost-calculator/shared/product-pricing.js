@@ -52,6 +52,22 @@ export function validateSettings(input) {
   if (JSON.stringify(input).length > 150000) errors.push('ข้อมูลมีขนาดใหญ่เกินไป');
   return { success: !errors.length, errors, value: input };
 }
+export const SHEET_UNITS = Object.freeze(['sheet', 'sheets', 'แผ่น']);
+export const PIECE_UNITS = Object.freeze(['piece', 'pieces', 'ชิ้น', 'ดวง']);
+export const unitKind = unit => (SHEET_UNITS.includes(unit) ? 'sheet' : PIECE_UNITS.includes(unit) ? 'piece' : 'job');
+// What one catalog item costs for a job and how much of it is charged to the customer.
+// `charge` is not rounded; it is exactly what calculateProductPrice adds to the subtotal.
+//  - service: included services of a package/tier product are free, otherwise cost x markup
+//  - material (isMaterial): only formula pricing charges it (it is part of the base cost x markup)
+export function itemCost({ product, item, sheets = 0, quantity = 1, isMaterial = false }) {
+  const kind = unitKind(item.unit);
+  const amount = kind === 'sheet' ? sheets : kind === 'piece' ? quantity : 1;
+  const unitPrice = Number(item.price) || 0;
+  const cost = unitPrice * amount;
+  const factor = 1 + product.markup / 100;
+  const included = isMaterial ? product.mode !== 'formula' : product.mode !== 'formula' && product.includedServiceIds.includes(item.id);
+  return { kind, amount, unitPrice, factor, cost, included, charge: included ? 0 : cost * factor };
+}
 export function calculateProductPrice({ product, version = '', quantity, sheets = 0, baseCost = 0, services = [], materialId = '', packageId = '', code = '', date = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Bangkok' }) }) {
   const validation = validateSettings({ products: [product] });
   if (!validation.success) throw new Error(validation.errors.join(' • '));
@@ -74,10 +90,9 @@ export function calculateProductPrice({ product, version = '', quantity, sheets 
   let cost = baseCost, extras = 0;
   for (const service of services) {
     if (!Number.isFinite(Number(service.price)) || Number(service.price) < 0) throw new Error('ราคาบริการไม่ถูกต้อง');
-    const amount = ['sheet', 'sheets', 'แผ่น'].includes(service.unit) ? sheets : ['piece', 'pieces', 'ชิ้น', 'ดวง'].includes(service.unit) ? quantity : 1;
-    const value = Number(service.price) * amount;
-    cost += value;
-    if (product.mode === 'formula' || !product.includedServiceIds.includes(service.id)) extras += value * factor;
+    const line = itemCost({ product, item: service, sheets, quantity });
+    cost += line.cost;
+    extras += line.charge;
   }
   base = money(base); extras = money(extras);
   const subtotal = money(base + extras);
