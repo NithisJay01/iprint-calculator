@@ -22,6 +22,9 @@ const ROUTES = [
   // ---- staff ----
   { access: 'staff', method: 'GET', path: '/auth/check' },
   { access: 'staff', method: 'PUT', path: '/staff/pricing-settings' },
+  { access: 'staff', method: 'GET', path: '/staff/pricing-settings/draft' },
+  { access: 'staff', method: 'PUT', path: '/staff/pricing-settings/draft' },
+  { access: 'staff', method: 'DELETE', path: '/staff/pricing-settings/draft' },
   { access: 'staff', method: 'PUT', path: '/staff/flow-settings' },
   { access: 'staff', method: 'POST', path: '/presets' },
   { access: 'staff', method: 'DELETE', path: '/presets?id=preset-1' },

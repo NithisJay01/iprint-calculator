@@ -29,8 +29,13 @@ assert.equal(configuredBusinessCard.mode, 'packages');
 assert.equal(configuredBusinessCard.packages.length, 3);
 configuredBusinessCard.packages.splice(0, 1);
 assert.deepEqual(configuredBusinessCard.packages.map(item => item.id), ['corporate', 'signature']);
-assert.match(pricingApp, /data-manage-catalog="\$\{group\.source === 'material' \? 'materials' : 'services'\}"/);
-assert.match(pricingApp, /\/staff\/\?catalog=\$\{type\}/);
+// Catalog items are created and deactivated from an item picker inside the set studio (no navigation away).
+assert.match(pricingApp, /data-open-picker="\$\{index\}"/);
+assert.match(pricingApp, /createCatalogItem\(/);
+assert.match(pricingApp, /deactivateCatalogItem\(/);
+assert.doesNotMatch(pricingApp, /\/staff\/\?catalog=/);
+// The full catalog page stays one click away, in a new tab so unsaved set edits are not lost.
+assert.match(readFileSync(new URL('../pricing/index.html', import.meta.url), 'utf8'), /href="\/staff\/\?catalog=materials" target="_blank" rel="noopener"/);
 assert.match(staffCatalogApp, /function openStaffCatalogFromQuery\(\)/);
 assert.match(staffCatalogApp, /openStaffCatalog\(requestedType\)/);
 assert.match(mainApp, /openStaffCatalogFromQuery\(\)/);

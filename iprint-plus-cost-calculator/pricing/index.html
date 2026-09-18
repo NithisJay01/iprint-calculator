@@ -3,27 +3,31 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>ครัวกลางจัดเซตสินค้า · iPrint</title>
+  <title>จัดเซตสินค้า · iPrint</title>
   <link rel="stylesheet" href="./styles.css">
   <link rel="stylesheet" href="../shared/typography.css?v=1">
 </head>
 <body>
   <header class="topbar">
     <a class="brand" href="/staff/" aria-label="กลับหน้าพนักงาน"><b>iPrint</b><span>SET STUDIO</span></a>
-    <div class="topbar-title"><strong>ครัวกลางจัดเซตสินค้า</strong><small id="environment"></small></div>
+    <div class="topbar-title"><strong>จัดเซตสินค้า</strong><small id="environment"></small></div>
     <div class="top-actions">
       <label id="keyWrap" class="api-key">API Key<input id="key" type="password" autocomplete="off"></label>
       <a class="button ghost" href="/business-card/">ดูหน้าขาย ↗</a>
-      <button class="button primary" id="save">บันทึกและเผยแพร่</button>
+      <span id="saveState" class="save-state published" role="status" aria-live="polite"></span>
+      <button class="button soft" id="saveDraft" type="button">บันทึกฉบับร่าง</button>
+      <button class="button primary" id="save" type="button">เผยแพร่ให้ลูกค้า</button>
     </div>
   </header>
   <main class="workspace">
     <aside class="product-rail">
       <div class="rail-heading"><div><small>PRODUCTS</small><h1>สินค้า</h1></div><button id="add" class="icon-button" title="เพิ่มสินค้า">＋</button></div>
       <div id="productList" class="product-list"></div>
-      <p class="rail-help">ครัวเดียวใช้จัดเซตได้ทุกหมวด สินค้าที่สร้างใหม่จะใช้วัตถุดิบและบริการจาก Catalog กลาง</p>
+      <p class="rail-help">วัสดุและบริการในเซตมาจากแคตตาล็อกเดียวกับหน้าจัดการวัสดุและบริการ เพิ่มหรือปิดใช้งานรายการได้จากในหมวดตัวเลือกโดยไม่ต้องออกจากหน้านี้</p>
+      <p class="rail-help"><a href="/staff/?catalog=materials" target="_blank" rel="noopener">จัดการวัสดุและบริการทั้งหมด ↗</a></p>
     </aside>
     <section class="editor-column">
+      <div id="draftBanner" class="draft-banner" hidden></div>
       <div id="status" class="status" role="status"></div>
       <form id="editor" autocomplete="off"></form>
     </section>
@@ -46,6 +50,40 @@
       </div>
     </aside>
   </main>
+
+  <dialog id="itemPicker" class="picker" aria-labelledby="pickerTitle">
+    <div class="picker-card">
+      <div class="picker-head">
+        <div><small id="pickerKind"></small><h2 id="pickerTitle"></h2></div>
+        <button type="button" class="text-button" data-picker-close>เสร็จสิ้น</button>
+      </div>
+      <p class="picker-note">ติ๊กเพื่อใส่รายการในหมวดนี้ การสร้างหรือปิดใช้งานรายการมีผลกับแคตตาล็อกทันที (ไม่ผ่านฉบับร่าง) ส่วนการเลือกรายการเข้าหมวดจะเก็บไว้ในฉบับร่างของเซต</p>
+      <div id="pickerNotice" class="status" role="status"></div>
+      <label class="picker-search">ค้นหา<input id="pickerSearch" type="search" placeholder="พิมพ์ชื่อรายการ" autocomplete="off"></label>
+      <div id="pickerList" class="picker-list"></div>
+      <details class="picker-create" id="pickerCreate">
+        <summary id="pickerCreateTitle">＋ สร้างรายการใหม่</summary>
+        <form id="pickerForm" autocomplete="off">
+          <label>ชื่อ<input name="name" maxlength="120" required></label>
+          <div class="two-fields">
+            <label>ราคา (บาท)<input name="price" type="number" min="0" step="0.01" required></label>
+            <label>หน่วย<select name="unit"></select></label>
+          </div>
+          <div class="picker-service-fields" hidden>
+            <label>หมวดหมู่บริการ<input name="category" list="pickerCategories" maxlength="80" placeholder="เช่น การเคลือบ"><datalist id="pickerCategories"></datalist></label>
+            <details class="picker-capacity"><summary>กำลังผลิต (ไม่บังคับ)</summary>
+              <div class="two-fields">
+                <label>แต้มกำลังผลิต<input name="capacityPoints" type="number" min="0" step="any" value="0"></label>
+                <label>นับแต้มต่อ<select name="capacityBasis"></select></label>
+              </div>
+              <small>ถ้าเป็นบริการที่ใช้เครื่องหรือแรงงาน ควรตั้งแต้มให้ตรงกับหน้าจัดการวัสดุและบริการ เพื่อให้คิวผลิตนับถูก</small>
+            </details>
+          </div>
+          <button class="button primary" type="submit" id="pickerCreateButton">สร้างและเพิ่มเข้าหมวด</button>
+        </form>
+      </details>
+    </div>
+  </dialog>
   <script type="module" src="./app.js"></script>
 </body>
 </html>

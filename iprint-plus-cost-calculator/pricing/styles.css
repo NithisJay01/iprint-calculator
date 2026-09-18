@@ -14,3 +14,54 @@ label{font-weight:500}
 .brand b,.brand span,.eyebrow,.rail-heading small,.preview-heading small,.set-label,.step,.product-icon,.live-dot{font-weight:700}
 .package-card span,.ingredient span,.calculator summary{font-weight:600}
 .group-actions,.group-settings{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.group-settings{margin:14px 0}.group-settings label{min-width:150px;flex:1}.group-settings .check{flex:0 0 auto}.text-button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 10px;color:var(--blue);font-weight:800}.text-button:disabled{opacity:.35}
+
+/* ---- Set studio: save state, drafts, collapsible option groups, item picker ---- */
+.top-actions{flex-wrap:wrap;justify-content:flex-end}
+.save-state{padding:5px 11px;border-radius:99px;font-size:12px;font-weight:700;white-space:nowrap;background:#e8f8ee;color:#17753b}
+.save-state.unsaved{background:#fff4dc;color:#94600a}
+.save-state.draft{background:#e4f1ff;color:#0a5fae}
+.draft-banner{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:12px;padding:11px 14px;border-radius:10px;background:#e4f1ff;color:#0a4f8f;border:1px solid #b9dcff}
+.draft-banner[hidden]{display:none}
+.draft-banner p{margin:0;font-weight:700}
+.draft-banner p+p{margin-top:4px;color:#94600a;font-weight:600}
+
+.group-toggle{flex:1;min-width:0;display:flex;align-items:center;gap:12px;border:0;background:none;padding:2px 0;color:inherit;text-align:left}
+.group-toggle:focus-visible,.text-danger:focus-visible,.picker-row input:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.group-title{min-width:0}
+.group-title h3{margin:0}
+.chevron{flex:0 0 auto;width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;background:var(--soft);color:var(--blue);font-size:20px;line-height:1;transition:transform .15s}
+.option-group.open .chevron{transform:rotate(90deg)}
+.group-title small.tone-warn,.group-title small.tone-empty{color:#b45309;font-weight:700}
+.group-body{padding-top:4px}
+
+.text-danger{border:0;background:none;color:var(--danger);font-weight:700;padding:6px 8px;border-radius:8px}
+.text-danger:hover{background:#fff0f0}
+
+.picker{border:0;padding:0;border-radius:18px;width:min(640px,calc(100% - 24px));max-height:90vh;box-shadow:0 24px 70px rgba(11,31,51,.3);color:var(--ink)}
+.picker::backdrop{background:rgba(11,31,51,.45)}
+.picker-card{padding:22px;display:grid;gap:12px}
+.picker-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
+.picker-head h2{margin:2px 0 0;font-size:20px}
+.picker-head small{color:var(--muted);font-weight:700}
+.picker-note{margin:0;font-size:12px;color:var(--muted)}
+.picker-search{display:grid;gap:5px;font-size:13px;font-weight:700}
+.picker-search input,.picker-create input,.picker-create select{min-height:40px;border:1px solid var(--line);border-radius:9px;padding:0 11px;background:#fff;color:var(--ink);width:100%}
+.picker-list{display:grid;gap:8px;max-height:38vh;overflow:auto;padding:2px}
+.picker-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border:1px solid var(--line);border-radius:11px;padding:9px 12px;background:#fff}
+.picker-row.in-group{border-color:var(--blue);background:#f2f9ff}
+.picker-row label{display:flex;align-items:center;gap:11px;flex:1;min-width:0;cursor:pointer}
+.picker-row input[type=checkbox]{width:20px;height:20px;accent-color:var(--blue);flex:0 0 auto}
+.picker-row b,.picker-row small{display:block}
+.picker-row small{color:var(--muted);font-size:12px}
+.picker-confirm{flex:1 0 100%;padding:10px;border-radius:9px;background:#fff7f7;border:1px solid #f3c9c9}
+.picker-confirm p{margin:0 0 9px;font-size:13px;color:#7a1f1f}
+.picker-empty{margin:0;padding:18px;text-align:center;color:var(--muted)}
+.picker-create{border:1px dashed var(--blue);border-radius:11px;padding:0}
+.picker-create>summary{cursor:pointer;padding:11px 14px;color:var(--blue);font-weight:800}
+.picker-create form{display:grid;gap:11px;padding:0 14px 14px}
+.picker-create label{display:grid;gap:5px;font-size:13px;font-weight:700}
+.picker-capacity{border:1px solid var(--line);border-radius:9px;padding:9px 11px}
+.picker-capacity summary{cursor:pointer;font-weight:700;font-size:13px}
+.picker-capacity small{display:block;margin-top:7px;color:var(--muted);font-size:12px}
+.picker .two-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:560px){.picker .two-fields{grid-template-columns:1fr}.draft-banner{flex-direction:column;align-items:flex-start}}

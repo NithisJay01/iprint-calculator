@@ -213,6 +213,24 @@ export default {
           return json({ success: false, error: error.message, errors: error.errors || [] }, error.status || (error instanceof SyntaxError ? 400 : 502));
         }
       }
+      if (url.pathname === '/staff/pricing-settings/draft' && ['GET', 'PUT', 'DELETE'].includes(request.method)) {
+        const authError = requireAuth(request);
+        if (authError) return authError;
+        try {
+          const repository = createPricingSettingsRepository(env, { headers: notionHeaders });
+          if (request.method === 'GET') return json({ success: true, draft: await repository.getDraft() });
+          if (request.method === 'DELETE') return json({ success: true, discarded: await repository.discardDraft() });
+          const body = await request.json().catch(() => null);
+          if (!body || typeof body !== 'object') return json({ success: false, error: 'Invalid JSON body' }, 400);
+          const draft = await repository.saveDraft(body, {
+            expectedSavedAt: typeof body.expectedSavedAt === 'string' ? body.expectedSavedAt : undefined,
+            force: body.force === true
+          });
+          return json({ success: true, draft });
+        } catch (error) {
+          return json({ success: false, code: error.code || '', error: error.message, errors: error.errors || [], current: error.current || null }, error.status || 502);
+        }
+      }
       if (url.pathname === "/flow-settings" && request.method === "GET") {
         try {
           const repository = createFlowSettingsRepository(env, { headers: notionHeaders });

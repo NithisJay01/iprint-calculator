@@ -3,6 +3,7 @@ import { spawnSync } from 'node:child_process';
 const tests = [
   'tests/product-pricing-test.mjs',
   'tests/pricing-settings-test.mjs',
+  'tests/set-studio-logic-test.mjs',
   'tests/catalog-page-test.mjs',
   'tests/deployment-config-test.mjs',
   'tests/business-card-mvp-test.mjs',
@@ -13,6 +14,7 @@ const tests = [
   'worker/order-smoke-test.mjs',
   'worker/public-order-security-test.mjs',
   'worker/customers-and-tracking-security-test.mjs',
+  'worker/pricing-draft-test.mjs',
   'worker/authorization-matrix-test.mjs',
   'worker/ticket-smoke-test.mjs',
   'worker/workflow-smoke-test.mjs',
