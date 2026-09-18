@@ -37,4 +37,11 @@ for (const directive of ['script-src', 'connect-src', 'frame-src']) {
   );
 }
 
+// Scripts, styles and pages must be revalidated so a deploy reaches returning visitors (the host defaults to 7 days).
+const cacheRule = htaccess.match(/<FilesMatch "([^"]+)">\s*Header always set Cache-Control "no-cache"\s*Header always unset Expires\s*<\/FilesMatch>/);
+assert.ok(cacheRule, '.htaccess must send Cache-Control: no-cache for js/css/html');
+for (const name of ['app.js', 'order.js', 'style.css', 'order.html']) assert.match(name, new RegExp(cacheRule[1]), `${name} must be revalidated`);
+for (const name of ['hero.png', 'logo.svg', 'font.woff2']) assert.doesNotMatch(name, new RegExp(cacheRule[1]), `${name} keeps the long cache`);
+assert.match(htaccess, /Strict-Transport-Security/, 'the security headers stay in place');
+
 console.log('Deployment configuration test passed');

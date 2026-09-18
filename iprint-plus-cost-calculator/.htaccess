@@ -15,6 +15,16 @@ Options -Indexes
   Header always set Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://iprint-flow-api.iprint-garphic1.workers.dev https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com"
 </IfModule>
 
+# Scripts, styles and pages are revalidated on every load; an unchanged file costs one cheap 304 (ETag).
+# Without this the host caches them for 7 days, so a deploy does not reach returning visitors and
+# old and new modules can end up mixed on one page. Images keep the host's long cache.
+<IfModule mod_headers.c>
+  <FilesMatch "\.(js|css|html)$">
+    Header always set Cache-Control "no-cache"
+    Header always unset Expires
+  </FilesMatch>
+</IfModule>
+
 <FilesMatch "(^\.|\.(md|toml|mjs)$)">
   Require all denied
 </FilesMatch>
