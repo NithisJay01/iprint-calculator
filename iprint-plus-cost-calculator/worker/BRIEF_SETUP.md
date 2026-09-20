@@ -72,6 +72,17 @@ npx wrangler deploy
 
 ก่อนตั้งค่าครบ Endpoint จะตอบ `503 ... is not configured` และไม่กระทบระบบสั่งงานเดิม
 
+### ทดลองโดยยังไม่มี LINE
+
+ส่งข้อความปลอมที่เซ็นลายเซ็นถูกต้องเข้า Webhook ด้วยสคริปต์ (ใช้ `userId` เดิมเพื่อให้อยู่ในแชทเดียวกัน ชื่อจะขึ้นเป็น “ลูกค้า LINE (ไม่ทราบชื่อ)”):
+
+```powershell
+$env:LINE_CHANNEL_SECRET = "<channel secret>"
+node tools/send-test-line-message.mjs https://iprint-flow-api.iprint-garphic1.workers.dev/line/webhook "เอาสติกเกอร์ 5x5 เหมือนรอบก่อนครับ รอบนี้ 500 ดวง ใช้ไฟล์ใหม่ ขอรับวันศุกร์"
+```
+
+จากนั้นเปิด `/brief/` กด **สร้างบรีฟ** การกด Create Ticket จะสร้างหน้าจริงใน `Iprint Jobs` (ชื่อขึ้นต้น `[LINE]`) ทดสอบเสร็จให้ลบหน้านั้นใน Notion
+
 ## ตัวแปร
 
 | ชื่อ | ชนิด | ค่าเริ่มต้น | ใช้ทำอะไร |
