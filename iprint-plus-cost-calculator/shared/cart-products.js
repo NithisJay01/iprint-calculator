@@ -36,7 +36,8 @@ export async function resolveCartItems(items, { loaders = CART_PRODUCT_LOADERS }
       const adapter = (await load()).default;
       const context = await adapter.load();
       group.forEach(item => {
-        try { resolved.set(item.id, { ...adapter.resolve(item, context), label: adapter.label }); }
+        // The entry is completed in place: a spread would drop the adapter's non-enumerable `toOrderItem`.
+        try { const entry = adapter.resolve(item, context); entry.label = adapter.label; resolved.set(item.id, entry); }
         catch (error) { resolved.set(item.id, { ...unavailable(item, error.message), label: adapter.label }); }
       });
     } catch (error) {

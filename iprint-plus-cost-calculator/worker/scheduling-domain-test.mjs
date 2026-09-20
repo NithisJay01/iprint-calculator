@@ -34,7 +34,7 @@ assert.equal(warningAllowed.estimatedCompletionDate, '2026-09-09');
 
 const boosted = planOrderSchedule({
   now: new Date('2026-09-08T03:00:00.000Z'), policy,
-  orderItems: [{ id: 'boosted', capacityPoints: 15, deliveryDeadline: '2026-09-09', boost: { days: 1, multiplier: 0.5 } }]
+  orderItems: [{ id: 'boosted', capacityPoints: 15, deliveryDeadline: '2026-09-09', boost: { days: 1, multiplier: 0.25 } }]
 });
 assert.equal(boosted.success, true);
 assert.equal(boosted.estimatedCompletionDate, '2026-09-09');

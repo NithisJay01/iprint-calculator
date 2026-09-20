@@ -39,11 +39,25 @@ assert.match(readFileSync(new URL('../pricing/index.html', import.meta.url), 'ut
 assert.match(staffCatalogApp, /function openStaffCatalogFromQuery\(\)/);
 assert.match(staffCatalogApp, /openStaffCatalog\(requestedType\)/);
 assert.match(mainApp, /openStaffCatalogFromQuery\(\)/);
+// The start screen opens the layout calculator (pieces per sheet) directly, skipping the job questions.
+const startPage = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+const flowApp = readFileSync(new URL('../js/flow.js', import.meta.url), 'utf8');
+assert.match(startPage, /id="openLayoutCalculator"[^>]*><strong>คำนวณชิ้นงาน \/ แผ่น<\/strong>/);
+assert.match(mainApp, /\$\('openLayoutCalculator'\)\.addEventListener\('click',openLayoutCalculator\)/);
+assert.match(mainApp, /showAppView\('layout', \{ from: 'direct' \}\)/);
+assert.match(flowApp, /options\.from === 'direct' \? 'home' : 'jobSetup'/, 'back returns home when the questions were skipped');
+// ... and there it is only a calculator: no stepper, cart, print choice or way on to the materials.
+const appCss = readFileSync(new URL('../css/app.css', import.meta.url), 'utf8');
+assert.match(flowApp, /classList\.toggle\('is-calculator-only', name === 'layout' && options\.from === 'direct'\)/);
+for (const hidden of ['#flowStepper', '#openCart', '#layoutPrintServices', '.flow-actions']) {
+  assert.ok(appCss.includes(`.mobile-app.is-calculator-only ${hidden.startsWith('#flow') || hidden === '#openCart' ? '' : '[data-app-view="layout"] '}${hidden}`), `${hidden} is hidden in calculator-only mode`);
+}
+assert.match(readFileSync(new URL('../js/services.js', import.meta.url), 'utf8'), /hasSelectedPrintService\(\) \|\| Boolean\(\$\('mobileApp'\)\?\.classList\.contains\('is-calculator-only'\)\)/, 'the preview does not wait for a print choice');
 // The order page configures one item; the shared cart page (cart/) holds the checkout steps.
 const cartPage = readFileSync(new URL('../cart/index.html', import.meta.url), 'utf8');
 assert.match(orderPage, /สร้างออร์เดอร์นามบัตร/);
 assert.match(orderPage, /href="\.\.\/cart\/"/, 'the order page links to the shared cart');
-for (const content of ['ตะกร้าสินค้าของคุณ', 'เลือกวันที่ต้องการรับงาน', 'ชำระเงินและระบุที่อยู่จัดส่ง', 'ส่งหลักฐานชำระเงิน']) assert.match(cartPage, new RegExp(content));
+for (const content of ['ตะกร้าสินค้าของคุณ', 'เลือกวันที่ต้องการรับงาน', 'ข้อมูลผู้สั่งและการจัดส่ง', 'ตรวจสอบและยืนยันออร์เดอร์']) assert.match(cartPage, new RegExp(content));
 
 const preset = { id:'paper-1', name:'13×19 กระดาษมาตรฐาน', usableW:31.02, usableH:47.26 };
 const material = { id:'material-1', name:'Art Paper 300g', price:1.2, unit:'sheet', updatedAt:'2026-09-15T00:00:00.000Z' };

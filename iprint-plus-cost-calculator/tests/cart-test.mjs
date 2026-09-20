@@ -18,7 +18,8 @@ globalThis.localStorage = storage;
 const {
   CART_KEY, CART_MAX_ITEMS, readCart, cartCount, cartItems, getCartItem, addCartItem, updateCartItem, removeCartItem, clearCart, productCartItem, upsertCartItem
 } = await import('../shared/cart.js');
-const { cartTotals, VAT_PERCENT, SHIPPING_FEES, roundMoney } = await import('../shared/cart-totals.js');
+const { cartTotals, VAT_PERCENT, SHIPPING_FEES, roundMoney, rushPrice } = await import('../shared/cart-totals.js');
+const { RUSH_STEP, RUSH_MAX_DAYS, rushMultiplier, rushPercent } = await import('../shared/rush.js');
 
 const reset = () => { storage.clear(); storage.failWrites = false; };
 
@@ -142,9 +143,29 @@ assert.equal(totals.count, 2);
 totals = cartTotals(priced, { shipping: 'ems' });
 assert.equal(totals.shippingFee, SHIPPING_FEES.ems);
 assert.equal(totals.grand, 1655.59);
-assert.deepEqual(cartTotals([]), { subtotal: 0, discount: 0, vat: 0, shippingFee: 0, grand: 0, points: 0, count: 0 });
+assert.deepEqual(cartTotals([]), { itemsTotal: 0, subtotal: 0, discount: 0, rushFee: 0, vat: 0, shippingFee: 0, grand: 0, points: 0, count: 0 });
 assert.equal(cartTotals([{ price: 10 }], { shipping: 'unknown' }).shippingFee, 0);
 assert.equal(roundMoney(0.1 + 0.2), 0.3);
 assert.equal(cartTotals([{ price: 0.1 }, { price: 0.2 }]).subtotal, 0.3);
+
+// ---------- rush orders: +25% of the price for every day earlier ----------
+assert.equal(RUSH_STEP, 0.25);
+assert.equal(RUSH_MAX_DAYS, 4);
+assert.deepEqual([1, 2, 3, 4].map(rushMultiplier), [0.25, 0.5, 0.75, 1]);
+assert.deepEqual([1, 2, 3, 4].map(rushPercent), [25, 50, 75, 100]);
+const rushItems = [{ price: 1000, basePrice: 1000, points: 2 }, { price: 500.55, basePrice: 500.549, points: 1 }, { price: 999, points: 9, problems: ['x'] }];
+assert.equal(cartTotals(rushItems, { rush: 0 }).rushFee, 0, 'a normal date has no surcharge');
+for (const days of [1, 2, 3]) {
+  const rushed = cartTotals(rushItems, { rush: rushMultiplier(days) });
+  const expectedItems = rushItems.slice(0, 2).map(item => rushPrice(item, rushMultiplier(days)));
+  assert.equal(rushed.subtotal, roundMoney(expectedItems[0] + expectedItems[1]), 'the order total is the sum of the rushed item prices');
+  assert.equal(rushed.rushFee, roundMoney(rushed.subtotal - 1500.55));
+  assert.equal(rushed.vat, roundMoney(rushed.subtotal * 0.07), 'VAT is charged on the surcharge too');
+  assert.equal(rushed.points, 3, 'a rush order books the same capacity');
+}
+assert.equal(cartTotals([{ price: 1000, basePrice: 1000 }], { rush: 0.5 }).rushFee, 500, '2 days earlier: +50% of 1,000');
+assert.equal(cartTotals([{ price: 400, basePrice: 400 }], { rush: 0.25 }).grand, 535, '400 + 25% = 500, VAT 35');
+assert.equal(rushPrice({ price: 123.24, basePrice: 123.2399 }, 0.25), 154.05, 'the surcharge starts from the unrounded price the Worker checks');
+assert.equal(rushPrice({ price: 100 }, 1), 200, 'entries without a base price use their price');
 
 console.log('Cart test passed');

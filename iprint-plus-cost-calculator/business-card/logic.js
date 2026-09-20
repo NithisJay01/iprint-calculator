@@ -71,15 +71,15 @@ export function catalogSnapshot(item) {
   };
 }
 
-export function buildOrderPayload({ state, quote, now = new Date(), orderKey, quoteNo }) {
+// One business card order item as the Worker expects it (also used for every item of a cart order).
+// includeBrief=false leaves out the generated brief image (a cart order has no artwork file, only a link).
+export function buildOrderItem({ state, quote, itemId, quoteNo = '', now = new Date(), includeBrief = true }) {
   const material = catalogSnapshot(state.material);
   const services = state.services.map(catalogSnapshot);
-  const vat = roundMoney(quote.price * PRICING.vatPercent / 100);
   const printSide = services.some(service => service.serviceRole === 'PRINT_DOUBLE' || /หน้า\s*[-–—/]?\s*หลัง|2\s*หน้า/.test(service.name)) ? 'double' : 'single';
-  const previewImages = [{ kind: 'brief', side: printSide === 'double' ? 'front-back' : 'front', label: 'ภาพบรีฟงานพิมพ์', filename: `${quoteNo}-brief.png` }]
+  const previewImages = (includeBrief ? [{ kind: 'brief', side: printSide === 'double' ? 'front-back' : 'front', label: 'ภาพบรีฟงานพิมพ์', filename: `${quoteNo}-brief.png` }] : [])
     .concat((state.references || []).slice(0, 3).map((file, index) => ({ kind: 'reference', side: String(index + 1), label: `ภาพ Ref ${index + 1}`, filename: safeFilename(file.name || `reference-${index + 1}.png`) })));
-  const itemId = `${orderKey}-item-1`.slice(0, 100);
-  const item = {
+  return {
     id: itemId, name: state.jobName, version: state.version || 'V1',
     size: '9.00 × 5.40 cm', width: 9, height: 5.4, quantity: quote.pieces, unit: 'ชิ้น',
     paper: { key: String(state.preset.id || ''), id: String(state.preset.id || ''), name: String(state.preset.name || '') },
@@ -95,6 +95,12 @@ export function buildOrderPayload({ state, quote, now = new Date(), orderKey, qu
     briefDeadline: isoDate(now), deliveryDeadline: state.deliveryDate,
     editor: { costPerSheet: PRICING.panelCost, profitPercent: PRICING.marginPercent }, createdAt: now.toISOString()
   };
+}
+
+export function buildOrderPayload({ state, quote, now = new Date(), orderKey, quoteNo }) {
+  const vat = roundMoney(quote.price * PRICING.vatPercent / 100);
+  const itemId = `${orderKey}-item-1`.slice(0, 100);
+  const item = buildOrderItem({ state, quote, itemId, quoteNo, now });
   return {
     orderKey, quoteNo, date: isoDate(now), createdAt: now.toISOString(), customer: state.customerName,
     recipient: state.customerName, phone: state.phone, email: state.email || '', lineId: state.lineId || '',

@@ -11,6 +11,7 @@ const tests = [
   'tests/package-included-test.mjs',
   'tests/cart-test.mjs',
   'tests/cart-products-test.mjs',
+  'tests/cart-order-test.mjs',
   'tests/ui-logic-node-test.mjs',
   'worker/catalog-contract-test.mjs',
   'worker/flow-settings-test.mjs',

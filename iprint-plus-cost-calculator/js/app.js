@@ -126,6 +126,14 @@ function continueAsGuest() {
   startApplication();
 }
 
+// Opens the layout calculator directly (sheet layout: how many pieces fit on one sheet), skipping the job questions.
+function openLayoutCalculator() {
+  if (activePortal !== 'customer') return;
+  showAuthenticatedApp('customer');
+  startApplication();
+  showAppView('layout', { from: 'direct' });
+}
+
 function toggleLoginKeyVisibility() {
   const input = $('loginApiKey');
   const button = $('toggleLoginKey');
@@ -206,6 +214,7 @@ function bindLogin() {
   $('loginForm').addEventListener('submit',submitLogin);
   $('toggleLoginKey').addEventListener('click',toggleLoginKeyVisibility);
   $('continueAsGuest').addEventListener('click',continueAsGuest);
+  $('openLayoutCalculator').addEventListener('click',openLayoutCalculator);
   $('homePortalBack')?.addEventListener('click', () => {
     showLoginGate();
     window.scrollTo({ top:0, behavior:'smooth' });

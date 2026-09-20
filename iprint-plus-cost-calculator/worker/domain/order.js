@@ -1,3 +1,5 @@
+import { RUSH_MAX_DAYS, rushMultiplier } from "../../shared/rush.js";
+
 export const ORDER_STATUS = Object.freeze({
   NEW: "NEW",
   IN_PROGRESS: "IN_PROGRESS",
@@ -129,7 +131,7 @@ export function validateOrderFoundation(input) {
       const days = Number(item.boost.days);
       const multiplier = Number(item.boost.multiplier);
       const basePrice = Number(item.basePrice);
-      if (!Number.isInteger(days) || days < 1 || days > 4 || multiplier !== days * 0.5) {
+      if (!Number.isInteger(days) || days < 1 || days > RUSH_MAX_DAYS || multiplier !== rushMultiplier(days)) {
         errors.push(`${prefix}.boost must use 1-4 days and the configured multiplier`);
       }
       if (!finiteMoney(basePrice) || !nearlyEqual(price, basePrice * (1 + multiplier))) {

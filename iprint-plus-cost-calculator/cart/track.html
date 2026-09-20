@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ติดตามออร์เดอร์ — iPrint</title>
+  <link rel="stylesheet" href="../business-card/order.css">
+  <link rel="stylesheet" href="cart.css">
+  <link rel="stylesheet" href="../shared/typography.css?v=1">
+</head>
+<body>
+  <header class="order-nav">
+    <a href="../catalog/" aria-label="กลับไป Catalog">‹</a>
+    <b>ติดตามออร์เดอร์</b>
+    <span></span>
+  </header>
+  <main class="order-shell">
+    <p id="status" class="status" role="status"></p>
+    <section class="sheet" id="trackSheet" aria-live="polite"></section>
+    <section class="sheet" id="recentSheet" hidden>
+      <h2>ออร์เดอร์ที่สั่งจากเครื่องนี้</h2>
+      <div id="recentList"></div>
+    </section>
+  </main>
+  <script type="module" src="track.js"></script>
+</body>
+</html>

@@ -183,10 +183,20 @@ function applyJobTypeDefaults() {
   return `${selectedJobType} • ${defaults.width}×${defaults.height} cm • ${defaults.quantity.toLocaleString('th-TH')} ชิ้น • ${presetName}`;
 }
 
+// The layout calculator can be opened straight from the start screen; then its back buttons return to the home view
+// instead of the job questions (which were skipped). Any other way of leaving the view restores the normal target.
+function setLayoutBackTarget(target) {
+  document.querySelectorAll('[data-app-view="layout"] [data-flow-back]').forEach(button => { button.dataset.flowBack = target; });
+}
+
 function showAppView(name, options = {}) {
   const target = document.querySelector(`[data-app-view="${name}"]`);
   if (!target) return false;
   const previousView = currentAppView;
+  if (name === 'layout') setLayoutBackTarget(options.from === 'direct' ? 'home' : 'jobSetup');
+  // Opened straight from the start screen it is only a calculator: the stepper, cart and the way on to materials are hidden (css/app.css).
+  $('mobileApp')?.classList.toggle('is-calculator-only', name === 'layout' && options.from === 'direct');
+  if (typeof syncLayoutPreviewVisibility === 'function') syncLayoutPreviewVisibility();
 
   document.querySelectorAll('[data-app-view]').forEach(view => {
     const active = view === target;
