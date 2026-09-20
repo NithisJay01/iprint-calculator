@@ -32,7 +32,9 @@ const tests = [
   'worker/scheduling-domain-test.mjs',
   'worker/order-queue-smoke-test.mjs',
   'worker/order-cancellation-test.mjs',
-  'worker/system-check-test.mjs'
+  'worker/system-check-test.mjs',
+  'worker/brief-domain-test.mjs',
+  'worker/brief-worker-test.mjs'
 ];
 
 let passed = 0;

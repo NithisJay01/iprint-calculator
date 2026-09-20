@@ -202,6 +202,6 @@ for (const page of ['../catalog/index.html', '../business-card/index.html', '../
   assert.match(read(page), /href="\.\.\/cart\/"/, `${page} opens the shared cart`);
   assert.doesNotMatch(read(page), /order\.html\?cart=1/, `${page} must not use the old cart link`);
 }
-assert.match(readFileSync(new URL('../../scripts/build-hostinger-package.ps1', import.meta.url), 'utf8'), /'business-card', 'cart', 'staff'/, 'the Hostinger package includes the cart page');
+assert.match(readFileSync(new URL('../../scripts/build-hostinger-package.ps1', import.meta.url), 'utf8'), /'business-card', 'cart', 'brief', 'staff'/, 'the Hostinger package includes the cart page');
 
 console.log('Cart products test passed');

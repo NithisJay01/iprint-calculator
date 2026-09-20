@@ -7,3 +7,4 @@ worker/.env
 worker/.env.*
 !worker/.dev.vars.example
 
+node_modules/

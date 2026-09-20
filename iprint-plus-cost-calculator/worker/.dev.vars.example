@@ -23,3 +23,10 @@ CAPACITY_TIME_ZONE=Asia/Bangkok
 CAPACITY_MAX_SEARCH_DAYS=180
 CAPACITY_LARGE_JOB_DAILY_SHARE=0.5
 CAPACITY_ENFORCE_DEADLINE=true
+
+# Brief Button V1 (ดู BRIEF_SETUP.md) ห้าม commit ค่าจริง
+ANTHROPIC_API_KEY=replace_with_anthropic_api_key
+LINE_CHANNEL_SECRET=replace_with_line_channel_secret
+LINE_CHANNEL_ACCESS_TOKEN=replace_with_line_channel_access_token
+# BRIEF_AI_MODEL=claude-opus-5
+# LINE_RETENTION_DAYS=30
