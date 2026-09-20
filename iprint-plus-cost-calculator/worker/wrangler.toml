@@ -26,13 +26,12 @@ TURNSTILE_EXPECTED_HOSTNAME = "iprint.tchl.online"
 # ---- Brief Button V1 (LINE -> Draft Brief -> Notion ticket) ----
 # Secrets (npx wrangler secret put ...): ANTHROPIC_API_KEY, LINE_CHANNEL_SECRET, LINE_CHANNEL_ACCESS_TOKEN (optional, for customer names)
 # Optional variables: BRIEF_AI_MODEL (default claude-opus-5), LINE_RETENTION_DAYS (default 30)
-# Create the database once, paste its id below and uncomment (steps in BRIEF_SETUP.md):
-#   npx wrangler d1 create iprint-brief
-# [[d1_databases]]
-# binding = "BRIEF_DB"
-# database_name = "iprint-brief"
-# database_id = "REPLACE_WITH_D1_DATABASE_ID"
-# migrations_dir = "migrations"
+# D1 database created 2026-09-21 (steps in BRIEF_SETUP.md). Keep this block in main: a deploy without it drops the binding.
+[[d1_databases]]
+binding = "BRIEF_DB"
+database_name = "iprint-brief"
+database_id = "7a8083a5-72d5-4b4b-8701-4428858b8eaf"
+migrations_dir = "migrations"
 
 # ---- Pictures uploaded from the set studio (gallery of a set) ----
 # Pictures are stored in this R2 bucket (created once; steps in MEDIA_SETUP.md):
