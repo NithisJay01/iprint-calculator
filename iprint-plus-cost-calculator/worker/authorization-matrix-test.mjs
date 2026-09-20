@@ -19,6 +19,7 @@ const ROUTES = [
   { access: 'public', method: 'GET', path: '/public/capacity' },
   { access: 'public', method: 'GET', path: `/public/orders/${UUID}` },
   { access: 'public', method: 'POST', path: '/public/orders' }, // guarded by Turnstile, not by the staff key
+  { access: 'public', method: 'POST', path: '/line/webhook' }, // guarded by the LINE signature, not by the staff key
   // ---- staff ----
   { access: 'staff', method: 'GET', path: '/auth/check' },
   { access: 'staff', method: 'PUT', path: '/staff/pricing-settings' },
@@ -48,6 +49,9 @@ const ROUTES = [
   { access: 'staff', method: 'GET', path: `/orders/${UUID}` },
   { access: 'staff', method: 'PATCH', path: '/order-items/item-1/status' },
   { access: 'staff', method: 'POST', path: '/tickets' },
+  { access: 'staff', method: 'GET', path: '/staff/line/conversations' },
+  { access: 'staff', method: 'POST', path: '/staff/briefs/draft' },
+  { access: 'staff', method: 'POST', path: '/staff/briefs/ticket' },
   { access: 'staff', method: 'POST', path: '/quotes' },
   { access: 'staff', method: 'POST', path: '/quotes/quote-1/preview' }
 ];

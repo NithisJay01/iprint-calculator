@@ -11,6 +11,7 @@ import { createQueueRepository } from './repositories/notion-queue-repository.js
 import { createFlowSettingsRepository } from './repositories/notion-flow-settings-repository.js';
 import { cancelOrderProduction } from './services/order-cancellation.js';
 import { buildPublicCapacityAvailability } from './services/public-capacity.js';
+import { handleCreateBriefTicket, handleDraftBrief, handleLineWebhook, handleListConversations } from './routes/brief.js';
 
 export default {
   async fetch(request, env) {
@@ -177,6 +178,10 @@ export default {
             "POST /quotes",
             "POST /quotes/:id/preview",
             "POST /tickets",
+            "POST /line/webhook",
+            "GET /staff/line/conversations",
+            "POST /staff/briefs/draft",
+            "POST /staff/briefs/ticket",
             "POST /orders",
             "POST /public/orders",
             "GET /public/orders/:ticketId",
@@ -1212,6 +1217,34 @@ export default {
           success: true,
           message: "WRITE_API_KEY is valid"
         });
+      }
+
+
+      // ================================
+      // BRIEF BUTTON - LINE messages -> Draft Brief -> Notion ticket
+      // ================================
+
+      // LINE calls this itself, so it is guarded by the LINE signature instead of the staff key.
+      if (url.pathname === "/line/webhook" && request.method === "POST") {
+        return handleLineWebhook({ request, env, json });
+      }
+
+      if (url.pathname === "/staff/line/conversations" && request.method === "GET") {
+        const authError = requireAuth(request);
+        if (authError) return authError;
+        return handleListConversations({ url, env, json });
+      }
+
+      if (url.pathname === "/staff/briefs/draft" && request.method === "POST") {
+        const authError = requireAuth(request);
+        if (authError) return authError;
+        return handleDraftBrief({ request, env, json });
+      }
+
+      if (url.pathname === "/staff/briefs/ticket" && request.method === "POST") {
+        const authError = requireAuth(request);
+        if (authError) return authError;
+        return handleCreateBriefTicket({ request, env, json, notionHeaders });
       }
 
 
@@ -3277,7 +3310,11 @@ export default {
           "GET /staff/orders",
           "PATCH /staff/queue/:allocationId",
           "DELETE /staff/queue/:allocationId",
-          "POST /tickets"
+          "POST /tickets",
+          "POST /line/webhook",
+          "GET /staff/line/conversations",
+          "POST /staff/briefs/draft",
+          "POST /staff/briefs/ticket"
         ]
       }, 404);
 

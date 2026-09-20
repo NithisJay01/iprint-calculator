@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>สร้างบรีฟจาก LINE — iPrint</title>
+  <link rel="stylesheet" href="brief.css?v=1">
+  <link rel="stylesheet" href="../shared/typography.css?v=1">
+</head>
+<body>
+  <header class="nav">
+    <a href="../?portal=staff" aria-label="กลับไปพื้นที่พนักงาน">‹</a>
+    <b>สร้างบรีฟจาก LINE</b>
+    <span aria-hidden="true"></span>
+  </header>
+
+  <main class="shell">
+    <p id="status" class="status" role="status" aria-live="polite"></p>
+
+    <section id="viewKey" class="sheet" hidden>
+      <h1>เข้าสู่ระบบพนักงาน</h1>
+      <p class="lead">ใส่ Staff API Key เพื่อดูแชทที่ลูกค้าส่งเข้ามาทาง LINE</p>
+      <form id="keyForm">
+        <label for="keyInput">Staff API Key</label>
+        <input id="keyInput" type="password" autocomplete="current-password" required>
+        <button class="primary block" type="submit">เข้าสู่ระบบ</button>
+      </form>
+    </section>
+
+    <section id="viewList" hidden>
+      <div class="sheet">
+        <div class="head-row">
+          <h1>แชทล่าสุดจาก LINE</h1>
+          <button id="refresh" class="ghost" type="button">รีเฟรช</button>
+        </div>
+        <p class="lead">เลือกลูกค้า แล้วกด “สร้างบรีฟ” ระบบจะอ่านข้อความล่าสุดและสรุปเป็นใบงานให้ตรวจก่อนสร้าง Ticket</p>
+        <label for="limit" class="inline">อ่านย้อนหลัง
+          <select id="limit">
+            <option value="20">20 ข้อความ</option>
+            <option value="40" selected>40 ข้อความ</option>
+            <option value="100">100 ข้อความ</option>
+          </select>
+        </label>
+        <details class="owner-note">
+          <summary>เพิ่มข้อความจากร้าน (ไม่บังคับ)</summary>
+          <p class="hint">ระบบเห็นเฉพาะข้อความที่ลูกค้าส่งมา หากร้านตอบหรือตกลงอะไรไว้ (เช่น ราคา วันส่ง) พิมพ์เพิ่มตรงนี้ให้ AI ใช้ประกอบ</p>
+          <textarea id="ownerNote" rows="3" maxlength="2000" placeholder="เช่น ร้านแจ้งว่าใช้เวลาผลิต 3 วัน"></textarea>
+        </details>
+        <div id="conversations" class="conversations" aria-live="polite"></div>
+        <p id="emptyList" class="empty" hidden>ยังไม่มีแชทใหม่ใน 14 วันที่ผ่านมา เมื่อลูกค้าส่งข้อความเข้า LINE ของร้าน รายชื่อจะปรากฏที่นี่</p>
+      </div>
+    </section>
+
+    <section id="viewDraft" hidden>
+      <div class="sheet">
+        <div class="head-row">
+          <div>
+            <p class="eyebrow">DRAFT BRIEF</p>
+            <h1 id="draftTitle">Draft Brief</h1>
+          </div>
+          <button id="backToList" class="ghost" type="button">เปลี่ยนแชท</button>
+        </div>
+        <p id="draftMeta" class="lead"></p>
+        <div id="groupCounts" class="counts"></div>
+      </div>
+      <div id="draftBody"></div>
+      <details class="sheet source">
+        <summary>ข้อความที่ AI อ่าน <span id="sourceCount"></span></summary>
+        <ol id="sourceList" class="source-list"></ol>
+      </details>
+    </section>
+
+    <section id="viewDone" class="sheet done" hidden>
+      <div class="done-icon" aria-hidden="true">✓</div>
+      <h1>สร้าง Ticket แล้ว</h1>
+      <p id="doneText" class="lead"></p>
+      <a id="doneLink" class="primary block" href="#" target="_blank" rel="noopener" hidden>เปิด Ticket ใน Notion</a>
+      <button id="doneNew" class="ghost block" type="button">สร้างบรีฟงานอื่น</button>
+    </section>
+  </main>
+
+  <div id="actionBar" class="action-bar" hidden>
+    <button id="toggleEdit" class="ghost" type="button">แก้ไข</button>
+    <button id="createTicket" class="primary" type="button">Create Ticket</button>
+  </div>
+
+  <dialog id="confirmDialog" class="confirm-dialog">
+    <form method="dialog">
+      <h2>ตรวจบรีฟแล้วใช่ไหม</h2>
+      <p id="confirmText"></p>
+      <div>
+        <button id="confirmCancel" class="ghost" type="button">กลับไปตรวจ</button>
+        <button id="confirmCreate" class="primary" type="button">ตรวจแล้ว สร้าง Ticket</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="../js/config.js"></script>
+  <script type="module" src="app.js?v=1"></script>
+</body>
+</html>
