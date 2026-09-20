@@ -12,6 +12,7 @@ import { createFlowSettingsRepository } from './repositories/notion-flow-setting
 import { cancelOrderProduction } from './services/order-cancellation.js';
 import { buildPublicCapacityAvailability, checkRushRequirement, publicCapacityPolicy } from './services/public-capacity.js';
 import { handleCreateBriefTicket, handleDraftBrief, handleLineWebhook, handleListConversations } from './routes/brief.js';
+import { handleGetMedia, handleUploadImage } from './routes/media.js';
 
 export default {
   async fetch(request, env) {
@@ -182,6 +183,8 @@ export default {
             "GET /staff/line/conversations",
             "POST /staff/briefs/draft",
             "POST /staff/briefs/ticket",
+            "POST /staff/uploads",
+            "GET /media/gallery/:file",
             "POST /orders",
             "POST /public/orders",
             "GET /public/orders/:ticketId",
@@ -1245,6 +1248,22 @@ export default {
         const authError = requireAuth(request);
         if (authError) return authError;
         return handleCreateBriefTicket({ request, env, json, notionHeaders });
+      }
+
+      // ================================
+      // MEDIA - pictures uploaded from the set studio (R2)
+      // ================================
+
+      if (url.pathname === "/staff/uploads" && request.method === "POST") {
+        const authError = requireAuth(request);
+        if (authError) return authError;
+        return handleUploadImage({ request, env, json });
+      }
+
+      // Public: the pictures are shown to customers. Only keys this Worker wrote can be read.
+      const mediaMatch = url.pathname.match(/^\/media\/(gallery\/[0-9a-f-]{36}\.(?:jpg|png|webp))$/);
+      if (mediaMatch && request.method === "GET") {
+        return handleGetMedia({ key: mediaMatch[1], env, json });
       }
 
 
@@ -3330,7 +3349,9 @@ export default {
           "POST /line/webhook",
           "GET /staff/line/conversations",
           "POST /staff/briefs/draft",
-          "POST /staff/briefs/ticket"
+          "POST /staff/briefs/ticket",
+          "POST /staff/uploads",
+          "GET /media/gallery/:file"
         ]
       }, 404);
 

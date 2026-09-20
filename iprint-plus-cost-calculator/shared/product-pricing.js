@@ -1,4 +1,5 @@
 // Shared by the settings preview, storefront and Worker.
+import { isValidSetImage, isValidGallery } from './set-image.js';
 export const money = value => Math.round(value * 100) / 100;
 export const emptySettings = () => ({ version: '', products: [] });
 export function newProduct(id = 'business-card', name = 'นามบัตร') {
@@ -35,6 +36,8 @@ export function validateSettings(input) {
       number(t.quantity, 'จำนวนแพ็กเกจไม่ถูกต้อง', 1); number(t.price, 'ราคาแพ็กเกจไม่ถูกต้อง');
       if (t.includedIds !== undefined && (!Array.isArray(t.includedIds) || t.includedIds.length > 100 || t.includedIds.some(id => typeof id !== 'string' || !id || id.length > 100))) errors.push('รายการที่รวมในเซตไม่ถูกต้อง');
       if (!Number.isInteger(t.quantity)) errors.push('จำนวนต้องเป็นจำนวนเต็ม');
+      if (t.image !== undefined && (typeof t.image !== 'string' || !isValidSetImage(t.image))) errors.push('ภาพของเซตต้องเป็นลิงก์ https:// หรือภาพที่มีในระบบ');
+      if (!isValidGallery(t.gallery)) errors.push('แกลเลอรี่ของเซตมีได้ไม่เกิน 5 ภาพ และต้องเป็นลิงก์ https:// หรือภาพที่มีในระบบ');
     }
     if (p.mode === 'tiers' && !p.tiers.length) errors.push('เพิ่มช่วงราคาอย่างน้อยหนึ่งช่วง');
     if (p.mode === 'packages' && !p.packages.length) errors.push('เพิ่มแพ็กเกจอย่างน้อยหนึ่งรายการ');

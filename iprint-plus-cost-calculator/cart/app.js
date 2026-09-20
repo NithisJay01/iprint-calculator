@@ -25,7 +25,6 @@ const state = { step: 1, entries: [], totals: cartTotals([]), availability: null
 const formatDate = iso => (iso ? new Date(`${iso}T00:00:00`).toLocaleDateString('th-TH', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : '');
 const setStatus = (message = '') => { $('status').textContent = message; };
 const payment = () => document.querySelector('[name="payment"]:checked')?.value || 'transfer';
-const isCash = () => payment() === 'cash';
 const customer = () => ({ name: $('customerName').value, phone: $('phone').value, email: $('email').value, lineId: $('lineId').value, address: $('address').value });
 
 // The rush request of the chosen date: { days, multiplier } when the date is earlier than the normal completion date
@@ -119,7 +118,6 @@ function validate() {
   if (state.step === 3) {
     if (!$('customerName').value.trim() || !$('phone').value.trim()) return 'กรุณากรอกชื่อและเบอร์โทร';
     if (state.shipping === 'ems' && !$('address').value.trim()) return 'กรุณากรอกที่อยู่จัดส่ง';
-    if (state.shipping === 'ems' && isCash()) return 'เงินสดใช้ได้เฉพาะรับสินค้าที่หน้าร้าน';
     const email = $('email').value.trim();
     if (email && !EMAIL_PATTERN.test(email)) return 'รูปแบบอีเมลไม่ถูกต้อง';
   }
@@ -240,7 +238,7 @@ function prepareReview() {
     info.email.trim() && ['อีเมล', info.email.trim()],
     info.lineId.trim() && ['LINE ID', info.lineId.trim()],
     ['การรับสินค้า', state.shipping === 'ems' ? `ส่ง EMS ไปที่ ${info.address.trim()}` : 'รับที่หน้าร้าน'],
-    ['ชำระเงิน', isCash() ? 'เงินสดที่หน้าร้าน' : 'โอนผ่านธนาคาร / Thai QR (ทีมงานส่งข้อมูลให้)']
+    ['ชำระเงิน', 'โอนผ่านธนาคาร / Thai QR (ทีมงานส่งข้อมูลให้)']
   ].filter(Boolean);
   $('reviewInfo').innerHTML = rows.map(([label, value]) => `<div><dt>${esc(label)}</dt><dd>${esc(value)}</dd></div>`).join('');
   $('reviewTotals').innerHTML = `<dl>
@@ -259,7 +257,7 @@ function showDone({ result, order }) {
   clearCheckoutIdentity();
   const trackUrl = `track.html?id=${encodeURIComponent(result.id)}`;
   $('doneSheet').innerHTML = `<span class="eyebrow">ORDER RECEIVED</span><h1>${result.duplicate ? 'พบออร์เดอร์นี้ในระบบแล้ว' : 'รับออร์เดอร์เรียบร้อย'}</h1>
-    <p>${isCash() ? 'ชำระเงินสดที่หน้าร้านเมื่อรับสินค้า' : 'ทีมงานจะติดต่อกลับเพื่อแจ้งวิธีชำระเงินและยืนยันยอดก่อนเริ่มผลิต'}</p>
+    <p>ทีมงานจะติดต่อกลับเพื่อแจ้งวิธีชำระเงินและยืนยันยอดก่อนเริ่มผลิต</p>
     <div class="price-box"><span>เลขอ้างอิงออร์เดอร์</span><strong class="done-id">${esc(order.quoteNo)}</strong><span>${order.orderItems.length} รายการ • รับงาน ${esc(formatDate(state.date))} (ยังไม่รวมระยะเวลาจัดส่ง)</span>${order.orderItems[0]?.boost ? `<span>งานด่วน: เร็วขึ้น ${order.orderItems[0].boost.days} วัน (+${percent(order.orderItems[0].boost.multiplier)}%)</span>` : ''}<span>ยอดสุทธิ ฿${money(order.grandTotal)}${state.shipping === 'ems' ? ' (ยังไม่รวมค่าส่ง EMS ฿50)' : ''}</span></div>
     ${result.testMode ? '<p class="mock-note">โหมดทดลองบนเครื่องนี้: ออร์เดอร์ยังไม่ได้ถูกส่งเข้าระบบจริง</p>' : ''}
     <a class="add-more primary-link" href="${trackUrl}">ติดตามสถานะออร์เดอร์</a>

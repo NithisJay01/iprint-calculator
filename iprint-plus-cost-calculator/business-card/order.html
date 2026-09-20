@@ -17,13 +17,20 @@
 
     <section class="step">
       <div class="product-hero"><img id="productImage" src="assets/hero.png" alt="ตัวอย่างเซตนามบัตร"><button type="button" class="upload-look" id="changeImage">ลองแบบของคุณ / เปลี่ยนภาพ</button></div>
+      <div class="sheet gallery" id="gallery" hidden><h2>ตัวอย่างงาน</h2><div class="gallery-strip" id="galleryStrip"></div></div>
       <div class="sheet"><span class="eyebrow">BUSINESS CARD SET</span><h1 id="productName">กำลังโหลดเซต…</h1><p id="productTagline"></p><strong class="start-price" id="startPrice"></strong>
-        <h2>สเปกในเซต</h2><ul class="spec-list" id="specList"></ul>
-        <label>ใส่ลิงก์ไฟล์ของท่าน <input id="driveLink" type="url" placeholder="https://drive.google.com/design/…"><small>รองรับลิงก์ Google Drive, Dropbox หรือไฟล์บน Cloud</small></label>
+        <div id="specBlock"><h2>สเปกในเซต</h2><ul class="spec-list" id="specList"></ul></div>
+        <div class="file-cta" id="fileCta">
+          <div class="file-cta-head">
+            <span class="file-cta-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.07 0l3-3a5 5 0 0 0-7.07-7.07l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7.07 0l-3 3a5 5 0 0 0 7.07 7.07l1.5-1.5"/></svg></span>
+            <div><label for="driveLink">ใส่ลิงก์ไฟล์งานของท่าน</label><span class="required-tag">จำเป็นต้องใส่</span></div>
+          </div>
+          <p>ทีมงานใช้ลิงก์นี้เปิดไฟล์เพื่อตรวจและพิมพ์งานของท่าน ตั้งค่าแชร์เป็น “ทุกคนที่มีลิงก์เปิดดูได้” ก่อนนำมาวาง</p>
+          <input id="driveLink" type="url" required pattern="https://.+" placeholder="https://drive.google.com/design/…" aria-describedby="driveLinkHelp">
+          <small id="driveLinkHelp">รองรับลิงก์ Google Drive, Dropbox หรือไฟล์บน Cloud</small>
+        </div>
         <h2>จำนวน</h2><div id="quantityChoices" class="choice-grid"></div>
-        <h2>เลือกวัสดุ</h2><div id="materialChoices" class="choice-grid"></div>
-        <h2>รูปแบบการพิมพ์</h2><div id="printChoices" class="choice-grid"></div>
-        <h2>ออปชันเพิ่มเติม</h2><div id="extraChoices" class="choice-grid"></div>
+        <div id="optionGroups"></div>
         <div class="price-box">
           <div id="priceBreakdown"></div>
           <div class="promo-row">
@@ -39,6 +46,12 @@
     <div><small id="totalLabel">ราคารายการนี้</small><strong id="grandTotal">฿0.00</strong></div>
     <button type="button" id="next">เพิ่มสินค้าลงตะกร้า</button>
   </footer>
+  <dialog id="galleryDialog" class="gallery-dialog" aria-label="ตัวอย่างงาน">
+    <figure><img id="galleryBig" alt=""><figcaption id="galleryCaption"></figcaption></figure>
+    <button type="button" class="gallery-nav gallery-prev" id="galleryPrev" aria-label="ภาพก่อนหน้า">‹</button>
+    <button type="button" class="gallery-nav gallery-next" id="galleryNext" aria-label="ภาพถัดไป">›</button>
+    <button type="button" class="gallery-close" id="galleryClose" aria-label="ปิด">✕</button>
+  </dialog>
   <script type="module" src="order.js"></script>
 </body>
 </html>

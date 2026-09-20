@@ -517,3 +517,20 @@ html{background:#dce9f5}body{padding:0;background:#dce9f5;color:#080808}.mobile-
 .mobile-app.is-calculator-only [data-app-view="layout"] .preview-drop-hint,
 .mobile-app.is-calculator-only [data-app-view="layout"] #artworkCurrent,
 .mobile-app.is-calculator-only [data-app-view="layout"] #artworkSideControls{display:none!important}
+
+/* Staff catalog: search, category filter and collapsible category groups */
+.visually-hidden{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.staff-catalog-filters{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:12px}
+.staff-catalog-filters[hidden]{display:none}
+.staff-catalog-search{flex:1 1 220px;min-width:0}
+.staff-catalog-search input{width:100%;min-height:42px;padding:0 14px;border:1px solid var(--flow-border);border-radius:10px;background:#fff;font:inherit}
+.staff-catalog-search input:focus{outline:none;border-color:var(--flow-blue);box-shadow:0 0 0 3px rgba(10,140,255,.14)}
+#staffCatalogCategoryFilter{flex:0 1 220px;min-height:42px;padding:0 10px;border:1px solid var(--flow-border);border-radius:10px;background:#fff;font:inherit}
+#staffCatalogCategoryFilter[hidden]{display:none}
+.staff-catalog-filter-button{min-height:42px;padding:0 14px;border:1px solid var(--flow-border);border-radius:10px;background:#fff;color:var(--flow-navy);font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.staff-catalog-filter-button[hidden]{display:none}
+.staff-catalog-count{flex:0 0 auto;color:var(--flow-muted);font-size:12px}
+.staff-catalog-table .staff-catalog-group th{position:static;padding:0;background:#dcecf9;border-bottom:1px solid var(--flow-border)}
+.staff-catalog-group-toggle{display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border:0;background:transparent;color:var(--flow-navy);font:inherit;text-align:left;cursor:pointer}
+.staff-catalog-group-toggle small{margin-left:auto;color:var(--flow-muted);font-size:12px;font-weight:600}
+.staff-catalog-table tbody tr[hidden]{display:none}

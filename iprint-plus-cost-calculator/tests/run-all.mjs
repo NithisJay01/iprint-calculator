@@ -12,6 +12,8 @@ const tests = [
   'tests/cart-test.mjs',
   'tests/cart-products-test.mjs',
   'tests/cart-order-test.mjs',
+  'tests/staff-catalog-filter-test.mjs',
+  'tests/set-options-test.mjs',
   'tests/ui-logic-node-test.mjs',
   'worker/catalog-contract-test.mjs',
   'worker/flow-settings-test.mjs',
@@ -33,6 +35,7 @@ const tests = [
   'worker/scheduling-domain-test.mjs',
   'worker/order-queue-smoke-test.mjs',
   'worker/order-cancellation-test.mjs',
+  'worker/media-test.mjs',
   'worker/system-check-test.mjs',
   'worker/brief-domain-test.mjs',
   'worker/brief-worker-test.mjs'

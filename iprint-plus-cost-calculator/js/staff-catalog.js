@@ -3,10 +3,33 @@
 let staffCatalogType = 'materials';
 let staffCatalogView = 'cards';
 const staffCatalogCollections = { materials: [], services: [] };
+const staffCatalogFilter = { query: '', category: '' };
+const staffCatalogCollapsed = new Set();
 const staffCatalogItems = () => IPRINT_TEST_MODE
   ? (staffCatalogType === 'services' ? services : materials)
   : staffCatalogCollections[staffCatalogType];
 const staffCatalogEscape = value => String(value ?? '').replace(/[&<>'"]/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[character]);
+
+// Category of an item in the lists: a service always has one; a material only when the catalog gives it one.
+function staffCatalogCategoryOf(item, type = staffCatalogType) {
+  const value = String(item?.category || '').trim();
+  return value || (type === 'services' ? 'บริการเพิ่มเติม' : '');
+}
+
+// Every word typed must appear in the name or the category (case-insensitive, any order).
+function filterStaffCatalogItems(items, { query = '', category = '' } = {}, type = staffCatalogType) {
+  const words = String(query).trim().toLowerCase().split(/\s+/).filter(Boolean);
+  return items.filter(item => {
+    const itemCategory = staffCatalogCategoryOf(item, type);
+    if (category && itemCategory !== category) return false;
+    const haystack = `${item.name || ''} ${itemCategory}`.toLowerCase();
+    return words.every(word => haystack.includes(word));
+  });
+}
+
+function staffCatalogCategories(items, type = staffCatalogType) {
+  return [...new Set(items.map(item => staffCatalogCategoryOf(item, type)).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'th'));
+}
 
 function staffServiceCategories() {
   return [...new Set([
@@ -110,11 +133,12 @@ function staffCatalogUnitOptions(selectedUnit) {
     .map(([value, label]) => `<option value="${value}"${normalizeUnit(selectedUnit) === value ? ' selected' : ''}>${label}</option>`).join('');
 }
 
-function renderStaffCatalogTable(items) {
+// Rows are grouped under a collapsible header per category (only when the items have categories).
+// While a filter is active every group with a match stays open.
+function renderStaffCatalogTable(items, { grouped = false, filtering = false } = {}) {
   const isService = staffCatalogType === 'services';
-  return `<div class="staff-catalog-table-wrap"><table class="staff-catalog-table">
-    <thead><tr><th>ชื่อที่แสดงบนเว็บ</th>${isService ? '<th>หมวดหมู่</th>' : ''}<th>ราคา</th><th>หน่วย</th><th>ลำดับ</th><th>แสดง</th><th>จัดการ</th></tr></thead>
-    <tbody>${items.map(item => `<tr data-catalog-id="${staffCatalogEscape(item.id)}">
+  const columns = isService ? 7 : 6;
+  const rows = (list, hidden = false) => list.map(item => `<tr data-catalog-id="${staffCatalogEscape(item.id)}"${hidden ? ' hidden' : ''}>
       <td><input data-table-field="name" maxlength="120" value="${staffCatalogEscape(item.name || '')}" aria-label="ชื่อรายการ"></td>
       ${isService ? `<td><input data-table-field="category" list="staffCatalogCategoryList" maxlength="80" value="${staffCatalogEscape(item.category || 'บริการเพิ่มเติม')}" aria-label="หมวดหมู่"></td>` : ''}
       <td><input data-table-field="price" type="number" min="0" step="0.01" value="${Number(item.price) || 0}" aria-label="ราคา"></td>
@@ -122,8 +146,33 @@ function renderStaffCatalogTable(items) {
       <td><input data-table-field="sortOrder" type="number" min="0" step="1" value="${Number(item.sortOrder) || 0}" aria-label="ลำดับการแสดง"></td>
       <td><label class="staff-table-active"><input data-table-field="active" type="checkbox"${item.active === false ? '' : ' checked'}><span>${item.active === false ? 'ปิด' : 'เปิด'}</span></label></td>
       <td><div class="staff-table-actions"><button type="button" data-catalog-action="save-row">บันทึก</button><button type="button" data-catalog-action="edit">รายละเอียด</button></div></td>
-    </tr>`).join('')}</tbody>
+    </tr>`).join('');
+  const body = grouped
+    ? staffCatalogCategories(items).map(category => {
+      const members = items.filter(item => staffCatalogCategoryOf(item) === category);
+      const key = `${staffCatalogType}:${category}`;
+      const collapsed = !filtering && staffCatalogCollapsed.has(key);
+      return `<tr class="staff-catalog-group"><th colspan="${columns}"><button type="button" class="staff-catalog-group-toggle" data-catalog-action="toggle-group" data-group-key="${staffCatalogEscape(key)}" aria-expanded="${!collapsed}"><span aria-hidden="true">${collapsed ? '▸' : '▾'}</span><strong>${staffCatalogEscape(category)}</strong><small>${members.filter(item => item.active !== false).length}/${members.length} แสดงอยู่</small></button></th></tr>${rows(members, collapsed)}`;
+    }).join('')
+    : rows(items);
+  return `<div class="staff-catalog-table-wrap"><table class="staff-catalog-table">
+    <thead><tr><th>ชื่อที่แสดงบนเว็บ</th>${isService ? '<th>หมวดหมู่</th>' : ''}<th>ราคา</th><th>หน่วย</th><th>ลำดับ</th><th>แสดง</th><th>จัดการ</th></tr></thead>
+    <tbody>${body}</tbody>
   </table></div>`;
+}
+
+// Keeps the filter bar in step with the list: category choices with counts, result count, clear/collapse buttons.
+function syncStaffCatalogFilters(all, shown, categories) {
+  const category = $('staffCatalogCategoryFilter');
+  if (staffCatalogFilter.category && !categories.includes(staffCatalogFilter.category)) staffCatalogFilter.category = '';
+  category.hidden = categories.length === 0;
+  category.innerHTML = `<option value="">ทุกหมวดหมู่ (${all.length})</option>${categories.map(name => `<option value="${staffCatalogEscape(name)}"${name === staffCatalogFilter.category ? ' selected' : ''}>${staffCatalogEscape(name)} (${all.filter(item => staffCatalogCategoryOf(item) === name).length})</option>`).join('')}`;
+  const filtering = Boolean(staffCatalogFilter.query.trim() || staffCatalogFilter.category);
+  $('staffCatalogClearFilter').hidden = !filtering;
+  $('staffCatalogToggleGroups').hidden = staffCatalogView !== 'table' || categories.length === 0 || filtering;
+  const allCollapsed = categories.length > 0 && categories.every(name => staffCatalogCollapsed.has(`${staffCatalogType}:${name}`));
+  $('staffCatalogToggleGroups').textContent = allCollapsed ? 'ขยายทุกหมวด' : 'ย่อทุกหมวด';
+  $('staffCatalogCount').textContent = filtering ? `แสดง ${shown} จาก ${all.length} รายการ` : `${all.length} รายการ`;
 }
 
 function renderStaffServiceVisibility(items) {
@@ -150,6 +199,7 @@ function renderStaffServiceVisibility(items) {
 function renderStaffCatalog() {
   const list = $('staffCatalogList');
   if (!list) return;
+  $('staffCatalogFilters').hidden = staffCatalogView === 'flow';
   if (staffCatalogView === 'flow' && typeof renderStaffFlowSettings === 'function') {
     list.innerHTML = renderStaffFlowSettings();
     return;
@@ -162,19 +212,26 @@ function renderStaffCatalog() {
     const updatedDifference = (Date.parse(b.updatedAt || '') || 0) - (Date.parse(a.updatedAt || '') || 0);
     return updatedDifference;
   });
+  const categories = staffCatalogCategories(items);
+  const shownItems = filterStaffCatalogItems(items, staffCatalogFilter);
+  syncStaffCatalogFilters(items, shownItems.length, categories);
   if (!items.length) {
     list.innerHTML = '<div class="staff-catalog-empty">ยังไม่มีรายการในหมวดนี้</div>';
     return;
   }
+  if (!shownItems.length) {
+    list.innerHTML = '<div class="staff-catalog-empty">ไม่พบรายการที่ตรงกับตัวกรอง ลองเปลี่ยนคำค้นหรือกด “ล้างตัวกรอง”</div>';
+    return;
+  }
   if (staffCatalogView === 'visibility') {
-    list.innerHTML = renderStaffServiceVisibility(items);
+    list.innerHTML = renderStaffServiceVisibility(shownItems);
     return;
   }
   if (staffCatalogView === 'table') {
-    list.innerHTML = renderStaffCatalogTable(items);
+    list.innerHTML = renderStaffCatalogTable(shownItems, { grouped: categories.length > 0, filtering: Boolean(staffCatalogFilter.query.trim() || staffCatalogFilter.category) });
     return;
   }
-  list.innerHTML = items.map(item => `
+  list.innerHTML = shownItems.map(item => `
     <article class="staff-catalog-item ${item.active === false ? 'is-inactive' : 'is-active'}" data-catalog-id="${staffCatalogEscape(item.id)}">
       ${staffCatalogType === 'services' && staffServiceImageUrl(item.imageUrl) ? `<img class="staff-catalog-thumb" src="${staffCatalogEscape(item.imageUrl)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ''}
       <div><strong>${staffCatalogEscape(item.name || 'ไม่ระบุชื่อ')}</strong><span>${staffCatalogType === 'services' ? `${staffCatalogEscape(item.category || 'บริการเพิ่มเติม')} • ` : ''}฿${money(item.price)} / ${staffCatalogEscape(unit(item.unit))}</span>${staffCatalogType === 'services' ? `<small class="staff-catalog-capacity">กำลังผลิต ${Number(item.capacityPoints || 0).toLocaleString('th-TH')} แต้ม / ${Number(item.capacityStep || 1).toLocaleString('th-TH')} ${staffCatalogEscape(staffCapacityBasisLabel(item.capacityBasis || 'job'))}</small>` : ''}<small class="staff-catalog-updated">${staffCatalogEscape(formatStaffCatalogUpdatedAt(item.updatedAt))}</small></div>
@@ -320,6 +377,14 @@ async function handleStaffCatalogAction(event) {
   if (staffCatalogView === 'flow' && typeof handleStaffFlowSettingsAction === 'function') {
     if (await handleStaffFlowSettingsAction(event)) return;
   }
+  const groupToggle = event.target.closest('[data-catalog-action="toggle-group"]');
+  if (groupToggle) {
+    const key = groupToggle.dataset.groupKey;
+    if (staffCatalogCollapsed.has(key)) staffCatalogCollapsed.delete(key);
+    else staffCatalogCollapsed.add(key);
+    renderStaffCatalog();
+    return;
+  }
   const row = event.target.closest('[data-catalog-id]');
   if (!row || activeAccessRole !== 'staff') return;
   const collection = staffCatalogItems();
@@ -378,6 +443,9 @@ function selectStaffCatalogTab(event) {
 
 function setStaffCatalogType(type) {
   staffCatalogType = type === 'services' ? 'services' : 'materials';
+  staffCatalogFilter.query = '';
+  staffCatalogFilter.category = '';
+  if ($('staffCatalogSearch')) $('staffCatalogSearch').value = '';
   if (staffCatalogView === 'flow' || (staffCatalogType === 'materials' && staffCatalogView === 'visibility')) staffCatalogView = 'cards';
   document.querySelectorAll('[data-catalog-tab]').forEach(tab => {
     const selected = tab.dataset.catalogTab === staffCatalogType;
@@ -446,6 +514,21 @@ function bindStaffCatalog() {
   $('deleteStaffCatalogItem')?.addEventListener('click', deleteStaffCatalogItem);
   $('staffCatalogList')?.addEventListener('click', handleStaffCatalogAction);
   $('staffCatalogViewToggle')?.addEventListener('click', selectStaffCatalogView);
+  $('staffCatalogSearch')?.addEventListener('input', event => { staffCatalogFilter.query = event.target.value; renderStaffCatalog(); });
+  $('staffCatalogCategoryFilter')?.addEventListener('change', event => { staffCatalogFilter.category = event.target.value; renderStaffCatalog(); });
+  $('staffCatalogClearFilter')?.addEventListener('click', () => {
+    staffCatalogFilter.query = '';
+    staffCatalogFilter.category = '';
+    $('staffCatalogSearch').value = '';
+    renderStaffCatalog();
+    $('staffCatalogSearch').focus();
+  });
+  $('staffCatalogToggleGroups')?.addEventListener('click', () => {
+    const keys = staffCatalogCategories(staffCatalogItems()).map(name => `${staffCatalogType}:${name}`);
+    if (keys.every(key => staffCatalogCollapsed.has(key))) keys.forEach(key => staffCatalogCollapsed.delete(key));
+    else keys.forEach(key => staffCatalogCollapsed.add(key));
+    renderStaffCatalog();
+  });
   $('staffCapacityPoints')?.addEventListener('input', updateStaffCapacityPreview);
   $('staffCapacityBasis')?.addEventListener('change', updateStaffCapacityPreview);
   $('staffCapacityStep')?.addEventListener('input', updateStaffCapacityPreview);

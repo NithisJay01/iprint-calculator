@@ -72,9 +72,15 @@ assert.deepEqual(broken.problems, ['เซตนี้ไม่มีขาย�
 
 // ---------- adapter: every item is priced on its own ----------
 const context = { settings: configured, catalog };
-const item = (extra = {}) => ({ id: 'i1', ...product.cartItemFromSelection({ pack: sets[0], quantity: 100, material, services: [single], promoCode: '' }), ...extra });
+const item = (extra = {}) => ({ id: 'i1', ...product.cartItemFromSelection({ pack: sets[0], quantity: 100, material, services: [single], promoCode: '', driveLink: 'https://drive.example/file' }), ...extra });
 let entry = adapter.resolve(item(), context);
 assert.deepEqual(entry.problems, []);
+
+// The file link is required: an item without one cannot be ordered (it stays in the cart with a clear reason).
+const noLink = adapter.resolve(item({ driveLink: '' }), context);
+assert.deepEqual(noLink.problems, ['ยังไม่ได้ใส่ลิงก์ไฟล์งาน (จำเป็นต้องใส่)']);
+assert.equal(adapter.resolve(item({ driveLink: '   ' }), context).problems.length, 1, 'blank counts as missing');
+assert.equal(entry.driveLink, 'https://drive.example/file');
 assert.equal(entry.title, 'นามบัตร Essential');
 assert.equal(entry.price, 123.24, 'included print does not change the set price');
 assert.equal(entry.discount, 0);

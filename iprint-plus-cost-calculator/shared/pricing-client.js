@@ -1,4 +1,5 @@
 import { emptySettings, newProduct, validateSettings } from './product-pricing.js';
+import { resizeImageFile } from './image-resize.js';
 export const LOCAL = ['localhost', '127.0.0.1'].includes(location.hostname);
 export const STORAGE_KEY = 'iprint-product-pricing-preview-v1';
 export const API_ROOT = 'https://iprint-flow-api.iprint-garphic1.workers.dev';
@@ -142,4 +143,29 @@ export async function deactivateCatalogItem(type, item, key = '') {
   if (response.status === 409) throw Object.assign(new Error('รายการนี้ถูกแก้ไขจากที่อื่น กรุณารีเฟรชหน้าแล้วลองอีกครั้ง'), { code: 'CATALOG_WRITE_CONFLICT' });
   if (!response.ok || !data.success) throw new Error(data.error || 'ปิดใช้งานรายการไม่สำเร็จ');
   return true;
+}
+
+// ---------------------------------------------------------------------------
+// Gallery pictures: made smaller in the browser, then stored by the Worker (staff only). Returns the public link.
+// `prepare` and `fetcher` can be replaced (the tests do); `local` is true on localhost, where there is no storage.
+export async function uploadGalleryImage(file, key, { prepare = resizeImageFile, fetcher = fetch, local = LOCAL } = {}) {
+  if (local) throw Object.assign(new Error('อัปโหลดไฟล์ใช้ได้เมื่อเปิดบนเว็บจริง (ในเครื่องนี้ให้ใช้ลิงก์รูปแทน)'), { code: 'LOCAL' });
+  const apiKey = String(key || '').trim();
+  if (!apiKey) throw Object.assign(new Error('กรุณาระบุ API Key ของพนักงาน'), { code: 'NO_KEY' });
+  const picture = await prepare(file);
+  const form = new FormData();
+  form.append('file', picture, picture.type === 'image/webp' ? 'photo.webp' : 'photo.jpg');
+  let response;
+  try {
+    response = await fetcher(`${API}/staff/uploads`, { method: 'POST', headers: { 'X-API-Key': apiKey }, body: form });
+  } catch (error) {
+    throw Object.assign(new Error('เชื่อมต่อระบบไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองใหม่'), { code: 'NETWORK' });
+  }
+  const data = await response.json().catch(() => ({}));
+  if (response.status === 401) throw Object.assign(new Error('API Key ไม่ถูกต้อง'), { code: 'UNAUTHORIZED' });
+  if (response.status === 503) throw Object.assign(new Error('ยังไม่ได้ตั้งค่าที่เก็บรูปบน Worker (ดูขั้นตอนใน worker/MEDIA_SETUP.md) ระหว่างนี้ใช้ลิงก์รูปแทนได้'), { code: 'NOT_CONFIGURED' });
+  if (response.status === 413) throw Object.assign(new Error('ไฟล์ภาพใหญ่เกินไป'), { code: 'TOO_LARGE' });
+  if (response.status === 415) throw Object.assign(new Error('รองรับเฉพาะรูป JPG, PNG และ WebP'), { code: 'UNSUPPORTED' });
+  if (!response.ok || data.success !== true || typeof data.url !== 'string') throw Object.assign(new Error('อัปโหลดไม่สำเร็จ กรุณาลองใหม่'), { code: 'UPLOAD_FAILED' });
+  return data.url;
 }

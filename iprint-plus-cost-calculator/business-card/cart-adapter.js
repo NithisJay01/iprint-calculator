@@ -33,7 +33,7 @@ export default {
       note: '',
       promoCode: item.promoCode || '',
       promotion: '',
-      driveLink: item.driveLink || '',
+      driveLink: String(item.driveLink || '').trim(),
       price: 0,
       discount: 0,
       points: 0,
@@ -68,6 +68,8 @@ export default {
         })
       });
       if (entry.promoCode && !quote.pricing?.promotion) entry.note = 'โค้ดส่วนลดนี้ไม่เข้าเงื่อนไขของรายการนี้';
+      // The link is the only way the shop receives the artwork of a cart order, so it is required.
+      if (!entry.driveLink) entry.problems.push('ยังไม่ได้ใส่ลิงก์ไฟล์งาน (จำเป็นต้องใส่)');
     } catch (error) {
       entry.problems.push(error.message);
     }

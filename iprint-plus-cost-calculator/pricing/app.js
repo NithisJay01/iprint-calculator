@@ -1,6 +1,8 @@
 import { newProduct, calculateProductPrice } from '../shared/product-pricing.js';
-import { LOCAL, loadPricing, savePricing, loadCatalog, storedWriteKey, loadDraft, saveDraft, discardDraft, createCatalogItem, deactivateCatalogItem } from '../shared/pricing-client.js';
+import { LOCAL, uploadGalleryImage, loadPricing, savePricing, loadCatalog, storedWriteKey, loadDraft, saveDraft, discardDraft, createCatalogItem, deactivateCatalogItem } from '../shared/pricing-client.js';
 import { newBusinessCardProduct } from '../shared/business-card-product.js';
+import { setBullets, parseBullets, groupRuleText } from '../business-card/product.js';
+import { BUILT_IN_SET_IMAGES, MAX_GALLERY_IMAGES, isValidSetImage, setImageUrl, resolveSetImage, galleryUrls } from '../shared/set-image.js';
 import { UNIT_OPTIONS, CAPACITY_BASIS_OPTIONS, formatUnit, newCatalogItemPayload, catalogListFor, filterCatalogItems, itemUsage, describeUsage, setGroupItem, removeItemEverywhere, groupSummary, saveStateLabel, toggleOffered, setIncluded, includedIdsOf } from '../shared/set-studio.js';
 
 const $ = id => document.getElementById(id);
@@ -47,7 +49,7 @@ function ensureKitchen(product) {
   const available = new Set(catalogItems().map(item => item.id));
   product.optionGroups.forEach(group => {
     group.enabled = group.enabled !== false;
-    group.selectionMode = group.selectionMode === 'multiple' ? 'multiple' : 'single';
+    group.selectionMode = group.selectionMode === 'multiple' && group.source !== 'material' ? 'multiple' : 'single';
     group.required = group.required === true;
     group.itemIds = Array.isArray(group.itemIds) ? group.itemIds.filter(id => available.has(id)) : [];
   });
@@ -91,7 +93,7 @@ function renderGroups(product, pack) {
     return `<section class="option-group ${group.enabled ? '' : 'disabled'} ${open ? 'open' : ''}" data-group-index="${index}">
       <div class="group-head"><button type="button" class="group-toggle" data-toggle-group="${index}" aria-expanded="${open}"><span class="chevron" aria-hidden="true">›</span><span class="group-title"><h3>${esc(group.name)}</h3><small class="tone-${summary.tone}">${esc(summary.text)}</small></span></button><div class="group-actions"><button type="button" class="text-button" data-move-group="up" data-group-index="${index}" aria-label="เลื่อนหมวดขึ้น" ${index === 0 ? 'disabled' : ''}>↑</button><button type="button" class="text-button" data-move-group="down" data-group-index="${index}" aria-label="เลื่อนหมวดลง" ${index === product.optionGroups.length - 1 ? 'disabled' : ''}>↓</button><button type="button" class="remove" data-remove-group="${index}">ลบหมวด</button><label class="switch"><input type="checkbox" data-group-toggle="${index}" ${group.enabled ? 'checked' : ''}><span></span><b>${group.enabled ? 'เปิดใช้งาน' : 'ปิดใช้งาน'}</b></label></div></div>
       ${open ? `<div class="group-body">
-      <div class="group-settings"><label>ชื่อหมวด<input data-group-field="name" data-group-index="${index}" value="${esc(group.name)}"></label><label>ประเภทรายการ<select data-group-field="source" data-group-index="${index}">${option('material','วัสดุ',group.source==='material')}${option('service','บริการ',group.source==='service')}</select></label><label>การเลือก<select data-group-field="selectionMode" data-group-index="${index}">${option('single','เลือกได้ 1 รายการ',group.selectionMode==='single')}${option('multiple','เลือกได้หลายรายการ',group.selectionMode==='multiple')}</select></label><label class="check"><input type="checkbox" data-group-field="required" data-group-index="${index}" ${group.required ? 'checked' : ''}> บังคับเลือก</label></div>
+      <div class="group-settings"><label>ชื่อหมวด<input data-group-field="name" data-group-index="${index}" value="${esc(group.name)}"></label><label>ประเภทรายการ<select data-group-field="source" data-group-index="${index}">${option('material','วัสดุ',group.source==='material')}${option('service','บริการ',group.source==='service')}</select></label><label>การเลือก<select data-group-field="selectionMode" data-group-index="${index}">${option('single','เลือกได้ 1 รายการ',group.selectionMode==='single')}${group.source === 'material' ? '' : option('multiple','เลือกได้หลายรายการ',group.selectionMode==='multiple')}</select></label><label class="check"><input type="checkbox" data-group-field="required" data-group-index="${index}" ${group.required ? 'checked' : ''}> บังคับเลือก</label></div>
       ${group.enabled ? `${includeHint(packagesMode, group)}<div class="ingredient-grid">${groupItems.map(item => { const active = pack.optionIds.includes(item.id); const included = canInclude && includedIds.includes(item.id); return `<div class="ingredient-cell"><button type="button" class="ingredient ${active ? 'selected' : ''} ${included ? 'included' : ''}" data-option-id="${esc(item.id)}" aria-pressed="${active}"><span>${esc(item.name)}</span><small>${item.price ? `+฿${fmt(item.price)} / ${esc(formatUnit(item.unit))}` : 'ไม่มีราคา'}</small>${included ? '<em class="included-badge">รวมในเซต</em>' : ''}</button>${canInclude && active ? `<label class="included-toggle"><input type="checkbox" data-included-id="${esc(item.id)}" data-group-index="${index}" ${included ? 'checked' : ''}> รวมในเซต (ไม่คิดเพิ่ม)</label>` : ''}</div>`; }).join('')}<button type="button" class="ingredient manage" data-open-picker="${index}">＋ เพิ่ม/แก้ไขรายการ</button></div>` : ''}
       </div>` : ''}
     </section>`;
@@ -117,12 +119,37 @@ function render() {
       ${renderPackageCards(product)}
       <div class="package-editor"><div class="section-title compact"><div><span class="step">2</span><div><h2>ข้อมูลเซตที่เลือก</h2><p>ราคานี้คือราคาเริ่มต้นก่อนบริการเสริม</p></div></div><button type="button" class="remove" data-remove-package ${product.packages.length === 1 ? 'disabled' : ''}>ลบเซต</button></div>
         <div class="two-fields"><label>ชื่อเซต<input data-package-field="name" value="${esc(pack.name)}"></label><label>คำอธิบาย<input data-package-field="description" value="${esc(pack.description)}"></label><label>จำนวนเริ่มต้น<input data-package-field="quantity" type="number" min="1" value="${pack.quantity}"></label><label>ราคาเริ่มต้น (บาท)<input data-package-field="price" type="number" min="0" step="0.01" value="${pack.price}"></label></div>
+        <label class="bullets-field">รายละเอียดในเซต <small>บรรทัดละ 1 ข้อ แสดงเป็นหัวข้อ “สเปกในเซต” ในหน้าลูกค้า (เว้นว่างเพื่อไม่แสดง)</small><textarea data-package-field="bullets" rows="4" maxlength="1000">${esc(setBullets({ product, pack, catalog }).join('\n'))}</textarea></label>
+        <div class="set-image-field">
+          <div class="set-image-head"><b>ภาพของเซต</b><small>แสดงที่หน้าสั่งซื้อและการ์ดเซตของลูกค้า</small></div>
+          <div class="set-image-row">
+            <div class="set-image-preview" id="setImagePreview"></div>
+            <div class="set-image-controls">
+              <label>ลิงก์รูปภาพ (ขึ้นต้นด้วย https://)<input data-package-field="image" type="url" inputmode="url" maxlength="500" placeholder="https://…/ภาพของเซต.jpg" value="${esc(pack.image || '')}"></label>
+              <small class="set-image-note" id="setImageNote" role="status"></small>
+              <button type="button" class="text-button" data-clear-image>ล้างภาพ (ใช้ภาพมาตรฐาน)</button>
+            </div>
+          </div>
+          <div class="set-image-presets" role="group" aria-label="เลือกจากภาพในระบบ"><small>หรือเลือกจากภาพในระบบ</small><div>${BUILT_IN_SET_IMAGES.map(image => `<button type="button" class="set-image-choice" data-image-preset="${esc(image)}" aria-label="ใช้ภาพนี้" aria-pressed="false"><img src="../business-card/${esc(image)}" alt="" loading="lazy"></button>`).join('')}</div></div>
+        </div>
+        <div class="set-image-field gallery-field">
+          <div class="set-image-head"><b>แกลเลอรี่ตัวอย่างงาน</b><small id="galleryCount"></small></div>
+          <p class="gallery-help">ภาพตัวอย่างงานพิมพ์ของเซตนี้ แสดงใต้ภาพหลักในหน้าสั่งซื้อ อัปโหลดได้สูงสุด ${MAX_GALLERY_IMAGES} รูป ระบบย่อภาพให้พอดีให้อัตโนมัติ</p>
+          <div class="gallery-grid" id="galleryGrid"></div>
+          <div class="gallery-actions">
+            <label class="button soft gallery-upload" id="galleryUploadButton"><input type="file" id="galleryFile" accept="image/jpeg,image/png,image/webp" multiple hidden>＋ อัปโหลดรูป</label>
+            <span class="gallery-link"><input id="galleryLink" type="url" inputmode="url" maxlength="500" placeholder="หรือวางลิงก์รูป https://…" aria-label="ลิงก์รูปสำหรับแกลเลอรี่"><button type="button" class="text-button" data-gallery-add-link>เพิ่ม</button></span>
+          </div>
+          <small class="set-image-note" id="galleryNote" role="status"></small>
+        </div>
       </div>
     </section>
     <section class="panel"><div class="section-title"><div><span class="step">3</span><div><h2>หมวดตัวเลือกของลูกค้า</h2><p>กดชื่อหมวดเพื่อแก้ไข หมวดที่เปิดและมีรายการในเซตจะปรากฏในหน้าลูกค้าตามลำดับนี้</p></div></div><button type="button" class="button soft" data-add-group>＋ เพิ่มหมวด</button></div>${renderGroups(product, pack)}</section>
     <details class="panel advanced"><summary><span><b>สูตรราคาและกติกาขั้นสูง</b><small>ใช้เมื่อจำเป็น สูตรหลักยังคงทำงานเหมือนเดิม</small></span><span>แก้ไข ›</span></summary><div class="advanced-body"><div class="two-fields"><label>รูปแบบราคา<select data-product-field="mode">${option('packages','แพ็กเกจสำเร็จรูป',product.mode==='packages')}${option('tiers','ราคาตามจำนวน',product.mode==='tiers')}${option('formula','ต้นทุน + กำไร',product.mode==='formula')}</select></label>${field('กำไรจากบริการเสริม (%)','markup',product.markup,'number','min="0" step="any"')}${field('ราคาขั้นต่ำ','minimum',product.minimum,'number','min="0" step="any"')}${field('ปัดราคาขึ้นทีละ','rounding',product.rounding,'number','min="0.01" step="any"')}</div></div></details>
     <details class="panel advanced"><summary><span><b>โปรโมชัน</b><small>${product.promotions.length} รายการ · ระบบเลือกส่วนลดที่ดีที่สุดหนึ่งรายการ</small></span><span>จัดการ ›</span></summary><div class="advanced-body"><div class="promo-list">${renderPromotions(product)}</div><button type="button" class="button soft" data-add-promo>＋ เพิ่มโปรโมชัน</button></div></details>`;
   syncPreviewControls(product);
+  syncSetImage();
+  syncGallery();
   renderCustomerPreview();
   previewPrice();
 }
@@ -136,11 +163,75 @@ function syncPreviewControls(product) {
   $('quantity').value = pack.quantity;
 }
 
+// The gallery of the set being edited: thumbnails with move / remove buttons and how many of the 5 places are used.
+function syncGallery(message = '', isError = false) {
+  const grid = $('galleryGrid');
+  if (!grid) return;
+  const pack = currentPackage();
+  const urls = galleryUrls(pack.gallery);
+  grid.innerHTML = urls.length
+    ? urls.map((url, index) => `<figure class="gallery-item"><img src="${esc(resolveSetImage(url, '../business-card/'))}" alt="ตัวอย่างงาน ${index + 1}" referrerpolicy="no-referrer" loading="lazy"><figcaption><button type="button" data-gallery-move="-1" data-index="${index}" aria-label="เลื่อนไปก่อนหน้า" ${index === 0 ? 'disabled' : ''}>←</button><button type="button" data-gallery-move="1" data-index="${index}" aria-label="เลื่อนไปถัดไป" ${index === urls.length - 1 ? 'disabled' : ''}>→</button><button type="button" class="danger" data-gallery-remove data-index="${index}" aria-label="ลบภาพนี้">✕</button></figcaption></figure>`).join('')
+    : '<p class="gallery-empty">ยังไม่มีภาพตัวอย่าง</p>';
+  const full = urls.length >= MAX_GALLERY_IMAGES;
+  $('galleryCount').textContent = `${urls.length} / ${MAX_GALLERY_IMAGES} รูป`;
+  $('galleryUploadButton').classList.toggle('disabled', full);
+  $('galleryFile').disabled = full;
+  $('galleryLink').disabled = full;
+  document.querySelector('[data-gallery-add-link]').disabled = full;
+  const note = $('galleryNote');
+  note.textContent = message || (full ? 'ครบ 5 รูปแล้ว ลบรูปเดิมก่อนถ้าต้องการเพิ่ม' : '');
+  note.classList.toggle('error', isError);
+}
+
+function setGallery(urls) {
+  currentPackage().gallery = urls.slice(0, MAX_GALLERY_IMAGES);
+  renderCustomerPreview();
+  dirty();
+}
+
+async function uploadGalleryFiles(files) {
+  const room = MAX_GALLERY_IMAGES - galleryUrls(currentPackage().gallery).length;
+  const chosen = [...files].slice(0, room);
+  const skipped = files.length - chosen.length;
+  let done = 0;
+  for (const file of chosen) {
+    syncGallery(`กำลังอัปโหลด ${done + 1} / ${chosen.length}…`);
+    try {
+      const url = await uploadGalleryImage(file, $('key').value);
+      setGallery([...galleryUrls(currentPackage().gallery), url]);
+      done += 1;
+    } catch (error) {
+      syncGallery(`${file.name}: ${error.message || 'อัปโหลดไม่สำเร็จ'}`, true);
+      return;
+    }
+  }
+  syncGallery(done ? `อัปโหลดแล้ว ${done} รูป${skipped ? ` (เกินจำนวนที่รับได้ ${skipped} รูป ไม่ได้อัปโหลด)` : ''} อย่าลืมกด “เผยแพร่ให้ลูกค้า”` : '');
+}
+
+// The picture field of the set being edited: thumbnail, note about the link and which built-in picture is chosen.
+function syncSetImage() {
+  const pack = currentPackage();
+  const preview = $('setImagePreview');
+  if (!preview) return;
+  const raw = String(pack.image || '').trim();
+  const valid = raw === '' || isValidSetImage(raw);
+  const url = valid ? setImageUrl(raw) : '';
+  preview.innerHTML = url
+    ? `<img src="${esc(resolveSetImage(url, '../business-card/'))}" alt="ภาพของเซต" referrerpolicy="no-referrer">`
+    : '<span>ยังไม่ได้เลือกภาพ<br>หน้าลูกค้าใช้ภาพมาตรฐาน</span>';
+  const note = $('setImageNote');
+  note.textContent = !valid ? 'ลิงก์ต้องขึ้นต้นด้วย https:// (ลิงก์จาก Google Drive ต้องเป็นลิงก์รูปตรง ไม่ใช่ลิงก์หน้าแชร์)' : url ? 'ถ้าภาพไม่ขึ้นที่หน้าลูกค้า ระบบจะใช้ภาพมาตรฐานแทน' : '';
+  note.classList.toggle('error', !valid);
+  const field = document.querySelector('[data-package-field="image"]');
+  if (field && field.value !== raw) field.value = raw;
+  document.querySelectorAll('[data-image-preset]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.imagePreset === raw)));
+}
+
 function renderCustomerPreview() {
   const product = currentProduct(), pack = currentPackage();
   const items = new Map(catalogItems().map(item => [item.id, item]));
   const groups = product.optionGroups.filter(group => group.enabled).map(group => ({ ...group, choices: group.itemIds.filter(id => pack.optionIds.includes(id)).map(id => items.get(id)).filter(Boolean) })).filter(group => group.choices.length);
-  $('customerPreview').innerHTML = `<article class="customer-card"><div class="mockup">${esc(product.name.trim().charAt(0) || 'P')}</div><span class="set-label">${esc(product.name)}</span><h3>${esc(pack.name)}</h3><p>${esc(pack.description || 'เซตพร้อมสั่งที่ Admin จัดไว้')}</p><div class="price-block"><span>เริ่มต้น ${Number(pack.quantity).toLocaleString('th-TH')} ชิ้น</span><b>฿${fmt(pack.price)}</b></div>${groups.map(group => `<div class="preview-group"><b>${esc(group.name)}</b><div>${group.choices.map(item => { const inc = product.mode === 'packages' && group.source === 'service' && includedIdsOf(product, pack).includes(item.id); return `<span class="${inc ? 'inc' : ''}">${esc(item.name)}${inc ? '<small>รวมในเซต</small>' : ''}</span>`; }).join('')}</div></div>`).join('')}<button type="button">เลือกเซตนี้</button></article>`;
+  $('customerPreview').innerHTML = `<article class="customer-card"><div class="mockup${setImageUrl(pack.image) ? ' has-image' : ''}">${setImageUrl(pack.image) ? `<img src="${esc(resolveSetImage(pack.image, '../business-card/'))}" alt="" referrerpolicy="no-referrer">` : esc(product.name.trim().charAt(0) || 'P')}</div><span class="set-label">${esc(product.name)}</span><h3>${esc(pack.name)}</h3><p>${esc(pack.description || 'เซตพร้อมสั่งที่ Admin จัดไว้')}</p>${(() => { const lines = setBullets({ product, pack, catalog }); return lines.length ? `<ul class="preview-bullets">${lines.map(line => `<li>${esc(line)}</li>`).join('')}</ul>` : ''; })()}<div class="price-block"><span>เริ่มต้น ${Number(pack.quantity).toLocaleString('th-TH')} ชิ้น</span><b>฿${fmt(pack.price)}</b></div>${groups.map(group => `<div class="preview-group"><b>${esc(group.name)}</b><small class="preview-rule">${esc(groupRuleText({ mode: group.source === 'material' ? 'single' : group.selectionMode, required: group.source === 'material' || group.required }))}</small><div>${group.choices.map(item => { const inc = product.mode === 'packages' && group.source === 'service' && includedIdsOf(product, pack).includes(item.id); return `<span class="${inc ? 'inc' : ''}">${esc(item.name)}${inc ? '<small>รวมในเซต</small>' : ''}</span>`; }).join('')}</div></div>`).join('')}<button type="button">เลือกเซตนี้</button></article>`;
 }
 
 function previewPrice() {
@@ -214,6 +305,7 @@ $('productList').addEventListener('click', event => {
 $('editor').addEventListener('submit', event => event.preventDefault());
 $('editor').addEventListener('input', event => {
   const input = event.target;
+  if (input.id === 'galleryFile' || input.id === 'galleryLink') return; // they change the gallery only through their own actions
   const product = currentProduct(), pack = currentPackage();
   if (input.dataset.productField) {
     const key = input.dataset.productField;
@@ -222,7 +314,9 @@ $('editor').addEventListener('input', event => {
     else if (key === 'name') { renderProductRail(); renderCustomerPreview(); }
     else previewPrice();
   } else if (input.dataset.packageField) {
-    pack[input.dataset.packageField] = input.type === 'number' ? Number(input.value) : input.value;
+    const key = input.dataset.packageField;
+    pack[key] = key === 'bullets' ? parseBullets(input.value) : key === 'image' ? input.value.trim() : input.type === 'number' ? Number(input.value) : input.value;
+    if (key === 'image') syncSetImage();
     renderCustomerPreview(); previewPrice();
   } else if (input.dataset.groupToggle != null) {
     product.optionGroups[Number(input.dataset.groupToggle)].enabled = input.checked;
@@ -231,7 +325,7 @@ $('editor').addEventListener('input', event => {
     const group = product.optionGroups[Number(input.dataset.groupIndex)];
     const key = input.dataset.groupField;
     group[key] = input.type === 'checkbox' ? input.checked : input.value;
-    if (key === 'source') { group.itemIds = []; render(); }
+    if (key === 'source') { group.itemIds = []; if (group.source === 'material') { group.selectionMode = 'single'; group.required = true; } render(); }
     else if (key === 'name') {
       input.closest('.option-group').querySelector('h3').textContent = group.name;
       renderCustomerPreview();
@@ -247,8 +341,45 @@ $('editor').addEventListener('input', event => {
   dirty();
 });
 
+$('editor').addEventListener('change', event => {
+  if (event.target.id !== 'galleryFile') return;
+  const files = [...event.target.files];
+  event.target.value = '';
+  if (files.length) uploadGalleryFiles(files);
+});
 $('editor').addEventListener('click', event => {
   const product = currentProduct();
+  const imagePreset = event.target.closest('[data-image-preset]');
+  if (imagePreset) {
+    currentPackage().image = imagePreset.dataset.imagePreset;
+    syncSetImage(); renderCustomerPreview(); dirty(); return;
+  }
+  const galleryRemove = event.target.closest('[data-gallery-remove]');
+  if (galleryRemove) {
+    const urls = galleryUrls(currentPackage().gallery);
+    urls.splice(Number(galleryRemove.dataset.index), 1);
+    setGallery(urls); syncGallery(); return;
+  }
+  const galleryMove = event.target.closest('[data-gallery-move]');
+  if (galleryMove) {
+    const urls = galleryUrls(currentPackage().gallery);
+    const from = Number(galleryMove.dataset.index), to = from + Number(galleryMove.dataset.galleryMove);
+    if (to >= 0 && to < urls.length) [urls[from], urls[to]] = [urls[to], urls[from]];
+    setGallery(urls); syncGallery(); return;
+  }
+  if (event.target.closest('[data-gallery-add-link]')) {
+    const field = $('galleryLink');
+    const link = field.value.trim();
+    const urls = galleryUrls(currentPackage().gallery);
+    if (!link || !isValidSetImage(link) || !setImageUrl(link)) { syncGallery('ลิงก์ต้องขึ้นต้นด้วย https:// (เป็นลิงก์รูปตรง)', true); return; }
+    if (urls.includes(link)) { syncGallery('มีภาพนี้ในแกลเลอรี่แล้ว', true); return; }
+    field.value = '';
+    setGallery([...urls, link]); syncGallery(); return;
+  }
+  if (event.target.closest('[data-clear-image]')) {
+    currentPackage().image = '';
+    syncSetImage(); renderCustomerPreview(); dirty(); return;
+  }
   const toggleGroup = event.target.closest('[data-toggle-group]');
   if (toggleGroup) {
     const group = product.optionGroups[Number(toggleGroup.dataset.toggleGroup)];

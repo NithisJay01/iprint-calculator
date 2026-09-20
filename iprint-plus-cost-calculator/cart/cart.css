@@ -63,11 +63,19 @@ button.add-more{width:100%;cursor:pointer}
 #doneSheet .price-box>span:first-child{margin-top:0}
 
 /* rush order (date step) */
-.rush-toggle{margin:4px 0 0;padding:13px;border:1px solid var(--line);border-radius:11px;background:#fff}
-.rush-toggle:has(input:checked){border-color:#f59e0b;background:#fff8e6}
-.rush-toggle b,.rush-toggle small{display:block}
-.rush-toggle small{margin-top:3px;color:var(--muted);font-weight:400}
-.rush-levels{margin-top:10px;padding:12px 14px;border-radius:11px;background:#fff8e6;color:#8a5a00;font-size:14px}
+.rush-toggle{display:flex;align-items:center;gap:14px;margin:10px 0 0;padding:14px 16px;border:2px solid var(--blue);border-radius:14px;background:#fff;box-shadow:0 6px 18px rgba(10,140,255,.12);cursor:pointer;transition:background .15s,box-shadow .15s}
+.rush-toggle:hover{box-shadow:0 8px 22px rgba(10,140,255,.2)}
+.rush-toggle:has(input:checked){background:var(--soft)}
+.rush-toggle:has(input:focus-visible){outline:3px solid rgba(10,140,255,.3);outline-offset:2px}
+.rush-icon{flex:none;width:44px;height:44px;display:grid;place-items:center;border-radius:12px;background:var(--blue);color:#fff}
+.rush-text{flex:1;min-width:0}
+.rush-text b{display:block;font-size:17px}
+.rush-text small{display:block;margin-top:3px;color:var(--muted);font-weight:400;line-height:1.4}
+.rush-toggle .rush-switch{appearance:none;-webkit-appearance:none;flex:none;position:relative;width:52px;height:30px;margin:0;padding:0;border:0;border-radius:99px;background:#b9cbdb;cursor:pointer;transition:background .15s}
+.rush-toggle .rush-switch::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .15s}
+.rush-toggle .rush-switch:checked{background:var(--blue)}
+.rush-toggle .rush-switch:checked::after{transform:translateX(22px)}
+.rush-levels{margin-top:10px;padding:12px 14px;border-radius:11px;background:#f3f6f9;color:var(--ink);font-size:14px}
 .rush-levels ul{margin:8px 0 0;padding:0;list-style:none}
 .rush-levels li{display:flex;justify-content:space-between;gap:12px;padding:4px 0}
 .rush-levels li strong{color:#b45309}

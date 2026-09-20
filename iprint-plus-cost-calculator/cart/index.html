@@ -31,7 +31,11 @@
       <div class="sheet">
         <h1>เลือกวันที่ต้องการรับงาน</h1>
         <p id="capacitySummary" class="capacity-summary" role="status"></p>
-        <label class="check-row rush-toggle"><input id="rushToggle" type="checkbox"><span><b>ต้องการงานด่วน</b><small id="rushHint">รับงานเร็วกว่าวันแนะนำได้ ราคาเพิ่ม 25% ของราคารวมต่อทุก 1 วันที่เร็วขึ้น</small></span></label>
+        <label class="rush-toggle" for="rushToggle">
+          <span class="rush-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M13.5 2 5 13.5h5.5L9.5 22 19 9.5h-5.7z"/></svg></span>
+          <span class="rush-text"><b>ต้องการงานด่วน</b><small id="rushHint">รับงานเร็วกว่าวันแนะนำได้ ราคาเพิ่ม 25% ของราคารวมต่อทุก 1 วันที่เร็วขึ้น</small></span>
+          <input id="rushToggle" class="rush-switch" type="checkbox" role="switch">
+        </label>
         <div id="rushLevels" class="rush-levels" hidden></div>
         <div class="week"><span>อา</span><span>จ</span><span>อ</span><span>พ</span><span>พฤ</span><span>ศ</span><span>ส</span></div>
         <div id="calendar"></div>
@@ -49,7 +53,7 @@
         <label>ที่อยู่ในการจัดส่ง <span id="addressHint" class="hint">(ไม่ต้องกรอกถ้ารับที่หน้าร้าน)</span><textarea id="address" rows="3" autocomplete="street-address" maxlength="500"></textarea></label>
       </div>
       <div class="sheet"><h2>วิธีการจัดส่ง</h2><label class="select-row"><input type="radio" name="shipping" value="pickup" checked><span><b>รับสินค้าที่หน้าร้าน</b><small>ไม่มีค่าจัดส่ง</small></span><strong>ฟรี</strong></label><label class="select-row"><input type="radio" name="shipping" value="ems"><span><b>ส่ง EMS ไปรษณีย์</b><small>จัดส่งหลังผลิตเสร็จ ค่าส่งชำระแยกกับทีมงาน</small></span><strong>฿50</strong></label></div>
-      <div class="sheet"><h2>วิธีการชำระเงิน</h2><label class="select-row"><input type="radio" name="payment" value="transfer" checked><span><b>Thai QR Payment / โอนผ่านธนาคาร</b><small>ทีมงานจะส่งข้อมูลการโอนให้หลังยืนยันออร์เดอร์</small></span></label><label class="select-row"><input type="radio" name="payment" value="cash"><span><b>เงินสด</b><small>เฉพาะรับที่หน้าร้าน</small></span></label></div>
+      <div class="sheet"><h2>วิธีการชำระเงิน</h2><label class="select-row"><input type="radio" name="payment" value="transfer" checked><span><b>Thai QR Payment / โอนผ่านธนาคาร</b><small>ทีมงานจะส่งข้อมูลการโอนให้หลังยืนยันออร์เดอร์</small></span></label></div>
     </section>
 
     <section class="step" data-step="4" hidden>

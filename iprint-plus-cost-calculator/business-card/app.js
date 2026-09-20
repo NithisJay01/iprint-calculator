@@ -1,6 +1,7 @@
 import { loadPricing } from '../shared/pricing-client.js';
 import { cartCount, readCart } from '../shared/cart.js';
 import { defaultBusinessCardPackages } from '../shared/business-card-product.js';
+import { setImageUrl } from '../shared/set-image.js';
 let pricingSettings = null;
 import { BUSINESS_CARD_SIZE, buildOrderPayload, calculateBusinessCardQuote, isoDate, safeFilename } from './logic.js';
 
@@ -24,7 +25,7 @@ function renderPackages() {
     const specs = Array.isArray(item.bullets) && item.bullets.length ? item.bullets : ['เลือกวัสดุและบริการเสริมได้', 'ปรับจำนวนก่อนสั่งซื้อ'];
     const price = Number(item.price);
     const priceLabel = Number.isFinite(price) && price >= 0 ? `฿${money(price)}` : 'ดูราคาเมื่อเลือก';
-    const image = item.image ? esc(item.image) : fallbackImages[index % fallbackImages.length];
+    const image = setImageUrl(item.image) ? esc(setImageUrl(item.image)) : fallbackImages[index % fallbackImages.length];
     return `<article class="package-card catalog-card ${item.recommended?'recommended':''}">
       <div class="catalog-media"><img src="${image}" alt="ตัวอย่าง${esc(item.name)}"><span class="catalog-type">เซตนามบัตร</span>${item.recommended?'<span class="tag">แนะนำ</span>':''}</div>
       <div class="catalog-card-body"><span class="catalog-kicker">BUSINESS CARD SET</span><h3>${esc(item.name)}</h3><p>${esc(item.tagline || 'เซตพร้อมสั่งที่จัด Spec ไว้แล้ว')}</p>

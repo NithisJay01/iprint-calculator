@@ -10,7 +10,7 @@
 /* Per-item totals on the option buttons and in the price summary */
 .choice small{font-size:12px;line-height:1.35}
 .choice .opt-total{display:block;color:var(--ink);font-size:15px;font-weight:800}
-.choice .opt-included{color:var(--green);font-weight:700}
+.choice .opt-included{color:var(--muted);font-weight:600}
 .price-line>span small{display:block;color:var(--muted);font-size:12px;font-weight:400}
 .price-line.discount b{color:var(--green)}
 
@@ -21,3 +21,51 @@
 .price-box .promo-row{margin-top:14px;padding-top:12px;border-top:1px dashed var(--line)}
 .price-box .promo-row label{margin-top:0}
 .price-box .promo-row small{min-height:16px;color:var(--muted)}
+
+/* File link: the one thing the customer must provide, so it is a call to action */
+.file-cta{margin:18px 0 6px;padding:18px;border:2px solid var(--blue);border-radius:16px;background:#fff}
+.file-cta-head{display:flex;gap:12px;align-items:center}
+.file-cta-icon{flex:none;width:46px;height:46px;display:grid;place-items:center;border-radius:13px;background:var(--blue);color:#fff}
+.file-cta-head label{display:block;margin:0;font-size:17px;font-weight:800}
+.required-tag{display:inline-block;margin-top:5px;padding:2px 10px;border-radius:99px;background:var(--ink);color:#fff;font-size:12px;font-weight:700}
+.file-cta>p{margin:12px 0 0;color:var(--muted);font-size:13px;line-height:1.5}
+.file-cta input{min-height:54px;margin-top:12px;font-size:16px}
+.file-cta small{display:block;margin-top:8px;color:var(--muted)}
+.file-cta.is-invalid{border-color:#e5484d}
+.file-cta.is-invalid input{border-color:#e5484d}
+
+/* Option groups of a set: name + the rule (one or several, required) and radio / checkbox looking cards */
+.option-group{margin-top:4px}
+.option-group>h2{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px}
+.group-rule{color:var(--muted);font-size:12px;font-weight:500}
+.group-rule.required{color:var(--ink);font-weight:600}
+.option-group.is-missing .choice-grid{padding:8px;border-radius:12px;outline:2px solid #e5484d;background:#fff5f5}
+.choice{position:relative}
+.choice.mode-single,.choice.mode-multiple{padding-right:34px}
+.choice.mode-single::after,.choice.mode-multiple::after{content:"";position:absolute;top:10px;right:10px;width:16px;height:16px;border:2px solid #9fbfd8;background:#fff;box-sizing:border-box}
+.choice.mode-single::after{border-radius:50%}
+.choice.mode-multiple::after{border-radius:4px}
+.choice.selected.mode-single::after{border-color:var(--blue);background:radial-gradient(circle,var(--blue) 0 38%,#fff 42%)}
+.choice.selected.mode-multiple::after{border-color:var(--blue);background:var(--blue) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 8.5l3 3 6-6.5' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/100% no-repeat}
+
+.spec-list{background:#f3f6f9}
+
+/* Gallery of sample work under the set picture */
+.gallery{margin-bottom:14px}
+.gallery h2{margin:0 0 12px}
+.gallery-strip{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.gallery-thumb{padding:0;overflow:hidden;aspect-ratio:1;border:1px solid var(--line);border-radius:10px;background:#f3f6f9;cursor:zoom-in}
+.gallery-thumb img{display:block;width:100%;height:100%;object-fit:cover;transition:transform .2s}
+.gallery-thumb:hover img{transform:scale(1.05)}
+.gallery-thumb:focus-visible{outline:3px solid rgba(10,140,255,.4);outline-offset:2px}
+.gallery-dialog{width:min(96vw,900px);max-width:none;padding:0;border:0;background:transparent;overflow:visible}
+.gallery-dialog::backdrop{background:rgba(10,20,30,.8)}
+.gallery-dialog figure{margin:0;text-align:center}
+.gallery-dialog img{display:block;max-width:100%;max-height:78vh;margin:auto;border-radius:12px;background:#fff;object-fit:contain}
+.gallery-dialog figcaption{margin-top:10px;color:#fff;font-size:14px}
+.gallery-nav,.gallery-close{position:absolute;display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;border-radius:50%;background:#fff;color:var(--ink);font-size:24px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.3)}
+.gallery-nav[hidden]{display:none}
+.gallery-nav{top:calc(50% - 22px)}
+.gallery-prev{left:8px}
+.gallery-next{right:8px}
+.gallery-close{top:-14px;right:-4px;font-size:18px}

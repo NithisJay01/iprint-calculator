@@ -38,7 +38,7 @@ const settings = {
   }]
 };
 const sets = product.resolveSets(settings.products[0]);
-const cartItem = (id, pack, quantity, services, promoCode = '') => ({ id, ...product.cartItemFromSelection({ pack, quantity, material, services, promoCode }) });
+const cartItem = (id, pack, quantity, services, promoCode = '') => ({ id, ...product.cartItemFromSelection({ pack, quantity, material, services, promoCode, driveLink: `https://drive.example/${id}` }) });
 const cartItems = [
   cartItem('a', sets[0], 100, [single]),
   cartItem('b', sets[1], 500, [double, matte]),
@@ -493,6 +493,9 @@ try {
   assert.match(cartJs, /render=explicit/);
   assert.match(cartJs, /action: 'create_order'/, 'the widget action must match what the Worker verifies');
   assert.ok(!/123-4-56789-0|paymentSlip|iprint-last-order/.test(cartHtml + cartJs), 'the demo bank account, slip upload and fake order record are gone');
+  assert.equal((cartHtml.match(/name="payment"/g) || []).length, 1, 'Thai QR / transfer is the only payment method offered');
+  assert.ok(!/เงินสด|value="cash"/.test(cartHtml + cartJs), 'cash payment is gone from the cart');
+  assert.equal(buildOrder().order.orderItems[0].brief.includes('Thai QR / โอนผ่านธนาคาร'), true, 'the order tells the shop it is paid by transfer');
   assert.match(trackHtml, /src="track\.js"/);
   assert.match(cartJs, /track\.html\?id=/, 'the success page links to tracking');
 } finally {

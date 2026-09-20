@@ -5,7 +5,8 @@ import { RUSH_MAX_DAYS, rushMultiplier } from './rush.js';
 // (see shared/cart-products.js). Every entry provides its own order item through `toOrderItem`.
 const pad = value => String(value).padStart(2, '0');
 const isoDay = date => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-const PAYMENT_LABELS = Object.freeze({ transfer: 'Thai QR / โอนผ่านธนาคาร', cash: 'เงินสด (ชำระที่หน้าร้าน)' });
+// Online orders are paid by Thai QR / bank transfer only (the shop sends the transfer details after the order).
+const PAYMENT_LABELS = Object.freeze({ transfer: 'Thai QR / โอนผ่านธนาคาร' });
 
 // The Worker keeps only the customer name, phone and e-mail of a public order, so delivery details travel in
 // the brief text of the first item (staff read it in the ticket).
