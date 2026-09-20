@@ -9,10 +9,11 @@
 
 /* Per-item totals on the option buttons and in the price summary */
 .choice small{font-size:12px;line-height:1.35}
-.choice .opt-total{display:block;color:var(--ink);font-size:15px;font-weight:800}
+.choice .opt-total{display:block;color:var(--blue);font-size:15px;font-weight:800}
 .choice .opt-included{color:var(--muted);font-weight:600}
 .price-line>span small{display:block;color:var(--muted);font-size:12px;font-weight:400}
-.price-line.discount b{color:var(--green)}
+.price-line b{color:var(--blue)}
+.price-line.included b{color:var(--muted);font-weight:600}
 
 /* Order page: cart shortcut in the header and the promo code under the price summary */
 .order-nav .nav-cart{position:relative;width:38px;height:38px;border:2px solid var(--blue);background:#fff}

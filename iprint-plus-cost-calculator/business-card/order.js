@@ -76,7 +76,7 @@ function recalc() {
     $('priceBreakdown').innerHTML = buildPriceBreakdown({
       product: pricingModel(), quote: state.quote, packName: state.pack.name, quantity: state.quantity,
       material: state.material, services: state.services, includedIds: includedNow()
-    }).map(line => `<div class="price-line ${line.kind === 'total' ? 'total' : ''} ${line.kind}"><span>${esc(line.label)}${line.basis ? `<small>${esc(line.basis)}</small>` : ''}</span><b>${esc(line.text)}</b></div>`).join('');
+    }).map(line => `<div class="price-line ${line.kind === 'total' ? 'total' : ''} ${line.kind}${line.included ? ' included' : ''}"><span>${esc(line.label)}${line.basis ? `<small>${esc(line.basis)}</small>` : ''}</span><b>${esc(line.text)}</b></div>`).join('');
     $('grandTotal').textContent = `฿${money(state.quote.price)}`;
     const code = $('promoCode').value.trim();
     $('promoHint').textContent = code && !state.quote.pricing?.promotion ? 'ไม่พบโปรโมชันที่เข้าเงื่อนไขของรายการนี้' : code ? `ใช้โปรโมชัน “${state.quote.pricing.promotion.name}” แล้ว` : '';

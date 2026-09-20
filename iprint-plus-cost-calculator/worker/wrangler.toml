@@ -35,8 +35,8 @@ TURNSTILE_EXPECTED_HOSTNAME = "iprint.tchl.online"
 # migrations_dir = "migrations"
 
 # ---- Pictures uploaded from the set studio (gallery of a set) ----
-# Create the bucket once (steps in MEDIA_SETUP.md) and uncomment:
+# Pictures are stored in this R2 bucket (created once; steps in MEDIA_SETUP.md):
 #   npx wrangler r2 bucket create iprint-media
-# [[r2_buckets]]
-# binding = "MEDIA"
-# bucket_name = "iprint-media"
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "iprint-media"

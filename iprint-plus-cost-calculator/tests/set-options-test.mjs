@@ -225,4 +225,12 @@ assert.match(studioJs, /data-gallery-move/);
 assert.match(studioJs, /uploadGalleryImage\(file, \$\('key'\)\.value\)/, 'the studio uploads with the staff key');
 assert.match(studioJs, /input\.id === 'galleryFile' \|\| input\.id === 'galleryLink'\) return/, 'choosing files does not mark the set as changed by itself');
 
+// ---------- price figures are primary blue; text such as "included in the set" is not ----------
+const orderCss = read('../business-card/order.css');
+assert.match(orderCss, /\.choice \.opt-total\{[^}]*color:var\(--blue\)/, 'the price on an option card is blue');
+assert.match(orderCss, /\.price-line b\{color:var\(--blue\)\}/, 'the amounts in the price summary are blue');
+assert.match(orderCss, /\.price-line\.included b\{color:var\(--muted\)/, '"รวมในเซต" in the summary is text, so it stays grey');
+assert.ok(!/\.price-line\.discount b\{color:var\(--green\)\}/.test(orderCss), 'no separate green for the discount amount');
+assert.ok(orderJs.includes("${line.included ? ' included' : ''}"), 'included lines are marked so they can stay grey');
+
 console.log('Set options test passed');
