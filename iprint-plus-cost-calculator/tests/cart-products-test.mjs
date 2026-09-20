@@ -151,7 +151,9 @@ const monday = new Date(2026, 8, 21, 10, 30); // Monday 21 Sep 2026
 const local = capacity.localAvailability(3, monday);
 assert.equal(local.days.length, 45);
 assert.equal(local.days[0].date, '2026-09-21');
-assert.equal(local.days[0].availability, 'TOO_SOON');
+assert.equal(local.days[0].availability, 'BOOST', 'the day before the recommended date can be had as a rush order');
+assert.deepEqual([local.days[0].boostDays, local.days[0].boostMultiplier], [2, 0.5], 'two days earlier: +50%');
+assert.deepEqual([local.days[1].boostDays, local.days[1].boostMultiplier], [1, 0.25], 'one day earlier: +25%');
 assert.equal(local.days[1].bookable, false);
 assert.equal(local.recommendedDate, '2026-09-23', 'two days of lead time');
 assert.equal(local.days.find(day => day.date === '2026-09-27').availability, 'CLOSED', 'Sunday is closed');
@@ -171,7 +173,12 @@ await assert.rejects(() => capacity.loadAvailability({ points: 1, now: monday, l
 await assert.rejects(() => capacity.loadAvailability({ points: 1, now: monday, local: false, fetcher: async () => new Response('oops', { status: 502 }) }), /502/);
 
 assert.equal(capacity.isSelectable({ bookable: true }), true);
-assert.equal(capacity.isSelectable({ bookable: false, boostDays: 2 }), false, 'rush days are not offered by the cart yet');
+assert.equal(capacity.isSelectable({ bookable: false, boostDays: 2 }), false, 'rush days need the rush option');
+assert.equal(capacity.isSelectable({ bookable: false, boostDays: 2 }, { rush: true }), true);
+assert.equal(capacity.isSelectable({ bookable: false, boostDays: 0, availability: 'FULL' }, { rush: true }), false, 'a full day is never selectable');
+assert.equal(capacity.isSelectable({ bookable: true }, { rush: true }), true);
+assert.equal(capacity.isRushDay({ bookable: false, boostDays: 1 }), true);
+assert.equal(capacity.isRushDay({ bookable: true, boostDays: 0 }), false);
 assert.equal(capacity.isSelectable(undefined), false);
 assert.equal(capacity.dayLabel({ bookable: true }), 'ว่าง');
 assert.equal(capacity.dayLabel({ bookable: false, boostDays: 1 }), 'ต้องเร่งด่วน');

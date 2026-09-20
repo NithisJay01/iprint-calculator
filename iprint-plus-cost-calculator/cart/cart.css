@@ -37,3 +37,42 @@
 .hint{color:var(--muted);font-weight:400}
 .done-id{display:block;margin:6px 0;color:var(--blue);font-size:26px}
 .mock-note{margin-top:14px;padding:10px 12px;border-radius:10px;background:#fff7e0;color:#8a5a00;font-size:13px}
+
+/* review + confirm */
+.review-item{margin-top:10px}
+.review-item p{margin:2px 0 0}
+.review-info{margin:16px 0 0}
+.review-info>div{display:flex;gap:16px;padding:7px 0;border-top:1px solid var(--line)}
+.review-info dt{flex:0 0 96px;color:var(--muted)}
+.review-info dd{margin:0;min-width:0;overflow-wrap:anywhere;font-weight:600}
+.check-row{display:flex;align-items:flex-start;gap:10px;margin-top:0;font-weight:500}
+.check-row input{width:auto;margin:4px 0 0}
+.turnstile-box{margin-top:14px;min-height:20px;color:var(--muted);font-size:12px}
+.primary-link{background:var(--blue);color:#fff;border-color:var(--blue)}
+
+/* tracking */
+.track-badges{display:flex;flex-wrap:wrap;gap:8px}
+.track-badges .badge{padding:5px 12px;border-radius:99px;background:var(--blue);color:#fff;font-size:13px;font-weight:700}
+.track-badges .badge.soft{background:var(--soft);color:var(--blue)}
+.track-meta{margin:10px 0 0;color:var(--muted);font-size:13px}
+.track-items{margin-top:14px}
+button.add-more{width:100%;cursor:pointer}
+.primary-link:hover{background:#0879df}
+.checkout-bar[hidden],.checkout-bar button[hidden]{display:none}
+#doneSheet .price-box>span{display:block;margin-top:4px;color:var(--muted)}
+#doneSheet .price-box>span:first-child{margin-top:0}
+
+/* rush order (date step) */
+.rush-toggle{margin:4px 0 0;padding:13px;border:1px solid var(--line);border-radius:11px;background:#fff}
+.rush-toggle:has(input:checked){border-color:#f59e0b;background:#fff8e6}
+.rush-toggle b,.rush-toggle small{display:block}
+.rush-toggle small{margin-top:3px;color:var(--muted);font-weight:400}
+.rush-levels{margin-top:10px;padding:12px 14px;border-radius:11px;background:#fff8e6;color:#8a5a00;font-size:14px}
+.rush-levels ul{margin:8px 0 0;padding:0;list-style:none}
+.rush-levels li{display:flex;justify-content:space-between;gap:12px;padding:4px 0}
+.rush-levels li strong{color:#b45309}
+#calendar .month .calendar button.rush{background:#fff8e6;border-color:#f59e0b;color:#8a5a00}
+#calendar .month .calendar button.rush.selected{background:#f59e0b;color:#fff;border-color:#f59e0b}
+.rush-summary{margin:6px 0 0;color:#b45309;font-weight:700}
+.delivery-note{margin:8px 0 0;padding:9px 12px;border-radius:10px;background:var(--soft);color:var(--blue);font-size:13px;font-weight:700}
+.cart-totals dl>div.rush dd{color:#b45309}

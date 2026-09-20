@@ -1,4 +1,5 @@
 import { allocateOrderCapacity, normalizeCapacityDay } from '../domain/capacity.js';
+import { RUSH_MAX_DAYS, rushMultiplier } from '../../shared/rush.js';
 
 const isoDate = value => String(value || '').slice(0, 10);
 const addDays = (date, amount) => {
@@ -49,13 +50,13 @@ export function buildPublicCapacityAvailability({ from, to, points, now = new Da
         cursor = addDays(cursor, 1);
         if (businessDays.has(weekdayOf(cursor)) && !holidays.has(cursor)) boostDays += 1;
       }
-      if (boostDays > 4) boostDays = 0;
+      if (boostDays > RUSH_MAX_DAYS) boostDays = 0;
     }
     const availability = closed ? 'CLOSED'
       : normalized.availablePoints <= 0 ? 'FULL'
         : bookable ? (remainingRatio <= 0.25 ? 'LIMITED' : 'AVAILABLE')
           : boostDays ? 'BOOST' : 'TOO_SOON';
-    result.push({ date, availability, bookable, boostDays, boostMultiplier: boostDays ? boostDays * 0.5 : 0 });
+    result.push({ date, availability, bookable, boostDays, boostMultiplier: boostDays ? rushMultiplier(boostDays) : 0 });
   }
 
   return {
@@ -66,4 +67,37 @@ export function buildPublicCapacityAvailability({ from, to, points, now = new Da
     schedulable: schedule.success,
     days: result
   };
+}
+
+// The same policy the public capacity route uses, so that the dates offered to customers and the dates accepted
+// for their orders come from one rule.
+export const publicCapacityPolicy = env => ({
+  dailyCapacity: Number(env.CAPACITY_DEFAULT_DAILY) || 20,
+  cutoffTime: env.CAPACITY_CUTOFF_TIME || '15:00',
+  businessDays: String(env.CAPACITY_BUSINESS_DAYS || '1,2,3,4,5,6').split(',').map(Number),
+  holidays: String(env.CAPACITY_HOLIDAYS || '').split(',').map(value => value.trim()).filter(Boolean),
+  timeZone: env.CAPACITY_TIME_ZONE || 'Asia/Bangkok',
+  maxSearchDays: Number(env.CAPACITY_MAX_SEARCH_DAYS) || 180,
+  largeJobDailyShare: Number(env.CAPACITY_LARGE_JOB_DAILY_SHARE) || 0.5
+});
+
+// A public order is scheduled item by item, but the calendar offered to the customer books the whole order at once.
+// A delivery date earlier than the normal completion date of the WHOLE order is a rush date: it is only accepted
+// when every item that asks for it carries the matching boost (and so pays the surcharge).
+export function checkRushRequirement({ orderItems = [], totalPoints, now = new Date(), policy, capacityDays = [] }) {
+  const deadlines = orderItems.map(item => isoDate(item?.deliveryDeadline)).filter(value => /^\d{4}-\d{2}-\d{2}$/.test(value)).sort();
+  if (!deadlines.length) return { success: true };
+  const from = zonedToday(now, policy.timeZone || 'Asia/Bangkok');
+  const to = deadlines[deadlines.length - 1] < addDays(from, 366) ? deadlines[deadlines.length - 1] : addDays(from, 366);
+  if (to < from) return { success: true };
+  const availability = buildPublicCapacityAvailability({ from, to, points: totalPoints, now, policy, capacityDays });
+  if (!availability.schedulable || !availability.recommendedDate) return { success: true };
+  for (const [itemIndex, item] of orderItems.entries()) {
+    const deadline = isoDate(item?.deliveryDeadline);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(deadline) || deadline >= availability.recommendedDate) continue;
+    const day = availability.days.find(entry => entry.date === deadline);
+    if (day && day.boostDays > 0 && Number(item?.boost?.days) === day.boostDays) continue;
+    return { success: false, itemIndex, itemKey: String(item?.id || ''), deadline, normalDate: availability.recommendedDate, boostDays: day?.boostDays || 0 };
+  }
+  return { success: true };
 }

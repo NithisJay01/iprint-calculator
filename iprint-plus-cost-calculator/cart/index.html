@@ -31,24 +31,39 @@
       <div class="sheet">
         <h1>เลือกวันที่ต้องการรับงาน</h1>
         <p id="capacitySummary" class="capacity-summary" role="status"></p>
+        <label class="check-row rush-toggle"><input id="rushToggle" type="checkbox"><span><b>ต้องการงานด่วน</b><small id="rushHint">รับงานเร็วกว่าวันแนะนำได้ ราคาเพิ่ม 25% ของราคารวมต่อทุก 1 วันที่เร็วขึ้น</small></span></label>
+        <div id="rushLevels" class="rush-levels" hidden></div>
         <div class="week"><span>อา</span><span>จ</span><span>อ</span><span>พ</span><span>พฤ</span><span>ศ</span><span>ส</span></div>
         <div id="calendar"></div>
-        <p class="calendar-legend">วันที่กดได้คือวันที่กำลังผลิตรองรับงานทั้งออร์เดอร์ (ทุกรายการรวมกัน) วันเร่งด่วนยังไม่เปิดให้เลือกในตะกร้า</p>
+        <p class="calendar-legend">วันที่กดได้คือวันที่กำลังผลิตรองรับงานทั้งออร์เดอร์ (ทุกรายการรวมกัน) ติ๊ก "ต้องการงานด่วน" เพื่อเลือกวันที่เร็วขึ้นได้</p>
+        <p class="delivery-note">วันที่เลือกยังไม่รวมระยะเวลาจัดส่ง</p>
       </div>
-      <div class="sheet selection-summary"><h2>กำหนดการที่เลือก</h2><p id="dateSummary">กรุณาเลือกวันที่</p><small>วันรับงานขึ้นอยู่กับการยืนยันจากทีมงาน</small></div>
+      <div class="sheet selection-summary"><h2>กำหนดการที่เลือก</h2><p id="dateSummary">กรุณาเลือกวันที่</p><p id="rushSummary" class="rush-summary" hidden></p><small>วันรับงานขึ้นอยู่กับการยืนยันจากทีมงาน • วันที่เลือกยังไม่รวมระยะเวลาจัดส่ง</small></div>
     </section>
 
     <section class="step" data-step="3" hidden>
-      <div class="sheet"><h1>ชำระเงินและระบุที่อยู่จัดส่ง</h1><div class="two"><label>ชื่อผู้รับ<input id="customerName" autocomplete="name" required></label><label>เบอร์โทร<input id="phone" inputmode="tel" autocomplete="tel" required></label></div><label>ที่อยู่ในการจัดส่ง <span id="addressHint" class="hint"></span><textarea id="address" rows="3" autocomplete="street-address"></textarea></label></div>
-      <div class="sheet"><h2>วิธีการจัดส่ง</h2><label class="select-row"><input type="radio" name="shipping" value="pickup" checked><span><b>รับสินค้าที่หน้าร้าน</b><small>ไม่มีค่าจัดส่ง</small></span><strong>ฟรี</strong></label><label class="select-row"><input type="radio" name="shipping" value="ems"><span><b>ส่ง EMS ไปรษณีย์</b><small>จัดส่งหลังผลิตเสร็จ</small></span><strong>฿50</strong></label></div>
-      <div class="sheet"><h2>วิธีการชำระเงิน</h2><label class="select-row"><input type="radio" name="payment" value="Thai QR / โอนผ่านธนาคาร" checked><span><b>Thai QR Payment / โอนผ่านธนาคาร</b></span></label><label class="select-row"><input type="radio" name="payment" value="เงินสด"><span><b>เงินสด</b><small>เฉพาะรับที่หน้าร้าน</small></span></label></div>
+      <div class="sheet">
+        <h1>ข้อมูลผู้สั่งและการจัดส่ง</h1>
+        <div class="two"><label>ชื่อผู้รับ<input id="customerName" autocomplete="name" maxlength="120" required></label><label>เบอร์โทร<input id="phone" inputmode="tel" autocomplete="tel" maxlength="30" required></label></div>
+        <div class="two"><label>อีเมล <span class="hint">(ไม่บังคับ)</span><input id="email" type="email" autocomplete="email" maxlength="160"></label><label>LINE ID <span class="hint">(ไม่บังคับ)</span><input id="lineId" maxlength="60"></label></div>
+        <label>ที่อยู่ในการจัดส่ง <span id="addressHint" class="hint">(ไม่ต้องกรอกถ้ารับที่หน้าร้าน)</span><textarea id="address" rows="3" autocomplete="street-address" maxlength="500"></textarea></label>
+      </div>
+      <div class="sheet"><h2>วิธีการจัดส่ง</h2><label class="select-row"><input type="radio" name="shipping" value="pickup" checked><span><b>รับสินค้าที่หน้าร้าน</b><small>ไม่มีค่าจัดส่ง</small></span><strong>ฟรี</strong></label><label class="select-row"><input type="radio" name="shipping" value="ems"><span><b>ส่ง EMS ไปรษณีย์</b><small>จัดส่งหลังผลิตเสร็จ ค่าส่งชำระแยกกับทีมงาน</small></span><strong>฿50</strong></label></div>
+      <div class="sheet"><h2>วิธีการชำระเงิน</h2><label class="select-row"><input type="radio" name="payment" value="transfer" checked><span><b>Thai QR Payment / โอนผ่านธนาคาร</b><small>ทีมงานจะส่งข้อมูลการโอนให้หลังยืนยันออร์เดอร์</small></span></label><label class="select-row"><input type="radio" name="payment" value="cash"><span><b>เงินสด</b><small>เฉพาะรับที่หน้าร้าน</small></span></label></div>
     </section>
 
     <section class="step" data-step="4" hidden>
-      <h1>ส่งหลักฐานชำระเงิน</h1>
-      <div class="sheet"><div class="bank-head"><div><span>ข้อมูลการโอนเงิน</span><b>ธนาคารกสิกรไทย (KBANK)</b><small>ชื่อบัญชี: บจก. ไอพรินท์ กรุ๊ป</small><strong>123-4-56789-0</strong></div><span id="quoteNo"></span></div><div class="pay-total"><span>ยอดเงินที่ต้องโอน</span><strong id="transferTotal"></strong></div></div>
-      <div class="sheet upload-slip"><input id="paymentSlip" type="file" accept="image/jpeg,image/png" hidden><button type="button" id="pickSlip"><span>▣</span><b>กดเพื่ออัปโหลดสลิปการโอนเงิน</b><small>เลือกไฟล์ JPG หรือ PNG</small></button><div id="slipPreview" hidden></div></div>
-      <p class="final-note">ขั้นตอนนี้ยังเป็นโหมดทดลอง: ยังไม่ได้ส่งออร์เดอร์เข้าระบบผลิต</p>
+      <div class="sheet">
+        <h1>ตรวจสอบและยืนยันออร์เดอร์</h1>
+        <div id="reviewList"></div>
+        <dl id="reviewInfo" class="review-info"></dl>
+      </div>
+      <div class="sheet cart-totals" id="reviewTotals"></div>
+      <div class="sheet">
+        <label class="check-row"><input id="consent" type="checkbox"><span>ยืนยันว่าข้อมูลและรายการสินค้าถูกต้อง ราคานี้ยังไม่รวมค่าจัดส่ง (ถ้ามี) และทีมงานจะยืนยันยอดก่อนเริ่มผลิต</span></label>
+        <div id="turnstileBox" class="turnstile-box"></div>
+      </div>
+      <p class="final-note">การกดยืนยันจะสร้างออร์เดอร์และจองคิวผลิตให้ทันที ทีมงานจะติดต่อกลับเพื่อแจ้งวิธีชำระเงิน</p>
     </section>
 
     <section class="step" data-step="5" hidden>
@@ -65,6 +80,7 @@
     <button type="button" class="ghost" id="back" hidden>ย้อนกลับ</button>
     <button type="button" id="next">เลือกวันรับงาน</button>
   </footer>
+  <script src="../js/config.js"></script>
   <script type="module" src="app.js"></script>
 </body>
 </html>

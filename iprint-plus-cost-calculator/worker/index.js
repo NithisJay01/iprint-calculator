@@ -10,7 +10,7 @@ import { createCapacityRepository } from './repositories/notion-capacity-reposit
 import { createQueueRepository } from './repositories/notion-queue-repository.js';
 import { createFlowSettingsRepository } from './repositories/notion-flow-settings-repository.js';
 import { cancelOrderProduction } from './services/order-cancellation.js';
-import { buildPublicCapacityAvailability } from './services/public-capacity.js';
+import { buildPublicCapacityAvailability, checkRushRequirement, publicCapacityPolicy } from './services/public-capacity.js';
 
 export default {
   async fetch(request, env) {
@@ -1439,6 +1439,22 @@ export default {
                 deadline: orderSchedule.deadline || null,
                 allocation: orderSchedule.allocation || null
               }, 409);
+            }
+            if (isPublicOrder) {
+              // Dates earlier than the normal completion of the whole order must be paid as a rush order.
+              const rush = checkRushRequirement({ orderItems, totalPoints: orderSchedule.totalPoints, now: new Date(), policy: publicCapacityPolicy(env), capacityDays });
+              if (!rush.success) {
+                return json({
+                  success: false,
+                  code: 'CAPACITY_DEADLINE_UNAVAILABLE',
+                  error: 'The requested delivery date is earlier than the normal completion date and needs a rush order',
+                  itemIndex: rush.itemIndex,
+                  itemKey: rush.itemKey,
+                  deadline: rush.deadline,
+                  normalDate: rush.normalDate,
+                  boostDays: rush.boostDays
+                }, 409);
+              }
             }
           } catch (error) {
             return json({ success: false, code: 'CAPACITY_PLANNING_FAILED', error: error.message, detail: error.detail || null }, error.status || 502);

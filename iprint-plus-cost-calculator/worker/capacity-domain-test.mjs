@@ -131,7 +131,7 @@ assert.equal(publicAvailability.recommendedDate, '2026-09-07');
 assert.equal(publicAvailability.days.find(day => day.date === '2026-09-05').bookable, false);
 assert.equal(publicAvailability.days.find(day => day.date === '2026-09-05').availability, 'BOOST');
 assert.equal(publicAvailability.days.find(day => day.date === '2026-09-05').boostDays, 1);
-assert.equal(publicAvailability.days.find(day => day.date === '2026-09-05').boostMultiplier, 0.5);
+assert.equal(publicAvailability.days.find(day => day.date === '2026-09-05').boostMultiplier, 0.25);
 assert.equal(publicAvailability.days.find(day => day.date === '2026-09-07').bookable, true);
 assert.equal(publicAvailability.days.find(day => day.date === '2026-09-06').availability, 'CLOSED');
 

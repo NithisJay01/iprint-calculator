@@ -59,7 +59,8 @@ function hasSelectedPrintService() {
 }
 
 function syncLayoutPreviewVisibility() {
-  const ready = hasSelectedPrintService();
+  // The calculator-only mode has no print choice, so its preview is always shown.
+  const ready = hasSelectedPrintService() || Boolean($('mobileApp')?.classList.contains('is-calculator-only'));
   const content = $('layoutPreviewContent');
   const zone = $('previewDropZone');
   const nextButton = $('openMaterialsServices');
