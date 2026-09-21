@@ -87,7 +87,7 @@ export function createArtwork(W, H, anisotropy = 4) {
     ctx.textBaseline = 'alphabetic';
     ctx.textAlign = 'left';
     ctx.font = `700 ${mm(3.7)}px ${FONT}`;
-    ctx.fillText('Supansa Wattana', mm(8), mm(41));
+    ctx.fillText('Chalisa wiriyawannakorn', mm(8), mm(41));
     ctx.font = `500 ${mm(2.3)}px ${FONT}`;
     ctx.globalAlpha = 0.78;
     trackedText(ctx, 'CREATIVE DIRECTOR', mm(8), mm(45.4), mm(0.35));

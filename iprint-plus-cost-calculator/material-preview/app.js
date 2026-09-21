@@ -22,6 +22,23 @@ const COARSE = matchMedia('(pointer: coarse)').matches;
 const params = new URLSearchParams(location.search);
 const DEBUG = params.has('debug');
 
+// The entry buttons on the other pages pass ?from=…, so "back" returns to the page the visitor came from.
+// A Map (not an object): any other value, even "constructor", just falls back to the catalog.
+const BACK = new Map([
+  ['catalog', ['../catalog/', 'Catalog']],
+  ['business-card', ['../business-card/#materials', 'นามบัตร']],
+  ['home', ['../', 'หน้าแรก']],
+]);
+{
+  const [href, label] = BACK.get(params.get('from')) ?? BACK.get('catalog');
+  const back = $('.back');
+  if (back) {
+    back.href = href;
+    back.textContent = `‹ ${label}`;
+    back.setAttribute('aria-label', `กลับไป${label}`);
+  }
+}
+
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /* ------------------------------------------------------------ renderer */

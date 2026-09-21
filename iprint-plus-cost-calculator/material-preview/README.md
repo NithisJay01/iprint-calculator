@@ -83,6 +83,16 @@ material-preview/
 - **Finish** (`finishes` + `FINISH_ORDER`): `type` เป็น `foil` (ฟอยล์), `gloss` (Spot UV) หรือ `emboss` (`heightUm` บวก = นูน ลบ = จม) Holographic = เพิ่ม `iridescence` ใน `createFinishMaterial` (card.js)
 - ระบบแสดงได้ทุกคู่ผสม กฎว่าคู่ไหนผลิตไม่ได้ (เช่น ฟอยล์บนเคลือบบางชนิด) ยังไม่ได้ใส่ — ให้ iPrint กำหนด
 
+## ปุ่มทางเข้า (3 จุด)
+
+| หน้า | ตำแหน่งปุ่ม | ลิงก์ |
+| --- | --- | --- |
+| หน้าแรก `index.html` | รายการทางเข้าบนหน้าเริ่มต้น ต่อจาก "บรีฟงานแบบเฉพาะเจาะจง" | `material-preview/?from=home` |
+| Catalog `catalog/` | การ์ด Business Cards ใต้ปุ่ม "ดูแพ็กเกจและราคา" | `../material-preview/?from=catalog` |
+| นามบัตร `business-card/` | หัวข้อ "02 / PAPERS & MATERIALS" | `../material-preview/?from=business-card` |
+
+`?from=` ทำให้ปุ่ม "‹ กลับ" ในหน้านี้พาไปหน้าที่ลูกค้าเข้ามา (ไม่ใส่หรือค่าอื่น = กลับ Catalog) เพิ่มทางเข้าใหม่: ใส่ปุ่มในหน้านั้น + เพิ่มคีย์ใน `BACK` ของ `app.js` (`tests/material-preview-test.mjs` ตรวจว่าปุ่มทุกอันชี้หน้าจริงและ `app.js` รู้จักคีย์) หน้านี้ยังตั้ง `noindex` อยู่
+
 ## Deploy
 
 - `scripts/build-hostinger-package.ps1` คัดลอกโฟลเดอร์นี้ไปกับ Package แล้ว (GitHub Pages ส่งทั้ง `iprint-plus-cost-calculator/` อยู่แล้ว)

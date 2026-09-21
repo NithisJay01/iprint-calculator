@@ -138,6 +138,20 @@ main { width: min(1180px, 100%); margin: auto; padding: 16px; }
 .product-action:hover { background: var(--blue-dark); }
 .product-action b { font-size: 20px; }
 .product-action:disabled { background: #eaf0f5; color: #81909e; cursor: not-allowed; }
+.product-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  border-radius: 9px;
+  color: var(--blue-dark);
+  font-size: 13px;
+  font-weight: 700;
+  transition: background .16s ease;
+}
+.product-link:hover { background: #e2f0ff; }
+.product-link:focus-visible { outline: 3px solid rgba(10, 140, 255, .28); outline-offset: 2px; }
 .product-card.is-coming-soon .product-image img { filter: saturate(.72); }
 
 footer {

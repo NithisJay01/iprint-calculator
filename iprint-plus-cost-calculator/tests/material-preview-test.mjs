@@ -335,4 +335,33 @@ const makeField = (w, h, paint) => {
   assert.match(pack, /'material-preview'/, 'the Hostinger package script must copy the folder');
 }
 
+// ---------- the buttons on the other pages that lead here ----------
+{
+  const app = readFileSync(new URL('../material-preview/app.js', import.meta.url), 'utf8');
+  const site = new URL('../', import.meta.url);
+  // every ?from= value the page understands, with the page its "back" link returns to
+  const back = new Map([...app.matchAll(/\['([\w-]+)',\s*\['([^']+)',\s*'[^']+'\]\]/g)].map((m) => [m[1], m[2]]));
+  assert.deepEqual([...back.keys()].sort(), ['business-card', 'catalog', 'home'], 'app.js knows where each entry button came from');
+  for (const [key, href] of back) {
+    const target = new URL(href.split('#')[0], new URL('material-preview/', site));
+    assert.equal(existsSync(new URL('index.html', target)), true, `the "${key}" back link (${href}) leads to a real page`);
+  }
+
+  const buttons = {
+    'index.html': ['material-preview/', 'home'],
+    'catalog/index.html': ['../material-preview/', 'catalog'],
+    'business-card/index.html': ['../material-preview/', 'business-card'],
+  };
+  for (const [file, [folder, from]] of Object.entries(buttons)) {
+    const page = readFileSync(new URL(file, site), 'utf8');
+    const links = [...page.matchAll(/href="([^"]*material-preview\/[^"]*)"/g)].map((m) => m[1]);
+    assert.deepEqual(links, [`${folder}?from=${from}`], `${file}: exactly one button, and it says where the visitor came from`);
+    assert.equal(existsSync(new URL('index.html', new URL(folder, new URL(file, site)))), true, `${file}: the button leads to a real page`);
+    assert.ok(back.has(from), `${file}: app.js handles from=${from}`);
+  }
+  // the "start" screen button is an <a>, so it needs the same no-underline rule as the catalog entry
+  assert.match(readFileSync(new URL('css/app.css', site), 'utf8'), /\.material-entry\{text-decoration:none\}/);
+  assert.match(readFileSync(new URL('catalog/styles.css', site), 'utf8'), /\.product-link\s*\{/);
+}
+
 console.log('Material preview test passed');
