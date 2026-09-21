@@ -287,4 +287,31 @@ finishes.silverFoil = {
 // chip order in the UI
 export const FINISH_ORDER = ['none', 'spotUV', 'goldFoil', 'silverFoil', 'emboss', 'deboss'];
 
+/**
+ * Production export (PDF / SVG). One place to change when iPrint's prepress spec is known.
+ *
+ * spots  one entry per thing that is separated in the file. `name` is the spot colour name written to the PDF
+ *        (ASCII only — it is what prepress sees in the swatches / separations), `cmyk` the on-screen alternate,
+ *        `rgb` how the SVG shows it, `layer` the layer name. Keys match the finish ids in `finishes`.
+ * The values below are placeholders chosen to be distinct and readable, NOT iPrint's real spec.
+ */
+export const EXPORT = {
+  marginMm: 10, // extra paper around the artwork frame when crop marks are on
+  cropMarkMm: { length: 3, gap: 1 },
+  minBleedMm: 3,
+  minDpi: 300,
+  fallbackDpi: 600, // an SVG that cannot be kept as vectors is drawn at this resolution
+  maxRasterPixels: 25e6,
+  hairlineMm: 0.088, // 0.25 pt
+  spots: {
+    dieline: { name: 'Dieline', cmyk: [0, 1, 0, 0], rgb: '#ff00ff', layer: 'Dieline' },
+    spotUV: { name: 'Spot_UV', cmyk: [1, 0, 0, 0], rgb: '#00a3e0', layer: 'Spot_UV' },
+    goldFoil: { name: 'Foil_Gold', cmyk: [0, 0.25, 0.85, 0.1], rgb: '#e7b95e', layer: 'Foil_Gold' },
+    silverFoil: { name: 'Foil_Silver', cmyk: [0, 0, 0, 0.35], rgb: '#b9bcc2', layer: 'Foil_Silver' },
+    emboss: { name: 'Emboss', cmyk: [0, 0.7, 1, 0], rgb: '#e8790b', layer: 'Emboss' },
+    deboss: { name: 'Deboss', cmyk: [0.8, 0.5, 0, 0], rgb: '#3b6fb6', layer: 'Deboss' },
+    registration: { name: 'All', cmyk: [1, 1, 1, 1], rgb: '#000000', layer: 'Marks' },
+  },
+};
+
 export const DEFAULTS = Object.freeze({ paper: 'smooth', coating: 'none', finish: 'none' });

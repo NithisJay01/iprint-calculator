@@ -391,6 +391,65 @@ export function readImageSize(bytes) {
   return null;
 }
 
+function exifOrientation(b, t, end) {
+  if (t + 8 > end) return null;
+  const le = b[t] === 0x49; // "II" = little endian, "MM" = big endian
+  const u16 = (o) => (le ? b[o] | (b[o + 1] << 8) : (b[o] << 8) | b[o + 1]);
+  const u32 = (o) => (le ? (b[o] | (b[o + 1] << 8) | (b[o + 2] << 16) | (b[o + 3] << 24)) >>> 0 : ((b[o] << 24) | (b[o + 1] << 16) | (b[o + 2] << 8) | b[o + 3]) >>> 0);
+  if (u16(t + 2) !== 42) return null;
+  const ifd = t + u32(t + 4);
+  if (ifd + 2 > end) return null;
+  const count = u16(ifd);
+  for (let i = 0; i < count; i++) {
+    const e = ifd + 2 + i * 12;
+    if (e + 12 > end) break;
+    if (u16(e) === 0x0112) {
+      const v = u16(e + 8);
+      return v >= 1 && v <= 8 ? v : null;
+    }
+  }
+  return null;
+}
+
+/**
+ * What a PDF needs to know to embed a JPEG untouched: size, number of colour components (1 grey, 3 RGB, 4 CMYK),
+ * and whether the picture is rotated by an EXIF orientation tag — a PDF ignores that tag, so a rotated JPEG cannot
+ * be passed through as it is. `adobeTransform` is the Adobe APP14 colour-transform flag (CMYK JPEGs are often inverted).
+ * @returns {{width, height, components, progressive, orientation: number, adobeTransform: number|null} | null}
+ */
+export function readJpegInfo(bytes) {
+  if (!(bytes.length >= 4 && bytes[0] === 0xff && bytes[1] === 0xd8)) return null;
+  let o = 2;
+  let orientation = 1;
+  let adobeTransform = null;
+  let sof = null;
+  while (o + 4 <= bytes.length) {
+    if (bytes[o] !== 0xff) {
+      o++;
+      continue;
+    }
+    const marker = bytes[o + 1];
+    if (marker === 0xff) {
+      o++;
+      continue;
+    }
+    if (marker === 0xd8 || marker === 0x01 || (marker >= 0xd0 && marker <= 0xd7)) {
+      o += 2;
+      continue;
+    }
+    if (marker === 0xd9 || marker === 0xda) break; // end of image / start of scan — the headers are behind us
+    const len = u16be(bytes, o + 2);
+    const seg = o + 4;
+    if (marker === 0xe1 && ascii(bytes, seg, 4) === 'Exif') orientation = exifOrientation(bytes, seg + 6, o + 2 + len) ?? orientation;
+    else if (marker === 0xee && ascii(bytes, seg, 5) === 'Adobe') adobeTransform = bytes[seg + 11] ?? null;
+    else if (marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc) {
+      sof = { progressive: marker === 0xc2, height: u16be(bytes, seg + 1), width: u16be(bytes, seg + 3), components: bytes[seg + 5] };
+    }
+    o += 2 + len;
+  }
+  return sof ? { ...sof, orientation, adobeTransform } : null;
+}
+
 /* ------------------------------------------------- outline from a mask image */
 
 /**

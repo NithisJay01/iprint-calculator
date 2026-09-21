@@ -87,7 +87,7 @@ export function createLayers({ card, studio, onChange = () => {}, setBusy = () =
 
   async function makeSvgLayer(file) {
     const parsed = parseSvg(await file.text(), file.name);
-    return { name: file.name, kind: 'svg', aspect: parsed.aspect, warnings: parsed.warnings, render: (W, H) => renderSvgLayer(parsed, W, H), dispose() {} };
+    return { name: file.name, kind: 'svg', file, parsed, aspect: parsed.aspect, warnings: parsed.warnings, render: (W, H) => renderSvgLayer(parsed, W, H), dispose() {} };
   }
 
   async function makeRasterLayer(file, asMask) {
@@ -96,6 +96,8 @@ export function createLayers({ card, studio, onChange = () => {}, setBusy = () =
     const layer = {
       name: file.name,
       kind: 'raster',
+      file,
+      info,
       aspect: decoded.width / decoded.height,
       pixelWidth: info.width,
       warnings: [],
@@ -185,6 +187,13 @@ export function createLayers({ card, studio, onChange = () => {}, setBusy = () =
       const file = state.cut.file;
       if (!file) return;
       await api.loadCut(file, { invert });
+    },
+
+    /** What the exporter needs: the original files and the parsed SVGs, not the preview canvases. */
+    exportSources() {
+      const pick = (l) =>
+        l && { name: l.name, kind: l.kind, aspect: l.aspect, pixelWidth: l.pixelWidth, warnings: l.warnings, file: l.file, parsed: l.parsed, info: l.info, invert: l.invert };
+      return { spec: card.spec, params: state.shape, cut: state.cut ? { kind: state.cut.kind, name: state.cut.name } : null, art: pick(state.art), mask: pick(state.mask) };
     },
 
     /** Everything the panel shows about the current state. */

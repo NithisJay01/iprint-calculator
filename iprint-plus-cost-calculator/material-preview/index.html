@@ -106,6 +106,30 @@
         </div>
       </details>
 
+      <details class="step" id="stepExport">
+        <summary><span class="num">4</span><h2>ส่งออกไฟล์ผลิต</h2><span class="sum" id="exportSum"></span></summary>
+        <div class="step-body">
+          <p class="desc">สร้างไฟล์ส่งโรงพิมพ์จากสิ่งที่เห็นในพรีวิว: <b>PDF</b> (มี Trim / Bleed, เลเยอร์ Artwork · Dieline · เทคนิคพิเศษเป็นสีพิเศษ) และ <b>SVG</b> แยกเลเยอร์ขนาดจริงเป็น mm ทั้งสองแบบเปิดใน Adobe Illustrator ได้</p>
+          <ul class="checks" id="exportChecks"></ul>
+          <div class="fields">
+            <label class="field wide">โหมดสีของงานพิมพ์
+              <select id="exportColor">
+                <option value="rgb">RGB (แนะนำ — ให้ฝ่ายผลิตแปลงเอง)</option>
+                <option value="cmyk">CMYK แบบง่าย (ไม่ใช้โปรไฟล์ ICC สีอาจเพี้ยน)</option>
+              </select>
+            </label>
+          </div>
+          <label class="check"><input type="checkbox" id="exportMarks"> ใส่ Crop marks (เพิ่มขอบกระดาษ 10 mm)</label>
+          <label class="check"><input type="checkbox" id="exportJob" checked> เพิ่มหน้าสรุปสเปก (หน้า 2 ของ PDF)</label>
+          <div class="chips two">
+            <button class="chip" id="exportPdf" type="button">ดาวน์โหลด PDF</button>
+            <button class="chip" id="exportSvg" type="button">ดาวน์โหลด SVG</button>
+          </div>
+          <p class="desc">ไฟล์ .ai: ไม่มีให้ดาวน์โหลดโดยตรง เพราะเป็นรูปแบบปิดของ Adobe — ให้เปิด PDF ใน Illustrator (ยังไม่ได้ทดสอบกับ Illustrator จริง) แล้วบันทึกเป็น .ai</p>
+          <ul class="notes" id="exportNotes"></ul>
+        </div>
+      </details>
+
       <div class="actions">
         <button class="primary" id="tiltBtn" type="button" hidden>Enable Tilt Preview</button>
         <p class="hint" id="hint"></p>

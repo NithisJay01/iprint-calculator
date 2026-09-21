@@ -348,6 +348,25 @@ html, body {
 .notes:empty { display: none; }
 .notes .is-warn { color: var(--warn); }
 
+/* export checklist */
+.checks {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.checks li { display: flex; gap: 8px; padding: 3px 0; }
+.checks li::before { flex: 0 0 14px; font-weight: 700; text-align: center; }
+.checks .ok::before { content: "✓"; color: #1c6b46; }
+.checks .warn::before { content: "!"; color: var(--warn); }
+.checks .warn { color: var(--warn); }
+.checks .error::before { content: "✕"; color: #b3261e; }
+.checks .error { color: #b3261e; }
+.checks .note::before { content: "i"; color: var(--muted); }
+.checks .note { color: var(--muted); }
+.desc b { color: var(--ink); }
+
 .actions { margin-top: 10px; }
 
 .primary {

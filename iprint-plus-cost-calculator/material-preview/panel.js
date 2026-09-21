@@ -172,6 +172,63 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
   });
   $('#maskInvert').addEventListener('change', (e) => act(() => layers.setMaskInvert(e.target.checked)));
 
+  /* ---------------------------------------------------------------- export */
+
+  // The export code (plan, PDF / SVG writers, SVG converter) is only fetched when this step is opened or used,
+  // so it costs the page nothing until then.
+  let planner = null;
+  let exportReport = [];
+  const exportOptions = () => ({ colorMode: $('#exportColor').value, cropMarks: $('#exportMarks').checked, jobPage: $('#exportJob').checked });
+  const exportSources = () => ({ ...layers.exportSources(), paperId: state.paper, coatingId: state.coating, finishId: state.finish });
+
+  async function runExport(kind) {
+    const { exportFile, downloadBlob } = await import('./exportFiles.js');
+    setBusy(true, kind === 'pdf' ? 'กำลังสร้างไฟล์ PDF…' : 'กำลังสร้างไฟล์ SVG…');
+    try {
+      const result = await exportFile(kind, exportSources(), exportOptions());
+      downloadBlob(result.blob, result.filename);
+      exportReport = [
+        `ดาวน์โหลดแล้ว: ${result.filename} (${result.bytes >= 1048576 ? `${(result.bytes / 1048576).toFixed(1)} MB` : `${Math.round(result.bytes / 1024)} KB`})`,
+        ...(result.pdf ? [`PDF ${result.pdf.pages} หน้า · เลเยอร์: ${result.pdf.layers.join(', ')} · สีพิเศษ: ${result.pdf.spots.join(', ')}`] : []),
+        ...result.report,
+      ];
+    } finally {
+      setBusy(false);
+    }
+  }
+  $('#exportPdf').addEventListener('click', () => act(() => runExport('pdf')));
+  $('#exportSvg').addEventListener('click', () => act(() => runExport('svg')));
+  for (const sel of ['#exportColor', '#exportMarks', '#exportJob']) $(sel).addEventListener('change', () => render());
+  $('#stepExport').addEventListener('toggle', () => {
+    if ($('#stepExport').open) render();
+  });
+
+  function renderExport(d) {
+    if (!$('#stepExport').open) return;
+    if (!planner) {
+      import('./productionSpec.js').then((m) => {
+        planner = m;
+        render();
+      });
+      return;
+    }
+    const src = exportSources();
+    const plan = planner.buildProductionPlan({ ...src, options: exportOptions() });
+    const ul = $('#exportChecks');
+    ul.replaceChildren(
+      ...plan.checks.map((c) => {
+        const li = document.createElement('li');
+        li.className = c.level;
+        li.textContent = c.text;
+        return li;
+      }),
+    );
+    $('#exportPdf').disabled = $('#exportSvg').disabled = plan.blocking;
+    $('#exportSum').textContent = plan.blocking ? 'ต้องมีไฟล์ Layer 1' : 'PDF · SVG';
+    setNotes($('#exportNotes'), exportReport.map((text) => ({ text, warn: false })));
+    return d;
+  }
+
   // drag & drop a file onto the card: it goes to the step that is open
   for (const step of document.querySelectorAll('.step')) {
     step.addEventListener('toggle', () => {
@@ -268,6 +325,7 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
     setNotes($('#maskNotes'), d.maskNotes);
 
     $('#caption').textContent = [paper.label, state.coating === 'none' ? '' : coat.label, state.finish === 'none' ? '' : finish.label].filter(Boolean).join(' · ');
+    renderExport(d);
   }
   render();
 
