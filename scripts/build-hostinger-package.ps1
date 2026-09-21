@@ -26,7 +26,7 @@ foreach ($file in @('index.html', '.htaccess')) {
   Copy-Item -LiteralPath (Join-Path $sourceRoot $file) -Destination $resolvedOutput
 }
 
-foreach ($directory in @('css', 'image', 'js', 'shared', 'pricing', 'catalog', 'business-card', 'cart', 'brief', 'staff')) {
+foreach ($directory in @('css', 'image', 'js', 'shared', 'pricing', 'catalog', 'business-card', 'cart', 'brief', 'staff', 'material-preview')) {
   Copy-Item -LiteralPath (Join-Path $sourceRoot $directory) -Destination $resolvedOutput -Recurse
 }
 

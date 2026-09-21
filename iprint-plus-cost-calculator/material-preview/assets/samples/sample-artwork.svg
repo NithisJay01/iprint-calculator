@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Sample for Layer 1 (printed artwork). Template 96 x 60 mm = a 90 x 54 mm card + 3 mm bleed on every side.
+  In the preview set "Bleed ของไฟล์งาน" to 3 mm (rectangle / rounded / oval) — or use it together with sample-diecut-leaf.svg,
+  which has the same 96 x 60 artboard, so the two line up by themselves.
+  The layer named "guides" is never printed (it matches "guide"); everything else is.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 60" width="96mm" height="60mm">
+  <title>iPrint sample artwork (Layer 1)</title>
+  <g id="background">
+    <rect width="96" height="60" fill="#f2e8d5"/>
+    <rect y="45" width="96" height="15" fill="#123d4a"/>
+  </g>
+  <g id="artwork">
+    <circle cx="23" cy="20" r="9" fill="none" stroke="#123d4a" stroke-width="1.6"/>
+    <path d="M23 13.5 L26.2 20 L23 26.5 L19.8 20 Z" fill="#123d4a"/>
+    <rect x="37" y="15" width="44" height="7" rx="1" fill="#123d4a"/>
+    <rect x="37" y="25" width="30" height="2" fill="#5b6472"/>
+    <rect x="11" y="38" width="30" height="2.4" fill="#123d4a"/>
+    <rect x="11" y="49.5" width="26" height="1.6" fill="#ffffff"/>
+    <rect x="59" y="49.5" width="26" height="1.6" fill="#ffffff"/>
+    <circle cx="85" cy="12" r="2.4" fill="#e8552d"/>
+  </g>
+  <g id="guides">
+    <rect x="3" y="3" width="90" height="54" fill="none" stroke="#00aaff" stroke-width="0.3"/>
+  </g>
+</svg>

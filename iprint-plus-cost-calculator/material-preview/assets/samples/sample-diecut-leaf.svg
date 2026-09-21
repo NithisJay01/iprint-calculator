@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Sample die-cut (รูปร่างบัตร): a leaf with a punched hole. The cut line is the group named "dieline".
+  Artboard 96 x 60 mm — the same as sample-artwork.svg / sample-foil-shape.svg, so those files line up with this shape.
+  Choose "ไดคัทจากไฟล์" in step 0, pick this file, then enter the real card width in mm (the height follows the shape).
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 60" width="96mm" height="60mm">
+  <title>iPrint sample die-cut</title>
+  <g id="dieline">
+    <path d="M7 30 C7 13 33 5 89 7 C91 33 73 55 33 53 C17 52 7 43 7 30 Z" fill="none" stroke="#ff00ff" stroke-width="0.3"/>
+    <circle cx="20" cy="30" r="3.5" fill="none" stroke="#ff00ff" stroke-width="0.3"/>
+  </g>
+</svg>

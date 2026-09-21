@@ -1,0 +1,275 @@
+/**
+ * app.js — wires renderer, studio, card, layers, input and the panel together. No look-and-feel decisions here:
+ * those live in materials.js (what) / studio.js (light) / card.js (how layers combine).
+ */
+import * as THREE from './vendor/three/three.module.min.js';
+import { paperMaterials, DEFAULTS, DEFAULT_SHAPE } from './materials.js';
+import { buildSpec } from './shape.js';
+import { createStudio, LIGHTING } from './studio.js';
+import { createCard } from './card.js';
+import { TiltInput } from './input.js';
+import { createLayers } from './layers.js';
+import { initPanel } from './panel.js';
+
+const $ = (sel) => document.querySelector(sel);
+const stage = $('#stage');
+const canvas = $('#gl');
+
+const ROT_X = THREE.MathUtils.degToRad(15); // pitch limit
+const ROT_Y = THREE.MathUtils.degToRad(20); // yaw limit
+const REDUCED_MOTION = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const COARSE = matchMedia('(pointer: coarse)').matches;
+const params = new URLSearchParams(location.search);
+const DEBUG = params.has('debug');
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/* ------------------------------------------------------------ renderer */
+
+function fatal(message) {
+  const box = $('#fatal');
+  box.hidden = false;
+  box.textContent = message;
+  $('#loader').classList.add('is-hidden');
+}
+
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
+} catch (err) {
+  console.error(err);
+  fatal('อุปกรณ์หรือเบราว์เซอร์นี้ไม่รองรับ WebGL — กรุณาลองเปิดด้วย Chrome หรือ Safari รุ่นล่าสุด');
+  throw err;
+}
+renderer.setClearColor(0x000000, 0); // transparent: the CSS backdrop shows through
+canvas.addEventListener('webglcontextlost', (e) => {
+  e.preventDefault();
+  fatal('การแสดงผล 3D หยุดชั่วคราว — กำลังโหลดใหม่…');
+  setTimeout(() => location.reload(), 800);
+});
+
+const spec = buildSpec(DEFAULT_SHAPE);
+const studio = createStudio(renderer);
+studio.setShape(spec.rings, spec.bounds);
+const card = createCard({ renderer, spec });
+card.setEnvironment(studio.envMap, LIGHTING.envIntensity);
+studio.scene.add(card.pivot);
+
+let pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+let needsRender = true;
+const requestRender = () => (needsRender = true);
+
+function resize() {
+  const r = stage.getBoundingClientRect();
+  studio.setSize(Math.max(1, Math.round(r.width)), Math.max(1, Math.round(r.height)), pixelRatio);
+  requestRender();
+}
+new ResizeObserver(resize).observe(stage);
+
+/* --------------------------------------------------------------- input */
+
+const input = new TiltInput(stage, {
+  onChange: () => {
+    requestRender();
+    syncZoomUI();
+  },
+});
+const cur = { x: 0, y: 0, zoom: 1, panX: 0, panY: 0 };
+
+/* ------------------------------------------------------------------ UI */
+
+const loader = $('#loader');
+let booted = false; // before boot the loader is a full-stage overlay, afterwards a small corner pill
+function setBusy(on, text = 'กำลังสร้างพื้นผิวกระดาษ…') {
+  $('#loaderText').textContent = text;
+  loader.classList.toggle('is-corner', booted);
+  loader.classList.toggle('is-hidden', !on);
+}
+
+const status = $('#status');
+const say = (text, warn = false) => {
+  status.textContent = text;
+  status.classList.toggle('is-warn', warn);
+};
+
+// the other papers are built one by one in the background, so switching is instant (restarted after a resize)
+let restToken = 0;
+async function prepareRest() {
+  const token = ++restToken;
+  for (const id of Object.keys(paperMaterials)) {
+    if (id === card.paper) continue;
+    await sleep(350);
+    if (token !== restToken) return;
+    try {
+      await card.preparePaper(id);
+    } catch (err) {
+      console.warn(`Paper "${id}" failed to prepare`, err);
+    }
+  }
+}
+
+let panel = null;
+const layers = createLayers({
+  card,
+  studio,
+  setBusy,
+  onChange: () => {
+    panel?.render();
+    requestRender();
+    prepareRest();
+  },
+});
+panel = initPanel({ card, layers, stage, setBusy, say, requestRender });
+
+// hint text depends on the input the device actually has
+$('#hint').textContent = COARSE ? 'เอียงโทรศัพท์เพื่อดูแสงและพื้นผิวของวัสดุ (หรือลากนิ้วบนนามบัตร)' : 'ลากเมาส์เพื่อเปลี่ยนมุม · เลื่อนล้อเมาส์เพื่อซูม';
+
+// zoom toggle (wheel / pinch / double-tap also change the zoom, so the button mirrors the state)
+const zoomBtn = $('#zoomBtn');
+function syncZoomUI() {
+  const zoomed = input.zoomTarget > 1.05;
+  zoomBtn.setAttribute('aria-pressed', String(zoomed));
+  $('#zoomLabel').textContent = zoomed ? 'ซูมออก' : 'ซูมดูผิว';
+}
+zoomBtn.addEventListener('click', () => input.setZoom(input.zoomTarget < 1.05 ? 2.4 : 1));
+
+// tilt button: shown where a motion sensor is plausible (touch devices; ?tilt=1 forces it for devtools sensor emulation)
+const tiltBtn = $('#tiltBtn');
+const wantsTilt = COARSE || typeof window.DeviceOrientationEvent?.requestPermission === 'function' || params.has('tilt');
+tiltBtn.hidden = !wantsTilt || typeof window.DeviceOrientationEvent === 'undefined';
+
+const REASONS = {
+  insecure: 'Tilt ต้องเปิดผ่าน HTTPS — ตอนนี้ใช้การลากนิ้วบนนามบัตรแทน',
+  unsupported: 'เครื่องนี้ไม่รองรับเซนเซอร์เอียง — ใช้การลากนิ้วบนนามบัตรแทน',
+  denied: 'ไม่ได้รับอนุญาตใช้เซนเซอร์ — ใช้การลากนิ้วแทน (iOS: ปิดแท็บแล้วเปิดใหม่เพื่อขออนุญาตอีกครั้ง)',
+  error: 'เปิดเซนเซอร์ไม่สำเร็จ — ใช้การลากนิ้วบนนามบัตรแทน',
+  'no-data': 'ไม่พบข้อมูลเซนเซอร์ (อาจถูกบล็อก) — ใช้การลากนิ้วบนนามบัตรแทน',
+};
+
+tiltBtn.addEventListener('click', async () => {
+  if (input.sensor.active) {
+    input.disableSensors();
+    tiltBtn.setAttribute('aria-pressed', 'false');
+    tiltBtn.textContent = 'Enable Tilt Preview';
+    say('ปิด Tilt แล้ว — ลากนิ้วบนนามบัตรเพื่อเปลี่ยนมุม');
+    return;
+  }
+  // NOTE: the permission request is started synchronously inside this click (iOS requirement).
+  const pending = input.enableSensors();
+  tiltBtn.disabled = true;
+  say('กำลังขออนุญาตใช้เซนเซอร์…');
+  const result = await pending;
+  tiltBtn.disabled = false;
+  if (result.ok) {
+    tiltBtn.setAttribute('aria-pressed', 'true');
+    tiltBtn.textContent = 'Tilt Preview: ON (แตะเพื่อปิด)';
+    say('เอียงโทรศัพท์เพื่อเปลี่ยนแสง — ตั้งท่าถือปัจจุบันเป็นจุดกึ่งกลางแล้ว');
+  } else {
+    say(REASONS[result.reason] ?? REASONS.error, true);
+  }
+});
+
+/* ---------------------------------------------------------- render loop */
+
+let last = performance.now();
+let perfFrames = 0;
+let perfTime = 0;
+let lastRendered = false;
+let fps = 0;
+const dbg = $('#debug');
+dbg.hidden = !DEBUG;
+if (DEBUG) window.__mp = { THREE, renderer, studio, card, layers, input, cur, panel, ROT_X, ROT_Y };
+
+function sweep(t) {
+  // gentle self-demo until the first touch, so the light visibly runs over the surface
+  return { x: 0.62 * Math.sin(t * 0.75), y: 0.42 * Math.sin(t * 0.52 + 1.2) };
+}
+
+const k = (dt, rate) => 1 - Math.exp(-dt * rate); // frame-rate independent smoothing
+
+function frame(now) {
+  requestAnimationFrame(frame);
+  const dtRaw = (now - last) / 1000;
+  last = now;
+  const dt = Math.min(0.05, dtRaw);
+
+  const sweeping = !input.interacted && !REDUCED_MOTION && cur.zoom < 1.05;
+  const target = sweeping ? sweep(now / 1000) : input.target;
+
+  const dx = target.x - cur.x;
+  const dy = target.y - cur.y;
+  const dz = input.zoomTarget - cur.zoom;
+  const dpx = input.pointer.x - cur.panX;
+  const dpy = input.pointer.y - cur.panY;
+  cur.x += dx * k(dt, 10);
+  cur.y += dy * k(dt, 10);
+  cur.zoom += dz * k(dt, 8);
+  const zoomed = cur.zoom > 1.01;
+  if (zoomed) {
+    cur.panX += dpx * k(dt, 5);
+    cur.panY += dpy * k(dt, 5);
+  }
+  const moving = Math.abs(dx) + Math.abs(dy) > 2e-4 || Math.abs(dz) > 2e-4 || (zoomed && Math.abs(dpx) + Math.abs(dpy) > 2e-4);
+
+  if (!(moving || sweeping || needsRender)) {
+    lastRendered = false;
+    return;
+  }
+  needsRender = false;
+
+  card.pivot.rotation.set(cur.y * ROT_X, cur.x * ROT_Y, 0);
+  studio.update(cur.x, cur.y, input.hover.x / 0.55, input.hover.y / 0.55);
+  card.setEnvYaw(studio.envYaw);
+  const l = studio.layout;
+  studio.frame(l.width, l.height, cur.zoom, cur.panX, cur.panY);
+  studio.render();
+
+  // adaptive resolution: if we cannot hold ~40 fps while animating, lower the pixel ratio a little
+  if (lastRendered && dtRaw < 0.2) {
+    // (a gap > 200 ms means the tab was hidden or the page stalled — not a slow GPU, so it is not counted)
+    perfFrames++;
+    perfTime += dtRaw;
+    if (perfFrames >= 45) {
+      fps = perfFrames / perfTime;
+      if (fps < 38 && pixelRatio > 1) {
+        pixelRatio = Math.max(1, pixelRatio * 0.8);
+        resize();
+      }
+      perfFrames = 0;
+      perfTime = 0;
+    }
+  } else {
+    perfFrames = 0;
+    perfTime = 0;
+  }
+  lastRendered = true;
+
+  if (DEBUG) {
+    const size = card.size;
+    dbg.textContent = `fps ${fps ? fps.toFixed(0) : '…'}  pr ${pixelRatio.toFixed(2)}\ntex ${size.width}×${size.height}  calls ${renderer.info.render.calls}\ntilt ${cur.x.toFixed(2)}, ${cur.y.toFixed(2)}  zoom ${cur.zoom.toFixed(2)}`;
+  }
+}
+
+/* ---------------------------------------------------------------- boot */
+
+async function boot() {
+  resize();
+  try {
+    await card.setPaper(DEFAULTS.paper);
+    await card.setCoating(DEFAULTS.coating);
+    await card.setFinish(DEFAULTS.finish);
+    await card.warmUp(studio.scene, studio.camera); // compile Foil / Spot UV shaders now, not on first tap
+  } catch (err) {
+    console.error(err);
+    fatal('เกิดข้อผิดพลาดในการสร้างพื้นผิววัสดุ — ลองรีเฟรชหน้าเว็บ');
+    return;
+  }
+  booted = true;
+  setBusy(false);
+  panel.render();
+  requestRender();
+  requestAnimationFrame(frame);
+  prepareRest();
+}
+
+boot();

@@ -6,6 +6,7 @@ const tests = [
   'tests/set-studio-logic-test.mjs',
   'tests/catalog-page-test.mjs',
   'tests/deployment-config-test.mjs',
+  'tests/material-preview-test.mjs',
   'tests/business-card-mvp-test.mjs',
   'tests/business-card-breakdown-test.mjs',
   'tests/package-included-test.mjs',
