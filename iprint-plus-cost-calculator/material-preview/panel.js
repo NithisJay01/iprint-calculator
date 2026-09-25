@@ -121,7 +121,19 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
     return selectPaper(id);
   }));
   buildChips($('#coatChips'), Object.entries(coatings).map(([id, c]) => [id, c.label]), (id) => act(() => selectCoating(id)));
-  buildChips($('#finishChips'), FINISH_ORDER.map((id) => [id, finishes[id].label]), (id) => act(() => selectFinish(id)));
+  // The first time a special technique is picked on this visit, remind that not every technique suits every stock.
+  // The finish is still applied behind the notice.
+  let finishNoticeShown = false;
+  const showFinishNotice = () => {
+    const dialog = $('#finishNotice');
+    if (finishNoticeShown || !dialog?.showModal) return;
+    finishNoticeShown = true;
+    dialog.showModal();
+  };
+  buildChips($('#finishChips'), FINISH_ORDER.map((id) => [id, finishes[id].label]), (id) => {
+    if (id !== 'none') showFinishNotice();
+    act(() => selectFinish(id));
+  });
 
   /* ------------------------------------------------------------------ shape */
 
