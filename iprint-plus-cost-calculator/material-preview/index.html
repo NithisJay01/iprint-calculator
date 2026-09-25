@@ -92,18 +92,18 @@
           <ul class="notes art-notes" id="artNotes"></ul>
           <h3 class="sub">รูปทรงและขนาดบัตร <span class="sub-sum" id="shapeSum"></span></h3>
           <div class="chips shape-chips" id="shapeChips" role="group" aria-label="รูปร่างบัตร"></div>
+          <div class="cut-box" id="cutBox" hidden>
+            <button class="chip" id="cutUpload" type="button">เลือกไฟล์ไดคัท (SVG / PNG)…</button>
+            <label class="check" id="cutInvertWrap" hidden><input type="checkbox" id="cutInvert"> กลับด้าน (ส่วนสว่าง = รูปทรง)</label>
+            <input id="cutInput" type="file" accept=".svg,.png,image/svg+xml,image/png" hidden>
+            <p class="desc" id="cutDesc"></p>
+          </div>
           <div class="fields">
             <label class="field wide" id="presetField">ขนาดมาตรฐาน<select id="sizePreset"></select></label>
             <label class="field">กว้าง (mm)<input id="sizeW" type="number" inputmode="decimal" min="20" max="150" step="0.5"></label>
             <label class="field">สูง (mm)<input id="sizeH" type="number" inputmode="decimal" min="20" max="150" step="0.5"></label>
             <label class="field" id="radiusField">รัศมีมุม (mm)<input id="sizeR" type="number" inputmode="decimal" min="0" max="30" step="0.5"></label>
             <label class="field" id="bleedField">Bleed ของไฟล์งาน<select id="bleedSel"></select></label>
-          </div>
-          <div class="cut-box" id="cutBox" hidden>
-            <button class="chip" id="cutUpload" type="button">เลือกไฟล์ Shape (SVG / PNG)…</button>
-            <label class="check" id="cutInvertWrap" hidden><input type="checkbox" id="cutInvert"> กลับด้าน (ส่วนสว่าง = รูปทรง)</label>
-            <input id="cutInput" type="file" accept=".svg,.png,image/svg+xml,image/png" hidden>
-            <p class="desc" id="cutDesc"></p>
           </div>
           <ul class="notes" id="shapeNotes"></ul>
         </div>

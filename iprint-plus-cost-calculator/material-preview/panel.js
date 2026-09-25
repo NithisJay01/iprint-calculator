@@ -372,9 +372,10 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
     const preset = SIZE_PRESETS.find((p) => p.w === spec.bounds.w && p.h === spec.bounds.h);
     $('#sizePreset').value = preset?.id ?? 'x';
     $('#cutInvertWrap').hidden = !(custom && d.cutKind === 'png');
-    $('#cutUpload').textContent = d.cutName ? `เปลี่ยนไฟล์ Shape (${d.cutName})` : 'เลือกไฟล์ Shape (SVG / PNG)…';
+    $('#cutUpload').textContent = d.cutName ? `เปลี่ยนไฟล์ไดคัท (${shortName(d.cutName, 24)})` : 'เลือกไฟล์ไดคัท (SVG / PNG)…';
+    $('#cutUpload').title = d.cutName ?? '';
     $('#cutDesc').textContent = d.cutName
-      ? `${d.cutKind === 'svg' ? 'อ่านเส้นจากไฟล์ SVG' : 'สกัดเส้นจากภาพ PNG'} — ตั้งความกว้างของบัตรจริงเป็น mm ด้านบน (ความสูงคำนวณให้) กรอบงานเท่ากับกรอบของไฟล์นี้ ไฟล์แบบและรูปทรงเทคนิคพิเศษที่ใช้ Artboard เดียวกันจะตรงกันเอง`
+      ? `${d.cutKind === 'svg' ? 'อ่านเส้นจากไฟล์ SVG' : 'สกัดเส้นจากภาพ PNG'} — ตั้งความกว้างของบัตรจริงเป็น mm ด้านล่าง (ความสูงคำนวณให้) กรอบงานเท่ากับกรอบของไฟล์นี้ ไฟล์แบบและรูปทรงเทคนิคพิเศษที่ใช้ Artboard เดียวกันจะตรงกันเอง`
       : 'อัปโหลดไฟล์เส้นตัดไดคัท (SVG หรือ PNG พื้นโปร่งใส) ระบบใช้เฉพาะรูปทรงและรูเจาะ จะใช้ชิ้นที่ใหญ่ที่สุดในไฟล์';
     setNotes($('#shapeNotes'), d.shapeNotes);
 
