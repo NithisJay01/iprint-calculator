@@ -21,7 +21,8 @@ import * as THREE from './vendor/three/three.module.min.js';
 // machines map them to outline / serif fonts, which breaks the artwork.
 const FONT = 'system-ui, "Segoe UI", Roboto, Arial, sans-serif';
 const INFO_INK = '#262a33';
-const BRAND_INK = '#20242d';
+const BRAND_INK = '#075ac8'; // iPrint primary blue: the logo mark and the "iPrint" wordmark
+const TAGLINE_INK = '#20242d';
 
 export function createArtwork(W, H, anisotropy = 4) {
   const cache = new Map();
@@ -58,7 +59,7 @@ export function createArtwork(W, H, anisotropy = 4) {
     }
   }
 
-  function drawBrand(ctx, color) {
+  function drawBrand(ctx, color, taglineColor = color) {
     ctx.fillStyle = color;
     const mx = mm(8);
     const my = mm(8.5);
@@ -77,6 +78,7 @@ export function createArtwork(W, H, anisotropy = 4) {
     ctx.textAlign = 'left';
     ctx.font = `800 ${mm(13.5)}px ${FONT}`;
     ctx.fillText('iPrint', mm(28), mm(21.2));
+    ctx.fillStyle = taglineColor;
     ctx.font = `700 ${mm(2.3)}px ${FONT}`;
     trackedText(ctx, 'PRINT • DESIGN • CREATE', mm(28.5), mm(26.6), mm(0.72));
   }
@@ -103,7 +105,7 @@ export function createArtwork(W, H, anisotropy = 4) {
     const print = newCanvas();
     const pg = print.getContext('2d');
     pg.translate(ox, oy);
-    drawBrand(pg, BRAND_INK);
+    drawBrand(pg, BRAND_INK, TAGLINE_INK);
     drawInfo(pg, INFO_INK);
     const shape = newCanvas();
     const sg = shape.getContext('2d');
