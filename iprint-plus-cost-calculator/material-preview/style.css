@@ -487,5 +487,18 @@ html, body {
   cursor: pointer;
 }
 
-/* front / back upload side by side: a long file name is cut short (the full name is the button's tooltip) */
-.upload-chips .chip { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* the sample card, then front | back uploads between two hairlines */
+.upload-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 10px;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.upload-col { display: grid; gap: 6px; align-content: start; min-width: 0; }
+.upload-label { font-size: 12.5px; font-weight: 600; text-align: center; color: var(--ink); }
+.upload-label small { font-weight: 400; color: var(--muted); }
+/* a long file name is cut short (the full name is the button's tooltip) */
+.upload-col .chip { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
