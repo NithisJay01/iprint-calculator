@@ -109,8 +109,8 @@ export function createArtwork(W, H, anisotropy = 4) {
     ctx.globalAlpha = 1;
     ctx.textAlign = 'right';
     ctx.font = `500 ${mm(2.4)}px ${FONT}`;
-    ctx.fillText('+66 81 234 5678', mm(82), mm(41));
-    ctx.fillText('hello@iprint.example', mm(82), mm(45.4));
+    ctx.fillText('099 406 8729', mm(82), mm(41));
+    ctx.fillText('mkt.iprint@gmail.com', mm(82), mm(45.4));
   }
 
   /** The built-in demo card: everything is printed, and the logo block doubles as the finish shape. */
