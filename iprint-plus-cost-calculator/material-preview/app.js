@@ -178,7 +178,7 @@ $('#hint').textContent = COARSE
   ? 'เอียงโทรศัพท์เพื่อดูแสงและพื้นผิวของวัสดุ (หรือลากนิ้วบนนามบัตร) · ปัดเร็วๆ ไปด้านข้างเพื่อพลิกดูอีกด้าน'
   : 'ลากเมาส์เพื่อเปลี่ยนมุม · สะบัดเมาส์ไปด้านข้างเพื่อพลิก · เลื่อนล้อเมาส์เพื่อซูม';
 
-// zoom toggle (wheel / pinch / double-tap also change the zoom, so the button mirrors the state)
+// zoom toggle (wheel / pinch also change the zoom, so the button mirrors the state; double-click does not zoom)
 const zoomBtn = $('#zoomBtn');
 function syncZoomUI() {
   const zoomed = input.zoomTarget > 1.05;

@@ -80,7 +80,6 @@ export class TiltInput {
       this.onChange();
     });
     element.addEventListener('wheel', (e) => this._wheel(e), opts);
-    element.addEventListener('dblclick', () => this.setZoom(this.zoomTarget > 1.05 ? 1 : 2.4));
     element.addEventListener('contextmenu', (e) => e.preventDefault());
   }
 
