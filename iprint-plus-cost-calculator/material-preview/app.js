@@ -10,6 +10,7 @@ import { createCard } from './card.js';
 import { TiltInput } from './input.js';
 import { createLayers } from './layers.js';
 import { initPanel } from './panel.js';
+import { initMaterialCatalog } from './catalog-panel.js';
 
 const $ = (sel) => document.querySelector(sel);
 const stage = $('#stage');
@@ -288,6 +289,7 @@ async function boot() {
   requestRender();
   requestAnimationFrame(frame);
   prepareRest();
+  initMaterialCatalog({ panel, say, requestedId: params.get('material') });
 }
 
 boot();

@@ -1,0 +1,11 @@
+# Notion material preview
+
+`3D Material Key` (Notion select) is read as `material3dKey` by the existing `/materials` API. The standalone `/material-preview/` fetches that API using the public runtime configuration, selects records by ID and resolves only their key. `?material=<record-id>` selects a record on entry. Reload data keeps that ID and reapplies its current key. No product name or category is used to choose a shader.
+
+Supported WebGL keys: `smooth`, `coated`, `kraft`, `pet_matte_white`, `pet_translucent`. Unknown/missing keys and non-WebGL records show Smooth with an explicit fallback notice. API failures show cached records or the existing sample presets. Existing inline CSS previews and Notion records are unchanged.
+
+Live Notion inspection on 2026-09-25 confirmed seven stock records use these keys and `webgl`. Both white-card records remain `Material=Art Paper`; `Card Paper` is absent from the schema. No migration is needed for this resolver. Smooth/Kraft presets are unchanged. This checkout had no Coated preset, so Coated reuses Smooth's maps with a smoother white finish.
+
+PET white uses an opaque physical material and a slightly higher IOR (1.58) for plastic specular response. Frosted PET uses transmission 0.92, roughness 0.48 and optical thickness 0.25 mm with opacity 1. An opaque striped backdrop is enabled only for transmission, since the existing CSS background and separate shadow scene cannot be sampled by Three.js transmission. These are visual approximations; the existing geometry/export thickness remains unchanged. Reference: https://threejs.org/docs/pages/MeshPhysicalMaterial.html
+
+Validation: `node tests/material-sync-test.mjs`, `node tests/material-preview-test.mjs`, `node tests/material-preview-export-test.mjs`, `node worker/catalog-contract-test.mjs`. Browser tests used local fixtures through the actual repository mapper: same record/name/category changed from Coated to translucent by changing only its key, then switching to opaque PET. Production API could not be reached from the test environment; deployment/live end-to-end verification remains pending. Deploy both Worker and static website together; an old Worker returns no key and safely falls back.
