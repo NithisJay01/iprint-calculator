@@ -195,7 +195,7 @@ paperMaterials.pet_matte_white = {
 paperMaterials.pet_translucent = {
   ...paperMaterials.pet_matte_white, label: 'PET ขุ่นไข',
   description: 'พลาสติกขุ่น มองทะลุด้านหลังแบบเบลอ',
-  color: '#f8faf9', roughness: 0.48, transmission: 0.92, thickness: 0.25,
+  color: '#f8faf9', roughness: 0.48, transmission: 0.65, thickness: 0.25, // milky: 0.92 let the dark backdrop tint the whole card
 };
 
 /**

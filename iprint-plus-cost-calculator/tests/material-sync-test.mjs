@@ -23,7 +23,7 @@ for (const key of ['coated','pet_translucent','smooth','pet_matte_white','kraft'
   assert.equal(record.specValue,250);
   assert.equal(resolveMaterial(record).key,key,'same record/category, changed Notion key drives shader');
   applyOpticalParams(material,paperMaterials[resolveMaterial(record).key]);
-  assert.equal(material.transmission,key==='pet_translucent'?0.92:0);
+  assert.equal(material.transmission,key==='pet_translucent'?paperMaterials.pet_translucent.transmission:0);
   assert.equal(material.opacity,1);
   assert.equal(material.transparent,false);
 }
@@ -37,7 +37,7 @@ for (const name of ['PVC Card','Sticker Paper','Sticker PP','Sticker PVC']) {
   assert.deepEqual(before,copy);
 }
 const pet=paperMaterials.pet_translucent;
-assert.ok(pet.roughness>0.3 && pet.transmission>0.8);
+assert.ok(pet.roughness>0.3 && pet.transmission>0.5 && pet.transmission<1, 'frosted PET: see-through but milky');
 assert.ok(paperMaterials.pet_matte_white.ior>1.5,'plastic Fresnel response exceeds default paper IOR');
 await assert.rejects(loadMaterials('https://api.example',async()=>Response.json({}, {status:503})));
 await assert.rejects(loadMaterials('https://api.example',async()=>Response.json({materials:null})));
