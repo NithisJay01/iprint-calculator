@@ -486,3 +486,6 @@ html, body {
   font-weight: 700;
   cursor: pointer;
 }
+
+/* front / back upload side by side: a long file name is cut short (the full name is the button's tooltip) */
+.upload-chips .chip { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

@@ -332,13 +332,15 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
 
     $('#artSum').textContent = `${d.artName || 'ตัวอย่างการ์ด'}${d.backArtName ? ' + ด้านหลัง' : ''} · ${bounds}`;
     $('#backArtUpload').textContent = d.backArtName ? `เปลี่ยนด้านหลัง (${d.backArtName})` : 'อัปโหลดด้านหลัง…';
-    $('#backArtClear').hidden = !d.backArtName;
+    $('#backClearRow').hidden = !d.backArtName; // "ลบด้านหลัง" sits under its upload button
     $('#viewFront').setAttribute('aria-pressed', String(state.side === 'front'));
     $('#viewBack').setAttribute('aria-pressed', String(state.side === 'back'));
     $('#flipBtn').setAttribute('aria-label', `พลิกด้าน — ตอนนี้แสดง${state.side === 'back' ? 'ด้านหลัง' : 'ด้านหน้า'}`);
     $('#artDemo').setAttribute('aria-pressed', String(!d.artName));
     $('#artUpload').setAttribute('aria-pressed', String(!!d.artName));
-    $('#artUpload').textContent = d.artName ? `เปลี่ยนไฟล์งาน (${d.artName})` : 'อัปโหลดไฟล์งาน…';
+    $('#artUpload').textContent = d.artName ? `เปลี่ยนด้านหน้า (${d.artName})` : 'อัปโหลดด้านหน้า…';
+    $('#artUpload').title = d.artName;
+    $('#backArtUpload').title = d.backArtName ?? '';
     setNotes($('#artNotes'), d.artNotes);
 
     // step 2 — material
