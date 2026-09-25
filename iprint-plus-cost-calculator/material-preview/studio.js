@@ -145,12 +145,12 @@ export function createStudio(renderer) {
 
   const scene = new THREE.Scene();
   // Backdrop for see-through stocks (PET transmission): three.js transmission can only refract what is in the scene,
-  // not the CSS background, so a real backdrop is drawn — navy above, slate below, split by a diagonal rising to the
+  // not the CSS background, so a real backdrop is drawn — dark navy above, blue below, split by a diagonal rising to the
   // right. The edge crosses behind the card, so the frosted blur and the tint of the stock are easy to read.
-  // colours: the reference navy / slate (#041f3d / #3f4764) lifted a little — the originals made the whole view too dark
+  // colours: sampled from the reference image the user supplied (dark navy above, bright blue below)
   // z: far enough behind that no card can reach it — tilted, mid-flip (edge-on) or the largest 150 × 150 mm size,
   // whose half-diagonal is ~106 mm. At -18 a tilted corner sank into it.
-  const BACKDROP = { top: '#16406b', bottom: '#66709a', slope: 0.32, through: [0, -4], z: -140 };
+  const BACKDROP = { top: '#203144', bottom: '#4d74ff', slope: 0.32, through: [0, -4], z: -140 };
   const transmissionBackdrop = new THREE.Group();
   const flat = (color) => new THREE.MeshBasicMaterial({ color, toneMapped: false }); // exact brand colours, no tone curve
   const upper = new THREE.Mesh(new THREE.PlaneGeometry(10000, 10000), flat(BACKDROP.top));
