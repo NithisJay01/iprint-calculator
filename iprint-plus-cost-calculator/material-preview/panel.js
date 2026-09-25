@@ -13,7 +13,8 @@ import { paperMaterials, coatings, finishes, FINISH_ORDER, SHAPE_KINDS, SIZE_PRE
 const $ = (sel) => document.querySelector(sel);
 
 export function initPanel({ card, layers, stage, setBusy, say, requestRender }) {
-  const state = { paper: DEFAULTS.paper, coating: DEFAULTS.coating, finish: DEFAULTS.finish, active: 'stepArt' };
+  // material: the catalog record the paper came from ({ id, name, fallback }), null when a sample chip was picked
+  const state = { paper: DEFAULTS.paper, coating: DEFAULTS.coating, finish: DEFAULTS.finish, material: null, active: 'stepArt' };
 
   /* --------------------------------------------------------------- helpers */
 
@@ -106,7 +107,10 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
     requestRender();
   }
 
-  buildChips($('#paperChips'), Object.entries(paperMaterials).map(([id, c]) => [id, c.label]), (id) => act(() => selectPaper(id)));
+  buildChips($('#paperChips'), Object.entries(paperMaterials).map(([id, c]) => [id, c.label]), (id) => act(() => {
+    state.material = null; // a sample look, not a catalog stock
+    return selectPaper(id);
+  }));
   buildChips($('#coatChips'), Object.entries(coatings).map(([id, c]) => [id, c.label]), (id) => act(() => selectCoating(id)));
   buildChips($('#finishChips'), FINISH_ORDER.map((id) => [id, finishes[id].label]), (id) => act(() => selectFinish(id)));
 
@@ -179,7 +183,7 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
   let planner = null;
   let exportReport = [];
   const exportOptions = () => ({ colorMode: $('#exportColor').value, cropMarks: $('#exportMarks').checked, jobPage: $('#exportJob').checked });
-  const exportSources = () => ({ ...layers.exportSources(), paperId: state.paper, coatingId: state.coating, finishId: state.finish });
+  const exportSources = () => ({ ...layers.exportSources(), paperId: state.paper, material: state.material, coatingId: state.coating, finishId: state.finish });
 
   async function runExport(kind) {
     const { exportFile, downloadBlob } = await import('./exportFiles.js');
@@ -293,7 +297,7 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
     // step 1 — material + artwork
     pressed($('#paperChips'), state.paper);
     $('#paperDesc').textContent = paper.description;
-    $('#artSum').textContent = `${paper.label} · ${d.artName || 'การ์ดเดโม'}`;
+    $('#artSum').textContent = `${state.material?.name ?? paper.label} · ${d.artName || 'การ์ดเดโม'}`;
     $('#artDemo').setAttribute('aria-pressed', String(!d.artName));
     $('#artUpload').setAttribute('aria-pressed', String(!!d.artName));
     $('#artUpload').textContent = d.artName ? `เปลี่ยนไฟล์งาน (${d.artName})` : 'อัปโหลดไฟล์งาน…';
@@ -324,7 +328,7 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
           : 'ตอนนี้ใช้รูปทรงโลโก้ของการ์ดเดโม — อัปโหลดไฟล์ของคุณเพื่อใช้แทน';
     setNotes($('#maskNotes'), d.maskNotes);
 
-    $('#caption').textContent = [paper.label, state.coating === 'none' ? '' : coat.label, state.finish === 'none' ? '' : finish.label].filter(Boolean).join(' · ');
+    $('#caption').textContent = [state.material?.name ?? paper.label, state.coating === 'none' ? '' : coat.label, state.finish === 'none' ? '' : finish.label].filter(Boolean).join(' · ');
     renderExport(d);
   }
   render();

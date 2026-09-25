@@ -8,6 +8,7 @@ const tests = [
   'tests/deployment-config-test.mjs',
   'tests/material-preview-test.mjs',
   'tests/material-preview-export-test.mjs',
+  'tests/material-sync-test.mjs',
   'tests/business-card-mvp-test.mjs',
   'tests/business-card-breakdown-test.mjs',
   'tests/package-included-test.mjs',
