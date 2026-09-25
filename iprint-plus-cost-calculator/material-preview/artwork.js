@@ -24,6 +24,17 @@ const INFO_INK = '#262a33';
 const BRAND_INK = '#075ac8'; // iPrint primary blue: the logo mark and the "iPrint" wordmark
 const TAGLINE_INK = '#20242d';
 
+// The iPrint mark (Logo.svg, viewBox 57 × 65), knocked out of the rounded square on the sample card.
+const MARK = {
+  w: 57,
+  h: 65,
+  paths: [
+    { d: 'M0.420413 14.5736C5.82642 16.4671 9.55485 19.6594 11.7221 24.3396C12.7007 26.467 13.1656 28.7228 13.1657 31.0629C13.1424 41.8074 13.1441 52.5323 13.1441 63.2768V64.9357C10.9773 65.191 9.08946 64.6594 7.29541 63.8087C2.49526 61.4685 0.397769 57.6388 0.374044 52.8098C0.304135 40.4274 0.326245 28.0648 0.302945 15.7037C0.302945 15.4059 0.373805 15.0843 0.420413 14.5736Z' },
+    { d: 'M55.6027 13.5734C56.7446 13.5522 57 13.8939 57 14.8939C56.9534 20.1704 56.9784 25.4478 56.9784 30.7456C56.9779 39.7025 49.963 47.02 40.1989 48.1051C37.9852 48.3603 35.7017 48.1716 33.4414 48.1715H31.9019C31.7855 50.6388 31.7639 52.936 31.531 55.2332C30.9717 60.6799 25.2844 65.1697 19.0855 64.9569V30.5733C19.0862 22.723 25.5175 15.5525 33.9762 14.0418C35.5606 13.7653 37.1923 13.6188 38.8233 13.6188C44.4162 13.5762 50.0098 13.616 55.6027 13.5734ZM37.9608 25.3821C34.6055 25.3826 31.8325 27.8515 31.8092 30.8725C31.7627 33.9359 34.6287 36.5736 38.0072 36.5955C41.363 36.6168 44.0894 34.0636 44.0661 30.9359C44.0426 27.7447 41.4097 25.3608 37.9608 25.3821Z', rule: 'evenodd' },
+    { d: 'M6.45458 0.000120913C9.95018 0.0213972 12.9108 2.72509 12.8875 5.91654C12.8633 9.1283 9.90427 11.8084 6.43294 11.7876C2.91403 11.7664 0 9.08395 0 5.87122C0.000806516 2.68053 2.98302 -0.0208175 6.45458 0.000120913Z' },
+  ],
+};
+
 export function createArtwork(W, H, anisotropy = 4) {
   const cache = new Map();
 
@@ -66,13 +77,15 @@ export function createArtwork(W, H, anisotropy = 4) {
     const ms = mm(15);
     roundRect(ctx, mx, my, ms, ms, mm(3.6));
     ctx.fill();
-    ctx.globalCompositeOperation = 'destination-out'; // knocked-out "i"
-    ctx.beginPath();
-    ctx.arc(mx + ms / 2, my + ms * 0.3, mm(1.3), 0, Math.PI * 2);
-    ctx.fill();
-    roundRect(ctx, mx + ms / 2 - mm(1.2), my + ms * 0.46, mm(2.4), ms * 0.36, mm(0.75));
-    ctx.fill();
-    ctx.globalCompositeOperation = 'source-over';
+    // knocked-out iPrint mark, centred, 60% of the square's height
+    const k = (ms * 0.6) / MARK.h;
+    ctx.save();
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.translate(mx + (ms - MARK.w * k) / 2, my + (ms - MARK.h * k) / 2);
+    ctx.scale(k, k);
+    for (const p of MARK.paths) ctx.fill(new Path2D(p.d), p.rule ?? 'nonzero');
+    ctx.restore();
+    ctx.fillStyle = color;
 
     ctx.textBaseline = 'alphabetic';
     ctx.textAlign = 'left';
