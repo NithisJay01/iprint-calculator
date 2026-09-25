@@ -335,6 +335,44 @@ export function artworkFit(aspect, spec) {
   return toTrim <= ASPECT_TOLERANCE && toTrim < toFrame ? 'trim' : 'frame';
 }
 
+/**
+ * Where a file of `aspect` lands in the frame, as fractions of the frame (x / y from the top-left, may reach past 0–1:
+ * that part is cut off). `placement` is the customer's own choice from the check pop-up, or null for automatic:
+ *   null                                   'trim' fit → on the trim, edges extended into the bleed (extend: true)
+ *                                          otherwise → contained in the frame (as before)
+ *   { base: 'fit' | 'fill' | 'trim',       fit = whole image inside the frame, fill = covers the frame, trim = inside the trim
+ *     zoom, dx, dy }                       then scaled by `zoom` about the centre and moved by dx / dy mm (y down)
+ */
+export function placeArtwork(aspect, spec, placement = null) {
+  const fa = spec.frame.w / spec.frame.h;
+  const inside = (a, box) => (a > box ? [1, box / a] : [a / box, 1]); // contain: [w, h] as fractions of the box
+  if (!placement) {
+    if (artworkFit(aspect, spec) === 'trim') {
+      const t = trimFraction(spec);
+      return { rect: t, extend: true };
+    }
+    const [w, h] = inside(aspect, fa);
+    return { rect: { x: (1 - w) / 2, y: (1 - h) / 2, w, h }, extend: false };
+  }
+  let w;
+  let h;
+  if (placement.base === 'fill') [w, h] = aspect > fa ? [aspect / fa, 1] : [1, fa / aspect];
+  else if (placement.base === 'trim' && spec.kind !== 'custom') {
+    const t = trimFraction(spec);
+    const [cw, ch] = inside(aspect, spec.bounds.w / spec.bounds.h);
+    [w, h] = [t.w * cw, t.h * ch];
+  } else [w, h] = inside(aspect, fa);
+  const z = Number(placement.zoom) || 1;
+  w *= z;
+  h *= z;
+  const cx = 0.5 + (Number(placement.dx) || 0) / spec.frame.w;
+  const cy = 0.5 + (Number(placement.dy) || 0) / spec.frame.h;
+  return { rect: { x: cx - w / 2, y: cy - h / 2, w, h }, extend: false };
+}
+
+/** Does the placed picture cover the whole frame (no empty paper left anywhere)? */
+export const coversFrame = (r) => r.x <= 1e-3 && r.y <= 1e-3 && r.x + r.w >= 1 - 1e-3 && r.y + r.h >= 1 - 1e-3;
+
 /** The trim area inside the frame, as fractions of the frame (preset shapes are centred in their frame). */
 export function trimFraction(spec) {
   const { w, h } = spec.frame;
@@ -370,6 +408,19 @@ export function registrationNotes({ spec, art, mask }) {
   const frameAspect = spec.frame.w / spec.frame.h;
   const size = `${spec.frame.w.toFixed(1)}×${spec.frame.h.toFixed(1)} mm`;
   for (const [label, layer] of [['Layer 1', art], ['Layer 3', mask]]) {
+    if (label === 'Layer 3' && layer?.aspect && art?.placement && compareAspect(layer.aspect, art.aspect)) {
+      notes.push({ text: 'Layer 3: ใช้ขนาดและตำแหน่งเดียวกับงานพิมพ์ที่ปรับไว้' });
+      continue;
+    }
+    if (layer?.placement) {
+      if (label === 'Layer 1') {
+        const covers = coversFrame(placeArtwork(layer.aspect, spec, layer.placement).rect);
+        notes.push(covers
+          ? { text: 'Layer 1: ปรับขนาด / ตำแหน่งภาพเองแล้ว — ภาพเต็มแผ่นรวม Bleed' }
+          : { text: 'Layer 1: ปรับขนาด / ตำแหน่งภาพเองแล้ว แต่ยังมีพื้นที่ว่างบนแผ่น — จะเป็นขอบขาวหลังตัด', warn: true });
+      }
+      continue;
+    }
     if (layer?.aspect && artworkFit(layer.aspect, spec) === 'trim') {
       notes.push({
         text: label === 'Layer 1'

@@ -45,7 +45,13 @@ export function buildSvg(job) {
   const groups = job.layers
     .filter((l) => l.svgInner || l.items?.length)
     // items first, then the customer's own SVG on top (a trim-sized SVG keeps its bleed picture underneath)
-    .map((l) => layer(l.name, [(l.items ?? []).map((item) => (item.type === 'image' ? image(item) : path(item))).join('\n'), l.svgInner].filter(Boolean).join('\n')));
+    .map((l) => {
+      const inner = [(l.items ?? []).map((item) => (item.type === 'image' ? image(item) : path(item))).join('\n'), l.svgInner].filter(Boolean).join('\n');
+      const c = l.clip; // a nested viewport with the page's own coordinates clips the layer to the box
+      if (!c) return layer(l.name, inner);
+      const box = [c.x0, c.y0, c.x1 - c.x0, c.y1 - c.y0].map(n);
+      return layer(l.name, `<svg x="${box[0]}" y="${box[1]}" width="${box[2]}" height="${box[3]}" viewBox="${box.join(' ')}" overflow="hidden">\n${inner}\n</svg>`);
+    });
   groups.push(layer('Guides', `${rect(job.bleed, '#ff0000')}\n${rect(job.trim, '#00aaff')}`).replace('<g ', '<g style="display:none" '));
 
   return `<?xml version="1.0" encoding="UTF-8"?>

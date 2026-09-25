@@ -193,7 +193,17 @@
   <dialog class="art-check" id="artCheck" aria-labelledby="artCheckTitle">
     <h2 id="artCheckTitle">ตรวจตำแหน่งตัดก่อนใช้ภาพ</h2>
     <p class="art-check-file" id="artCheckFile"></p>
-    <div class="art-check-stage"><canvas id="artCheckCanvas" aria-describedby="artCheckText"></canvas></div>
+    <div class="art-check-stage"><canvas id="artCheckCanvas" aria-describedby="artCheckText" title="ลากเพื่อเลื่อนตำแหน่งภาพ"></canvas></div>
+    <div class="art-check-controls">
+      <div class="art-check-fit" role="group" aria-label="ขนาดภาพ">
+        <button class="chip" type="button" data-fit="auto" aria-pressed="true">อัตโนมัติ</button>
+        <button class="chip" type="button" data-fit="fit" aria-pressed="false">พอดีแผ่น</button>
+        <button class="chip" type="button" data-fit="fill" aria-pressed="false">เต็มแผ่น</button>
+      </div>
+      <label class="art-check-zoom">ย่อ / ขยาย<input id="artCheckZoom" type="range" min="50" max="200" step="1" value="100"><output id="artCheckZoomOut" for="artCheckZoom">100%</output></label>
+      <button class="art-check-reset" id="artCheckReset" type="button">รีเซ็ต</button>
+    </div>
+    <p class="art-check-hint">ลากภาพในกรอบเพื่อเลื่อนตำแหน่ง</p>
     <ul class="art-check-legend" aria-hidden="true">
       <li><i class="lg-cut"></i>ส่วนที่แรเงาจะถูกตัดทิ้ง</li>
       <li><i class="lg-line"></i>เส้นตัด</li>

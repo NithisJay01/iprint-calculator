@@ -139,7 +139,12 @@ export async function buildPdf(job) {
     const name = `OC${ocgs.length + 1}`;
     ocgs.push({ id, name });
     content += `/OC /${name} BDC\n`;
+    // clip: nothing of this layer may reach past the box (a picture moved / enlarged in the check pop-up), e.g. into
+    // the crop-mark margin
+    const c = layer.clip;
+    if (c) content += `q\n${[c.x0 * k, (H - c.y1) * k, (c.x1 - c.x0) * k, (c.y1 - c.y0) * k].map(fmt).join(' ')} re W n\n`;
     for (const item of layer.items) content += item.type === 'image' ? await imageOps(item) : pathOps(item);
+    if (c) content += 'Q\n';
     content += 'EMC\n';
   }
 

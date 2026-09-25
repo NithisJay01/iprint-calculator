@@ -21,7 +21,7 @@ import { inspectPdf, rgbToCmyk } from './pdf.js';
 import { convertSvg } from './svgConvert.js';
 import { renderSvgLayer } from './svgArtwork.js';
 import { decodeRaster } from './rasterArtwork.js';
-import { readJpegInfo, containRect, shapeFieldFromRgba, blurField, traceContours, simplifyRing, polygonArea, artworkFit } from './shape.js';
+import { readJpegInfo, containRect, shapeFieldFromRgba, blurField, traceContours, simplifyRing, polygonArea, artworkFit, placeArtwork, compareAspect } from './shape.js';
 import { placeOnTrim } from './bleed.js';
 import { ringsToSegments } from './svgPath.js';
 
@@ -277,7 +277,12 @@ export async function buildExportJob(src, options, kind) {
   // A file that is exactly the trim size (no bleed of its own): full sheet + bleed — the design sits on the trim and its
   // stretched edges fill the bleed (bleed.js), instead of the file being enlarged to the frame and cut at the trim.
   const trimRect = { x0: plan.trim.x0, y0: plan.trim.y0, w: plan.trim.x1 - plan.trim.x0, h: plan.trim.y1 - plan.trim.y0 };
-  const artOnTrim = artworkFit(art.aspect, src.spec) === 'trim';
+  // frame fractions (placeArtwork) → page mm
+  const toPage = (r) => ({ x0: frame.x0 + r.x * frame.w, y0: frame.y0 + r.y * frame.h, w: r.w * frame.w, h: r.h * frame.h });
+  // where the customer's file goes: their own size / position from the check pop-up, or automatic (contained)
+  const artRect = toPage(placeArtwork(art.aspect, src.spec, art.placement ?? null).rect);
+  if (art.placement) report.push('Layer 1: ใช้ขนาดและตำแหน่งภาพที่ลูกค้าปรับเองในหน้าตรวจตำแหน่งตัด');
+  const artOnTrim = !art.placement && artworkFit(art.aspect, src.spec) === 'trim';
   if (artOnTrim) {
     const bled = await bleedArtwork(art, frame, trimRect, colorMode, wantDataUrl);
     const id = nextId();
@@ -300,10 +305,10 @@ export async function buildExportJob(src, options, kind) {
     report.push(`Layer 1: ไฟล์เท่าขนาดตัด — เติม Bleed ${+src.spec.bleed.toFixed(1)} mm อัตโนมัติด้วยการยืดขอบภาพ (${bled.width}×${bled.height} px${art.kind === 'svg' ? ', งานบนพื้นที่ตัดยังเป็นเวกเตอร์' : ''})`);
   } else if (art.kind === 'svg') {
     if (kind === 'svg') {
-      artSvgInner = nestedSvg(art.parsed, frame, 'a-');
+      artSvgInner = nestedSvg(art.parsed, artRect, 'a-');
       report.push('Layer 1: ฝังไฟล์ SVG เดิมทั้งหมด (ข้อความและ Gradient ยังแก้ไขได้)');
     } else {
-      const conv = await convertSvg(art.parsed, frame, { mode: 'print', nextId });
+      const conv = await convertSvg(art.parsed, artRect, { mode: 'print', nextId });
       if (conv.ok) {
         artItems = conv.items;
         for (const im of conv.images) {
@@ -313,9 +318,9 @@ export async function buildExportJob(src, options, kind) {
         report.push(`Layer 1: เวกเตอร์ ${conv.items.length} ชิ้น${conv.images.length ? ` (รูปฝัง ${conv.images.length})` : ''}`);
       } else {
         const id = nextId();
-        const r = await rasterizeSvg(art.parsed, frame, colorMode, false);
+        const r = await rasterizeSvg(art.parsed, artRect, colorMode, false);
         images[id] = r.res;
-        artItems = [{ type: 'image', id, matrix: imageMatrix({ x: frame.x0, y: frame.y0, w: frame.w, h: frame.h }), alpha: 1 }];
+        artItems = [{ type: 'image', id, matrix: imageMatrix({ x: artRect.x0, y: artRect.y0, w: artRect.w, h: artRect.h }), alpha: 1 }];
         report.push(`Layer 1: ส่งออกเป็นภาพ ${r.dpi} dpi เพราะไฟล์ใช้ ${conv.reasons.join(', ')} ที่ PDF เก็บเป็นเวกเตอร์ไม่ได้ (แก้ไฟล์ให้เป็น Outline / สีทึบ ถ้าต้องการเวกเตอร์)`);
       }
     }
@@ -323,8 +328,7 @@ export async function buildExportJob(src, options, kind) {
     const e = await embedRaster(art.file, art.info.type, colorMode, wantDataUrl);
     const id = nextId();
     images[id] = e.res;
-    const r = containRect(e.width, e.height, frame.w, frame.h);
-    artItems = [{ type: 'image', id, matrix: imageMatrix({ x: frame.x0 + r.x, y: frame.y0 + r.y, w: r.w, h: r.h }), alpha: 1 }];
+    artItems = [{ type: 'image', id, matrix: imageMatrix({ x: artRect.x0, y: artRect.y0, w: artRect.w, h: artRect.h }), alpha: 1 }];
     report.push(`Layer 1: รูป ${e.width}×${e.height} px — ${e.note}`);
   }
 
@@ -334,7 +338,14 @@ export async function buildExportJob(src, options, kind) {
   const { mask } = src;
   if (plan.finish?.hasShape) {
     const key = plan.finish.id;
-    const place = artworkFit(mask.aspect, src.spec) === 'trim' ? trimRect : frame; // a trim-sized shape sits on the trim
+    // a shape with the artwork's ratio follows the customer's placement of the artwork (they stay in register);
+    // otherwise a trim-sized shape sits on the trim, anything else on the frame
+    const place =
+      art.placement && compareAspect(mask.aspect, art.aspect)
+        ? toPage(placeArtwork(mask.aspect, src.spec, art.placement).rect)
+        : artworkFit(mask.aspect, src.spec) === 'trim'
+          ? trimRect
+          : frame;
     if (mask.kind === 'svg') {
       const conv = await convertSvg(mask.parsed, place, { mode: 'shape', spotKey: key, nextId });
       if (conv.ok) {

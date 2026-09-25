@@ -10,8 +10,8 @@
  */
 import { paperMaterials, coatings, finishes, FINISH_ORDER, SHAPE_KINDS, SIZE_PRESETS, BLEED_OPTIONS, DEFAULTS } from './materials.js';
 import { buildArtworkBundle, nameArtworkBundle } from './artwork-bundle.js';
-import { compareAspect } from './shape.js';
-import { drawArtCheck, artCheckMessage, EXTEND_BG_ASK } from './artCheck.js';
+import { artworkFit } from './shape.js';
+import { drawArtCheck, artCheckMessage, renderArtCheckSource, EXTEND_BG_ASK } from './artCheck.js';
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -195,40 +195,89 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
   const mine = { front: null, back: null };
   const showingMine = () => Boolean(layers.state.art);
 
-  // "check the cut": before a front / back file is used, show it as it will be printed and what gets trimmed off
+  // "check the cut": before a front / back file is used, show it as it will be printed and what gets trimmed off; the
+  // customer can change its size / position here. The answer is { placement } (null = automatic), or null = not used.
   const artCheck = $('#artCheck');
-  let answerCheck = null; // resolves the open pop-up: true = use the file
-  let checkSide = 'front';
+  const view = $('#artCheckCanvas');
+  const zoomInput = $('#artCheckZoom');
+  let answerCheck = null;
+  let check = null; // the open check: { side, src, aspect, spec, placement }
   const finishCheck = (use) => {
     const resolve = answerCheck;
+    const placement = check?.placement ?? null;
     answerCheck = null;
     if (artCheck.open) artCheck.close();
-    resolve?.(use);
+    resolve?.(use ? { placement } : null);
   };
+  function redrawCheck() {
+    const c = check;
+    const { rect } = drawArtCheck(view, c.src, c.aspect, c.spec, layers.state.shape, c.placement);
+    const msg = artCheckMessage(c.aspect, c.spec, c.placement, rect);
+    $('#artCheckAsk').hidden = !msg.ask;
+    $('#artCheckText').textContent = msg.text;
+    const mode = c.placement?.base === 'fill' ? 'fill' : c.placement ? 'fit' : 'auto';
+    for (const b of document.querySelectorAll('.art-check-fit .chip')) b.setAttribute('aria-pressed', String(b.dataset.fit === mode));
+    const zoom = Math.round((c.placement?.zoom ?? 1) * 100);
+    zoomInput.value = String(zoom);
+    $('#artCheckZoomOut').textContent = `${zoom}%`;
+  }
+  // the customer's own placement starts from what automatic shows (on the trim for a trim-sized file, else fitted)
+  const manual = () => (check.placement ??= { base: artworkFit(check.aspect, check.spec) === 'trim' ? 'trim' : 'fit', zoom: 1, dx: 0, dy: 0 });
+  for (const b of document.querySelectorAll('.art-check-fit .chip')) {
+    b.addEventListener('click', () => {
+      if (!check) return;
+      check.placement = b.dataset.fit === 'auto' ? null : { base: b.dataset.fit, zoom: 1, dx: 0, dy: 0 };
+      redrawCheck();
+    });
+  }
+  zoomInput.addEventListener('input', () => {
+    if (!check) return;
+    manual().zoom = Number(zoomInput.value) / 100;
+    redrawCheck();
+  });
+  $('#artCheckReset').addEventListener('click', () => {
+    if (!check) return;
+    check.placement = null;
+    redrawCheck();
+  });
+  // drag the picture to move it (mm follow the canvas as it is shown, whatever its on-screen size)
+  let drag = null;
+  view.addEventListener('pointerdown', (e) => {
+    if (!check) return;
+    view.setPointerCapture?.(e.pointerId);
+    const p = manual();
+    drag = { x: e.clientX, y: e.clientY, dx: p.dx, dy: p.dy, mmPerPx: check.spec.frame.w / view.getBoundingClientRect().width };
+    view.classList.add('is-dragging');
+  });
+  view.addEventListener('pointermove', (e) => {
+    if (!drag || !check) return;
+    check.placement.dx = drag.dx + (e.clientX - drag.x) * drag.mmPerPx;
+    check.placement.dy = drag.dy + (e.clientY - drag.y) * drag.mmPerPx;
+    redrawCheck();
+  });
+  const endDrag = () => {
+    drag = null;
+    view.classList.remove('is-dragging');
+  };
+  view.addEventListener('pointerup', endDrag);
+  view.addEventListener('pointercancel', endDrag);
   $('#artCheckUse').addEventListener('click', () => finishCheck(true));
   $('#artCheckAgain').addEventListener('click', () => {
+    const side = check?.side;
     finishCheck(false);
-    $(checkSide === 'back' ? '#backArtInput' : '#artInput').click(); // still inside the click: the picker may open
+    $(side === 'back' ? '#backArtInput' : '#artInput').click(); // still inside the click: the picker may open
   });
   artCheck.addEventListener('close', () => finishCheck(false)); // Esc / closed any other way = not used
 
   async function checkArt(file, side) {
     const layer = await layers.inspectFile(file); // an unreadable file throws here, like before
     try {
-      const spec = card.spec; // real mm
-      const { canvas, fit } = await drawArtCheck(layer, spec, layers.state.shape);
-      const msg = artCheckMessage(fit, spec, compareAspect(layer.aspect, spec.frame.w / spec.frame.h));
-      const view = $('#artCheckCanvas');
-      view.width = canvas.width;
-      view.height = canvas.height;
-      view.getContext('2d').drawImage(canvas, 0, 0);
+      finishCheck(false); // a pop-up left open by an earlier file loses
+      check = { side, src: await renderArtCheckSource(layer), aspect: layer.aspect, spec: card.spec, placement: null };
       $('#artCheckFile').textContent = `${side === 'back' ? 'ด้านหลัง' : 'ด้านหน้า'} · ${file.name}`;
       $('#artCheckAsk').textContent = EXTEND_BG_ASK;
-      $('#artCheckAsk').hidden = !msg.ask;
-      $('#artCheckText').textContent = msg.text;
-      $('#artCheckSafeLegend').hidden = spec.kind === 'custom';
-      checkSide = side;
-      finishCheck(false); // a pop-up left open by an earlier file loses
+      $('#artCheckSafeLegend').hidden = check.spec.kind === 'custom';
+      redrawCheck();
       const answer = new Promise((resolve) => (answerCheck = resolve));
       artCheck.showModal();
       return await answer;
@@ -238,16 +287,18 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
   }
 
   async function useFront(file) {
-    if (!(await checkArt(file, 'front'))) return;
-    await layers.setArt(file);
-    if (layers.state.art) mine.front = file; // only once it actually loaded (a bad file keeps the previous one)
+    const ok = await checkArt(file, 'front');
+    if (!ok) return;
+    await layers.setArt(file, ok.placement);
+    if (layers.state.art) Object.assign(mine, { front: file, frontPlacement: ok.placement }); // only once it loaded
     state.side = 'front';
   }
   async function useBack(file) {
-    if (!(await checkArt(file, 'back'))) return;
-    if (!showingMine() && mine.front) await layers.setArt(mine.front); // a back belongs to the customer's card
-    await layers.setBackArt(file);
-    if (layers.state.backArt) mine.back = file;
+    const ok = await checkArt(file, 'back');
+    if (!ok) return;
+    if (!showingMine() && mine.front) await layers.setArt(mine.front, mine.frontPlacement); // a back belongs to the customer's card
+    await layers.setBackArt(file, ok.placement);
+    if (layers.state.backArt) Object.assign(mine, { back: file, backPlacement: ok.placement });
     state.side = 'back';
   }
   const pickFront = () => $('#artInput').click();
@@ -261,8 +312,8 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
     if (showingMine()) return; // already on the customer's card
     if (!mine.front) return pickFront();
     act(async () => {
-      await layers.setArt(mine.front);
-      if (mine.back) await layers.setBackArt(mine.back);
+      await layers.setArt(mine.front, mine.frontPlacement);
+      if (mine.back) await layers.setBackArt(mine.back, mine.backPlacement);
       state.side = 'front';
     });
   });

@@ -13,7 +13,7 @@
  * so textures of different sizes can never end up mixed on the card.
  */
 import { DEFAULT_SHAPE, MIN_BLEED_MM } from './materials.js';
-import { buildSpec, registrationNotes, artworkFit, trimFraction } from './shape.js';
+import { buildSpec, registrationNotes, artworkFit, placeArtwork, compareAspect } from './shape.js';
 import { placeOnTrim } from './bleed.js';
 import { parseSvg, renderSvgLayer } from './svgArtwork.js';
 import { inspectRaster, decodeRaster, drawRasterLayer, drawRasterMask, isSvgFile, isRasterFile } from './rasterArtwork.js';
@@ -36,17 +36,20 @@ export function createLayers({ card, studio, onChange = () => {}, setBusy = () =
   async function makeSource(size) {
     const { width: W, height: H } = size;
     const demo = state.art && state.mask ? null : card.artwork.demo(); // the layer that is not uploaded yet shows the demo
-    // A file that is exactly the trim size is drawn over the trim; printed artwork also gets its edges stretched into
-    // the bleed (bleed.js). Any other file fills the frame as before.
+    // Each file is drawn where placeArtwork puts it: the customer's own size / position from the check pop-up, or —
+    // automatically — a trim-sized file on the trim with its edges stretched into the bleed (bleed.js), anything else
+    // contained in the frame. A finish shape with the artwork's ratio follows the artwork's placement, so they stay in
+    // register.
     const spec = currentSpec();
-    const t = trimFraction(spec);
-    const trimPx = { x: t.x * W, y: t.y * H, w: t.w * W, h: t.h * H };
-    const draw = async (layer, extend) => {
-      if (artworkFit(layer.aspect, spec) !== 'trim') return layer.render(W, H);
-      return placeOnTrim(await layer.render(Math.round(trimPx.w), Math.round(trimPx.h)), W, H, trimPx, { extend });
+    const draw = async (layer, isPrint, placement = layer.placement ?? null) => {
+      if (!placement && artworkFit(layer.aspect, spec) !== 'trim') return layer.render(W, H); // contained, as before
+      const { rect, extend } = placeArtwork(layer.aspect, spec, placement);
+      const r = { x: rect.x * W, y: rect.y * H, w: rect.w * W, h: rect.h * H };
+      return placeOnTrim(await layer.render(Math.max(1, Math.round(r.w)), Math.max(1, Math.round(r.h))), W, H, r, { extend: isPrint && extend });
     };
+    const maskPlacement = () => (state.art?.placement && compareAspect(state.mask.aspect, state.art.aspect) ? state.art.placement : null);
     const print = state.art ? await draw(state.art, true) : demo.print;
-    const shape = state.mask ? await draw(state.mask, false) : state.art ? null : demo.shape;
+    const shape = state.mask ? await draw(state.mask, false, maskPlacement()) : state.art ? null : demo.shape;
     const backPrint = state.backArt ? await draw(state.backArt, true) : null;
     return { name: state.art?.name ?? 'Demo card', print, shape, backPrint };
   }
@@ -139,9 +142,10 @@ export function createLayers({ card, studio, onChange = () => {}, setBusy = () =
   // The newest request for a slot always wins; an older one that finishes late is dropped.
   const calls = { art: 0, backArt: 0, mask: 0, cut: 0 };
 
-  async function loadSlot(slot, file, asMask) {
+  async function loadSlot(slot, file, asMask, placement = null) {
     const call = ++calls[slot];
     const next = file ? await makeLayer(file, asMask) : null;
+    if (next) next.placement = placement; // the customer's size / position from the check pop-up (null = automatic)
     if (call !== calls[slot]) {
       next?.dispose?.();
       return;
@@ -153,8 +157,8 @@ export function createLayers({ card, studio, onChange = () => {}, setBusy = () =
     state,
 
     /** Layer 1 */
-    setArt: (file) => loadSlot('art', file, false),
-    setBackArt: (file) => loadSlot('backArt', file, false),
+    setArt: (file, placement = null) => loadSlot('art', file, false, placement),
+    setBackArt: (file, placement = null) => loadSlot('backArt', file, false, placement),
     /** Read an artwork file without using it (for the check pop-up). The caller disposes it. */
     inspectFile: (file) => makeLayer(file, false),
 
@@ -208,7 +212,7 @@ export function createLayers({ card, studio, onChange = () => {}, setBusy = () =
     /** What the exporter needs: the original files and the parsed SVGs, not the preview canvases. */
     exportSources() {
       const pick = (l) =>
-        l && { name: l.name, kind: l.kind, aspect: l.aspect, pixelWidth: l.pixelWidth, warnings: l.warnings, file: l.file, parsed: l.parsed, info: l.info, invert: l.invert };
+        l && { name: l.name, kind: l.kind, aspect: l.aspect, pixelWidth: l.pixelWidth, warnings: l.warnings, file: l.file, parsed: l.parsed, info: l.info, invert: l.invert, placement: l.placement ?? null };
       return { spec: card.spec, params: state.shape, cut: state.cut ? { kind: state.cut.kind, name: state.cut.name, file: state.cut.file } : null, art: pick(state.art), backArt: pick(state.backArt), mask: pick(state.mask) };
     },
 

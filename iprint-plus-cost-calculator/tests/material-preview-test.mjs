@@ -3,7 +3,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import {
   polygonArea, boundsOf, pointInRing, simplifyRing, ringSelfIntersects, validateRings,
   presetOutline, buildSpec, clampSize, textureSizeFor, containRect, compareAspect, suggestBleed, effectiveDpi,
-  registrationNotes, readImageSize, shapeFieldFromRgba, traceContours, outlineFromField, SIZE_LIMITS, previewScaleFor, previewSpec, artworkFit, trimFraction
+  registrationNotes, readImageSize, shapeFieldFromRgba, traceContours, outlineFromField, SIZE_LIMITS, previewScaleFor, previewSpec, artworkFit, trimFraction, placeArtwork, coversFrame
 } from '../material-preview/shape.js';
 import {
   paperMaterials, coatings, finishes, FINISH_ORDER, SHAPE_KINDS, SIZE_PRESETS, BLEED_OPTIONS, MIN_BLEED_MM, TEXTURE_BUDGET, DEFAULT_SHAPE, DEFAULTS
@@ -72,6 +72,22 @@ const near = (actual, expected, tolerance, message) =>
   near(tf.w, 90 / 96, 1e-12, 'trim width inside the frame');
   assert.ok(registrationNotes({ spec: withBleed, art: { aspect: 90 / 54 } }).some((n) => !n.warn && /เติม Bleed 3 mm/.test(n.text)), 'the customer is told the bleed was added');
   assert.equal(buildSpec({ bleed: 99 }).bleed, 10, 'bleed is clamped');
+
+  // placement: automatic, or the customer's own size / position from the check pop-up (frame fractions)
+  const auto = placeArtwork(90 / 54, withBleed, null);
+  assert.equal(auto.extend, true, 'automatic: a trim-sized file is auto-bled');
+  near(auto.rect.w, 90 / 96, 1e-12, 'automatic: on the trim');
+  const sq = placeArtwork(1, withBleed, null);
+  near(sq.rect.h, 1, 1e-12, 'automatic: a square file is contained (full height)');
+  assert.equal(coversFrame(sq.rect), false, 'contained square leaves paper');
+  const fill = placeArtwork(1, withBleed, { base: 'fill', zoom: 1, dx: 0, dy: 0 });
+  assert.equal(coversFrame(fill.rect), true, 'fill covers the whole frame');
+  near(fill.rect.w, 1, 1e-12, 'fill: the wide side of the frame');
+  near(fill.rect.h, 1.6, 1e-12, 'fill: the square overflows top and bottom');
+  const zoomed = placeArtwork(1, withBleed, { base: 'fit', zoom: 2, dx: 9.6, dy: 0 });
+  near(zoomed.rect.w, 1.25, 1e-12, 'zoom scales about the centre');
+  near(zoomed.rect.x + zoomed.rect.w / 2, 0.6, 1e-12, 'dx moves it by mm (9.6 mm = 10 % of a 96 mm frame)');
+  assert.equal(placeArtwork(90 / 54, withBleed, { base: 'trim', zoom: 1, dx: 0, dy: 0 }).extend, false, 'manual placement is never stretched');
 }
 
 // ---------- custom die-cut is scaled by the cut width and keeps the file frame ----------

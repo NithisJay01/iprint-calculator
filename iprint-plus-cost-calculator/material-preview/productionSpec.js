@@ -11,7 +11,7 @@
  */
 import { EXPORT, paperMaterials, coatings, finishes, SHAPE_KINDS } from './materials.js';
 import { rectSegments, ellipseSegments, polySegments } from './svgPath.js';
-import { effectiveDpi, artworkFit } from './shape.js';
+import { effectiveDpi, artworkFit, placeArtwork, coversFrame } from './shape.js';
 import { asciiOnly } from './pdf.js';
 
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -109,7 +109,11 @@ export function buildProductionPlan({ spec, params = {}, cut = null, paperId, co
   const add = (level, text) => checks.push({ level, text });
   if (!art) add('error', 'ยังไม่ได้อัปโหลดไฟล์งาน Layer 1 — ส่งออกไม่ได้ (ตัวอย่างการ์ดไม่ใช่งานของลูกค้า)');
   else add('ok', `Layer 1: ${art.name}`);
-  if (art && artworkFit(art.aspect, spec) === 'trim') add('ok', `Layer 1 เท่าขนาดตัด — เติม Bleed ${mm(spec.bleed)} mm อัตโนมัติ (ยืดขอบภาพ ไม่ขยายงาน)`);
+  if (art && !art.placement && artworkFit(art.aspect, spec) === 'trim') add('ok', `Layer 1 เท่าขนาดตัด — เติม Bleed ${mm(spec.bleed)} mm อัตโนมัติ (ยืดขอบภาพ ไม่ขยายงาน)`);
+  if (art?.placement) {
+    const covers = coversFrame(placeArtwork(art.aspect, spec, art.placement).rect);
+    add(covers ? 'ok' : 'warn', covers ? 'Layer 1: ลูกค้าปรับขนาด / ตำแหน่งภาพเอง — ภาพเต็มแผ่นรวม Bleed' : 'Layer 1: ลูกค้าปรับขนาด / ตำแหน่งภาพเอง แต่ยังมีพื้นที่ว่างบนแผ่น — จะเป็นขอบขาวหลังตัด');
+  }
 
   if (stock?.fallback) add('warn', `วัสดุ "${stock.name}" ยังไม่มีตัวอย่าง 3D — พรีวิวใช้ผิว ${paper} แทน ฝ่ายผลิตต้องยึดชื่อวัสดุนี้ ไม่ใช่ผิวในพรีวิว`);
   else if (stock) add('ok', `วัสดุ: ${stock.name}`);
@@ -205,8 +209,10 @@ export function assembleJob({ plan, artItems = [], artSvgInner = null, finishIte
     rule: 'nonzero',
     overprint: true,
   };
-  const layers = [{ name: 'Artwork', items: artItems, svgInner: artSvgInner }, { name: EXPORT.spots.dieline.layer, items: [die] }];
-  if (plan.finish?.hasShape) layers.push({ name: plan.finish.layerName, items: finishItems });
+  // artwork and finish are clipped to the bleed box: a picture enlarged / moved in the check pop-up never reaches the
+  // crop-mark margin
+  const layers = [{ name: 'Artwork', items: artItems, svgInner: artSvgInner, clip: plan.bleed }, { name: EXPORT.spots.dieline.layer, items: [die] }];
+  if (plan.finish?.hasShape) layers.push({ name: plan.finish.layerName, items: finishItems, clip: plan.bleed });
   if (plan.marks.length) layers.push({ name: EXPORT.spots.registration.layer, items: plan.marks });
 
   const spots = { dieline: EXPORT.spots.dieline };
