@@ -8,6 +8,7 @@ import {
 import {
   paperMaterials, coatings, finishes, FINISH_ORDER, SHAPE_KINDS, SIZE_PRESETS, BLEED_OPTIONS, TEXTURE_BUDGET, DEFAULT_SHAPE, DEFAULTS
 } from '../material-preview/materials.js';
+import { flickDirection } from '../material-preview/input.js';
 
 const near = (actual, expected, tolerance, message) =>
   assert.ok(Math.abs(actual - expected) <= tolerance, `${message}: got ${actual}, expected ${expected} ± ${tolerance}`);
@@ -362,6 +363,21 @@ const makeField = (w, h, paint) => {
   // the "start" screen button is an <a>, so it needs the same no-underline rule as the catalog entry
   assert.match(readFileSync(new URL('css/app.css', site), 'utf8'), /\.material-entry\{text-decoration:none\}/);
   assert.match(readFileSync(new URL('catalog/styles.css', site), 'utf8'), /\.product-link\s*\{/);
+}
+
+// ---------- flick to turn the card over ----------
+{
+  const path = (x0, x1, y0, y1, ms, n = 8) => Array.from({ length: n + 1 }, (_, i) => ({ t: (ms * i) / n, x: x0 + ((x1 - x0) * i) / n, y: y0 + ((y1 - y0) * i) / n }));
+  assert.equal(flickDirection(path(0, 170, 0, 0, 120)), 1, 'a fast swipe to the right flips');
+  assert.equal(flickDirection(path(0, -170, 0, 0, 120)), -1, 'a fast swipe to the left flips the other way');
+  assert.equal(flickDirection(path(0, 170, 0, 0, 1000)), 0, 'a slow drag only tilts');
+  assert.equal(flickDirection(path(0, 30, 0, 0, 40)), 0, 'a short twitch is not a flick');
+  assert.equal(flickDirection(path(0, 120, 0, 150, 120)), 0, 'a diagonal / vertical swipe is not a flick');
+  const stopThenLift = [...path(0, 170, 0, 0, 120), { t: 400, x: 170, y: 0 }];
+  assert.equal(flickDirection(stopThenLift), 0, 'swipe, stop, then lift: the finger was still at release');
+  const backtrack = [...path(0, 200, 0, 0, 300), ...path(200, 140, 0, 0, 60).slice(1).map((p) => ({ ...p, t: p.t + 300 }))];
+  assert.equal(flickDirection(backtrack), 0, 'moving back against the stroke at release does not flip');
+  assert.equal(flickDirection([{ t: 0, x: 0, y: 0 }]), 0);
 }
 
 console.log('Material preview test passed');

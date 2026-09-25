@@ -8,6 +8,7 @@
  * Sources (all optional — the card always works with a plain finger drag):
  *   mouse  hover  → gentle absolute tilt; press-and-drag → relative, full-range tilt
  *   touch  drag   → relative tilt; two fingers → pinch zoom
+ *   flick         a quick sideways swipe (finger or mouse) → onFlip(±1): turn the card over. A slow drag only tilts.
  *   sensor DeviceOrientation, calibrated to however the phone is held, clamped, low-passed
  *
  * iOS rule: DeviceOrientationEvent.requestPermission() must be called from a user gesture and
@@ -19,10 +20,39 @@ const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
 export const ZOOM_MAX = 3.2;
 const SENSOR_RANGE_DEG = 22; // phone tilt that maps to a full ±1 card tilt (keeps motion gentle)
 
+// A flick = released while still moving fast sideways, after a clearly horizontal stroke.
+export const FLICK = Object.freeze({
+  minSpeed: 0.55, // px/ms over the last `windowMs` before release
+  minDistance: 48, // px from the press
+  horizontal: 1.4, // |dx| must beat |dy| by this factor
+  windowMs: 90,
+});
+
+/**
+ * Was this stroke a flick? `samples` are { t, x, y } from press to release (oldest first).
+ * @returns {-1 | 0 | 1} direction of the flick (+1 = to the right), 0 = an ordinary drag
+ */
+export function flickDirection(samples, f = FLICK) {
+  if (samples.length < 2) return 0;
+  const first = samples[0];
+  const last = samples[samples.length - 1];
+  const dx = last.x - first.x;
+  const dy = last.y - first.y;
+  if (Math.abs(dx) < f.minDistance || Math.abs(dx) < f.horizontal * Math.abs(dy)) return 0;
+  let i = samples.length - 1;
+  while (i > 0 && last.t - samples[i - 1].t <= f.windowMs) i--;
+  const from = samples[i === samples.length - 1 ? i - 1 : i];
+  const dt = last.t - from.t;
+  if (dt <= 0) return 0;
+  const vx = (last.x - from.x) / dt;
+  return Math.abs(vx) >= f.minSpeed && Math.sign(vx) === Math.sign(dx) ? Math.sign(dx) : 0;
+}
+
 export class TiltInput {
-  constructor(element, { onChange = () => {} } = {}) {
+  constructor(element, { onChange = () => {}, onFlip = null } = {}) {
     this.el = element;
     this.onChange = onChange;
+    this.onFlip = onFlip;
 
     this.drag = { x: 0, y: 0 }; // accumulated drag tilt
     this.hover = { x: 0, y: 0 }; // mouse-hover tilt
@@ -35,6 +65,7 @@ export class TiltInput {
     this._pointers = new Map();
     this._dragBase = null;
     this._pinchBase = null;
+    this._stroke = null; // { samples: [{ t, x, y }], pinched } of the current one-finger stroke, for flick detection
     this._sensorBase = null;
     this._sensorRaw = null;
     this._onOrientation = (e) => this._handleOrientation(e);
@@ -91,8 +122,10 @@ export class TiltInput {
       this.drag.x = this._dragBase.x;
       this.drag.y = this._dragBase.y;
       this.el.classList.add('is-dragging');
+      this._stroke = { samples: [{ t: e.timeStamp, x: e.clientX, y: e.clientY }], pinched: false };
     } else if (this._pointers.size === 2) {
       this._pinchBase = { dist: this._pinchDistance(), zoom: this.zoomTarget };
+      if (this._stroke) this._stroke.pinched = true; // a pinch that ends in a swipe is not a flick
     }
     this.onChange();
   }
@@ -118,6 +151,11 @@ export class TiltInput {
     if (this._pointers.size >= 2 && this._pinchBase) {
       this.zoomTarget = clamp(this._pinchBase.zoom * (this._pinchDistance() / this._pinchBase.dist), 1, ZOOM_MAX);
     } else if (this._dragBase) {
+      if (this._stroke) {
+        const s = this._stroke.samples;
+        s.push({ t: e.timeStamp, x: e.clientX, y: e.clientY });
+        if (s.length > 64) s.splice(1, s.length - 64); // keep the press point + the recent path
+      }
       const range = clamp(n.w * 0.32, 90, 230); // px of finger travel for a full tilt
       this.drag.x = clamp(this._dragBase.x + (e.clientX - this._dragBase.px) / range, -1, 1);
       this.drag.y = clamp(this._dragBase.y + (e.clientY - this._dragBase.py) / range, -1, 1);
@@ -132,6 +170,18 @@ export class TiltInput {
     if (this._pointers.size === 0) {
       this._dragBase = null;
       this.el.classList.remove('is-dragging');
+      const stroke = this._stroke;
+      this._stroke = null;
+      // No flick while zoomed in: there a sideways drag pans the close-up. pointercancel (e.g. the browser took the
+      // gesture over) never flips either.
+      if (stroke && !stroke.pinched && e.type === 'pointerup' && this.onFlip && this.zoomTarget < 1.05) {
+        stroke.samples.push({ t: e.timeStamp, x: e.clientX, y: e.clientY });
+        const dir = flickDirection(stroke.samples);
+        if (dir) {
+          this.drag.x = 0; // the swipe also tilted the card: let it land flat on its other side
+          this.onFlip(dir);
+        }
+      }
     } else if (this._pointers.size === 1) {
       // one finger lifted after a pinch: continue dragging from the remaining finger
       const [[, p]] = this._pointers;

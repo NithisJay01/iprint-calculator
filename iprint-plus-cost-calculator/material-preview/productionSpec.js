@@ -107,7 +107,7 @@ export function buildProductionPlan({ spec, params = {}, cut = null, paperId, co
   /* ------------------------------------------------------------ checks */
   const checks = [];
   const add = (level, text) => checks.push({ level, text });
-  if (!art) add('error', 'ยังไม่ได้อัปโหลดไฟล์งาน Layer 1 — ส่งออกไม่ได้ (การ์ดเดโมไม่ใช่งานของลูกค้า)');
+  if (!art) add('error', 'ยังไม่ได้อัปโหลดไฟล์งาน Layer 1 — ส่งออกไม่ได้ (ตัวอย่างการ์ดไม่ใช่งานของลูกค้า)');
   else add('ok', `Layer 1: ${art.name}`);
 
   if (stock?.fallback) add('warn', `วัสดุ "${stock.name}" ยังไม่มีตัวอย่าง 3D — พรีวิวใช้ผิว ${paper} แทน ฝ่ายผลิตต้องยึดชื่อวัสดุนี้ ไม่ใช่ผิวในพรีวิว`);

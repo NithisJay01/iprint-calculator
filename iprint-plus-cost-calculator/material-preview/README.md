@@ -43,7 +43,7 @@ material-preview/
 └─ exportFiles.js  ประกอบทุก Layer เป็นไฟล์ + ดาวน์โหลด (ฝังรูป, สกัดเส้นจาก PNG, fallback เป็นภาพ)
 ├─ rasterArtwork.js PNG/JPG/WebP: ตรวจ header ก่อนถอดรหัส, วาดแบบ contain
 ├─ card.js         ประกอบตัวบัตร: ตัวบัตรจากเส้นขอบ + หมึก + เคลือบ + Finish
-├─ artwork.js      Canvas ของงานพิมพ์ / รูปทรง + การ์ดเดโม
+├─ artwork.js      Canvas ของงานพิมพ์ / รูปทรง + ตัวอย่างการ์ด
 ├─ procedural.js   สร้างพื้นผิวกระดาษ (height → normal / roughness / albedo)
 ├─ studio.js       กล้อง, ไฟ, Environment, เงา (เงาตามเส้นขอบ)
 ├─ input.js        เมาส์ / สัมผัส / Pinch / DeviceOrientation

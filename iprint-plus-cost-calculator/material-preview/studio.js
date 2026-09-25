@@ -244,8 +244,9 @@ export function createStudio(renderer) {
     /**
      * tx, ty ∈ [−1, 1]: smoothed tilt (tx = yaw / left-right, ty = pitch / up-down).
      * hx, hy ∈ [−1, 1]: pointer hover offset, nudges the key light on desktop.
+     * yaw: the card's actual yaw in radians (tilt + flip); defaults to the tilt alone.
      */
-    update(tx, ty, hx = 0, hy = 0) {
+    update(tx, ty, hx = 0, hy = 0, yaw = tx * THREE.MathUtils.degToRad(20)) {
       const k = LIGHTING.key;
       dirFromAzEl(k.az + tx * k.swingAz + hx * 12, k.el - ty * k.swingEl - hy * 8, keyDir);
       key.position.copy(keyDir).multiplyScalar(k.distance);
@@ -255,7 +256,8 @@ export function createStudio(renderer) {
       softShadow.position.y = -keyDir.y * 9 - 2;
       contactShadow.position.x = -keyDir.x * 1.6;
       contactShadow.position.y = -keyDir.y * 1.6 - 0.3;
-      const squash = Math.cos(tx * THREE.MathUtils.degToRad(20));
+      // a card turned edge-on (mid-flip) still casts a thin sliver, never nothing
+      const squash = Math.max(0.04, Math.abs(Math.cos(yaw)));
       softShadow.scale.x = contactShadow.scale.x = squash;
       softShadow.scale.y = contactShadow.scale.y = Math.cos(ty * THREE.MathUtils.degToRad(15));
 

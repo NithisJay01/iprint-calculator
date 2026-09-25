@@ -91,8 +91,41 @@ const input = new TiltInput(stage, {
     requestRender();
     syncZoomUI();
   },
+  // a sideways flick turns the card over, in the direction of the swipe
+  onFlip: (dir) => {
+    if (!panel) return;
+    flip.dir = dir;
+    panel.state.side = panel.state.side === 'back' ? 'front' : 'back';
+    panel.render();
+    requestRender();
+  },
 });
 const cur = { x: 0, y: 0, zoom: 1, panX: 0, panY: 0 };
+
+// Turning the card over. `target` is a whole number of half turns (odd = back up); it keeps growing in the direction
+// of each flip, so the card always spins the way it was swiped (buttons spin it the way of the last swipe).
+// A critically damped spring eases in and out, and a flip started mid-flip continues smoothly from where it is.
+const flip = { angle: 0, vel: 0, target: 0, dir: 1 };
+const FLIP_OMEGA = 11; // spring speed (rad/s): ~0.55 s for a half turn
+function stepFlip(dt) {
+  const wantBack = panel?.state.side === 'back';
+  const isBack = Math.abs(Math.round(flip.target / Math.PI)) % 2 === 1;
+  if (wantBack !== isBack) flip.target += flip.dir * Math.PI;
+  if (REDUCED_MOTION) {
+    flip.angle = flip.target;
+    flip.vel = 0;
+    return false;
+  }
+  const d = flip.target - flip.angle;
+  if (Math.abs(d) < 1e-4 && Math.abs(flip.vel) < 1e-3) {
+    flip.angle = flip.target;
+    flip.vel = 0;
+    return false;
+  }
+  flip.vel += (FLIP_OMEGA * FLIP_OMEGA * d - 2 * FLIP_OMEGA * flip.vel) * dt;
+  flip.angle += flip.vel * dt;
+  return true;
+}
 
 /* ------------------------------------------------------------------ UI */
 
@@ -141,7 +174,9 @@ panel = initPanel({ card, layers, stage, setBusy, say, requestRender });
 import('./request-print.js').then(({ initPrintRequest }) => initPrintRequest({ card, layers, panel }));
 
 // hint text depends on the input the device actually has
-$('#hint').textContent = COARSE ? 'เอียงโทรศัพท์เพื่อดูแสงและพื้นผิวของวัสดุ (หรือลากนิ้วบนนามบัตร)' : 'ลากเมาส์เพื่อเปลี่ยนมุม · เลื่อนล้อเมาส์เพื่อซูม';
+$('#hint').textContent = COARSE
+  ? 'เอียงโทรศัพท์เพื่อดูแสงและพื้นผิวของวัสดุ (หรือลากนิ้วบนนามบัตร) · ปัดเร็วๆ ไปด้านข้างเพื่อพลิกดูอีกด้าน'
+  : 'ลากเมาส์เพื่อเปลี่ยนมุม · สะบัดเมาส์ไปด้านข้างเพื่อพลิก · เลื่อนล้อเมาส์เพื่อซูม';
 
 // zoom toggle (wheel / pinch / double-tap also change the zoom, so the button mirrors the state)
 const zoomBtn = $('#zoomBtn');
@@ -228,7 +263,8 @@ function frame(now) {
     cur.panX += dpx * k(dt, 5);
     cur.panY += dpy * k(dt, 5);
   }
-  const moving = Math.abs(dx) + Math.abs(dy) > 2e-4 || Math.abs(dz) > 2e-4 || (zoomed && Math.abs(dpx) + Math.abs(dpy) > 2e-4);
+  const flipping = stepFlip(dt);
+  const moving = flipping || Math.abs(dx) + Math.abs(dy) > 2e-4 || Math.abs(dz) > 2e-4 || (zoomed && Math.abs(dpx) + Math.abs(dpy) > 2e-4);
 
   if (!(moving || sweeping || needsRender)) {
     lastRendered = false;
@@ -236,8 +272,9 @@ function frame(now) {
   }
   needsRender = false;
 
-  card.pivot.rotation.set(cur.y * ROT_X, cur.x * ROT_Y + (panel?.state.side === 'back' ? Math.PI : 0), 0);
-  studio.update(cur.x, cur.y, input.hover.x / 0.55, input.hover.y / 0.55);
+  const yaw = cur.x * ROT_Y + flip.angle;
+  card.pivot.rotation.set(cur.y * ROT_X, yaw, 0);
+  studio.update(cur.x, cur.y, input.hover.x / 0.55, input.hover.y / 0.55, yaw);
   card.setEnvYaw(studio.envYaw);
   const l = studio.layout;
   studio.frame(l.width, l.height, cur.zoom, cur.panX, cur.panY);

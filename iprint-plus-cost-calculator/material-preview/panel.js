@@ -312,7 +312,7 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
     // step 1 — material + artwork
     pressed($('#paperChips'), state.paper);
     $('#paperDesc').textContent = paper.description;
-    $('#artSum').textContent = `${state.material?.name ?? paper.label} · ${d.artName || 'การ์ดเดโม'}`;
+    $('#artSum').textContent = `${state.material?.name ?? paper.label} · ${d.artName || 'ตัวอย่างการ์ด'}`;
     $('#backArtUpload').textContent = d.backArtName ? `เปลี่ยนด้านหลัง (${d.backArtName})` : 'อัปโหลดด้านหลัง…';
     $('#backArtClear').hidden = !d.backArtName;
     $('#viewFront').setAttribute('aria-pressed', String(state.side === 'front'));
@@ -344,7 +344,7 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
         ? `${finish.label}: ยังไม่มีรูปทรง — อัปโหลดไฟล์รูปทรง (SVG หรือ PNG โปร่งใส) เพื่อดูผล`
         : d.maskName
           ? `รูปทรงจากไฟล์ ${d.maskName}`
-          : 'ตอนนี้ใช้รูปทรงโลโก้ของการ์ดเดโม — อัปโหลดไฟล์ของคุณเพื่อใช้แทน';
+          : 'ตอนนี้ใช้รูปทรงโลโก้ของตัวอย่างการ์ด — อัปโหลดไฟล์ของคุณเพื่อใช้แทน';
     setNotes($('#maskNotes'), d.maskNotes);
 
     $('#caption').textContent = [state.material?.name ?? paper.label, state.coating === 'none' ? '' : coat.label, state.finish === 'none' ? '' : finish.label].filter(Boolean).join(' · ');
