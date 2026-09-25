@@ -145,22 +145,23 @@ export function createStudio(renderer) {
 
   const scene = new THREE.Scene();
   // Backdrop for see-through stocks (PET transmission): three.js transmission can only refract what is in the scene,
-  // not the CSS background, so a real backdrop is drawn — near-white above, blue below, split by a diagonal rising to the
-  // right. The edge crosses behind the card, so the frosted blur and the tint of the stock are easy to read.
-  // colours: sampled from the reference image the user supplied (near-white above, brand blue below)
+  // not the CSS background, so a real backdrop is drawn — near-white on the left, blue on the right, split by a steep
+  // line leaning right (72.5°). The edge crosses behind the card, so the frosted blur and the tint are easy to read.
+  // colours and angle: measured from the reference image the user supplied
   // z: far enough behind that no card can reach it — tilted, mid-flip (edge-on) or the largest 150 × 150 mm size,
   // whose half-diagonal is ~106 mm. At -18 a tilted corner sank into it.
-  const BACKDROP = { top: '#f9f9f9', bottom: '#4a71ff', slope: 0.32, through: [0, -4], z: -140 };
+  const BACKDROP = { base: '#f9f9f9', split: '#4a71ff', slope: 3.17, through: [-6, 0], z: -140 };
   const transmissionBackdrop = new THREE.Group();
   const flat = (color) => new THREE.MeshBasicMaterial({ color, toneMapped: false }); // exact brand colours, no tone curve
-  const upper = new THREE.Mesh(new THREE.PlaneGeometry(10000, 10000), flat(BACKDROP.top));
-  upper.position.z = BACKDROP.z;
-  const lower = new THREE.Mesh(new THREE.PlaneGeometry(10000, 10000), flat(BACKDROP.bottom));
+  const basePlane = new THREE.Mesh(new THREE.PlaneGeometry(10000, 10000), flat(BACKDROP.base));
+  basePlane.position.z = BACKDROP.z;
+  // the split colour: a second plane whose edge lies on the line `slope` (rise over run) through `through`; rotated
+  // by atan(slope) its own "up" points up-left, so it covers the side below / right of the line
+  const splitPlane = new THREE.Mesh(new THREE.PlaneGeometry(10000, 10000), flat(BACKDROP.split));
   const tilt = Math.atan(BACKDROP.slope);
-  lower.rotation.z = tilt;
-  // put the lower plane's top edge on the diagonal: its centre sits 5000 mm "down" from a point on the line
-  lower.position.set(BACKDROP.through[0] + Math.sin(tilt) * 5000, BACKDROP.through[1] - Math.cos(tilt) * 5000, BACKDROP.z + 0.1);
-  transmissionBackdrop.add(upper, lower);
+  splitPlane.rotation.z = tilt;
+  splitPlane.position.set(BACKDROP.through[0] + Math.sin(tilt) * 5000, BACKDROP.through[1] - Math.cos(tilt) * 5000, BACKDROP.z + 0.1);
+  transmissionBackdrop.add(basePlane, splitPlane);
   transmissionBackdrop.visible = false;
   scene.add(transmissionBackdrop);
   const camera = new THREE.PerspectiveCamera(LIGHTING.fov, 1, 20, 4000);
