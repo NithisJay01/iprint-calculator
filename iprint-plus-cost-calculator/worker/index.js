@@ -13,6 +13,7 @@ import { cancelOrderProduction } from './services/order-cancellation.js';
 import { buildPublicCapacityAvailability, checkRushRequirement, publicCapacityPolicy } from './services/public-capacity.js';
 import { handleCreateBriefTicket, handleDraftBrief, handleLineWebhook, handleListConversations } from './routes/brief.js';
 import { handleGetMedia, handleUploadImage } from './routes/media.js';
+import { handlePrintRequest } from './routes/print-requests.js';
 
 export default {
   async fetch(request, env) {
@@ -156,6 +157,9 @@ export default {
     };
 
     try {
+      if (url.pathname === '/public/print-requests' && request.method === 'POST') {
+        return await handlePrintRequest({ request, env, json, notionHeaders });
+      }
 
       // ================================
       // ROOT
@@ -187,6 +191,7 @@ export default {
             "GET /media/gallery/:file",
             "POST /orders",
             "POST /public/orders",
+            "POST /public/print-requests",
             "GET /public/orders/:ticketId",
             "GET /public/capacity",
             "GET /staff/orders",
@@ -3336,6 +3341,7 @@ export default {
           "POST /quotes/:id/preview",
           "POST /orders",
           "POST /public/orders",
+            "POST /public/print-requests",
           "GET /public/orders/:ticketId",
           "GET /public/capacity",
           "GET /staff/capacity",

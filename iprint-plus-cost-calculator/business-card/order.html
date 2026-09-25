@@ -16,8 +16,13 @@
     <p id="status" class="status" role="status"></p>
 
     <section class="step">
-      <div class="product-hero"><img id="productImage" src="assets/hero.png" alt="ตัวอย่างเซตนามบัตร"><button type="button" class="upload-look" id="changeImage">ลองแบบของคุณ / เปลี่ยนภาพ</button></div>
-      <div class="sheet gallery" id="gallery" hidden><h2>ตัวอย่างงาน</h2><div class="gallery-strip" id="galleryStrip"></div></div>
+      <div class="product-hero" id="gallery" role="region" aria-roledescription="carousel" aria-label="ภาพตัวอย่างนามบัตร">
+        <div class="hero-track" id="galleryStrip" tabindex="0" aria-label="เลื่อนซ้ายขวาเพื่อดูภาพตัวอย่าง"></div>
+        <button type="button" class="hero-arrow hero-prev" id="heroPrev" aria-label="ภาพก่อนหน้า" hidden>‹</button>
+        <button type="button" class="hero-arrow hero-next" id="heroNext" aria-label="ภาพถัดไป" hidden>›</button>
+        <div class="hero-dots" id="heroDots" hidden></div>
+        <span class="sr-only" id="heroCount" aria-live="polite"></span>
+      </div>
       <div class="sheet"><span class="eyebrow">BUSINESS CARD SET</span><h1 id="productName">กำลังโหลดเซต…</h1><p id="productTagline"></p><strong class="start-price" id="startPrice"></strong>
         <div id="specBlock"><h2>สเปกในเซต</h2><ul class="spec-list" id="specList"></ul></div>
         <div class="file-cta" id="fileCta">

@@ -9,11 +9,12 @@
  * Papers, laminations, finishes and shapes are all built from materials.js, so a new entry there needs no change here.
  */
 import { paperMaterials, coatings, finishes, FINISH_ORDER, SHAPE_KINDS, SIZE_PRESETS, BLEED_OPTIONS, DEFAULTS } from './materials.js';
+import { buildArtworkBundle, nameArtworkBundle } from './artwork-bundle.js';
 
 const $ = (sel) => document.querySelector(sel);
 
 export function initPanel({ card, layers, stage, setBusy, say, requestRender }) {
-  const state = { paper: DEFAULTS.paper, coating: DEFAULTS.coating, finish: DEFAULTS.finish, active: 'stepArt' };
+  const state = { paper: DEFAULTS.paper, coating: DEFAULTS.coating, finish: DEFAULTS.finish, active: 'stepArt', side: 'front' };
 
   /* --------------------------------------------------------------- helpers */
 
@@ -155,12 +156,22 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
 
   /* --------------------------------------------------------------- layers */
 
-  $('#artDemo').addEventListener('click', () => act(() => layers.setArt(null)));
+  $('#artDemo').addEventListener('click', () => act(async () => { await layers.setArt(null); state.side = 'front'; }));
+  $('#backArtUpload').addEventListener('click', () => $('#backArtInput').click());
+  $('#backArtInput').addEventListener('change', event => act(async () => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    await layers.setBackArt(file);
+    state.side = 'back';
+    event.target.value = '';
+  }));
+  $('#backArtClear').addEventListener('click', () => act(async () => { await layers.setBackArt(null); state.side = 'front'; }));
+  for (const side of ['front', 'back']) $('#view' + (side === 'front' ? 'Front' : 'Back')).addEventListener('click', () => act(() => { state.side = side; }));
   $('#artUpload').addEventListener('click', () => $('#artInput').click());
   $('#artInput').addEventListener('change', (e) => {
     const file = e.target.files?.[0];
     e.target.value = '';
-    if (file) act(() => layers.setArt(file));
+    if (file) act(async () => { await layers.setArt(file); state.side = 'front'; });
   });
 
   $('#maskUpload').addEventListener('click', () => $('#maskInput').click());
@@ -168,7 +179,7 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
   $('#maskInput').addEventListener('change', (e) => {
     const file = e.target.files?.[0];
     e.target.value = '';
-    if (file) act(() => layers.setMask(file));
+    if (file) act(async () => { await layers.setMask(file); state.side = 'front'; });
   });
   $('#maskInvert').addEventListener('change', (e) => act(() => layers.setMaskInvert(e.target.checked)));
 
@@ -185,12 +196,16 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
     const { exportFile, downloadBlob } = await import('./exportFiles.js');
     setBusy(true, kind === 'pdf' ? 'กำลังสร้างไฟล์ PDF…' : 'กำลังสร้างไฟล์ SVG…');
     try {
-      const result = await exportFile(kind, exportSources(), exportOptions());
-      downloadBlob(result.blob, result.filename);
+      const metadata = { name: $('#exportCustomer').value.trim(), jobName: $('#exportJobName').value.trim(), materialName: $('#exportMaterialName').value.trim(), quantity: Number($('#exportQuantity').value), spec: { width: card.spec.bounds.w, height: card.spec.bounds.h, paper: state.paper } };
+      if (!metadata.name || !metadata.jobName || !metadata.materialName || !Number.isInteger(metadata.quantity) || metadata.quantity < 1 || metadata.quantity > 100000) throw new Error('กรุณากรอกชื่อลูกค้า ชื่องาน วัสดุ และจำนวนผลิตก่อนดาวน์โหลด');
+      const results = nameArtworkBundle(await buildArtworkBundle(exportFile, exportSources(), exportOptions(), [kind]), metadata);
+      for (const result of results) downloadBlob(result.blob, result.filename);
+      const result = results[0];
       exportReport = [
         `ดาวน์โหลดแล้ว: ${result.filename} (${result.bytes >= 1048576 ? `${(result.bytes / 1048576).toFixed(1)} MB` : `${Math.round(result.bytes / 1024)} KB`})`,
         ...(result.pdf ? [`PDF ${result.pdf.pages} หน้า · เลเยอร์: ${result.pdf.layers.join(', ')} · สีพิเศษ: ${result.pdf.spots.join(', ')}`] : []),
-        ...result.report,
+        ...results.flatMap(file => file.report),
+        ...results.slice(1).map(file => `ดาวน์โหลดด้านหลัง: ${file.filename}`),
       ];
     } finally {
       setBusy(false);
@@ -252,7 +267,7 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
     const file = e.dataTransfer.files[0];
     if (!file) return;
     const target = dropTarget();
-    if (target === 'art') act(() => layers.setArt(file));
+    if (target === 'art') act(() => state.side === 'back' ? layers.setBackArt(file) : layers.setArt(file));
     else if (target === 'mask') act(() => layers.setMask(file));
     else act(() => layers.loadCut(file, { invert: $('#cutInvert').checked }));
   });
@@ -294,6 +309,10 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
     pressed($('#paperChips'), state.paper);
     $('#paperDesc').textContent = paper.description;
     $('#artSum').textContent = `${paper.label} · ${d.artName || 'การ์ดเดโม'}`;
+    $('#backArtUpload').textContent = d.backArtName ? `เปลี่ยนด้านหลัง (${d.backArtName})` : 'อัปโหลดด้านหลัง…';
+    $('#backArtClear').hidden = !d.backArtName;
+    $('#viewFront').setAttribute('aria-pressed', String(state.side === 'front'));
+    $('#viewBack').setAttribute('aria-pressed', String(state.side === 'back'));
     $('#artDemo').setAttribute('aria-pressed', String(!d.artName));
     $('#artUpload').setAttribute('aria-pressed', String(!!d.artName));
     $('#artUpload').textContent = d.artName ? `เปลี่ยนไฟล์งาน (${d.artName})` : 'อัปโหลดไฟล์งาน…';

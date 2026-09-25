@@ -115,11 +115,10 @@ h1, h2, h3 { font-family: Sora, Prompt, sans-serif; }
 .material-grid .special em, .material-grid .special strong { color: #7c59d6; }
 .material-grid strong { display: block; margin-top: 18px; padding-top: 15px; border-top: 1px solid var(--line); font-size: 12px; line-height: 1.5; }
 
-.technique-grid { max-width: 1280px; margin: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 18px 24px; }
-.technique-grid article { display: flex; align-items: center; gap: 18px; padding: 21px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); box-shadow: 0 8px 24px rgba(30, 91, 145, .06); }
-.technique-grid i { display: grid; place-items: center; width: 48px; height: 48px; flex: none; border-radius: 12px; background: var(--blue-soft); color: var(--blue); font: 700 21px Sora, sans-serif; font-style: normal; }
-.technique-grid h3 { margin: 0 0 5px; font: 700 16px Sora, sans-serif; }
-.technique-grid p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.55; }
+.technique-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.technique-cards article { display: flex; flex-direction: column; }
+.technique-cards strong { margin-top: auto; }
+.technique-cards p { margin-top: 0; padding-bottom: 18px; }
 
 .package-card { display: flex; flex-direction: column; position: relative; }
 .package-card.recommended { border-color: var(--blue); box-shadow: 0 12px 32px rgba(10, 140, 255, .14); }

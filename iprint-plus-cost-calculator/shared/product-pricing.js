@@ -34,6 +34,8 @@ export function validateSettings(input) {
       if (!t || typeof t !== 'object') { errors.push('แพ็กเกจไม่ถูกต้อง'); continue; }
       if (typeof t.id !== 'string' || !/^[a-z0-9-]{1,80}$/.test(t.id) || packageIds.has(t.id) || typeof t.name !== 'string' || !t.name.trim()) errors.push('รหัสแพ็กเกจต้องไม่ซ้ำและมีชื่อ'); packageIds.add(t.id);
       number(t.quantity, 'จำนวนแพ็กเกจไม่ถูกต้อง', 1); number(t.price, 'ราคาแพ็กเกจไม่ถูกต้อง');
+      if (t.inquiryOnly !== undefined && typeof t.inquiryOnly !== 'boolean') errors.push('สถานะสอบถามข้อมูลเท่านั้นต้องเป็น ON/OFF');
+      if (t.lineOaId !== undefined && (typeof t.lineOaId !== 'string' || (t.lineOaId !== '' && !/^@[A-Za-z0-9._-]{1,100}$/.test(t.lineOaId)))) errors.push('LINE OA ID ต้องขึ้นต้นด้วย @ และไม่มีช่องว่าง');
       if (t.includedIds !== undefined && (!Array.isArray(t.includedIds) || t.includedIds.length > 100 || t.includedIds.some(id => typeof id !== 'string' || !id || id.length > 100))) errors.push('รายการที่รวมในเซตไม่ถูกต้อง');
       if (!Number.isInteger(t.quantity)) errors.push('จำนวนต้องเป็นจำนวนเต็ม');
       if (t.image !== undefined && (typeof t.image !== 'string' || !isValidSetImage(t.image))) errors.push('ภาพของเซตต้องเป็นลิงก์ https:// หรือภาพที่มีในระบบ');
@@ -91,6 +93,7 @@ export function calculateProductPrice({ product, version = '', quantity, sheets 
   if (product.mode === 'packages') {
     selectedPackage = product.packages.find(p => p.id === packageId && p.quantity === quantity);
     if (!selectedPackage) throw new Error('กรุณาเลือกแพ็กเกจและจำนวนให้ตรงกัน');
+    if (selectedPackage.inquiryOnly) throw new Error('เซตนี้ต้องติดต่อสอบถามก่อนสั่งซื้อ');
     base = selectedPackage.price;
   }
   const includedIds = includedIdsFor(product, selectedPackage);

@@ -120,3 +120,5 @@ label{font-weight:500}
 .gallery-upload.disabled{opacity:.45;pointer-events:none}
 .gallery-link{display:flex;flex:1 1 260px;gap:6px;align-items:center}
 .gallery-link input{flex:1;min-width:0}
+
+.inquiry-toggle{display:flex;align-items:center;gap:12px;margin:18px 0 6px}.inquiry-toggle input{width:44px;height:24px;margin:0;accent-color:#0a8cff}.inquiry-help{font-size:13px;color:var(--muted)}

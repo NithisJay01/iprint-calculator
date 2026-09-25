@@ -3,7 +3,7 @@
  *
  *   1. Paper body     the card outline (any die-cut shape, holes included) extruded to 0.55 mm with a tiny bevel,
  *                     MeshPhysicalMaterial with albedo / normal / roughness maps. The cut edge is shaded separately.
- *   2. Printed ink    Layer 1 — a multiply texture sampled inside the paper shader (front face only), so the ink
+ *   2. Printed ink    Layer 1 — a multiply texture sampled inside the paper shader (independent front/back faces), so the ink
  *                     inherits the paper's grain, roughness and lighting.
  *   3. Lamination     Layer 2 — a clear coat over the whole face (clearcoat + roughness + softened grain).
  *   4. Finish         Layer 3 — driven by one shape mask:
@@ -102,9 +102,23 @@ export function createCard({ renderer, spec: initialSpec }) {
     clearcoatRoughness: 0.5,
   });
   const inkUniform = { value: artwork.inkTexture() };
+  let backArtwork = createArtwork(size.width, size.height, anisotropy);
+  backArtwork.setSource({ print: null, shape: null });
+  const backInkUniform = { value: backArtwork.inkTexture() };
+  const backNormalUniform = { value: ph.normal };
+  const backNormalScale = { value: new THREE.Vector2(1, 1) };
+  const frontEmboss = { value: 0 };
+  function setBackSource(source) {
+    backArtwork.setSource({ print: source?.backPrint || null, shape: null });
+    backInkUniform.value = backArtwork.inkTexture();
+  }
   const edgeUniform = { value: new THREE.Color(1, 1, 1) };
   paperMat.onBeforeCompile = (shader) => {
     shader.uniforms.uInkMap = inkUniform;
+    shader.uniforms.uBackInkMap = backInkUniform;
+    shader.uniforms.uBackNormalMap = backNormalUniform;
+    shader.uniforms.uBackNormalScale = backNormalScale;
+    shader.uniforms.uFrontEmboss = frontEmboss;
     shader.uniforms.uEdgeColor = edgeUniform;
     // vCardUv is the card's own 0–1 UV. Ink must NOT use vMapUv: that one carries the paper texture's tiling (repeat).
     shader.vertexShader = shader.vertexShader
@@ -117,15 +131,25 @@ export function createCard({ renderer, spec: initialSpec }) {
         vFace = vec2(step(0.0, normal.z) * capness, 1.0 - capness); // x: printed front face, y: cut edge`,
       );
     shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', '#include <common>\nvarying vec2 vFace;\nvarying vec2 vCardUv;\nuniform sampler2D uInkMap;\nuniform vec3 uEdgeColor;')
+      .replace('#include <common>', '#include <common>\nvarying vec2 vFace;\nvarying vec2 vCardUv;\nuniform sampler2D uInkMap;\nuniform sampler2D uBackInkMap;\nuniform vec3 uEdgeColor;')
       .replace(
         '#include <map_fragment>',
         `#include <map_fragment>
         diffuseColor.rgb *= mix(vec3(1.0), texture2D(uInkMap, vCardUv).rgb, vFace.x); // ink multiplies paper
+        diffuseColor.rgb *= mix(vec3(1.0), texture2D(uBackInkMap, vec2(1.0 - vCardUv.x, vCardUv.y)).rgb, 1.0 - vFace.x - vFace.y);
         diffuseColor.rgb = mix(diffuseColor.rgb, uEdgeColor, vFace.y);                // fibrous cut edge colour`,
       )
       .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = mix(roughnessFactor, 0.98, vFace.y);')
-      .replace('#include <normal_fragment_maps>', '#include <normal_fragment_maps>\nif (vFace.y > 0.02) normal = nonPerturbedNormal; // planar UVs are degenerate on the edge wall');
+      .replace('uniform sampler2D uBackInkMap;', 'uniform sampler2D uBackInkMap;\nuniform sampler2D uBackNormalMap;\nuniform vec2 uBackNormalScale;\nuniform float uFrontEmboss;')
+      .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
+        #ifdef USE_NORMALMAP_TANGENTSPACE
+        if (uFrontEmboss > 0.5 && 1.0 - vFace.x - vFace.y > 0.5) {
+          vec3 backN = texture2D(uBackNormalMap, vCardUv).xyz * 2.0 - 1.0;
+          backN.xy *= uBackNormalScale;
+          normal = normalize(tbn * backN);
+        }
+        #endif
+        if (vFace.y > 0.02) normal = nonPerturbedNormal;`);
   };
   const body = new THREE.Mesh(buildBody(), paperMat);
   body.name = 'paper';
@@ -328,11 +352,14 @@ export function createCard({ renderer, spec: initialSpec }) {
   /** The paper's own relief (no emboss), scaled by how much of the grain the lamination lets through. */
   function restorePaperRelief() {
     const m = paperMat;
+    frontEmboss.value = 0;
     if (currentPack) {
       m.normalMap = currentPack.normalMap ?? (currentPack.bumpMap ? null : ph.normal);
       m.bumpMap = m.normalMap ? null : currentPack.bumpMap;
     }
     if (currentPaper) m.normalScale.set(...paperNormalScale());
+    backNormalUniform.value = currentPack?.normalMap ?? ph.normal;
+    backNormalScale.value.copy(m.normalScale);
     syncMapSignature();
   }
 
@@ -401,6 +428,7 @@ export function createCard({ renderer, spec: initialSpec }) {
       if (!embossNormal.has(key)) await nextTick(); // let the UI paint before the heavy part
       if (token !== applyToken) return;
       paperMat.normalMap = embossTexture(layer, key);
+      frontEmboss.value = 1;
       paperMat.bumpMap = null;
       paperMat.normalScale.set(1, 1);
       syncMapSignature();
@@ -434,9 +462,10 @@ export function createCard({ renderer, spec: initialSpec }) {
     await applyFinishLayer();
   }
 
-  /** Replace the artwork: { name, print, shape } canvases at the current texture size, or null for the demo card. */
+  /** Replace the artwork: { name, print, shape, backPrint } canvases at the current texture size, or null for the demo card. */
   async function setLayers(source) {
     artwork.setSource(source);
+    setBackSource(source);
     clearReliefCaches();
     inkUniform.value = artwork.inkTexture();
     await applyFinishLayer();
@@ -465,9 +494,13 @@ export function createCard({ renderer, spec: initialSpec }) {
       artwork.dispose();
       size = nextSize;
       artwork = createArtwork(size.width, size.height, anisotropy);
+      backArtwork.dispose();
+      backArtwork = createArtwork(size.width, size.height, anisotropy);
     }
     if (frameChanged || makeSource) {
-      artwork.setSource(makeSource ? await makeSource(size) : null);
+      const source = makeSource ? await makeSource(size) : null;
+      artwork.setSource(source);
+      setBackSource(source);
       clearReliefCaches();
       inkUniform.value = artwork.inkTexture();
     }

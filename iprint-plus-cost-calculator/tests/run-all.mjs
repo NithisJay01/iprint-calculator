@@ -8,6 +8,8 @@ const tests = [
   'tests/deployment-config-test.mjs',
   'tests/material-preview-test.mjs',
   'tests/material-preview-export-test.mjs',
+  'tests/preview-print-flow-test.mjs',
+  'tests/showroom-cycle-test.mjs',
   'tests/business-card-mvp-test.mjs',
   'tests/business-card-breakdown-test.mjs',
   'tests/package-included-test.mjs',
@@ -40,7 +42,8 @@ const tests = [
   'worker/media-test.mjs',
   'worker/system-check-test.mjs',
   'worker/brief-domain-test.mjs',
-  'worker/brief-worker-test.mjs'
+  'worker/brief-worker-test.mjs',
+  'worker/print-requests-test.mjs'
 ];
 
 let passed = 0;

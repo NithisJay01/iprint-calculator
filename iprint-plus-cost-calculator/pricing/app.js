@@ -119,6 +119,10 @@ function render() {
       ${renderPackageCards(product)}
       <div class="package-editor"><div class="section-title compact"><div><span class="step">2</span><div><h2>ข้อมูลเซตที่เลือก</h2><p>ราคานี้คือราคาเริ่มต้นก่อนบริการเสริม</p></div></div><button type="button" class="remove" data-remove-package ${product.packages.length === 1 ? 'disabled' : ''}>ลบเซต</button></div>
         <div class="two-fields"><label>ชื่อเซต<input data-package-field="name" value="${esc(pack.name)}"></label><label>คำอธิบาย<input data-package-field="description" value="${esc(pack.description)}"></label><label>จำนวนเริ่มต้น<input data-package-field="quantity" type="number" min="1" value="${pack.quantity}"></label><label>ราคาเริ่มต้น (บาท)<input data-package-field="price" type="number" min="0" step="0.01" value="${pack.price}"></label></div>
+        <label class="inquiry-toggle"><input type="checkbox" role="switch" data-package-field="inquiryOnly" ${pack.inquiryOnly ? 'checked' : ''}> ต้องสอบถามข้อมูลเพิ่มเติมเท่านั้น — ${pack.inquiryOnly ? 'ON' : 'OFF'}</label>
+        <p class="inquiry-help">เมื่อเปิด ลูกค้าเห็นเฉพาะรายละเอียดและปุ่ม “ติดต่อสอบถาม” ราคาและตัวเลือกสั่งซื้อจะถูกซ่อน</p>
+        <label ${pack.inquiryOnly ? '' : 'hidden'}>LINE OA ID ของร้านสำหรับเซตนี้<input data-package-field="lineOaId" value="${esc(pack.lineOaId || '')}" placeholder="@ชื่อร้าน" maxlength="101"><small>เปิดแชตร้านพร้อมข้อความเกี่ยวกับเซตนี้ ลูกค้ากดส่งใน LINE อีกครั้ง</small></label>
+
         <label class="bullets-field">รายละเอียดในเซต <small>บรรทัดละ 1 ข้อ แสดงเป็นหัวข้อ “สเปกในเซต” ในหน้าลูกค้า (เว้นว่างเพื่อไม่แสดง)</small><textarea data-package-field="bullets" rows="4" maxlength="1000">${esc(setBullets({ product, pack, catalog }).join('\n'))}</textarea></label>
         <div class="set-image-field">
           <div class="set-image-head"><b>ภาพของเซต</b><small>แสดงที่หน้าสั่งซื้อและการ์ดเซตของลูกค้า</small></div>
@@ -231,6 +235,10 @@ function renderCustomerPreview() {
   const product = currentProduct(), pack = currentPackage();
   const items = new Map(catalogItems().map(item => [item.id, item]));
   const groups = product.optionGroups.filter(group => group.enabled).map(group => ({ ...group, choices: group.itemIds.filter(id => pack.optionIds.includes(id)).map(id => items.get(id)).filter(Boolean) })).filter(group => group.choices.length);
+  if (pack.inquiryOnly) {
+    $('customerPreview').innerHTML = `<article class="customer-card"><div class="mockup${setImageUrl(pack.image) ? ' has-image' : ''}">${setImageUrl(pack.image) ? `<img src="${esc(resolveSetImage(pack.image, '../business-card/'))}" alt="">` : esc(product.name)}</div><span class="set-label">${esc(product.name)}</span><h3>${esc(pack.name)}</h3><p>${esc(pack.description || '')}</p><button type="button">ติดต่อสอบถาม</button>${pack.lineOaId ? '' : '<p>กรอก LINE OA ID เพื่อเปิดใช้งานปุ่มติดต่อ</p>'}</article>`;
+    return;
+  }
   $('customerPreview').innerHTML = `<article class="customer-card"><div class="mockup${setImageUrl(pack.image) ? ' has-image' : ''}">${setImageUrl(pack.image) ? `<img src="${esc(resolveSetImage(pack.image, '../business-card/'))}" alt="" referrerpolicy="no-referrer">` : esc(product.name.trim().charAt(0) || 'P')}</div><span class="set-label">${esc(product.name)}</span><h3>${esc(pack.name)}</h3><p>${esc(pack.description || 'เซตพร้อมสั่งที่ Admin จัดไว้')}</p>${(() => { const lines = setBullets({ product, pack, catalog }); return lines.length ? `<ul class="preview-bullets">${lines.map(line => `<li>${esc(line)}</li>`).join('')}</ul>` : ''; })()}<div class="price-block"><span>เริ่มต้น ${Number(pack.quantity).toLocaleString('th-TH')} ชิ้น</span><b>฿${fmt(pack.price)}</b></div>${groups.map(group => `<div class="preview-group"><b>${esc(group.name)}</b><small class="preview-rule">${esc(groupRuleText({ mode: group.source === 'material' ? 'single' : group.selectionMode, required: group.source === 'material' || group.required }))}</small><div>${group.choices.map(item => { const inc = product.mode === 'packages' && group.source === 'service' && includedIdsOf(product, pack).includes(item.id); return `<span class="${inc ? 'inc' : ''}">${esc(item.name)}${inc ? '<small>รวมในเซต</small>' : ''}</span>`; }).join('')}</div></div>`).join('')}<button type="button">เลือกเซตนี้</button></article>`;
 }
 
@@ -315,7 +323,8 @@ $('editor').addEventListener('input', event => {
     else previewPrice();
   } else if (input.dataset.packageField) {
     const key = input.dataset.packageField;
-    pack[key] = key === 'bullets' ? parseBullets(input.value) : key === 'image' ? input.value.trim() : input.type === 'number' ? Number(input.value) : input.value;
+    pack[key] = input.type === 'checkbox' ? input.checked : key === 'lineOaId' ? input.value.trim() : key === 'bullets' ? parseBullets(input.value) : key === 'image' ? input.value.trim() : input.type === 'number' ? Number(input.value) : input.value;
+    if (key === 'inquiryOnly') { render(); return; }
     if (key === 'image') syncSetImage();
     renderCustomerPreview(); previewPrice();
   } else if (input.dataset.groupToggle != null) {

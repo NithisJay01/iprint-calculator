@@ -23,6 +23,7 @@ export function createLayers({ card, studio, onChange = () => {}, setBusy = () =
     shape: { ...DEFAULT_SHAPE }, // buildSpec params: kind, width, height, radius, bleed
     cut: null, // die-cut file loaded by loadCut(): { name, kind, rings, frame, warnings, invert }
     art: null, // Layer 1
+    backArt: null,
     mask: null, // Layer 3
   };
 
@@ -36,7 +37,8 @@ export function createLayers({ card, studio, onChange = () => {}, setBusy = () =
     const demo = state.art && state.mask ? null : card.artwork.demo(); // the layer that is not uploaded yet shows the demo
     const print = state.art ? await state.art.render(W, H) : demo.print;
     const shape = state.mask ? await state.mask.render(W, H) : state.art ? null : demo.shape;
-    return { name: state.art?.name ?? 'Demo card', print, shape };
+    const backPrint = state.backArt ? await state.backArt.render(W, H) : null;
+    return { name: state.art?.name ?? 'Demo card', print, shape, backPrint };
   }
 
   async function applyOnce() {
@@ -125,7 +127,7 @@ export function createLayers({ card, studio, onChange = () => {}, setBusy = () =
 
   // Reading a file takes a while and takes a different while for every file, so requests can finish out of order.
   // The newest request for a slot always wins; an older one that finishes late is dropped.
-  const calls = { art: 0, mask: 0, cut: 0 };
+  const calls = { art: 0, backArt: 0, mask: 0, cut: 0 };
 
   async function loadSlot(slot, file, asMask) {
     const call = ++calls[slot];
@@ -142,6 +144,7 @@ export function createLayers({ card, studio, onChange = () => {}, setBusy = () =
 
     /** Layer 1 */
     setArt: (file) => loadSlot('art', file, false),
+    setBackArt: (file) => loadSlot('backArt', file, false),
 
     /** Layer 3 */
     setMask: (file) => loadSlot('mask', file, true),
@@ -193,7 +196,7 @@ export function createLayers({ card, studio, onChange = () => {}, setBusy = () =
     exportSources() {
       const pick = (l) =>
         l && { name: l.name, kind: l.kind, aspect: l.aspect, pixelWidth: l.pixelWidth, warnings: l.warnings, file: l.file, parsed: l.parsed, info: l.info, invert: l.invert };
-      return { spec: card.spec, params: state.shape, cut: state.cut ? { kind: state.cut.kind, name: state.cut.name } : null, art: pick(state.art), mask: pick(state.mask) };
+      return { spec: card.spec, params: state.shape, cut: state.cut ? { kind: state.cut.kind, name: state.cut.name, file: state.cut.file } : null, art: pick(state.art), backArt: pick(state.backArt), mask: pick(state.mask) };
     },
 
     /** Everything the panel shows about the current state. */
@@ -216,6 +219,7 @@ export function createLayers({ card, studio, onChange = () => {}, setBusy = () =
         cutName: state.cut?.name ?? '',
         cutKind: state.cut?.kind ?? '',
         artName: state.art?.name ?? '',
+        backArtName: state.backArt?.name ?? '',
         maskName: state.mask?.name ?? '',
         maskIsRaster: state.mask?.kind === 'raster',
         maskInvert: Boolean(state.mask?.invert),

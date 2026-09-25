@@ -1,7 +1,7 @@
 # Material Preview — ดูตัวอย่างวัสดุ 3 มิติ
 
 หน้าแยก (`/material-preview/`) ให้ลูกค้าเห็นนามบัตรเป็น 3 มิติ เอียงแล้วเห็นแสงวิ่งผ่านผิวกระดาษ / ฟอยล์ / Spot UV / Emboss
-ก่อนสั่งพิมพ์ — ไม่มี Backend ไม่ผูกกับราคา ตะกร้า หรือออเดอร์ ไฟล์ที่อัปโหลดประมวลผลในเบราว์เซอร์เท่านั้น
+ก่อนสั่งพิมพ์ — ไฟล์พรีวิวประมวลผลในเบราว์เซอร์ จนกว่าลูกค้าจะยืนยันส่งคำขอ จากนั้นส่งบรีฟสรุปและ PDF Artwork ไป Notion ผ่าน `/public/print-requests` (ยังไม่จองคิวผลิต)
 
 Three.js r186 (MIT) อยู่ใน `vendor/three/` ไม่พึ่ง CDN · เริ่มต้นจากต้นแบบ `iprint-material-preview-v2`
 
@@ -89,7 +89,7 @@ material-preview/
 | --- | --- | --- |
 | หน้าแรก `index.html` | รายการทางเข้าบนหน้าเริ่มต้น ต่อจาก "บรีฟงานแบบเฉพาะเจาะจง" | `material-preview/?from=home` |
 | Catalog `catalog/` | การ์ด Business Cards ใต้ปุ่ม "ดูแพ็กเกจและราคา" | `../material-preview/?from=catalog` |
-| นามบัตร `business-card/` | หัวข้อ "02 / PAPERS & MATERIALS" | `../material-preview/?from=business-card` |
+| นามบัตร `business-card/` | Hero: "ลองใส่ดีไซน์ของคุณ" | `../material-preview/?from=business-card` |
 
 `?from=` ทำให้ปุ่ม "‹ กลับ" ในหน้านี้พาไปหน้าที่ลูกค้าเข้ามา (ไม่ใส่หรือค่าอื่น = กลับ Catalog) เพิ่มทางเข้าใหม่: ใส่ปุ่มในหน้านั้น + เพิ่มคีย์ใน `BACK` ของ `app.js` (`tests/material-preview-test.mjs` ตรวจว่าปุ่มทุกอันชี้หน้าจริงและ `app.js` รู้จักคีย์) หน้านี้ยังตั้ง `noindex` อยู่
 
@@ -109,3 +109,7 @@ material-preview/
 ส่งออกไฟล์: อ่านไฟล์ PDF ที่ได้กลับมาตรวจเอง (offset, ความยาว stream, Trim/Bleed Box, เลเยอร์, สีพิเศษ) และจำลองวาดเนื้อหา PDF เทียบกับที่เบราว์เซอร์วาด SVG ต้นฉบับ (เส้นโค้ง, transform ซ้อน, เส้นประ, evenodd, opacity, `<svg>` ซ้อน), รูป JPEG (ส่งผ่าน / EXIF หมุน), PNG โปร่งใส, ไฟล์ที่ต้อง fallback, ภาพเกินเกณฑ์ 25 ล้านพิกเซล
 
 **ยังไม่ได้ทดสอบ**: iPhone Safari / Android Chrome จริง (Permission เซนเซอร์, ทิศเอียง, FPS, หน่วยความจำ) · บน Hostinger จริง (Header / Cache / บีบอัด) · **ไฟล์ที่ส่งออกกับ Acrobat / Illustrator / RIP และ preflight ของ iPrint จริง** · ด้านหลังบัตร (มีด้านหน้าอย่างเดียว) · สีบนจอเป็นค่าโดยประมาณ ไม่ใช่สีพิมพ์
+
+## Showroom และคำขอสั่งพิมพ์
+
+ดูรายละเอียด flow, ข้อจำกัดราคา, สิ่งที่ส่งไป Notion และขั้นตอน deploy ที่ `../../docs/BUSINESS-CARD-3D-FLOW.md`

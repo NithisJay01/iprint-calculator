@@ -70,3 +70,17 @@
 .gallery-prev{left:8px}
 .gallery-next{right:8px}
 .gallery-close{top:-14px;right:-4px;font-size:18px}
+
+/* Image-only carousel; native scrolling supports touch and trackpads. */
+.product-hero{display:block;min-height:0;padding:0;background:var(--page)}
+.hero-track{display:flex;width:100%;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;border-radius:20px}
+.hero-track::-webkit-scrollbar{display:none}
+.hero-slide{flex:0 0 100%;width:100%;padding:0;border:0;background:transparent;scroll-snap-align:start;scroll-snap-stop:always;display:grid;place-items:center;aspect-ratio:16/9}
+.product-hero .hero-slide img{display:block;width:100%;height:100%;max-height:none;object-fit:contain;border-radius:0;box-shadow:none}
+.hero-arrow{position:absolute;top:50%;transform:translateY(-50%);width:40px;height:40px;border:1px solid var(--line);border-radius:50%;background:rgba(255,255,255,.92);color:var(--ink);font-size:28px;line-height:1}
+.hero-prev{left:12px}.hero-next{right:12px}.hero-dots{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:6px;padding:4px 8px;border-radius:99px;background:rgba(255,255,255,.9)}
+.hero-dots button{width:24px;height:24px;border:0;background:transparent;padding:7px}
+.hero-dots button::after{content:"";display:block;width:10px;height:10px;background:#a2bbd0;border-radius:50%}
+.hero-dots button[aria-current="true"]::after{background:var(--blue)}
+.hero-dots[hidden],.hero-arrow[hidden]{display:none}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
+.hero-slide:focus-visible,.hero-arrow:focus-visible,.hero-dots button:focus-visible{outline:3px solid var(--blue);outline-offset:-3px}

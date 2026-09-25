@@ -26,7 +26,7 @@ const DEBUG = params.has('debug');
 // A Map (not an object): any other value, even "constructor", just falls back to the catalog.
 const BACK = new Map([
   ['catalog', ['../catalog/', 'Catalog']],
-  ['business-card', ['../business-card/#materials', 'นามบัตร']],
+  ['business-card', ['../business-card/#top', 'นามบัตร']],
   ['home', ['../', 'หน้าแรก']],
 ]);
 {
@@ -137,6 +137,7 @@ const layers = createLayers({
   },
 });
 panel = initPanel({ card, layers, stage, setBusy, say, requestRender });
+import('./request-print.js').then(({ initPrintRequest }) => initPrintRequest({ card, layers, panel }));
 
 // hint text depends on the input the device actually has
 $('#hint').textContent = COARSE ? 'เอียงโทรศัพท์เพื่อดูแสงและพื้นผิวของวัสดุ (หรือลากนิ้วบนนามบัตร)' : 'ลากเมาส์เพื่อเปลี่ยนมุม · เลื่อนล้อเมาส์เพื่อซูม';
@@ -234,7 +235,7 @@ function frame(now) {
   }
   needsRender = false;
 
-  card.pivot.rotation.set(cur.y * ROT_X, cur.x * ROT_Y, 0);
+  card.pivot.rotation.set(cur.y * ROT_X, cur.x * ROT_Y + (panel?.state.side === 'back' ? Math.PI : 0), 0);
   studio.update(cur.x, cur.y, input.hover.x / 0.55, input.hover.y / 0.55);
   card.setEnvYaw(studio.envYaw);
   const l = studio.layout;

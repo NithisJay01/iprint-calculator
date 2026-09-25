@@ -142,6 +142,7 @@ export function selectionFromItem({ item, settings, catalog }) {
   const pack = resolveSets(product).find(set => set.id === item.packageId) || null;
   const problems = [];
   if (!pack) problems.push('เซตนี้ไม่มีขายแล้ว');
+  if (pack?.inquiryOnly) problems.push('เซตนี้ต้องติดต่อสอบถามก่อนสั่งซื้อ');
   const material = catalog.materials.find(entry => entry.id === item.materialId) || null;
   if (!material) problems.push('วัสดุที่เลือกไม่มีขายแล้ว');
   const services = [];
@@ -154,6 +155,7 @@ export function selectionFromItem({ item, settings, catalog }) {
 }
 
 export function quoteSelection({ settings, pack, material, services, quantity, code = '' }) {
+  if (pack?.inquiryOnly) throw new Error('เซตนี้ต้องติดต่อสอบถามก่อนสั่งซื้อ');
   return calculateBusinessCardQuote({ preset: PRESET, material, services, quantity, pricingSettings: settings, packageId: pack.id, code });
 }
 

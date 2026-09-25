@@ -11,6 +11,7 @@
   <!-- No import map and no inline script: the site's Content-Security-Policy (script-src 'self') would block them.
        three.js is vendored in vendor/three and imported by relative path. -->
   <script type="module" src="app.js?v=2"></script>
+  <link rel="stylesheet" href="request-print.css?v=1">
 </head>
 <body>
   <div class="app">
@@ -70,7 +71,7 @@
           <h3 class="sub">Material (กระดาษ)</h3>
           <div class="chips paper-chips" id="paperChips" role="group" aria-label="Material"></div>
           <p class="desc" id="paperDesc"></p>
-          <h3 class="sub">ไฟล์งานพิมพ์ (พื้นหลัง ข้อความ รูป ในไฟล์เดียว)</h3>
+          <h3 class="sub">Artwork ด้านหน้า (พื้นหลัง ข้อความ รูป ในไฟล์เดียว)</h3>
           <div class="chips two">
             <button class="chip" id="artDemo" type="button" aria-pressed="true">การ์ดเดโม</button>
             <button class="chip" id="artUpload" type="button" aria-pressed="false">อัปโหลดไฟล์งาน…</button>
@@ -78,6 +79,11 @@
           <input id="artInput" type="file" accept=".svg,.png,.jpg,.jpeg,.webp,image/svg+xml,image/png,image/jpeg,image/webp" hidden>
           <p class="desc" id="artDesc">รับ SVG, PNG, JPG, WebP — ใช้ไฟล์ขนาดเท่างานจริง สีขาวจะแสดงเป็นสีกระดาษ (ไม่มีหมึกขาวในงานพิมพ์ออฟเซ็ต) หรือลากไฟล์มาวางบนนามบัตร</p>
           <ul class="notes" id="artNotes"></ul>
+          <h3 class="sub">Artwork ด้านหลัง (ถ้ามี)</h3>
+          <div class="chips two"><button class="chip" id="backArtUpload" type="button">อัปโหลดด้านหลัง…</button><button class="chip" id="backArtClear" type="button" hidden>ลบด้านหลัง</button></div>
+          <input id="backArtInput" type="file" accept=".svg,.png,.jpg,.jpeg,.webp,image/svg+xml,image/png,image/jpeg,image/webp" hidden>
+          <div class="chips two" role="group" aria-label="ด้านที่แสดง"><button class="chip" id="viewFront" type="button" aria-pressed="true">ดูด้านหน้า</button><button class="chip" id="viewBack" type="button" aria-pressed="false">ดูด้านหลัง</button></div>
+          <p class="desc">ด้านหลังใช้ขนาดและวัสดุเดียวกับด้านหน้า พิมพ์สีได้ ส่วนเทคนิคพิเศษใช้กับด้านหน้าเท่านั้น ไฟล์ส่งออกแยกด้านหน้า (-front) และด้านหลัง (-back)</p>
         </div>
       </details>
 
@@ -112,6 +118,12 @@
           <p class="desc">สร้างไฟล์ส่งโรงพิมพ์จากสิ่งที่เห็นในพรีวิว: <b>PDF</b> (มี Trim / Bleed, เลเยอร์ Artwork · Dieline · เทคนิคพิเศษเป็นสีพิเศษ) และ <b>SVG</b> แยกเลเยอร์ขนาดจริงเป็น mm ทั้งสองแบบเปิดใน Adobe Illustrator ได้</p>
           <ul class="checks" id="exportChecks"></ul>
           <div class="fields">
+            <label class="field wide">ชื่อลูกค้า / บริษัท (ใช้ตั้งชื่อไฟล์)<input id="exportCustomer" maxlength="120" placeholder="Bdms"></label>
+            <label class="field wide">ชื่องาน<input id="exportJobName" maxlength="120" value="Business-Card" placeholder="Essential-Pack"></label>
+            <label class="field wide">วัสดุที่ต้องการผลิต<input id="exportMaterialName" maxlength="120" placeholder="เช่น Art300g — ระบุให้ทีมงานยืนยัน"></label>
+            <label class="field wide">จำนวนผลิต (ใบ)<input id="exportQuantity" type="number" min="1" max="100000" step="1" value="100"></label>
+          </div>
+          <div class="fields">
             <label class="field wide">โหมดสีของงานพิมพ์
               <select id="exportColor">
                 <option value="rgb">RGB (แนะนำ — ให้ฝ่ายผลิตแปลงเอง)</option>
@@ -131,6 +143,7 @@
       </details>
 
       <div class="actions">
+        <button class="print-request-button" id="requestPrint" type="button">สั่งพิมพ์นามบัตร →</button>
         <button class="primary" id="tiltBtn" type="button" hidden>Enable Tilt Preview</button>
         <p class="hint" id="hint"></p>
         <p class="status" id="status" role="status" aria-live="polite"></p>
@@ -138,11 +151,34 @@
           <a href="assets/samples/sample-artwork.svg" download>งานพิมพ์ (Layer 1)</a> ·
           <a href="assets/samples/sample-foil-shape.svg" download>รูปทรงเทคนิคพิเศษ (Layer 3)</a> ·
           <a href="assets/samples/sample-diecut-leaf.svg" download>ไดคัทรูปใบไม้</a></p>
-        <p class="disclaimer">สีบนหน้าจอเป็นค่าโดยประมาณ ไม่ใช่สีพิมพ์จริง · ไฟล์ที่อัปโหลดประมวลผลในเบราว์เซอร์เท่านั้น ไม่ถูกส่งไปที่ใด และไม่ผูกกับออเดอร์</p>
+        <p class="disclaimer">สีบนหน้าจอเป็นค่าโดยประมาณ ไม่ใช่สีพิมพ์จริง · ไฟล์อยู่ในเบราว์เซอร์จนกว่าคุณจะยืนยันส่งคำขอสั่งพิมพ์หรือสอบถามราคา</p>
       </div>
     </section>
   </div>
 
+  <dialog class="print-dialog" id="printRequestDialog" aria-labelledby="requestTitle">
+    <button class="request-close" id="requestClose" type="button" aria-label="ปิดหน้าต่างสั่งพิมพ์">✕</button>
+    <h2 id="requestTitle">สั่งพิมพ์นามบัตรของคุณ</h2>
+    <form id="printRequestForm">
+      <label>จำนวน (ใบ)<input id="requestQuantity" type="number" min="1" max="100000" step="1" value="100" required></label>
+      <p class="request-summary" id="requestSummary"></p>
+      <label id="requestPackageWrap" hidden>เทียบราคางานพื้นฐานจากเซต<select id="requestPackage"></select></label>
+      <p class="request-price" id="requestPrice" aria-live="polite"></p><p class="request-note" id="requestPriceDetail"></p>
+      <label>ชื่อ / บริษัท<input id="requestName" autocomplete="name" maxlength="120" required></label>
+      <label>ชื่องาน<input id="requestJobName" maxlength="120" required></label>
+      <label>วัสดุที่ต้องการผลิต<input id="requestMaterialName" maxlength="120" required></label>
+      <label>เบอร์โทร<input id="requestPhone" type="tel" autocomplete="tel" maxlength="30" required></label>
+      <label>LINE ID (ถ้ามี)<input id="requestLineId" maxlength="100"></label>
+      <p class="request-note" id="requestPdfStatus" role="status"></p><p class="request-note" id="requestPdfWarnings"></p><a id="requestPdfDownload" hidden>ดาวน์โหลด PDF ที่จะส่งเพื่อตรวจดูก่อน</a>
+      <div id="requestArtworkDownloads"></div>
+      <label class="request-consent"><input id="requestConsent" type="checkbox" required>ยืนยันให้ส่งบรีฟสรุปภาษาไทย ข้อมูลติดต่อ และ PDF / SVG Artwork ทุกด้านที่อัปโหลดให้ทีม iPrint ตรวจสเปกและราคา</label>
+      <div id="requestVerification"></div>
+      <button class="print-request-button" id="requestSubmit" type="submit">ส่งคำขอสั่งพิมพ์</button>
+      <p class="request-note">ยังไม่มีการเรียกเก็บเงินหรือจองคิวผลิต ทีมงานจะยืนยันราคาและวันรับงานก่อนเริ่มผลิต</p>
+    </form>
+    <p class="request-error" id="requestStatus" role="status"></p>
+    <div id="requestSuccess" hidden><h3>รับคำขอแล้ว</h3><p>บรีฟภาษาไทยและ PDF / SVG Artwork ทุกด้านบันทึกส่งให้ทีมงานแล้ว เก็บรหัสนี้ไว้เพื่อติดตามงาน</p><p id="requestTicket" class="request-summary"></p><a id="requestLine" hidden target="_blank" rel="noopener">ส่งสรุปคำขอเข้า LINE ร้าน →</a><p id="requestLinePending" class="request-note">ทีมงานจะติดต่อกลับตามข้อมูลที่ให้ไว้ ช่องทาง LINE จากหน้านี้ยังไม่เปิดใช้งาน</p></div>
+  </dialog>
   <noscript><p style="padding:24px">ต้องเปิด JavaScript เพื่อดูตัวอย่างวัสดุ 3 มิติ</p></noscript>
 </body>
 </html>

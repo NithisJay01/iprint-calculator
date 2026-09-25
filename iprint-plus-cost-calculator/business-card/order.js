@@ -89,16 +89,37 @@ function recalc() {
   }
 }
 
-// Sample work of the set (up to 5 pictures from the studio): a strip of thumbnails, each opens a larger view.
-// A picture that does not load is dropped from the strip so no broken image is shown.
+// One image-only carousel: cover followed by the set's sample images.
 const gallery = { urls: [], index: 0 };
-
-function renderGallery(urls) {
-  gallery.urls = urls;
-  $('gallery').hidden = !urls.length;
-  $('galleryStrip').innerHTML = urls.map((url, index) => `<button type="button" class="gallery-thumb" data-gallery="${index}" aria-label="ดูตัวอย่างงานภาพที่ ${index + 1}"><img src="${esc(url)}" alt="ตัวอย่างงาน ${index + 1}" loading="lazy" referrerpolicy="no-referrer" data-url="${esc(url)}"></button>`).join('');
-  $('galleryStrip').querySelectorAll('img').forEach(image => image.addEventListener('error', () => renderGallery(gallery.urls.filter(url => url !== image.dataset.url)), { once: true }));
+function syncHero(index) {
+  gallery.index = Math.max(0, Math.min(index, gallery.urls.length - 1));
+  $('heroDots').querySelectorAll('button').forEach((dot, i) => dot.setAttribute('aria-current', String(i === gallery.index)));
+  $('heroCount').textContent = `ภาพที่ ${gallery.index + 1} จาก ${gallery.urls.length}`;
 }
+function moveHero(index) {
+  if (!gallery.urls.length) return;
+  const next = (index + gallery.urls.length) % gallery.urls.length;
+  $('galleryStrip').scrollTo({ left: next * $('galleryStrip').clientWidth, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
+}
+function renderGallery(urls) {
+  gallery.urls = urls.length ? urls : ['assets/hero.png'];
+  $('galleryStrip').innerHTML = gallery.urls.map((url, index) => `<button type="button" class="hero-slide" data-gallery="${index}" aria-label="ขยายภาพตัวอย่าง ${index + 1}"><img src="${esc(url)}" alt="ตัวอย่างนามบัตร ${index + 1}" loading="${index ? 'lazy' : 'eager'}" referrerpolicy="no-referrer" data-url="${esc(url)}"></button>`).join('');
+  $('galleryStrip').querySelectorAll('img').forEach(image => image.addEventListener('error', () => {
+    if (image.dataset.url !== 'assets/hero.png') renderGallery(gallery.urls.filter(url => url !== image.dataset.url));
+  }, { once: true }));
+  $('heroDots').innerHTML = gallery.urls.map((_, index) => `<button type="button" data-slide="${index}" aria-label="ไปภาพที่ ${index + 1}"></button>`).join('');
+  $('heroDots').hidden = $('heroPrev').hidden = $('heroNext').hidden = gallery.urls.length < 2;
+  $('galleryStrip').scrollLeft = 0;
+  syncHero(0);
+}
+$('heroPrev').addEventListener('click', () => moveHero(gallery.index - 1));
+$('heroNext').addEventListener('click', () => moveHero(gallery.index + 1));
+$('heroDots').addEventListener('click', event => { const dot = event.target.closest('[data-slide]'); if (dot) moveHero(Number(dot.dataset.slide)); });
+$('galleryStrip').addEventListener('scroll', () => syncHero(Math.round($('galleryStrip').scrollLeft / ($('galleryStrip').clientWidth || 1))), { passive: true });
+$('galleryStrip').addEventListener('keydown', event => {
+  if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') { event.preventDefault(); moveHero(gallery.index + (event.key === 'ArrowRight' ? 1 : -1)); }
+});
+new ResizeObserver(() => { $('galleryStrip').scrollLeft = gallery.index * $('galleryStrip').clientWidth; }).observe($('galleryStrip'));
 
 function showGallery(index) {
   const count = gallery.urls.length;
@@ -119,6 +140,7 @@ $('galleryStrip').addEventListener('click', event => {
 $('galleryPrev').addEventListener('click', () => showGallery(gallery.index - 1));
 $('galleryNext').addEventListener('click', () => showGallery(gallery.index + 1));
 $('galleryClose').addEventListener('click', () => $('galleryDialog').close());
+$('galleryDialog').addEventListener('close', () => moveHero(gallery.index));
 $('galleryDialog').addEventListener('click', event => { if (event.target === $('galleryDialog')) $('galleryDialog').close(); });
 $('galleryDialog').addEventListener('keydown', event => {
   if (event.key === 'ArrowLeft') showGallery(gallery.index - 1);
@@ -129,14 +151,7 @@ function renderChoices() {
   const { product, pack } = state;
   $('productName').textContent = `นามบัตร ${pack.name}`;
   $('productTagline').textContent = setDescription(pack) || 'เซตพร้อมสั่งที่ Admin จัดไว้';
-  // The set's own picture (set in the studio); the standard one when it has none or the link does not load.
-  const hero = $('productImage');
-  const image = setImageUrl(pack.image);
-  hero.onerror = () => { hero.onerror = null; hero.src = 'assets/hero.png'; };
-  hero.referrerPolicy = 'no-referrer';
-  hero.src = image || 'assets/hero.png';
-  hero.alt = `ตัวอย่างเซตนามบัตร ${pack.name}`;
-  renderGallery(galleryUrls(pack.gallery));
+  renderGallery([...new Set([setImageUrl(pack.image), ...galleryUrls(pack.gallery)].filter(Boolean))]);
   const bullets = setBullets({ product, pack, catalog: state.catalog });
   $('specBlock').hidden = !bullets.length;
   $('specList').innerHTML = bullets.map(text => `<li>${esc(text)}</li>`).join('');
@@ -239,7 +254,6 @@ document.addEventListener('click', event => {
 
 $('promoCode').addEventListener('input', recalc);
 $('next').addEventListener('click', saveToCart);
-$('changeImage').addEventListener('click', () => alert('สามารถเชื่อมเครื่องมือ Mockup ในขั้นต่อไปได้'));
 $('cartCount').textContent = String(cartCount());
 addEventListener('pageshow', () => { $('cartCount').textContent = String(cartCount()); });
 init();

@@ -168,8 +168,6 @@ for (const bad of ['http://cdn.example.com/a.jpg', 'javascript:alert(1)', 5, 'as
 // pages
 const [landingJs, sharedImage] = ['../business-card/app.js', '../shared/set-image.js'].map(read);
 assert.match(orderJs, /setImageUrl\(pack\.image\)/, 'the order page shows the set picture');
-assert.ok(orderJs.includes("hero.onerror = () => { hero.onerror = null; hero.src = 'assets/hero.png'; };"), 'a picture that does not load falls back to the standard one');
-assert.ok(orderJs.includes("hero.src = image || 'assets/hero.png';"), 'a set without a picture shows the standard one');
 assert.match(landingJs, /setImageUrl\(item\.image\)/, 'the set cards check the picture too');
 assert.ok(!/esc\(item\.image\)/.test(landingJs), 'the landing page no longer prints an unchecked link');
 assert.match(studioJs, /data-package-field="image"/);
@@ -214,10 +212,11 @@ assert.deepEqual(fitWithin(0, 100), { width: 0, height: 0 });
 
 // pages
 const [orderHtmlNow] = ['../business-card/order.html'].map(read);
-assert.match(orderHtmlNow, /id="gallery"[^>]*hidden/, 'the gallery is hidden until the set has pictures');
+assert.match(orderHtmlNow, /aria-roledescription="carousel"/, 'sample images appear in the main carousel');
+assert.doesNotMatch(orderHtmlNow, /id="changeImage"/);
 assert.match(orderHtmlNow, /<dialog id="galleryDialog"/);
-assert.match(orderJs, /renderGallery\(galleryUrls\(pack\.gallery\)\)/, 'the order page shows the set gallery');
-assert.ok(orderJs.includes("image.addEventListener('error', () => renderGallery(gallery.urls.filter(url => url !== image.dataset.url))"), 'a picture that fails to load leaves the strip');
+assert.match(orderJs, /galleryUrls\(pack\.gallery\)/, 'the order page shows the set gallery');
+assert.ok(orderJs.includes("renderGallery(gallery.urls.filter(url => url !== image.dataset.url))"), 'a picture that fails to load leaves the strip');
 assert.match(orderJs, /\$\('galleryDialog'\)\.showModal\(\)/);
 assert.match(studioJs, /data-gallery-add-link/);
 assert.match(studioJs, /data-gallery-remove/);

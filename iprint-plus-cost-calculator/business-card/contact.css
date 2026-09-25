@@ -1,0 +1,29 @@
+.floating-contact {
+  position: fixed;
+  right: max(20px, env(safe-area-inset-right));
+  bottom: max(20px, env(safe-area-inset-bottom));
+  z-index: 30;
+  width: 72px;
+  height: 72px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #06c755;
+  color: #fff;
+  box-shadow: 0 5px 20px #12583135;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.floating-contact[hidden] { display: none; }
+.floating-contact svg { width: 25px; height: 25px; }
+.floating-contact:hover { background: #049f44; }
+.floating-contact:focus-visible { outline: 3px solid #064d99; outline-offset: 4px; }
+@media (max-width: 600px) {
+  .floating-contact { width: 64px; height: 64px; right: max(14px, env(safe-area-inset-right)); bottom: max(14px, env(safe-area-inset-bottom)); }
+}

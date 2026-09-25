@@ -18,6 +18,7 @@ const ROUTES = [
   { access: 'public', method: 'GET', path: '/services' },
   { access: 'public', method: 'GET', path: '/public/capacity' },
   { access: 'public', method: 'GET', path: `/public/orders/${UUID}` },
+  { access: 'public', method: 'POST', path: '/public/print-requests' }, // Turnstile + allowed origin + bounded PDF
   { access: 'public', method: 'POST', path: '/public/orders' }, // guarded by Turnstile, not by the staff key
   { access: 'public', method: 'POST', path: '/line/webhook' }, // guarded by the LINE signature, not by the staff key
   { access: 'public', method: 'GET', path: '/media/gallery/3cc1a0ce-e8bd-8068-acd1-000bcaea0f4a.jpg' }, // pictures shown to customers; read-only

@@ -77,14 +77,17 @@ export function buildBriefBlocks(brief) {
   return blocks;
 }
 
-export async function createBriefTicket({ env, brief, briefKey, notionHeaders, fetchImpl = fetch }) {
+export async function createBriefTicket({ env, brief, briefKey, notionHeaders, fetchImpl = fetch, sourceKind = 'line', attachmentBlocks = async () => [] }) {
   const source = await resolveDataSource(env.NOTION_TICKETS_DATA_SOURCE_ID, notionHeaders, fetchImpl);
   const schema = source.properties;
   const titleProperty = Object.entries(schema).find(([, property]) => property?.type === 'title')?.[0];
   if (!titleProperty) throw new NotionTicketError('Ticket data source has no title property');
 
   // The same brief submitted twice (double click, retry after a timeout) returns the ticket that already exists.
-  const orderKey = `BRIEF-${briefKey}`;
+  const orderKey = `${sourceKind === 'preview' ? 'PREVIEW' : 'BRIEF'}-${briefKey}`;
+  if (sourceKind === 'preview' && schema['Order Key']?.type !== 'rich_text') {
+    throw new NotionTicketError('Print requests require the Order Key rich text property');
+  }
   if (schema['Order Key']?.type === 'rich_text') {
     const found = await notion(`https://api.notion.com/v1/data_sources/${source.id}/query`, {
       method: 'POST',
@@ -111,12 +114,18 @@ export async function createBriefTicket({ env, brief, briefKey, notionHeaders, f
     break;
   }
 
+  const children = sourceKind === 'preview' ? [
+    { object: 'block', type: 'heading_2', heading_2: { rich_text: richText('บรีฟนามบัตรจากหน้า 3D') } },
+    { object: 'block', type: 'paragraph', paragraph: { rich_text: richText(brief.note) } },
+    { object: 'block', type: 'divider', divider: {} }
+  ] : buildBriefBlocks(brief);
+  children.push(...await attachmentBlocks());
   const page = await notion('https://api.notion.com/v1/pages', {
     method: 'POST',
     body: JSON.stringify({
       parent: { type: 'data_source_id', data_source_id: source.id },
       properties,
-      children: buildBriefBlocks(brief)
+      children
     })
   }, notionHeaders, fetchImpl);
   return { id: page.id, url: page.url || null, deduplicated: false };

@@ -6,13 +6,24 @@
   <meta name="description" content="สั่งพิมพ์นามบัตร iPrint เลือกแพ็กเกจ เห็นราคาและวันรับงานก่อนยืนยัน">
   <title>นามบัตร iPrint — เลือกให้เหมาะกับภาพลักษณ์ของคุณ</title>
   <meta name="theme-color" content="#eef6ff">
-  <link rel="stylesheet" href="styles.css?v=9">
+  <link rel="stylesheet" href="styles.css?v=10">
   <link rel="stylesheet" href="../shared/typography.css?v=1">
+  <link rel="stylesheet" href="hero.css?v=1">
+  <link rel="stylesheet" href="contact.css?v=1">
 </head>
 <body>
   <header class="nav"><a class="brand" href="../catalog/" aria-label="กลับไป Catalog iPrint"><strong>iPrint</strong><span>สั่งพิมพ์ง่าย เห็นราคาก่อนยืนยัน</span></a><nav><a href="#sizes">ขนาด & วัสดุ</a><a href="#techniques">เทคนิคพิเศษ</a><a href="#packages">Catalog นามบัตร</a><a href="#how">ขั้นตอนการสั่ง</a></nav><div class="nav-actions"><a class="all-catalog-link" href="../catalog/"><span aria-hidden="true">⌂</span> Catalog รวม</a><a class="cart-button" href="../cart/" aria-label="เปิดตะกร้าสินค้า"><img src="../catalog/assets/cart.svg" alt=""><b id="cartCount">0</b></a></div></header>
   <main id="top">
-    <section class="hero simplified"><a class="hero-back" href="../catalog/" aria-label="ย้อนกลับไปหน้า Catalog"><span aria-hidden="true">←</span>ย้อนกลับ</a><div class="hero-copy"><span class="eyebrow">I PRINT STUDIO</span><h1>นามบัตร</h1><h2>ความประทับใจแรกของธุรกิจคุณ</h2><p>นามบัตรไม่ได้บอกแค่ “คุณคือใคร” แต่ยังสะท้อนว่า คุณใส่ใจกับธุรกิจของคุณแค่ไหน เลือกเซตที่ Admin จัดไว้ แล้วปรับวัสดุ จำนวน และเทคนิคการพิมพ์ก่อนสั่งได้ทันที</p><div class="hero-statement"><b>กระดาษใบเล็ก<br>ที่สะท้อนภาพลักษณ์ของแบรนด์</b><small>A Small Card That Reflects Your Brand Image.</small></div><div class="actions"><a class="button" href="#packages">ดู Catalog นามบัตร</a></div></div></section>
+    <section class="hero showroom-hero">
+      <a class="hero-back" href="../catalog/">← ย้อนกลับ</a>
+      <div class="hero-copy"><span class="eyebrow">SEE IT FIRST. PRINT IT RIGHT.</span>
+        <h1>นามบัตรที่ใช่<br>เห็นได้ก่อนพิมพ์</h1><h2>ความประทับใจแรก ที่คุณออกแบบได้</h2>
+        <p>เห็นแสงบนฟอยล์ สัมผัสมิติของพื้นผิว ลองใส่ดีไซน์ของคุณแล้วเลือกวัสดุให้สะท้อนตัวตนของแบรนด์</p>
+        <div class="actions"><a class="button" href="../material-preview/?from=business-card">ลองใส่ดีไซน์ของคุณ</a><a class="button ghost" href="#packages">ดูแพ็กเกจและราคา</a></div>
+      </div>
+      <div class="hero-mount" id="heroMount"><div class="hero-stage" id="heroStage"><canvas aria-label="ตัวอย่างนามบัตรฟอยล์ทอง 3 มิติ"></canvas><p class="hero-loading" id="heroLoading" role="status">กำลังเตรียมนามบัตร 3 มิติ…</p></div><button class="hero-expand" id="heroExpand" type="button">⛶ ขยายดูเต็มจอ</button><p class="hero-footnote">ตัวอย่างวัสดุและสีโดยประมาณ · ฟอยล์และเทคนิคพิเศษสอบถามราคาเพิ่มเติม</p></div>
+    </section>
+    <dialog class="hero-preview" id="heroPreview" aria-label="ดูนามบัตรเต็มจอ"><div class="hero-preview-toolbar"><button id="heroTilt" type="button" hidden>เปิดการเอียงตามมือถือ</button><button id="heroClose" type="button">ปิด ✕</button></div><p class="hero-preview-hint" id="heroPreviewHint" role="status"></p></dialog>
 
     <section id="packages" class="section alt catalog-section">
       <div class="section-head split catalog-heading">
@@ -31,24 +42,26 @@
       <article><img src="assets/hero.png" alt="นามบัตรขนาดบัตรเครดิต"><h3>ขนาดเท่าบัตรเครดิต / ATM</h3><p>8.5 × 5.5 ซม. หรือปรับเป็น Custom Size</p></article>
     </div></section>
 
-    <section id="materials" class="section materials-section"><div class="section-head split"><div><span>02 / PAPERS & MATERIALS</span><h2>กระดาษและวัสดุสังเคราะห์</h2></div><a class="button ghost" href="../material-preview/?from=business-card">ลองดูวัสดุแบบ 3 มิติ <span aria-hidden="true">→</span></a></div><div class="info-grid material-grid">
+    <section id="materials" class="section materials-section"><div class="section-head split"><div><span>02 / PAPERS & MATERIALS</span><h2>กระดาษและวัสดุสังเคราะห์</h2></div></div><div class="info-grid material-grid">
       <article><img src="assets/material-professional.png" alt="พื้นผิวกระดาษอาร์ต"><em>PROFESSIONAL CLASS</em><h3>กระดาษอาร์ตมาตรฐานสูง</h3><p>กระดาษอาร์ตด้าน 250 แกรม และ 300 แกรม เคลือบผิวเรียบเนียนระดับคุณภาพ เพื่อให้แสดงสีสันได้อย่างแม่นยำ เหมาะสำหรับแบรนด์ Corporate / SME</p><strong>• อาร์ตด้าน 250 แกรม · อาร์ตด้าน 300 แกรม · การ์ดขาว 300 แกรม</strong></article>
       <article class="natural"><img src="assets/material-textured.png" alt="กระดาษธรรมชาติและอัดลาย"><em>NATURAL & TEXTURED</em><h3>สัมผัสธรรมชาติและลวดลาย</h3><p>ตั้งแต่กระดาษคราฟท์สีน้ำตาลธรรมชาติ จนถึงกระดาษ Fine Linen, Orange Peel, Pine Bark และ Eggshell เพิ่มความพรีเมียมที่รู้สึกได้ผ่านนิ้วสัมผัส</p><strong>• คราฟท์ 300g · Fine Linen · Orange Peel · Pine Bark · Eggshell</strong></article>
       <article class="special"><img src="assets/material-special.png" alt="วัสดุพิเศษ PET"><em>POLYPLEX & SPECIAL</em><h3>วัสดุพิเศษสังเคราะห์ PET</h3><p>ความทนทานขั้นสูงด้วยวัสดุ PET หนา 250–275 ไมครอน กันน้ำ 100% ไม่ฉีกขาด มีทั้งแบบสีขาวด้าน ขุ่นไข โปร่งแสง และสีเมทัลลิก</p><strong>• PET ขาวด้าน 275μ · PET ขุ่นไข 250μ · Silver & Pearl Metallic</strong></article>
     </div></section>
 
-    <section id="techniques" class="section"><div class="section-head split"><div><span>03 / SPECIAL TECHNIQUES</span><h2>ยกระดับมิติด้วยเทคนิคตกแต่งพิเศษ</h2></div><p>การเพิ่มมิติ แสงเงา และลวดลายสัมผัส ทำให้ข้อมูลสำคัญของคุณโดดเด่นขึ้นอย่างลุ่มลึก</p></div><div class="technique-grid">
-      <article><i>✦</i><div><h3>FOIL — ปั๊มฟอยล์</h3><p>เพิ่มความหรูหราสะดุดตาด้วยฟอยล์สีทอง เงิน โรสโกลด์ สะท้อนแสงเงางาม</p></div></article>
-      <article><i>↥</i><div><h3>EMBOSS — ปั๊มนูน</h3><p>ดึงผิวสัมผัสข้อความหรือโลโก้ให้นูนขึ้นมาเป็นสามมิติจนนิ้วมือสัมผัสได้</p></div></article>
-      <article><i>↧</i><div><h3>DEBOSS — ปั๊มจม</h3><p>เน้นความประณีตเรียบหรูด้วยการปั๊มกดลึกลงบนกระดาษหนาพิเศษ</p></div></article>
-      <article><i>◉</i><div><h3>SPOT UV</h3><p>สร้างระดับความเงาเฉพาะจุดตัดกับเนื้อกระดาษเคลือบด้านอย่างหรูหรา</p></div></article>
-    </div></section>
+    <section id="techniques" class="section">
+      <div class="section-head"><span>03 / SPECIAL TECHNIQUES</span><h2>ยกระดับมิติด้วยเทคนิคตกแต่งพิเศษ</h2></div>
+      <div class="info-grid material-grid technique-cards">
+        <article><img src="assets/material-natural.png" alt="ตัวอย่างนามบัตรตกแต่งด้วยฟอยล์สีทอง" loading="lazy"><em>FOIL</em><h3>ปั๊มฟอยล์</h3><p>เพิ่มความหรูหราสะดุดตาด้วยฟอยล์สีทอง เงิน และโรสโกลด์ สะท้อนแสงเงางาม เหมาะกับโลโก้หรือข้อความที่ต้องการเน้น</p><strong>• ทอง · เงิน · โรสโกลด์</strong></article>
+        <article class="natural"><img src="assets/material-natural.png" alt="ตัวอย่างงานตกแต่งผิวกระดาษและโลโก้บนบัตร" loading="lazy"><em>EMBOSS</em><h3>ปั๊มนูน</h3><p>ยกผิวกระดาษบริเวณข้อความหรือโลโก้ให้นูนขึ้น เพิ่มมิติที่มองเห็นผ่านแสงเงาและสัมผัสได้ด้วยปลายนิ้ว</p><strong>• ผิวนูน · มิติแสงเงา · สัมผัสบนกระดาษ</strong></article>
+        <article class="special"><img src="assets/technique.png" alt="ตัวอย่างตัวอักษรปั๊มจมบนกระดาษ" loading="lazy"><em>DEBOSS</em><h3>ปั๊มจม</h3><p>สร้างร่องลึกบนผิวกระดาษบริเวณข้อความหรือโลโก้ ให้รายละเอียดดูประณีต เรียบหรู เหมาะกับกระดาษหนาที่ต้องการโชว์เนื้อสัมผัส</p><strong>• ร่องลึก · รายละเอียดคมชัด · กระดาษหนา</strong></article>
+        <article><img src="assets/size-us.png" alt="ตัวอย่างนามบัตรพื้นด้านที่มีลวดลายเงาเฉพาะจุด" loading="lazy"><em>SPOT UV</em><h3>เคลือบเงาเฉพาะจุด</h3><p>เพิ่มความเงาเฉพาะโลโก้ ตัวอักษร หรือลวดลาย ให้ตัดกับพื้นผิวด้านและเห็นรายละเอียดเด่นขึ้นเมื่อเปลี่ยนมุมมอง</p><strong>• เงาเฉพาะจุด · พื้นด้าน · เน้นโลโก้และลวดลาย</strong></article>
+      </div>
+    </section>
 
     <section class="section combinations"><div class="section-head"><span>MATERIAL × FINISH SYNERGY</span><h2>คู่ผสมยอดนิยมที่ตอบโจทย์</h2></div><div class="combo-grid"><figure><img src="assets/hero.png" alt="กระดาษอาร์ตด้านกับปั๊มฟอยล์"><figcaption>กระดาษอาร์ตด้าน + ปั๊มฟอยล์</figcaption></figure><figure><img src="assets/material-natural.png" alt="กระดาษอัดลายกับปั๊มนูน"><figcaption>กระดาษอัดลาย + ปั๊มนูน</figcaption></figure><figure><img src="assets/technique.png" alt="กระดาษอัดลายกับปั๊มจม"><figcaption>กระดาษอัดลาย + ปั๊มจม</figcaption></figure><figure><img src="assets/size-us.png" alt="พื้นด้านกับ Spot UV"><figcaption>พื้นด้าน + Spot UV</figcaption></figure><figure><img src="assets/size-jp.png" alt="PET กับ Metallic"><figcaption>PET + Metallic</figcaption></figure></div></section>
 
     <section id="how" class="section"><div class="section-head"><span>05 / WORK PROCESS</span><h2>จากไอเดียออกแบบ สู่ความประทับใจจริง</h2></div><ol class="process-grid"><li><b>01</b><h3>บอกความต้องการแบรนด์</h3><p>พูดคุยกับทีมงาน iPrint ถึงสไตล์ของบริษัท โทนสี โลโก้ และภาพลักษณ์โดยรวมที่คุณต้องการสื่อสาร</p></li><li><b>02</b><h3>เลือกกระดาษและเทคนิคพิเศษ</h3><p>รับคำแนะนำชนิดกระดาษ ระดับแกรม และเทคนิคอย่างปั๊มนูนหรือ Spot UV ที่เข้ากับดีไซน์</p></li><li><b>03</b><h3>การจัดพิมพ์จริงแบบมั่นใจ</h3><p>ระบบแท่นพิมพ์ทันสมัย ดับเบิลเช็กระดับสี กระดาษ และแรงอัดปั๊ม เพื่อให้ชิ้นงานสมบูรณ์แบบ</p></li></ol></section>
 
-    <section class="section specs-quote"><article class="spec-card"><span class="eyebrow">PRODUCT SPECIFICATIONS SUMMARY</span><h2>รายละเอียดสเปกสินค้า</h2><dl><div><dt>ขนาด</dt><dd>9.0 × 5.4 ซม. | 8.5 × 5.5 ซม. | Custom Size</dd></div><div><dt>กระดาษพรีเมียม</dt><dd>อาร์ตด้าน 250g/300g | คราฟท์ 300g | Fine Linen | Eggshell</dd></div><div><dt>Polyplex / PET</dt><dd>PET ขาวด้าน 275μ | PET ขุ่นไข 250μ | Silver Metallic</dd></div><div><dt>งานพิมพ์ & เคลือบ</dt><dd>พิมพ์ 4 สี 1 ด้าน / 2 ด้าน | เคลือบด้าน / เงา</dd></div><div><dt>รูปทรงการตัด</dt><dd>ตัดมุมมน | ไดคัทตามทรงเฉพาะแบรนด์</dd></div><div><dt>เทคนิคพิเศษ</dt><dd>ปั๊มฟอยล์ | ปั๊มนูน / จม | Spot UV</dd></div><div><dt>บรรจุขั้นต่ำ</dt><dd>100 ใบ / กล่องกระดาษ</dd></div></dl><div class="contact-block"><img src="assets/size-th.png" alt="QR Code ติดต่อ iPrint"><div><h3>สแกน Line เพื่อสอบถาม</h3><p>สแกนแอดไลน์ @iprint หรือปรึกษาฝ่ายผลิตนามบัตรโดยตรง</p></div></div></article><aside class="quote-card"><span class="eyebrow">READY TO PRINT</span><h2>ขอใบเสนอราคา</h2><p>เลือกแพ็กเกจและกรอกรายละเอียด เจ้าหน้าที่จะได้รับข้อมูลพร้อมไฟล์และวันรับงานที่ต้องการ</p><ul><li>เห็นราคาจาก Catalog จริงก่อนยืนยัน</li><li>เลือกวันจากกำลังผลิตจริง</li><li>ได้รับ Ticket ID สำหรับติดตามงาน</li></ul><button class="button quote-button" data-start>เริ่มสร้างออร์เดอร์นามบัตร</button><small>* ข้อมูลจัดส่งตรงถึงทีมงานประเมินราคา iPrint® ทันที</small></aside></section>
 
     <section id="order" class="builder" hidden>
       <div class="builder-head"><div><span class="eyebrow">BUSINESS CARD BUILDER</span><h2>สร้างออร์เดอร์นามบัตร</h2></div><button class="icon-button" id="closeBuilder" aria-label="ปิด">×</button></div>
@@ -66,5 +79,8 @@
   </main>
   <footer><b>SEE IT FIRST. PRINT IT RIGHT.</b><span>iPrint® Business Card Series</span><small>© 2026 iPrint® Design System. All rights reserved.</small></footer>
   <script type="module" src="app.js?v=4"></script>
+  <a id="floatingContact" class="floating-contact" target="_blank" rel="noopener noreferrer" aria-label="ติดต่อ เพิ่มเพื่อน LINE ร้าน iPrint" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20 11.2c0 4.1-4 7.4-8.6 7.4H9l-4.3 2 .9-3.7C3.4 15.6 2 13.6 2 11.2 2 7.1 6 4 11 4s9 3.1 9 7.2Z"/><path d="M7 10.8h10M7 13.8h6"/></svg><span>ติดต่อ</span></a>
+  <script type="module" src="contact.js?v=1"></script>
+  <script type="module" src="hero.js?v=1"></script>
 </body>
 </html>
