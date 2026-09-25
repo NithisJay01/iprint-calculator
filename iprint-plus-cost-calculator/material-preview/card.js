@@ -19,7 +19,7 @@ import * as THREE from './vendor/three/three.module.min.js';
 import { paperMaterials, coatings, finishes, TEXTURE_BUDGET, FILM } from './materials.js';
 import { generatePaperMaps, loadFileMaps, maskToArray, boxBlur, reliefNormalTexture, filmNormalTexture, nextTick } from './procedural.js';
 import { createArtwork } from './artwork.js';
-import { textureSizeFor } from './shape.js';
+import { textureSizeFor, previewSpec } from './shape.js';
 import { applyOpticalParams } from './material-catalog.js';
 
 const isCoarse = () => matchMedia('(pointer: coarse)').matches;
@@ -43,7 +43,10 @@ export function createCard({ renderer, spec: initialSpec }) {
   const budget = isCoarse() ? TEXTURE_BUDGET.mobile : TEXTURE_BUDGET.desktop;
   const anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
 
-  let spec = initialSpec;
+  // realSpec: the job in real mm (what card.spec reports: export, forms). spec: what the 3D is built from — the same
+  // shape at 1:N when the job is larger than the preview allows (see previewSpec). Everything below uses spec.
+  let realSpec = initialSpec;
+  let spec = previewSpec(initialSpec);
   let size = textureSizeFor(spec.frame.w, spec.frame.h, budget); // { width, height, ppm } of every frame-sized texture
   let artwork = createArtwork(size.width, size.height, anisotropy);
   let sizeGen = 0; // bumps whenever the frame-sized resources are thrown away, so stale async work can tell
@@ -486,13 +489,15 @@ export function createCard({ renderer, spec: initialSpec }) {
    * Change the card outline / size. `makeSource(size)` (optional, async) returns the artwork for the new texture size
    * — the layers are re-fitted to the new frame in one go, so nothing flashes at the wrong scale.
    */
-  async function setSpec(next, makeSource) {
+  async function setSpec(real, makeSource) {
+    const next = previewSpec(real);
     const nextSize = textureSizeFor(next.frame.w, next.frame.h, budget);
     const frameChanged =
       nextSize.width !== size.width ||
       nextSize.height !== size.height ||
       Math.abs(next.frame.w - spec.frame.w) > 1e-6 ||
       Math.abs(next.frame.h - spec.frame.h) > 1e-6;
+    realSpec = real;
     spec = next;
     fitFilm();
     swapGeometry();
@@ -544,6 +549,10 @@ export function createCard({ renderer, spec: initialSpec }) {
       return size;
     },
     get spec() {
+      return realSpec; // real mm
+    },
+    /** The spec the 3D model is built from (1:scale of card.spec). */
+    get view() {
       return spec;
     },
     get artwork() {

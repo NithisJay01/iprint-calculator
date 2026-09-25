@@ -3,7 +3,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import {
   polygonArea, boundsOf, pointInRing, simplifyRing, ringSelfIntersects, validateRings,
   presetOutline, buildSpec, clampSize, textureSizeFor, containRect, compareAspect, suggestBleed, effectiveDpi,
-  registrationNotes, readImageSize, shapeFieldFromRgba, traceContours, outlineFromField, SIZE_LIMITS
+  registrationNotes, readImageSize, shapeFieldFromRgba, traceContours, outlineFromField, SIZE_LIMITS, previewScaleFor, previewSpec
 } from '../material-preview/shape.js';
 import {
   paperMaterials, coatings, finishes, FINISH_ORDER, SHAPE_KINDS, SIZE_PRESETS, BLEED_OPTIONS, TEXTURE_BUDGET, DEFAULT_SHAPE, DEFAULTS
@@ -40,9 +40,26 @@ const near = (actual, expected, tolerance, message) =>
   assert.deepEqual(bled.frame, { cx: 0, cy: 0, w: 96, h: 60 }, 'bleed grows the artwork frame, not the card');
   assert.deepEqual(bled.bounds, { w: 90, h: 54 });
   assert.equal(clampSize(5), SIZE_LIMITS.min);
-  assert.equal(clampSize(999), SIZE_LIMITS.max);
+  assert.equal(clampSize(5000), SIZE_LIMITS.max);
   assert.equal(clampSize('abc'), 90);
-  assert.equal(buildSpec({ width: 1000, height: 1 }).bounds.w, SIZE_LIMITS.max, 'sizes are clamped');
+  assert.equal(buildSpec({ width: 5000, height: 1 }).bounds.w, SIZE_LIMITS.max, 'sizes are clamped');
+
+  // big jobs keep their ratio and are previewed as a scale model; the real size is untouched
+  assert.equal(previewScaleFor({ w: 90, h: 54 }), 1, 'a business card is shown at real size');
+  assert.equal(previewScaleFor({ w: 150, h: 150 }), 1);
+  assert.equal(previewScaleFor({ w: 300, h: 100 }), 2);
+  assert.equal(previewScaleFor({ w: 700, h: 200 }), 5);
+  assert.equal(previewScaleFor({ w: 1000, h: 1000 }), 10, 'the largest job still fits the preview');
+  const poster = buildSpec({ kind: 'rounded', width: 600, height: 400, radius: 10, bleed: 3 });
+  assert.deepEqual(poster.bounds, { w: 600, h: 400 }, 'no side is clamped on its own: the ratio stays');
+  const model = previewSpec(poster);
+  assert.equal(model.scale, 5);
+  assert.deepEqual(model.bounds, { w: 120, h: 80 });
+  near(model.frame.w, 606 / 5, 1e-9, 'bleed shrinks with the model');
+  near(model.bounds.w / model.bounds.h, 1.5, 1e-9, 'same ratio as the job');
+  assert.equal(model.thickness, poster.thickness, 'the model keeps real card thickness');
+  assert.ok(model.rings[0].every((p) => Math.abs(p.x) <= 60 + 1e-9 && Math.abs(p.y) <= 40 + 1e-9), 'outline scaled');
+  assert.equal(previewSpec(buildSpec({ width: 90, height: 54 })).scale, 1);
   assert.equal(buildSpec({ bleed: 99 }).bleed, 10, 'bleed is clamped');
 }
 

@@ -44,7 +44,7 @@ export function createLayers({ card, studio, onChange = () => {}, setBusy = () =
   async function applyOnce() {
     const spec = currentSpec();
     await card.setSpec(spec, makeSource);
-    studio.setShape(spec.rings, spec.bounds);
+    studio.setShape(card.view.rings, card.view.bounds); // the shadow follows the model, which may be at 1:N
     onChange();
   }
 
@@ -206,7 +206,11 @@ export function createLayers({ card, studio, onChange = () => {}, setBusy = () =
       const own = (layer) => (layer?.warnings ?? []).map((text) => ({ text, warn: true }));
       const shapeNotes = [...(state.shape.kind === 'custom' ? (state.cut?.warnings ?? []).map((text) => ({ text, warn: true })) : [])];
       if (state.shape.kind === 'custom' && Math.abs(spec.bounds.w - state.shape.width) > 0.5) {
-        shapeNotes.push({ text: `ขนาดถูกปรับเป็น ${+(spec.bounds.w / 10).toFixed(2)} × ${+(spec.bounds.h / 10).toFixed(2)} cm ให้อยู่ในช่วงที่รองรับ (2–15 cm)`, warn: true });
+        shapeNotes.push({ text: `ขนาดถูกปรับเป็น ${+(spec.bounds.w / 10).toFixed(2)} × ${+(spec.bounds.h / 10).toFixed(2)} cm ให้อยู่ในช่วงที่รองรับ (2–100 cm)`, warn: true });
+      }
+      const previewScale = card.view.scale ?? 1;
+      if (previewScale > 1) {
+        shapeNotes.push({ text: `พรีวิวแสดงแบบย่อส่วน 1:${previewScale} (สัดส่วนเท่างานจริง) — ไฟล์ผลิตและใบสั่งพิมพ์ใช้ขนาดจริง ${+(spec.bounds.w / 10).toFixed(2)} × ${+(spec.bounds.h / 10).toFixed(2)} cm` });
       }
       const artNotes = [...own(state.art), ...reg.filter((n) => n.text.startsWith('Layer 1'))];
       const maskNotes = [...own(state.mask), ...reg.filter((n) => !n.text.startsWith('Layer 1'))];
@@ -215,6 +219,7 @@ export function createLayers({ card, studio, onChange = () => {}, setBusy = () =
       }
       return {
         spec,
+        previewScale, // 1:N of the 3D model (1 = real size)
         shape: state.shape,
         cutName: state.cut?.name ?? '',
         cutKind: state.cut?.kind ?? '',

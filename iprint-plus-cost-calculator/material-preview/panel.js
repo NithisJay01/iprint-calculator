@@ -361,7 +361,8 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
 
     // step 1 — artwork: front, back, card shape and size
     pressed($('#shapeChips'), d.shape.kind);
-    $('#shapeSum').textContent = `${kind?.label ?? ''} · ${bounds}`;
+    const scaleText = d.previewScale > 1 ? `สเกล 1:${d.previewScale}` : ''; // the 3D model is a scale model of a big job
+    $('#shapeSum').textContent = [kind?.label ?? '', bounds, scaleText].filter(Boolean).join(' · ');
     $('#presetField').hidden = custom;
     $('#radiusField').hidden = d.shape.kind !== 'rounded';
     $('#bleedField').hidden = custom;
@@ -441,7 +442,7 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
           : 'ตอนนี้ใช้รูปทรงโลโก้ของตัวอย่างการ์ด — อัปโหลดไฟล์ของคุณเพื่อใช้แทน';
     setNotes($('#maskNotes'), d.maskNotes);
 
-    $('#caption').textContent = [state.material?.name ?? paper.label, state.coating === 'none' ? '' : coat.label, state.finish === 'none' ? '' : finish.label].filter(Boolean).join(' · ');
+    $('#caption').textContent = [state.material?.name ?? paper.label, state.coating === 'none' ? '' : coat.label, state.finish === 'none' ? '' : finish.label, scaleText].filter(Boolean).join(' · ');
     renderExport(d);
   }
   render();

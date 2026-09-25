@@ -13,7 +13,14 @@
 
 export const THICKNESS_MM = 0.55;
 export const BEVEL_MM = 0.07;
-export const SIZE_LIMITS = Object.freeze({ min: 20, max: 150 });
+/** Real (production) size range per side, mm. Each side is clamped on its own only at these limits. */
+export const SIZE_LIMITS = Object.freeze({ min: 20, max: 1000 });
+/**
+ * The 3D preview never builds a card larger than PREVIEW_MAX_MM: a bigger job is shown as a scale model — the same
+ * shape and ratio, drawn at 1:N (the first step that fits). Production files and the size fields keep the real mm.
+ */
+export const PREVIEW_MAX_MM = 150;
+export const PREVIEW_SCALES = Object.freeze([1, 2, 5, 10]);
 export const ASPECT_TOLERANCE = 0.02;
 
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -274,6 +281,31 @@ function customSpec(custom, widthMm) {
     thickness: THICKNESS_MM,
     bevel: BEVEL_MM,
     bleed: 0,
+  };
+}
+
+/** The 1:N the preview uses for a real size: the first scale step whose model fits in PREVIEW_MAX_MM. */
+export function previewScaleFor(bounds) {
+  const big = Math.max(bounds.w, bounds.h);
+  return PREVIEW_SCALES.find((n) => big / n <= PREVIEW_MAX_MM + 1e-6) ?? PREVIEW_SCALES[PREVIEW_SCALES.length - 1];
+}
+
+/**
+ * The spec the 3D preview is built from: `spec` (real mm) shrunk to 1:`scale` — outline, frame and bleed alike, so the
+ * ratio and artwork placement are unchanged. Thickness and bevel stay those of real stock, so the model still reads as a
+ * card. `scale` is kept on the result.
+ */
+export function previewSpec(spec, scale = previewScaleFor(spec.bounds)) {
+  if (scale === 1) return { ...spec, scale: 1 };
+  const k = 1 / scale;
+  const f = spec.frame;
+  return {
+    ...spec,
+    rings: spec.rings.map((r) => r.map((p) => ({ x: p.x * k, y: p.y * k }))),
+    bounds: { w: spec.bounds.w * k, h: spec.bounds.h * k },
+    frame: { cx: f.cx * k, cy: f.cy * k, w: f.w * k, h: f.h * k },
+    bleed: spec.bleed * k,
+    scale,
   };
 }
 
