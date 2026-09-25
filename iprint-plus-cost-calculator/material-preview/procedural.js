@@ -426,3 +426,62 @@ export function reliefNormalTexture(layers, W, H, ppm, anisotropy = 4) {
   }
   return dataTexture(heightToNormalBytes(sum, W, H, ppm), W, H, THREE.RGBAFormat, THREE.NoColorSpace, anisotropy);
 }
+
+/* -------------------------------------------------------- lamination film */
+
+/** Value noise that wraps around an N×N tile (`cells` lattice cells per side), so the tile repeats without seams. */
+function addPeriodicNoise(dst, N, cells, amp, rand) {
+  const lattice = new Float32Array(cells * cells);
+  for (let i = 0; i < lattice.length; i++) lattice[i] = rand() * 2 - 1;
+  const at = (i, j) => lattice[(j % cells) * cells + (i % cells)];
+  const cellPx = N / cells;
+  for (let y = 0; y < N; y++) {
+    const fy = y / cellPx;
+    const j = fy | 0;
+    const ty = (fy - j) * (fy - j) * (3 - 2 * (fy - j));
+    for (let x = 0; x < N; x++) {
+      const fx = x / cellPx;
+      const i = fx | 0;
+      const tx = (fx - i) * (fx - i) * (3 - 2 * (fx - i));
+      const a = lerp(at(i, j), at(i + 1, j), tx);
+      const b = lerp(at(i, j + 1), at(i + 1, j + 1), tx);
+      dst[y * N + x] += lerp(a, b, ty) * amp;
+    }
+  }
+}
+
+/**
+ * "Orange peel" of a laminating film: the slow, soft waviness a real gloss film has. It is invisible in the print
+ * and only shows where the film mirrors light — as a mottled, broken-up highlight. One seamless square tile of
+ * `tileMm`, meant for clearcoatNormalMap with RepeatWrapping (repeat = card mm / tileMm).
+ * @param recipe { tileMm, px, seed, octaves: [{ sizeMm, um }] }  heights in micrometres
+ */
+export function filmNormalTexture({ tileMm, px, seed, octaves }, anisotropy = 4) {
+  const N = px;
+  const h = new Float32Array(N * N);
+  const rand = mulberry32(seed);
+  for (const o of octaves) addPeriodicNoise(h, N, Math.max(1, Math.round(tileMm / o.sizeMm)), o.um, rand);
+  // slopes with wrap-around neighbours (heightToNormalBytes clamps at the border, which would leave a seam)
+  const ppm = N / tileMm;
+  const k = ppm / 2000;
+  const out = new Uint8Array(N * N * 4);
+  for (let y = 0; y < N; y++) {
+    const ym = ((y - 1 + N) % N) * N;
+    const yp = ((y + 1) % N) * N;
+    for (let x = 0; x < N; x++) {
+      const xm = (x - 1 + N) % N;
+      const xp = (x + 1) % N;
+      const dx = (h[y * N + xp] - h[y * N + xm]) * k;
+      const dy = (h[yp + x] - h[ym + x]) * k;
+      const inv = 1 / Math.sqrt(dx * dx + dy * dy + 1);
+      const o = (y * N + x) * 4;
+      out[o] = (-dx * inv * 0.5 + 0.5) * 255;
+      out[o + 1] = (-dy * inv * 0.5 + 0.5) * 255;
+      out[o + 2] = (inv * 0.5 + 0.5) * 255;
+      out[o + 3] = 255;
+    }
+  }
+  const t = dataTexture(out, N, N, THREE.RGBAFormat, THREE.NoColorSpace, anisotropy);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  return t;
+}

@@ -16,8 +16,8 @@
  * when the artwork frame changes; the paper being shown is regenerated first, the others on demand.
  */
 import * as THREE from './vendor/three/three.module.min.js';
-import { paperMaterials, coatings, finishes, TEXTURE_BUDGET } from './materials.js';
-import { generatePaperMaps, loadFileMaps, maskToArray, boxBlur, reliefNormalTexture, nextTick } from './procedural.js';
+import { paperMaterials, coatings, finishes, TEXTURE_BUDGET, FILM } from './materials.js';
+import { generatePaperMaps, loadFileMaps, maskToArray, boxBlur, reliefNormalTexture, filmNormalTexture, nextTick } from './procedural.js';
 import { createArtwork } from './artwork.js';
 import { textureSizeFor } from './shape.js';
 import { applyOpticalParams } from './material-catalog.js';
@@ -90,6 +90,11 @@ export function createCard({ renderer, spec: initialSpec }) {
 
   /* ---------------------------------------------------------- paper body */
 
+  // The lamination film's orange peel, on the clearcoat only: it shows in the reflection, never in the print.
+  // Present from the start (scale 0 = flat) so switching lamination never recompiles the shader.
+  const film = filmNormalTexture(FILM, anisotropy);
+  const fitFilm = () => film.repeat.set(spec.frame.w / FILM.tileMm, spec.frame.h / FILM.tileMm); // tile = FILM.tileMm on the card
+  fitFilm();
   const paperMat = new THREE.MeshPhysicalMaterial({
     color: 0xffffff,
     roughness: 1,
@@ -101,6 +106,8 @@ export function createCard({ renderer, spec: initialSpec }) {
     sheenColor: new THREE.Color(0xffffff),
     clearcoat: 0.001,
     clearcoatRoughness: 0.5,
+    clearcoatNormalMap: film,
+    clearcoatNormalScale: new THREE.Vector2(0, 0),
   });
   const inkUniform = { value: artwork.inkTexture() };
   let backArtwork = createArtwork(size.width, size.height, anisotropy);
@@ -347,6 +354,7 @@ export function createCard({ renderer, spec: initialSpec }) {
     m.sheenColor.set(cfg.sheenColor);
     m.clearcoat = Math.max(0.001, co.clearcoat);
     m.clearcoatRoughness = co.clearcoatRoughness;
+    m.clearcoatNormalScale.set(co.filmRelief ?? 0, co.filmRelief ?? 0);
     m.bumpScale = cfg.bumpScale;
     edgeUniform.value.set(cfg.edgeColor);
   }
@@ -486,6 +494,7 @@ export function createCard({ renderer, spec: initialSpec }) {
       Math.abs(next.frame.w - spec.frame.w) > 1e-6 ||
       Math.abs(next.frame.h - spec.frame.h) > 1e-6;
     spec = next;
+    fitFilm();
     swapGeometry();
 
     if (frameChanged) {

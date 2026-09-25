@@ -203,8 +203,25 @@ paperMaterials.pet_translucent = {
  *   roughness         replaces the paper's own roughness (the film is what the light meets first)
  *   clearcoat*        the film's own specular layer
  *   normalMul         how much of the paper grain still shows through the film
+ *   filmRelief        strength of the film's own orange peel (FILM below) in its reflection: 0 = mirror-flat
  * The values are tuned by eye, not measured — compare them with real iPrint samples.
  */
+/**
+ * The orange peel of a laminating film — a slow, soft waviness that only shows in the highlight (see filmNormalTexture).
+ * Heights are 10× a real film's (a few µm) so the 8-bit normal map keeps enough precision; `filmRelief` 0.1
+ * scales them back to life-size. One seamless tile covers `tileMm` and repeats over the card.
+ */
+export const FILM = Object.freeze({
+  tileMm: 18,
+  px: 512,
+  seed: 71,
+  octaves: [
+    { sizeMm: 4.5, um: 34 }, // broad swells: the highlight breaks into patches
+    { sizeMm: 1.8, um: 20 }, // the typical orange-peel dimples
+    { sizeMm: 0.6, um: 6 }, // fine tooth at the edge of the glare
+  ],
+});
+
 export const coatings = {
   none: {
     label: 'ไม่เคลือบ',
@@ -213,6 +230,7 @@ export const coatings = {
     clearcoat: 0,
     clearcoatRoughness: 0.5,
     normalMul: 1,
+    filmRelief: 0,
   },
   matte: {
     label: 'เคลือบด้าน',
@@ -221,6 +239,7 @@ export const coatings = {
     clearcoat: 0.4,
     clearcoatRoughness: 0.55,
     normalMul: 0.25,
+    filmRelief: 0.1, // a matte film is textured too, but its rough surface blurs it
   },
   gloss: {
     label: 'เคลือบเงา',
@@ -229,6 +248,7 @@ export const coatings = {
     clearcoat: 1,
     clearcoatRoughness: 0.05,
     normalMul: 0.15,
+    filmRelief: 0.3, // tuned by eye: 0.15 is barely visible, 0.5 starts to look like water
   },
 };
 
