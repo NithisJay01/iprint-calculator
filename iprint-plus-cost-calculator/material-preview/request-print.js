@@ -69,8 +69,8 @@ export function initPrintRequest({ card, layers, panel }) {
     if (!$('loader').classList.contains('is-hidden')) { $('status').textContent = 'รอให้พรีวิวอัปเดตเสร็จก่อนสั่งพิมพ์'; return; }
     const generation = ++opening;
     const sources = layers.exportSources();
-    if (!sources.art?.file) { $('status').textContent = 'กรุณาอัปโหลดดีไซน์ของคุณใน Layer 1 ก่อนสั่งพิมพ์'; return; }
-    if (panel.state.finish !== 'none' && !sources.mask?.file) { $('status').textContent = 'กรุณาอัปโหลดรูปทรงเทคนิคพิเศษใน Layer 3'; return; }
+    if (!sources.art?.file) { $('status').textContent = 'กรุณาอัปโหลดดีไซน์ของคุณในขั้น 1 แบบของคุณ ก่อนสั่งพิมพ์'; return; }
+    if (panel.state.finish !== 'none' && !sources.mask?.file) { $('status').textContent = 'กรุณาอัปโหลดรูปทรงเทคนิคพิเศษในขั้น 4 เทคนิคพิเศษ'; return; }
     const files = { artwork: sources.art.file, backArtwork: sources.backArt?.file, finish: sources.mask?.file, dieline: sources.cut?.file };
     const spec = { ...sources.params, width: card.spec.bounds.w, height: card.spec.bounds.h, paper: panel.state.paper, coating: panel.state.coating, finish: panel.state.finish };
     // Keep the retry key for an unchanged design. A new design starts a new request.

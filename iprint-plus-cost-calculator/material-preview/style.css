@@ -436,3 +436,22 @@ html, body {
 .material-catalog select { width: 100%; min-height: 42px; padding: 8px; border: 1px solid #ddd; border-radius: 10px; background: #fff; color: #202124; font: inherit; }
 .material-catalog > button { justify-self: start; }
 .material-catalog p { margin: 0; font-size: 12px; color: #62676b; }
+
+/* preview controls: flip + zoom side by side */
+.stage-actions { display: flex; gap: 8px; }
+
+/* step 1 groups front, back and shape: a summary beside the shape heading, a hairline above it */
+.sub-sum { margin-left: 6px; letter-spacing: 0; opacity: 0.8; }
+#shapeChips { margin-top: 0; }
+.sub:has(+ #shapeChips) { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+
+/* the advice above the print button */
+.print-advice {
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #eef3fa;
+  color: #33415a;
+  font-size: 12.5px;
+  line-height: 1.6;
+}

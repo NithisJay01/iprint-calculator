@@ -49,6 +49,14 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
   const setValue = (el, value) => {
     if (document.activeElement !== el) el.value = value; // never fight the user's typing
   };
+  // "วัสดุที่ต้องการผลิต" follows the material picked on the preview, until the customer types their own.
+  let autoMaterial = '';
+  const fillMaterialField = (name) => {
+    const field = $('#exportMaterialName');
+    const typed = field.value.trim();
+    if (document.activeElement !== field && (!typed || typed === autoMaterial)) field.value = name;
+    autoMaterial = name;
+  };
   const setNotes = (ul, notes) => {
     ul.replaceChildren(
       ...notes.map((n) => {
@@ -119,7 +127,7 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
 
   buildChips($('#shapeChips'), SHAPE_KINDS.map((k) => [k.id, k.label]), (kind) => {
     if (kind === 'custom' && !layers.state.cut) {
-      $('#stepShape').open = true;
+      $('#stepArt').open = true;
       $('#cutInput').click(); // nothing to switch to yet: ask for the file
       return;
     }
@@ -254,13 +262,14 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
       if (step.open) state.active = step.id;
     });
   }
-  const DROP = { art: 'Layer 1 (งานพิมพ์)', mask: 'Layer 3 (รูปทรงเทคนิคพิเศษ)', cut: 'รูปร่างบัตร (ไดคัท)' };
-  const dropTarget = () => ({ stepFinish: 'mask', stepShape: 'cut' })[state.active] ?? 'art';
+  const DROP = { art: 'แบบของคุณ', mask: 'รูปทรงเทคนิคพิเศษ' };
+  const dropTarget = () => ({ stepFinish: 'mask' })[state.active] ?? 'art';
   const hasFiles = (e) => [...(e.dataTransfer?.types ?? [])].includes('Files');
   stage.addEventListener('dragover', (e) => {
     if (!hasFiles(e)) return;
     e.preventDefault();
-    stage.dataset.drop = `วางไฟล์เพื่อใช้เป็น ${DROP[dropTarget()]}`;
+    const target = dropTarget();
+    stage.dataset.drop = `วางไฟล์เพื่อใช้เป็น ${DROP[target]}${target === 'art' ? (state.side === 'back' ? ' ด้านหลัง' : ' ด้านหน้า') : ''}`;
     stage.classList.add('is-drop');
   });
   stage.addEventListener('dragleave', () => stage.classList.remove('is-drop'));
@@ -271,9 +280,9 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
     const file = e.dataTransfer.files[0];
     if (!file) return;
     const target = dropTarget();
+    // (a die-cut file is picked with its own button in step 1: a drop there is artwork, which is what people drag in)
     if (target === 'art') act(() => state.side === 'back' ? layers.setBackArt(file) : layers.setArt(file));
-    else if (target === 'mask') act(() => layers.setMask(file));
-    else act(() => layers.loadCut(file, { invert: $('#cutInvert').checked }));
+    else act(() => layers.setMask(file));
   });
 
   /* ---------------------------------------------------------------- render */
@@ -288,7 +297,7 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
     const custom = d.shape.kind === 'custom';
     const bounds = `${+spec.bounds.w.toFixed(1)}×${+spec.bounds.h.toFixed(1)} mm`;
 
-    // step 0 — shape
+    // step 1 — artwork: front, back, card shape and size
     pressed($('#shapeChips'), d.shape.kind);
     $('#shapeSum').textContent = `${kind?.label ?? ''} · ${bounds}`;
     $('#presetField').hidden = custom;
@@ -305,29 +314,34 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
     $('#cutInvertWrap').hidden = !(custom && d.cutKind === 'png');
     $('#cutUpload').textContent = d.cutName ? `เปลี่ยนไฟล์ Shape (${d.cutName})` : 'เลือกไฟล์ Shape (SVG / PNG)…';
     $('#cutDesc').textContent = d.cutName
-      ? `${d.cutKind === 'svg' ? 'อ่านเส้นจากไฟล์ SVG' : 'สกัดเส้นจากภาพ PNG'} — ตั้งความกว้างของบัตรจริงเป็น mm ด้านบน (ความสูงคำนวณให้) กรอบงานเท่ากับกรอบของไฟล์นี้ ไฟล์ Layer 1 / 3 ที่ใช้ Artboard เดียวกันจะตรงกันเอง`
+      ? `${d.cutKind === 'svg' ? 'อ่านเส้นจากไฟล์ SVG' : 'สกัดเส้นจากภาพ PNG'} — ตั้งความกว้างของบัตรจริงเป็น mm ด้านบน (ความสูงคำนวณให้) กรอบงานเท่ากับกรอบของไฟล์นี้ ไฟล์แบบและรูปทรงเทคนิคพิเศษที่ใช้ Artboard เดียวกันจะตรงกันเอง`
       : 'อัปโหลดไฟล์เส้นตัดไดคัท (SVG หรือ PNG พื้นโปร่งใส) ระบบใช้เฉพาะรูปทรงและรูเจาะ จะใช้ชิ้นที่ใหญ่ที่สุดในไฟล์';
     setNotes($('#shapeNotes'), d.shapeNotes);
 
-    // step 1 — material + artwork
-    pressed($('#paperChips'), state.paper);
-    $('#paperDesc').textContent = paper.description;
-    $('#artSum').textContent = `${state.material?.name ?? paper.label} · ${d.artName || 'ตัวอย่างการ์ด'}`;
+    $('#artSum').textContent = `${d.artName || 'ตัวอย่างการ์ด'}${d.backArtName ? ' + ด้านหลัง' : ''} · ${bounds}`;
     $('#backArtUpload').textContent = d.backArtName ? `เปลี่ยนด้านหลัง (${d.backArtName})` : 'อัปโหลดด้านหลัง…';
     $('#backArtClear').hidden = !d.backArtName;
     $('#viewFront').setAttribute('aria-pressed', String(state.side === 'front'));
     $('#viewBack').setAttribute('aria-pressed', String(state.side === 'back'));
+    $('#flipBtn').setAttribute('aria-label', `พลิกด้าน — ตอนนี้แสดง${state.side === 'back' ? 'ด้านหลัง' : 'ด้านหน้า'}`);
     $('#artDemo').setAttribute('aria-pressed', String(!d.artName));
     $('#artUpload').setAttribute('aria-pressed', String(!!d.artName));
     $('#artUpload').textContent = d.artName ? `เปลี่ยนไฟล์งาน (${d.artName})` : 'อัปโหลดไฟล์งาน…';
     setNotes($('#artNotes'), d.artNotes);
 
-    // step 2 — lamination
+    // step 2 — material
+    pressed($('#paperChips'), state.paper);
+    $('#paperDesc').textContent = paper.description;
+    const materialName = state.material?.name ?? paper.label;
+    $('#materialSum').textContent = materialName;
+    fillMaterialField(materialName);
+
+    // step 3 — lamination
     pressed($('#coatChips'), state.coating);
     $('#coatSum').textContent = coat.label;
     $('#coatDesc').textContent = coat.description;
 
-    // step 3 — finish + its shape file
+    // step 4 — finish + its shape file
     pressed($('#finishChips'), state.finish);
     $('#finishDesc').textContent = finish.description;
     const wantsShape = state.finish !== 'none';

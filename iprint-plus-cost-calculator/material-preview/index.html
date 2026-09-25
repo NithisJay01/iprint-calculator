@@ -29,10 +29,16 @@
 
       <div class="stage-ui">
         <p class="caption" id="caption" aria-live="polite"></p>
-        <button class="pill" id="zoomBtn" type="button" aria-pressed="false">
-          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5 21 21M10.5 7.5v6M7.5 10.5h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
-          <span id="zoomLabel">ซูมดูผิว</span>
-        </button>
+        <div class="stage-actions">
+          <button class="pill" id="flipBtn" type="button" aria-label="พลิกด้าน — ตอนนี้แสดงด้านหน้า">
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 12a8 8 0 0 1 13.7-5.6M20 12a8 8 0 0 1-13.7 5.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M18.5 2.5v4.2h-4.2M5.5 21.5v-4.2h4.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span>พลิกด้าน</span>
+          </button>
+          <button class="pill" id="zoomBtn" type="button" aria-pressed="false">
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5 21 21M10.5 7.5v6M7.5 10.5h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+            <span id="zoomLabel">ซูมดูผิว</span>
+          </button>
+        </div>
       </div>
 
       <div class="loader" id="loader" role="status">
@@ -45,9 +51,23 @@
     </main>
 
     <section class="panel" aria-label="ตัวเลือกวัสดุ">
-      <details class="step" id="stepShape">
-        <summary><span class="num">0</span><h2>รูปร่างและขนาดบัตร</h2><span class="sum" id="shapeSum"></span></summary>
+      <details class="step" id="stepArt" open>
+        <summary><span class="num">1</span><h2>แบบของคุณ · Artwork</h2><span class="sum" id="artSum"></span></summary>
         <div class="step-body">
+          <h3 class="sub">ด้านหน้า (พื้นหลัง ข้อความ รูป ในไฟล์เดียว)</h3>
+          <div class="chips two">
+            <button class="chip" id="artDemo" type="button" aria-pressed="true">ตัวอย่างการ์ด</button>
+            <button class="chip" id="artUpload" type="button" aria-pressed="false">อัปโหลดไฟล์งาน…</button>
+          </div>
+          <input id="artInput" type="file" accept=".svg,.png,.jpg,.jpeg,.webp,image/svg+xml,image/png,image/jpeg,image/webp" hidden>
+          <p class="desc" id="artDesc">รับ SVG, PNG, JPG, WebP — ใช้ไฟล์ขนาดเท่างานจริง สีขาวจะแสดงเป็นสีกระดาษ (ไม่มีหมึกขาวในงานพิมพ์ออฟเซ็ต) หรือลากไฟล์มาวางบนนามบัตร</p>
+          <ul class="notes" id="artNotes"></ul>
+          <h3 class="sub">ด้านหลัง (ถ้ามี)</h3>
+          <div class="chips two"><button class="chip" id="backArtUpload" type="button">อัปโหลดด้านหลัง…</button><button class="chip" id="backArtClear" type="button" hidden>ลบด้านหลัง</button></div>
+          <input id="backArtInput" type="file" accept=".svg,.png,.jpg,.jpeg,.webp,image/svg+xml,image/png,image/jpeg,image/webp" hidden>
+          <div class="chips two" role="group" aria-label="ด้านที่แสดง"><button class="chip" id="viewFront" type="button" aria-pressed="true">ดูด้านหน้า</button><button class="chip" id="viewBack" type="button" aria-pressed="false">ดูด้านหลัง</button></div>
+          <p class="desc">ด้านหลังใช้ขนาดและวัสดุเดียวกับด้านหน้า พิมพ์สีได้ ส่วนเทคนิคพิเศษใช้กับด้านหน้าเท่านั้น ไฟล์ส่งออกแยกด้านหน้า (-front) และด้านหลัง (-back)</p>
+          <h3 class="sub">รูปทรงและขนาดบัตร <span class="sub-sum" id="shapeSum"></span></h3>
           <div class="chips shape-chips" id="shapeChips" role="group" aria-label="รูปร่างบัตร"></div>
           <div class="fields">
             <label class="field wide" id="presetField">ขนาดมาตรฐาน<select id="sizePreset"></select></label>
@@ -66,30 +86,16 @@
         </div>
       </details>
 
-      <details class="step" id="stepArt" open>
-        <summary><span class="num">1</span><h2>Layer 1 · Material + งานพิมพ์</h2><span class="sum" id="artSum"></span></summary>
+      <details class="step" id="stepMaterial" open>
+        <summary><span class="num">2</span><h2>เลือกวัสดุ · Material</h2><span class="sum" id="materialSum"></span></summary>
         <div class="step-body">
-          <h3 class="sub">Material (กระดาษ)</h3>
           <div class="chips paper-chips" id="paperChips" role="group" aria-label="Material"></div>
           <p class="desc" id="paperDesc"></p>
-          <h3 class="sub">Artwork ด้านหน้า (พื้นหลัง ข้อความ รูป ในไฟล์เดียว)</h3>
-          <div class="chips two">
-            <button class="chip" id="artDemo" type="button" aria-pressed="true">ตัวอย่างการ์ด</button>
-            <button class="chip" id="artUpload" type="button" aria-pressed="false">อัปโหลดไฟล์งาน…</button>
-          </div>
-          <input id="artInput" type="file" accept=".svg,.png,.jpg,.jpeg,.webp,image/svg+xml,image/png,image/jpeg,image/webp" hidden>
-          <p class="desc" id="artDesc">รับ SVG, PNG, JPG, WebP — ใช้ไฟล์ขนาดเท่างานจริง สีขาวจะแสดงเป็นสีกระดาษ (ไม่มีหมึกขาวในงานพิมพ์ออฟเซ็ต) หรือลากไฟล์มาวางบนนามบัตร</p>
-          <ul class="notes" id="artNotes"></ul>
-          <h3 class="sub">Artwork ด้านหลัง (ถ้ามี)</h3>
-          <div class="chips two"><button class="chip" id="backArtUpload" type="button">อัปโหลดด้านหลัง…</button><button class="chip" id="backArtClear" type="button" hidden>ลบด้านหลัง</button></div>
-          <input id="backArtInput" type="file" accept=".svg,.png,.jpg,.jpeg,.webp,image/svg+xml,image/png,image/jpeg,image/webp" hidden>
-          <div class="chips two" role="group" aria-label="ด้านที่แสดง"><button class="chip" id="viewFront" type="button" aria-pressed="true">ดูด้านหน้า</button><button class="chip" id="viewBack" type="button" aria-pressed="false">ดูด้านหลัง</button></div>
-          <p class="desc">ด้านหลังใช้ขนาดและวัสดุเดียวกับด้านหน้า พิมพ์สีได้ ส่วนเทคนิคพิเศษใช้กับด้านหน้าเท่านั้น ไฟล์ส่งออกแยกด้านหน้า (-front) และด้านหลัง (-back)</p>
         </div>
       </details>
 
       <details class="step" id="stepCoat">
-        <summary><span class="num">2</span><h2>Layer 2 · เคลือบ</h2><span class="sum" id="coatSum"></span></summary>
+        <summary><span class="num">3</span><h2>เคลือบ · Laminate</h2><span class="sum" id="coatSum"></span></summary>
         <div class="step-body">
           <div class="chips coat-chips" id="coatChips" role="group" aria-label="เคลือบ"></div>
           <p class="desc" id="coatDesc"></p>
@@ -97,7 +103,7 @@
       </details>
 
       <details class="step" id="stepFinish">
-        <summary><span class="num">3</span><h2>Layer 3 · เทคนิคพิเศษ</h2><span class="sum" id="finishSum"></span></summary>
+        <summary><span class="num">4</span><h2>เทคนิคพิเศษ · Special</h2><span class="sum" id="finishSum"></span></summary>
         <div class="step-body">
           <div class="chips finish-chips" id="finishChips" role="group" aria-label="เทคนิคพิเศษ"></div>
           <p class="desc" id="finishDesc"></p>
@@ -114,7 +120,7 @@
       </details>
 
       <details class="step" id="stepExport">
-        <summary><span class="num">4</span><h2>ส่งออกไฟล์ผลิต</h2><span class="sum" id="exportSum"></span></summary>
+        <summary><span class="num">5</span><h2>ส่งออกไฟล์ผลิต</h2><span class="sum" id="exportSum"></span></summary>
         <div class="step-body">
           <p class="desc">สร้างไฟล์ส่งโรงพิมพ์จากสิ่งที่เห็นในพรีวิว: <b>PDF</b> (มี Trim / Bleed, เลเยอร์ Artwork · Dieline · เทคนิคพิเศษเป็นสีพิเศษ) และ <b>SVG</b> แยกเลเยอร์ขนาดจริงเป็น mm ทั้งสองแบบเปิดใน Adobe Illustrator ได้</p>
           <ul class="checks" id="exportChecks"></ul>
@@ -144,13 +150,14 @@
       </details>
 
       <div class="actions">
+        <p class="print-advice">เทคนิคพิเศษแต่ละแบบ อาจจะผลิตร่วมกับวัสดุบางชนิดไม่ได้ ส่งแบบที่คุณอยากได้แล้วทางเราจะให้คำแนะนำที่ดีที่สุดในการรังสรรค์ให้ใกล้เคียงแบบที่สุด</p>
         <button class="print-request-button" id="requestPrint" type="button">สั่งพิมพ์นามบัตร →</button>
         <button class="primary" id="tiltBtn" type="button" hidden>Enable Tilt Preview</button>
         <p class="hint" id="hint"></p>
         <p class="status" id="status" role="status" aria-live="polite"></p>
         <p class="samples">ไฟล์ตัวอย่างสำหรับทดลอง (Template 96×60 mm, Bleed 3 mm):
-          <a href="assets/samples/sample-artwork.svg" download>งานพิมพ์ (Layer 1)</a> ·
-          <a href="assets/samples/sample-foil-shape.svg" download>รูปทรงเทคนิคพิเศษ (Layer 3)</a> ·
+          <a href="assets/samples/sample-artwork.svg" download>แบบของคุณ (ขั้น 1)</a> ·
+          <a href="assets/samples/sample-foil-shape.svg" download>รูปทรงเทคนิคพิเศษ (ขั้น 4)</a> ·
           <a href="assets/samples/sample-diecut-leaf.svg" download>ไดคัทรูปใบไม้</a></p>
         <p class="disclaimer">สีบนหน้าจอเป็นค่าโดยประมาณ ไม่ใช่สีพิมพ์จริง · ไฟล์อยู่ในเบราว์เซอร์จนกว่าคุณจะยืนยันส่งคำขอสั่งพิมพ์หรือสอบถามราคา</p>
       </div>

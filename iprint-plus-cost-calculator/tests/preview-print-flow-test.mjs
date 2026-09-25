@@ -36,9 +36,9 @@ el('exportColor').value='rgb'; el('exportJob').checked=true;
 
 await el('requestPrint').emit('click');
 assert.equal(el('printRequestDialog').open,false);
-assert.match(el('status').textContent,/Layer 1/);
+assert.match(el('status').textContent,/ขั้น 1 แบบของคุณ/);
 sources.art={file:new File(['art'], 'original.svg')}; panel.state.finish='goldFoil';
-await el('requestPrint').emit('click'); assert.match(el('status').textContent,/Layer 3/);
+await el('requestPrint').emit('click'); assert.match(el('status').textContent,/ขั้น 4 เทคนิคพิเศษ/);
 sources.mask={file:new File(['mask'],'finish.svg'),invert:false};
 await el('requestPrint').emit('click');
 assert.equal(el('requestConsent').checked,false);

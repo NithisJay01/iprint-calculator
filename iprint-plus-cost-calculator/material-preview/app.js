@@ -187,6 +187,14 @@ function syncZoomUI() {
 }
 zoomBtn.addEventListener('click', () => input.setZoom(input.zoomTarget < 1.05 ? 2.4 : 1));
 
+// flip button beside the zoom: same turn as a flick, in the direction of the last one
+$('#flipBtn').addEventListener('click', () => {
+  if (!panel) return;
+  panel.state.side = panel.state.side === 'back' ? 'front' : 'back';
+  panel.render();
+  requestRender();
+});
+
 // tilt button: shown where a motion sensor is plausible (touch devices; ?tilt=1 forces it for devtools sensor emulation)
 const tiltBtn = $('#tiltBtn');
 const wantsTilt = COARSE || typeof window.DeviceOrientationEvent?.requestPermission === 'function' || params.has('tilt');
