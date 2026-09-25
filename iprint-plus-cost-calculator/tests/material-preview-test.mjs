@@ -3,10 +3,10 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import {
   polygonArea, boundsOf, pointInRing, simplifyRing, ringSelfIntersects, validateRings,
   presetOutline, buildSpec, clampSize, textureSizeFor, containRect, compareAspect, suggestBleed, effectiveDpi,
-  registrationNotes, readImageSize, shapeFieldFromRgba, traceContours, outlineFromField, SIZE_LIMITS, previewScaleFor, previewSpec
+  registrationNotes, readImageSize, shapeFieldFromRgba, traceContours, outlineFromField, SIZE_LIMITS, previewScaleFor, previewSpec, artworkFit, trimFraction
 } from '../material-preview/shape.js';
 import {
-  paperMaterials, coatings, finishes, FINISH_ORDER, SHAPE_KINDS, SIZE_PRESETS, BLEED_OPTIONS, TEXTURE_BUDGET, DEFAULT_SHAPE, DEFAULTS
+  paperMaterials, coatings, finishes, FINISH_ORDER, SHAPE_KINDS, SIZE_PRESETS, BLEED_OPTIONS, MIN_BLEED_MM, TEXTURE_BUDGET, DEFAULT_SHAPE, DEFAULTS
 } from '../material-preview/materials.js';
 import { flickDirection } from '../material-preview/input.js';
 
@@ -60,6 +60,17 @@ const near = (actual, expected, tolerance, message) =>
   assert.equal(model.thickness, poster.thickness, 'the model keeps real card thickness');
   assert.ok(model.rings[0].every((p) => Math.abs(p.x) <= 60 + 1e-9 && Math.abs(p.y) <= 40 + 1e-9), 'outline scaled');
   assert.equal(previewSpec(buildSpec({ width: 90, height: 54 })).scale, 1);
+
+  // full sheet + bleed: a trim-sized file sits on the trim, a file with bleed fills the frame
+  const withBleed = buildSpec({ width: 90, height: 54, bleed: 3 });
+  assert.equal(artworkFit(90 / 54, withBleed), 'trim', 'a 90 × 54 file has no bleed: it goes on the trim');
+  assert.equal(artworkFit(96 / 60, withBleed), 'frame', 'a 96 × 60 file already has the 3 mm bleed');
+  assert.equal(artworkFit(1, withBleed), 'frame', 'another ratio is contained in the frame as before');
+  assert.equal(artworkFit(90 / 54, buildSpec({ width: 90, height: 54, bleed: 0 })), 'frame', 'no bleed: nothing to fill');
+  const tf = trimFraction(withBleed);
+  near(tf.x, 3 / 96, 1e-12, 'trim starts after the bleed');
+  near(tf.w, 90 / 96, 1e-12, 'trim width inside the frame');
+  assert.ok(registrationNotes({ spec: withBleed, art: { aspect: 90 / 54 } }).some((n) => !n.warn && /เติม Bleed 3 mm/.test(n.text)), 'the customer is told the bleed was added');
   assert.equal(buildSpec({ bleed: 99 }).bleed, 10, 'bleed is clamped');
 }
 
@@ -295,7 +306,8 @@ const makeField = (w, h, paint) => {
   assert.deepEqual(SHAPE_KINDS.map((k) => k.id), ['rect', 'rounded', 'ellipse', 'custom']);
   assert.equal(new Set(SIZE_PRESETS.map((p) => p.id)).size, SIZE_PRESETS.length, 'preset ids are unique');
   for (const p of SIZE_PRESETS) assert.ok(p.w >= SIZE_LIMITS.min && p.h >= SIZE_LIMITS.min && p.w <= SIZE_LIMITS.max && p.h <= SIZE_LIMITS.max, `${p.id}: inside the size limits`);
-  assert.ok(BLEED_OPTIONS.includes(0), 'bleed can be switched off');
+  assert.ok(BLEED_OPTIONS.every((b) => b >= MIN_BLEED_MM) && BLEED_OPTIONS.includes(MIN_BLEED_MM), 'bleed is required: 3 mm or more');
+  assert.equal(DEFAULT_SHAPE.bleed, MIN_BLEED_MM, 'new cards start with the minimum bleed');
   const desktop = textureSizeFor(90, 54, TEXTURE_BUDGET.desktop);
   assert.deepEqual([desktop.width, desktop.height], [1536, 922], 'the standard card keeps its tuned desktop texture size');
   const mobile = textureSizeFor(90, 54, TEXTURE_BUDGET.mobile);

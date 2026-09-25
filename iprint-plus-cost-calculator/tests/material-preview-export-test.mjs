@@ -167,6 +167,9 @@ const plan = (params, extra = {}) => {
   assert.equal(p.blocking, false);
   assert.ok(p.checks.some((c) => c.level === 'ok' && /Bleed 3 mm/.test(c.text)));
   assert.ok(p.jobLines.every((l) => /^[\x20-\x7e]*$/.test(l)), 'the job sheet is plain ASCII (standard font)');
+  const trimArt = plan({}, { art: { name: 'trim.png', kind: 'raster', aspect: 90 / 54, pixelWidth: 1063 } });
+  assert.ok(trimArt.checks.some((c) => c.level === 'ok' && /เติม Bleed 3 mm อัตโนมัติ/.test(c.text)), 'a trim-sized file is flagged as auto-bled');
+  assert.ok(!p.checks.some((c) => /เติม Bleed/.test(c.text)), 'a file with its own bleed is not');
 
   assert.equal(types(plan({ kind: 'rounded', radius: 3 }).dieline.segs), 'MLCLCLCLCZ', 'rounded corners are exact curves');
   assert.equal(types(plan({ kind: 'ellipse', width: 60, height: 40 }).dieline.segs), 'MCCCCZ', 'an oval is four Béziers');

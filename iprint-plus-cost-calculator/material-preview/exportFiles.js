@@ -21,7 +21,8 @@ import { inspectPdf, rgbToCmyk } from './pdf.js';
 import { convertSvg } from './svgConvert.js';
 import { renderSvgLayer } from './svgArtwork.js';
 import { decodeRaster } from './rasterArtwork.js';
-import { readJpegInfo, containRect, shapeFieldFromRgba, blurField, traceContours, simplifyRing, polygonArea } from './shape.js';
+import { readJpegInfo, containRect, shapeFieldFromRgba, blurField, traceContours, simplifyRing, polygonArea, artworkFit } from './shape.js';
+import { placeOnTrim } from './bleed.js';
 import { ringsToSegments } from './svgPath.js';
 
 const MASK_TRACE_MAX_SIDE = 3000; // px on the long side a picture / rasterised SVG is traced at
@@ -142,6 +143,48 @@ async function rasterizeSvg(parsed, frameRect, colorMode, wantDataUrl) {
   return { res, dpi: Math.round(W / (frameRect.w / 25.4)) };
 }
 
+/**
+ * Trim-sized artwork → one picture of the whole frame: the design at its own resolution on the trim, the bleed filled
+ * with its stretched edges (bleed.js). A picture keeps the file's pixels; an SVG is drawn at the fallback dpi (it is only
+ * seen in the bleed — the vector goes on top). Capped at EXPORT.maxRasterPixels.
+ */
+async function bleedArtwork(art, frame, trimRect, colorMode, wantDataUrl) {
+  let src;
+  let close = () => {};
+  if (art.kind === 'svg') {
+    let w = Math.round((trimRect.w / 25.4) * EXPORT.fallbackDpi);
+    let h = Math.round((trimRect.h / 25.4) * EXPORT.fallbackDpi);
+    const s = Math.min(1, Math.sqrt(EXPORT.maxRasterPixels / (w * h)));
+    w = Math.floor(w * s);
+    h = Math.floor(h * s);
+    src = await renderSvgLayer(art.parsed, w, h);
+  } else {
+    try {
+      src = await createImageBitmap(art.file, { imageOrientation: 'from-image' });
+      close = () => src.close?.();
+    } catch {
+      const decoded = await decodeRaster(art.file, art.info); // browsers without the option: the capped decoder
+      src = decoded.source;
+      close = () => decoded.close();
+    }
+  }
+  try {
+    const iw = src.width;
+    const ih = src.height;
+    const bx = (iw * (frame.w - trimRect.w)) / 2 / trimRect.w; // bleed in the file's own pixels
+    const by = (ih * (frame.h - trimRect.h)) / 2 / trimRect.h;
+    const k = Math.min(1, Math.sqrt(EXPORT.maxRasterPixels / ((iw + 2 * bx) * (ih + 2 * by))));
+    const W = Math.round((iw + 2 * bx) * k);
+    const H = Math.round((ih + 2 * by) * k);
+    const canvas = placeOnTrim(src, W, H, { x: bx * k, y: by * k, w: iw * k, h: ih * k });
+    const res = pixelsToResource(canvas.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, W, H).data, W, H, colorMode);
+    if (wantDataUrl) res.dataUrl = art.info?.type === 'jpeg' ? canvas.toDataURL('image/jpeg', 0.92) : canvas.toDataURL('image/png');
+    return { res, width: W, height: H, dpi: Math.round(W / (frame.w / 25.4)) };
+  } finally {
+    close();
+  }
+}
+
 /** A silhouette (RGBA pixels) → one even-odd path in the spot colour: every piece, holes included. */
 function traceSilhouette(rgba, w, h, place, spotKey, { alphaOnly = false, invert = false } = {}) {
   let field;
@@ -231,7 +274,31 @@ export async function buildExportJob(src, options, kind) {
   let artItems = [];
   let artSvgInner = null;
   const { art } = src;
-  if (art.kind === 'svg') {
+  // A file that is exactly the trim size (no bleed of its own): full sheet + bleed — the design sits on the trim and its
+  // stretched edges fill the bleed (bleed.js), instead of the file being enlarged to the frame and cut at the trim.
+  const trimRect = { x0: plan.trim.x0, y0: plan.trim.y0, w: plan.trim.x1 - plan.trim.x0, h: plan.trim.y1 - plan.trim.y0 };
+  const artOnTrim = artworkFit(art.aspect, src.spec) === 'trim';
+  if (artOnTrim) {
+    const bled = await bleedArtwork(art, frame, trimRect, colorMode, wantDataUrl);
+    const id = nextId();
+    images[id] = bled.res;
+    artItems = [{ type: 'image', id, matrix: imageMatrix({ x: frame.x0, y: frame.y0, w: frame.w, h: frame.h }), alpha: 1 }];
+    if (art.kind === 'svg') {
+      // the vector design stays vector on the trim; the picture underneath only shows in the bleed
+      if (kind === 'svg') artSvgInner = nestedSvg(art.parsed, trimRect, 'a-');
+      else {
+        const conv = await convertSvg(art.parsed, trimRect, { mode: 'print', nextId });
+        if (conv.ok) {
+          artItems.push(...conv.items);
+          for (const im of conv.images) {
+            const e = await embedRaster(new File([im.bytes], 'embedded', { type: im.mime }), im.mime.split('/')[1], colorMode, false);
+            images[im.id] = e.res;
+          }
+        } else report.push(`Layer 1: ส่งออกเป็นภาพ ${bled.dpi} dpi เพราะไฟล์ใช้ ${conv.reasons.join(', ')} ที่ PDF เก็บเป็นเวกเตอร์ไม่ได้`);
+      }
+    }
+    report.push(`Layer 1: ไฟล์เท่าขนาดตัด — เติม Bleed ${+src.spec.bleed.toFixed(1)} mm อัตโนมัติด้วยการยืดขอบภาพ (${bled.width}×${bled.height} px${art.kind === 'svg' ? ', งานบนพื้นที่ตัดยังเป็นเวกเตอร์' : ''})`);
+  } else if (art.kind === 'svg') {
     if (kind === 'svg') {
       artSvgInner = nestedSvg(art.parsed, frame, 'a-');
       report.push('Layer 1: ฝังไฟล์ SVG เดิมทั้งหมด (ข้อความและ Gradient ยังแก้ไขได้)');
@@ -267,24 +334,25 @@ export async function buildExportJob(src, options, kind) {
   const { mask } = src;
   if (plan.finish?.hasShape) {
     const key = plan.finish.id;
+    const place = artworkFit(mask.aspect, src.spec) === 'trim' ? trimRect : frame; // a trim-sized shape sits on the trim
     if (mask.kind === 'svg') {
-      const conv = await convertSvg(mask.parsed, frame, { mode: 'shape', spotKey: key, nextId });
+      const conv = await convertSvg(mask.parsed, place, { mode: 'shape', spotKey: key, nextId });
       if (conv.ok) {
         finishItems = conv.items;
         report.push(`Layer 3: เวกเตอร์ ${conv.items.length} ชิ้น สีพิเศษ ${plan.finish.spot.name}`);
       } else if (kind === 'svg') {
-        finishInner = nestedSvg(mask.parsed, frame, 'm-');
+        finishInner = nestedSvg(mask.parsed, place, 'm-');
         report.push(`Layer 3: ฝังไฟล์ SVG เดิม (ไฟล์ใช้ ${conv.reasons.join(', ')})`);
       } else {
-        let W = Math.round((frame.w / 25.4) * EXPORT.fallbackDpi);
-        let H = Math.round((frame.h / 25.4) * EXPORT.fallbackDpi);
+        let W = Math.round((place.w / 25.4) * EXPORT.fallbackDpi);
+        let H = Math.round((place.h / 25.4) * EXPORT.fallbackDpi);
         const s = Math.min(1, MASK_TRACE_MAX_SIDE / Math.max(W, H));
         W = Math.round(W * s);
         H = Math.round(H * s);
         const canvas = await renderSvgLayer(mask.parsed, W, H);
-        const t = traceSilhouette(pixelsOf(canvas), W, H, frame, key, { alphaOnly: true });
+        const t = traceSilhouette(pixelsOf(canvas), W, H, place, key, { alphaOnly: true });
         finishItems = t.items;
-        report.push(`Layer 3: ไฟล์ใช้ ${conv.reasons.join(', ')} จึงสกัดเส้นจากภาพ (${t.points} จุด) — ความแม่นยำประมาณ ±${(frame.w / W / 2).toFixed(2)} mm`);
+        report.push(`Layer 3: ไฟล์ใช้ ${conv.reasons.join(', ')} จึงสกัดเส้นจากภาพ (${t.points} จุด) — ความแม่นยำประมาณ ±${(place.w / W / 2).toFixed(2)} mm`);
       }
     } else {
       const info = mask.info;
@@ -292,9 +360,9 @@ export async function buildExportJob(src, options, kind) {
       try {
         const canvas = newCanvas(decoded.width, decoded.height);
         canvas.getContext('2d').drawImage(decoded.source, 0, 0);
-        const t = traceSilhouette(pixelsOf(canvas), canvas.width, canvas.height, frame, key, { invert: mask.invert });
+        const t = traceSilhouette(pixelsOf(canvas), canvas.width, canvas.height, place, key, { invert: mask.invert });
         finishItems = t.items;
-        report.push(`Layer 3: สกัดเส้นจาก PNG เป็นเวกเตอร์ ${t.pieces} ชิ้น ${t.points} จุด — ความแม่นยำประมาณ ±${(frame.w / canvas.width / 2).toFixed(2)} mm`);
+        report.push(`Layer 3: สกัดเส้นจาก PNG เป็นเวกเตอร์ ${t.pieces} ชิ้น ${t.points} จุด — ความแม่นยำประมาณ ±${(place.w / canvas.width / 2).toFixed(2)} mm`);
       } finally {
         decoded.close();
       }

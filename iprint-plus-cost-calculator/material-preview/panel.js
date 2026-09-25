@@ -153,7 +153,7 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
     act(() => layers.setShape({ kind }));
   });
   $('#sizePreset').append(...[...SIZE_PRESETS.map((p) => new Option(p.label, p.id)), new Option('กำหนดเอง', 'x')]);
-  $('#bleedSel').append(...BLEED_OPTIONS.map((b) => new Option(b ? `${b} mm` : 'ไม่มี Bleed', String(b))));
+  $('#bleedSel').append(...BLEED_OPTIONS.map((b) => new Option(`${b} mm`, String(b))));
 
   let sizeTimer = 0;
   const applySizeInputs = () => {

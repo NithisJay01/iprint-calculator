@@ -12,8 +12,9 @@
  * Changes are applied one at a time: a second change made while the first is running is folded into one more pass,
  * so textures of different sizes can never end up mixed on the card.
  */
-import { DEFAULT_SHAPE } from './materials.js';
-import { buildSpec, registrationNotes } from './shape.js';
+import { DEFAULT_SHAPE, MIN_BLEED_MM } from './materials.js';
+import { buildSpec, registrationNotes, artworkFit, trimFraction } from './shape.js';
+import { placeOnTrim } from './bleed.js';
 import { parseSvg, renderSvgLayer } from './svgArtwork.js';
 import { inspectRaster, decodeRaster, drawRasterLayer, drawRasterMask, isSvgFile, isRasterFile } from './rasterArtwork.js';
 import { loadShapeFile } from './shapeFile.js';
@@ -35,9 +36,18 @@ export function createLayers({ card, studio, onChange = () => {}, setBusy = () =
   async function makeSource(size) {
     const { width: W, height: H } = size;
     const demo = state.art && state.mask ? null : card.artwork.demo(); // the layer that is not uploaded yet shows the demo
-    const print = state.art ? await state.art.render(W, H) : demo.print;
-    const shape = state.mask ? await state.mask.render(W, H) : state.art ? null : demo.shape;
-    const backPrint = state.backArt ? await state.backArt.render(W, H) : null;
+    // A file that is exactly the trim size is drawn over the trim; printed artwork also gets its edges stretched into
+    // the bleed (bleed.js). Any other file fills the frame as before.
+    const spec = currentSpec();
+    const t = trimFraction(spec);
+    const trimPx = { x: t.x * W, y: t.y * H, w: t.w * W, h: t.h * H };
+    const draw = async (layer, extend) => {
+      if (artworkFit(layer.aspect, spec) !== 'trim') return layer.render(W, H);
+      return placeOnTrim(await layer.render(Math.round(trimPx.w), Math.round(trimPx.h)), W, H, trimPx, { extend });
+    };
+    const print = state.art ? await draw(state.art, true) : demo.print;
+    const shape = state.mask ? await draw(state.mask, false) : state.art ? null : demo.shape;
+    const backPrint = state.backArt ? await draw(state.backArt, true) : null;
     return { name: state.art?.name ?? 'Demo card', print, shape, backPrint };
   }
 
@@ -158,6 +168,7 @@ export function createLayers({ card, studio, onChange = () => {}, setBusy = () =
     async setShape(patch) {
       const prev = state.shape;
       state.shape = { ...state.shape, ...patch };
+      state.shape.bleed = Math.max(MIN_BLEED_MM, Number(state.shape.bleed) || 0); // bleed is required (min 3 mm)
       try {
         await refresh();
       } catch (err) {

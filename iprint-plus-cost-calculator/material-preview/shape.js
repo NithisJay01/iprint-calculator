@@ -322,6 +322,25 @@ export function textureSizeFor(frameW, frameH, budget) {
 export const aspectOf = (w, h) => w / h;
 export const compareAspect = (a, b, tol = ASPECT_TOLERANCE) => Math.abs(a / b - 1) <= tol;
 
+/**
+ * How a file of this aspect sits on the card:
+ *   'trim'   it is the trim size without bleed → drawn over the trim, and (artwork) its edges extended into the bleed
+ *   'frame'  it already includes the bleed, or nothing better fits → the whole frame (contained, as before)
+ * Only preset shapes with a bleed can be 'trim'; a die-cut file's frame is its own artboard.
+ */
+export function artworkFit(aspect, spec) {
+  if (!aspect || spec.kind === 'custom' || !(spec.bleed > 0)) return 'frame';
+  const toTrim = Math.abs(aspect / (spec.bounds.w / spec.bounds.h) - 1);
+  const toFrame = Math.abs(aspect / (spec.frame.w / spec.frame.h) - 1);
+  return toTrim <= ASPECT_TOLERANCE && toTrim < toFrame ? 'trim' : 'frame';
+}
+
+/** The trim area inside the frame, as fractions of the frame (preset shapes are centred in their frame). */
+export function trimFraction(spec) {
+  const { w, h } = spec.frame;
+  return { x: (w - spec.bounds.w) / 2 / w, y: (h - spec.bounds.h) / 2 / h, w: spec.bounds.w / w, h: spec.bounds.h / h };
+}
+
 /** Where an image of size sw × sh lands inside W × H without stretching (centred). */
 export function containRect(sw, sh, W, H) {
   const s = Math.min(W / sw, H / sh);
@@ -351,6 +370,14 @@ export function registrationNotes({ spec, art, mask }) {
   const frameAspect = spec.frame.w / spec.frame.h;
   const size = `${spec.frame.w.toFixed(1)}×${spec.frame.h.toFixed(1)} mm`;
   for (const [label, layer] of [['Layer 1', art], ['Layer 3', mask]]) {
+    if (layer?.aspect && artworkFit(layer.aspect, spec) === 'trim') {
+      notes.push({
+        text: label === 'Layer 1'
+          ? `Layer 1: ไฟล์ขนาดเท่างานตัด (ไม่มี Bleed) — ระบบเติม Bleed ${+spec.bleed.toFixed(1)} mm ให้อัตโนมัติ โดยยืดขอบภาพออกไป งานไม่ถูกขยายหรือตัดขอบ`
+          : 'Layer 3: ไฟล์ขนาดเท่างานตัด — วางตรงกับงานตัด (ไม่ขยายเข้า Bleed)',
+      });
+      continue;
+    }
     if (!layer?.aspect || compareAspect(layer.aspect, frameAspect)) continue;
     let text = `${label}: สัดส่วนไฟล์ ${layer.aspect.toFixed(2)} ไม่ตรงกับกรอบ ${size} (${frameAspect.toFixed(2)}) — วางไว้กลางกรอบโดยไม่ยืดภาพ`;
     if (spec.kind !== 'custom') {

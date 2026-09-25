@@ -11,7 +11,7 @@
  */
 import { EXPORT, paperMaterials, coatings, finishes, SHAPE_KINDS } from './materials.js';
 import { rectSegments, ellipseSegments, polySegments } from './svgPath.js';
-import { effectiveDpi } from './shape.js';
+import { effectiveDpi, artworkFit } from './shape.js';
 import { asciiOnly } from './pdf.js';
 
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -109,6 +109,7 @@ export function buildProductionPlan({ spec, params = {}, cut = null, paperId, co
   const add = (level, text) => checks.push({ level, text });
   if (!art) add('error', 'ยังไม่ได้อัปโหลดไฟล์งาน Layer 1 — ส่งออกไม่ได้ (ตัวอย่างการ์ดไม่ใช่งานของลูกค้า)');
   else add('ok', `Layer 1: ${art.name}`);
+  if (art && artworkFit(art.aspect, spec) === 'trim') add('ok', `Layer 1 เท่าขนาดตัด — เติม Bleed ${mm(spec.bleed)} mm อัตโนมัติ (ยืดขอบภาพ ไม่ขยายงาน)`);
 
   if (stock?.fallback) add('warn', `วัสดุ "${stock.name}" ยังไม่มีตัวอย่าง 3D — พรีวิวใช้ผิว ${paper} แทน ฝ่ายผลิตต้องยึดชื่อวัสดุนี้ ไม่ใช่ผิวในพรีวิว`);
   else if (stock) add('ok', `วัสดุ: ${stock.name}`);

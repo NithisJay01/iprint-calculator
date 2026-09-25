@@ -44,7 +44,8 @@ export function buildSvg(job) {
 
   const groups = job.layers
     .filter((l) => l.svgInner || l.items?.length)
-    .map((l) => layer(l.name, l.svgInner ?? l.items.map((item) => (item.type === 'image' ? image(item) : path(item))).join('\n')));
+    // items first, then the customer's own SVG on top (a trim-sized SVG keeps its bleed picture underneath)
+    .map((l) => layer(l.name, [(l.items ?? []).map((item) => (item.type === 'image' ? image(item) : path(item))).join('\n'), l.svgInner].filter(Boolean).join('\n')));
   groups.push(layer('Guides', `${rect(job.bleed, '#ff0000')}\n${rect(job.trim, '#00aaff')}`).replace('<g ', '<g style="display:none" '));
 
   return `<?xml version="1.0" encoding="UTF-8"?>

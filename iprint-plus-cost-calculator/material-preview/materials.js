@@ -30,9 +30,11 @@ export const SIZE_PRESETS = [
   { id: 'square', label: 'จัตุรัส 5.5 × 5.5 cm', w: 55, h: 55 },
 ];
 
-export const BLEED_OPTIONS = [0, 1, 2, 3, 5];
+/** Bleed is required: at least MIN_BLEED_MM on every side of a preset shape (a die-cut file brings its own frame). */
+export const MIN_BLEED_MM = 3;
+export const BLEED_OPTIONS = [3, 5];
 
-export const DEFAULT_SHAPE = Object.freeze({ kind: 'rect', width: 90, height: 54, radius: 3, bleed: 0 });
+export const DEFAULT_SHAPE = Object.freeze({ kind: 'rect', width: 90, height: 54, radius: 3, bleed: MIN_BLEED_MM });
 
 /**
  * Paper presets (the "Material" of Layer 1).
