@@ -187,6 +187,44 @@ function syncZoomUI() {
 }
 zoomBtn.addEventListener('click', () => input.setZoom(input.zoomTarget < 1.05 ? 2.4 : 1));
 
+// Full screen: the preview fills the screen and the settings (top bar + panel) are hidden. The browser's own full
+// screen is used where it exists; iPhone Safari has none for pages, so there the preview just fills the page.
+const appEl = $('.app');
+const fullBtn = $('#fullBtn');
+let fullViaBrowser = false;
+function setFull(on) {
+  appEl.classList.toggle('is-full', on);
+  fullBtn.setAttribute('aria-pressed', String(on));
+  const label = on ? 'ออกจากเต็มจอ' : 'เต็มจอ';
+  fullBtn.setAttribute('aria-label', label);
+  fullBtn.title = label;
+  const root = document.documentElement;
+  const request = root.requestFullscreen ?? root.webkitRequestFullscreen;
+  const exit = document.exitFullscreen ?? document.webkitExitFullscreen;
+  const current = document.fullscreenElement ?? document.webkitFullscreenElement;
+  if (on && request && !current) {
+    fullViaBrowser = true;
+    Promise.resolve(request.call(root)).catch(() => (fullViaBrowser = false)); // refused: the page-filling layout still applies
+  } else if (!on && current && exit) {
+    fullViaBrowser = false;
+    Promise.resolve(exit.call(document)).catch(() => {});
+  }
+  requestRender();
+}
+fullBtn.addEventListener('click', () => setFull(!appEl.classList.contains('is-full')));
+// leaving the browser's full screen (Esc, system gesture) also brings the settings back
+for (const type of ['fullscreenchange', 'webkitfullscreenchange']) {
+  document.addEventListener(type, () => {
+    if (fullViaBrowser && !(document.fullscreenElement ?? document.webkitFullscreenElement)) {
+      fullViaBrowser = false;
+      setFull(false);
+    }
+  });
+}
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && appEl.classList.contains('is-full') && !document.querySelector('dialog[open]')) setFull(false);
+});
+
 // flip button beside the zoom: same turn as a flick, in the direction of the last one
 $('#flipBtn').addEventListener('click', () => {
   if (!panel) return;

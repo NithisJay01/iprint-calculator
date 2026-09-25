@@ -609,3 +609,19 @@ html, body {
 @media (prefers-reduced-motion: reduce) {
   .switch-track, .switch-thumb { transition: none; }
 }
+
+/* ---- full screen: the preview alone, settings hidden ---- */
+.pill-icon { width: 34px; padding: 0; justify-content: center; }
+.pill-icon .icon-exit, .pill-icon[aria-pressed="true"] .icon-enter { display: none; }
+.pill-icon[aria-pressed="true"] .icon-exit { display: block; }
+.app.is-full { display: block; }
+.app.is-full .topbar, .app.is-full .panel { display: none; }
+.app.is-full .stage {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  min-height: 0;
+  border-radius: 0;
+}
+.app.is-full .stage-top { top: calc(10px + env(safe-area-inset-top)); }
+.app.is-full .stage-ui { bottom: calc(10px + env(safe-area-inset-bottom)); }
