@@ -457,7 +457,7 @@ html, body {
 }
 
 /* warning icon: in the advice box and in the first-special-finish notice */
-.warn-icon { flex: none; color: #e09a12; }
+.warn-icon { flex: none; color: #075ac8; } /* primary blue, same as the print button */
 .print-advice { display: flex; align-items: flex-start; gap: 8px; }
 .print-advice .warn-icon { margin-top: 1px; }
 
