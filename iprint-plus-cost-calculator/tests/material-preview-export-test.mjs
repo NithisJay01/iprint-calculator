@@ -193,6 +193,19 @@ const plan = (params, extra = {}) => {
   assert.ok(gold.jobLines.some((l) => /Lamination: matte/.test(l)));
   assert.ok(gold.jobLines.some((l) => /Foil_Gold/.test(l)));
   assert.equal(gold.fileBase, 'iprint-20260921-90x54mm-kraft-goldFoil');
+  // catalog material: production gets the stock the customer picked, not the preview look
+  const thai = plan({}, { paperId: 'coated', material: { id: 'rec-white-300', name: 'การ์ดขาว 300g', fallback: false } });
+  assert.ok(thai.jobLines.every((l) => /^[\x20-\x7e]*$/.test(l)), 'a Thai stock name keeps the job sheet ASCII');
+  assert.ok(thai.jobLines.some((l) => l === 'Material: catalog ID rec-white-300'), 'a Thai stock is named by its catalog ID');
+  assert.ok(thai.jobLines.some((l) => l === 'Preview look: Coated'));
+  assert.ok(!thai.jobLines.some((l) => /^Paper:/.test(l)));
+  assert.match(thai.info.subject, /^Material: การ์ดขาว 300g \(catalog ID rec-white-300\); Preview look: Coated;/, 'the full name is in the document properties');
+  assert.ok(thai.checks.some((c) => c.level === 'ok' && c.text === 'วัสดุ: การ์ดขาว 300g'));
+  const pvc = plan({}, { paperId: 'smooth', material: { id: 'rec-pvc', name: 'PVC Card', fallback: true } });
+  assert.ok(pvc.jobLines.some((l) => l === 'Material: PVC Card - catalog ID rec-pvc'), 'an ASCII stock name is printed as is');
+  assert.ok(pvc.jobLines.some((l) => /^Preview look: Smooth \(placeholder/.test(l)), 'a placeholder look is labelled as such');
+  assert.ok(pvc.checks.some((c) => c.level === 'warn' && /"PVC Card" ยังไม่มีตัวอย่าง 3D/.test(c.text)), 'a stock without a 3D preset is flagged');
+  assert.ok(plan({}).jobLines.some((l) => l === 'Paper: Kraft'), 'without a catalog record the sample look is the paper');
   const missing = plan({}, { finishId: 'emboss', mask: null });
   assert.ok(missing.checks.some((c) => c.level === 'warn' && /ยังไม่มีไฟล์รูปทรง/.test(c.text)));
   for (const id of Object.keys(finishes).filter((id) => finishes[id].layer)) assert.ok(EXPORT.spots[id]?.name && /^[A-Za-z0-9_.-]+$/.test(EXPORT.spots[id].name), `${id}: spot name is safe ASCII`);

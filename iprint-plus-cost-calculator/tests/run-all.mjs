@@ -10,6 +10,7 @@ const tests = [
   'tests/material-preview-export-test.mjs',
   'tests/preview-print-flow-test.mjs',
   'tests/showroom-cycle-test.mjs',
+  'tests/material-sync-test.mjs',
   'tests/business-card-mvp-test.mjs',
   'tests/business-card-breakdown-test.mjs',
   'tests/package-included-test.mjs',

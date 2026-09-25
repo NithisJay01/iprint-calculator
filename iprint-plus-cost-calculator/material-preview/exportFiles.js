@@ -201,7 +201,7 @@ function nestedSvg(parsed, rect, prefix) {
 /* -------------------------------------------------------------- the job */
 
 /**
- * @param src      layers.exportSources() + { paperId, coatingId, finishId }
+ * @param src      layers.exportSources() + { paperId, material, coatingId, finishId }
  * @param options  { colorMode, cropMarks, jobPage }
  * @param kind     'pdf' | 'svg'
  */
@@ -211,6 +211,7 @@ export async function buildExportJob(src, options, kind) {
     params: src.params,
     cut: src.cut,
     paperId: src.paperId,
+    material: src.material,
     coatingId: src.coatingId,
     finishId: src.finishId,
     art: src.art,

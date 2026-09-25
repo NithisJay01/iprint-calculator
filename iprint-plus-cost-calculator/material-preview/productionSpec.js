@@ -75,8 +75,10 @@ export function cropMarks(trim, margins) {
  *   cut         the loaded die-cut file or null paperId / coatingId / finishId
  *   art, mask   { name, kind: 'svg'|'raster', aspect, pixelWidth?, warnings? } or null (Layer 1 / Layer 3)
  *   options     { colorMode: 'rgb'|'cmyk', cropMarks: boolean, jobPage: boolean }
+ *   material    the catalog (Notion) record the customer picked { id, name, fallback } or null. When set it is what
+ *               production orders — paperId is only the 3D look used for the preview (Smooth for a stock without one).
  */
-export function buildProductionPlan({ spec, params = {}, cut = null, paperId, coatingId = 'none', finishId = 'none', art = null, mask = null, options = {}, now = new Date() }) {
+export function buildProductionPlan({ spec, params = {}, cut = null, paperId, coatingId = 'none', finishId = 'none', art = null, mask = null, material = null, options = {}, now = new Date() }) {
   const opts = { colorMode: 'rgb', cropMarks: false, jobPage: true, ...options };
   const margin = opts.cropMarks ? EXPORT.marginMm : 0;
   const { frame, bounds } = spec;
@@ -97,6 +99,7 @@ export function buildProductionPlan({ spec, params = {}, cut = null, paperId, co
     : null;
 
   const paper = paperMaterials[paperId]?.label ?? String(paperId);
+  const stock = material?.name ? material : null;
   const coating = coatings[coatingId]?.label ?? '';
   const shapeLabel = SHAPE_KINDS.find((k) => k.id === (spec.kind === 'custom' ? 'custom' : params.kind ?? spec.kind))?.label ?? spec.kind;
   const sizeText = `${mm(bounds.w)} x ${mm(bounds.h)} mm`;
@@ -106,6 +109,9 @@ export function buildProductionPlan({ spec, params = {}, cut = null, paperId, co
   const add = (level, text) => checks.push({ level, text });
   if (!art) add('error', 'ยังไม่ได้อัปโหลดไฟล์งาน Layer 1 — ส่งออกไม่ได้ (การ์ดเดโมไม่ใช่งานของลูกค้า)');
   else add('ok', `Layer 1: ${art.name}`);
+
+  if (stock?.fallback) add('warn', `วัสดุ "${stock.name}" ยังไม่มีตัวอย่าง 3D — พรีวิวใช้ผิว ${paper} แทน ฝ่ายผลิตต้องยึดชื่อวัสดุนี้ ไม่ใช่ผิวในพรีวิว`);
+  else if (stock) add('ok', `วัสดุ: ${stock.name}`);
 
   if (minMargin >= EXPORT.minBleedMm - 0.05) add('ok', `Bleed ${mm(minMargin)} mm`);
   else if (minMargin > 0.05) add('warn', `Bleed แค่ ${mm(minMargin)} mm (ควร ${EXPORT.minBleedMm} mm ขึ้นไป) — งานที่ชนขอบอาจเห็นขอบขาวหลังตัด`);
@@ -140,7 +146,14 @@ export function buildProductionPlan({ spec, params = {}, cut = null, paperId, co
     `Date: ${now.toISOString().slice(0, 10)}`,
     `Trim size: ${sizeText}   Shape: ${asciiOnly(shapeLabel) === shapeLabel ? shapeLabel : spec.kind}${spec.kind === 'rounded' ? ` (radius ${mm(Number(params.radius) || 0)} mm)` : ''}`,
     `Artwork frame: ${mm(frame.w)} x ${mm(frame.h)} mm   Bleed: ${mm(Math.max(0, minMargin))} mm`,
-    `Paper: ${asciiOnly(paper)}`,
+    // The job sheet uses a standard PDF font (ASCII only), so a Thai stock name is identified by its catalog ID;
+    // the full name is in the document properties (Subject) and the export checks.
+    ...(stock
+      ? [
+          `Material: ${asciiOnly(stock.name) === stock.name ? `${stock.name} - ` : ''}catalog ID ${asciiOnly(stock.id)}`,
+          `Preview look: ${asciiOnly(paper)}${stock.fallback ? ' (placeholder - no 3D preset for this material)' : ''}`,
+        ]
+      : [`Paper: ${asciiOnly(paper)}`]),
     `Lamination: ${coatingId === 'none' ? 'none' : coatingId === 'matte' ? 'matte' : coatingId === 'gloss' ? 'gloss' : asciiOnly(coating)}`,
     finish ? `Finish: ${asciiOnly(finish.label)} - layer "${finish.layerName}", spot colour "${finish.spot.name}" 100%, overprint${relief}` : 'Finish: none',
     `Artwork file: ${asciiOnly(art?.name ?? '-')}`,
@@ -168,7 +181,7 @@ export function buildProductionPlan({ spec, params = {}, cut = null, paperId, co
     jobLines: opts.jobPage ? jobLines : null,
     info: {
       title: `iPrint production file ${sizeText}`,
-      subject: `Paper: ${paper}; Lamination: ${coatingId === 'none' ? 'none' : coatingId}; Finish: ${finish ? finish.label : 'none'}`,
+      subject: `${stock ? `Material: ${stock.name} (catalog ID ${stock.id}); Preview look: ${paper}` : `Paper: ${paper}`}; Lamination: ${coatingId === 'none' ? 'none' : coatingId}; Finish: ${finish ? finish.label : 'none'}`,
       keywords: ['iPrint', 'production', paperId, finishId].join(', '),
     },
     fileBase,
