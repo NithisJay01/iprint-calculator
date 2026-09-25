@@ -27,6 +27,14 @@
     <main class="stage" id="stage" aria-label="ตัวอย่างนามบัตร 3 มิติ">
       <canvas id="gl"></canvas>
 
+      <div class="stage-top">
+        <button class="tilt-switch" id="tiltBtn" type="button" role="switch" aria-checked="false" hidden>
+          <span>Tilt Preview</span>
+          <span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span>
+        </button>
+        <p class="stage-note" id="tiltNote" role="status" hidden></p>
+      </div>
+
       <div class="stage-ui">
         <p class="caption" id="caption" aria-live="polite"></p>
         <div class="stage-actions">
@@ -167,7 +175,6 @@
       <div class="actions">
         <p class="print-advice"><svg class="warn-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 3.2 2.6 19.5a1 1 0 0 0 .87 1.5h17.06a1 1 0 0 0 .87-1.5L12 3.2Z" fill="currentColor"/><path d="M12 9.2v5.2" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.25" fill="#fff"/></svg><span>เทคนิคพิเศษแต่ละแบบ อาจจะผลิตร่วมกับวัสดุบางชนิดไม่ได้ ส่งแบบที่คุณอยากได้แล้วทางเราจะให้คำแนะนำที่ดีที่สุดในการรังสรรค์ให้ใกล้เคียงแบบที่สุด</span></p>
         <button class="print-request-button" id="requestPrint" type="button">สั่งพิมพ์นามบัตร →</button>
-        <button class="primary" id="tiltBtn" type="button" hidden>Enable Tilt Preview</button>
         <p class="hint" id="hint"></p>
         <p class="status" id="status" role="status" aria-live="polite"></p>
         <p class="samples">ไฟล์ตัวอย่างสำหรับทดลอง (Template 96×60 mm, Bleed 3 mm):

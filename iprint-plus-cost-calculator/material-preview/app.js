@@ -208,26 +208,38 @@ const REASONS = {
   'no-data': 'ไม่พบข้อมูลเซนเซอร์ (อาจถูกบล็อก) — ใช้การลากนิ้วบนนามบัตรแทน',
 };
 
+// The switch sits on the preview, so its messages show right under it (briefly) as well as in the panel status.
+const tiltNote = $('#tiltNote');
+let tiltNoteTimer = 0;
+function tiltSay(text, warn = false) {
+  say(text, warn);
+  tiltNote.textContent = text;
+  tiltNote.classList.toggle('is-warn', warn);
+  tiltNote.hidden = !text;
+  clearTimeout(tiltNoteTimer);
+  if (text) tiltNoteTimer = setTimeout(() => (tiltNote.hidden = true), warn ? 6000 : 3500);
+}
+const setTiltSwitch = (on) => tiltBtn.setAttribute('aria-checked', String(on));
+
 tiltBtn.addEventListener('click', async () => {
   if (input.sensor.active) {
     input.disableSensors();
-    tiltBtn.setAttribute('aria-pressed', 'false');
-    tiltBtn.textContent = 'Enable Tilt Preview';
-    say('ปิด Tilt แล้ว — ลากนิ้วบนนามบัตรเพื่อเปลี่ยนมุม');
+    setTiltSwitch(false);
+    tiltSay('ปิด Tilt แล้ว — ลากนิ้วบนนามบัตรเพื่อเปลี่ยนมุม');
     return;
   }
   // NOTE: the permission request is started synchronously inside this click (iOS requirement).
   const pending = input.enableSensors();
   tiltBtn.disabled = true;
-  say('กำลังขออนุญาตใช้เซนเซอร์…');
+  setTiltSwitch(true); // flips at once; flips back if the sensor cannot be used
+  tiltSay('กำลังขออนุญาตใช้เซนเซอร์…');
   const result = await pending;
   tiltBtn.disabled = false;
   if (result.ok) {
-    tiltBtn.setAttribute('aria-pressed', 'true');
-    tiltBtn.textContent = 'Tilt Preview: ON (แตะเพื่อปิด)';
-    say('เอียงโทรศัพท์เพื่อเปลี่ยนแสง — ตั้งท่าถือปัจจุบันเป็นจุดกึ่งกลางแล้ว');
+    tiltSay('เอียงโทรศัพท์เพื่อเปลี่ยนแสง — ตั้งท่าถือปัจจุบันเป็นจุดกึ่งกลางแล้ว');
   } else {
-    say(REASONS[result.reason] ?? REASONS.error, true);
+    setTiltSwitch(false);
+    tiltSay(REASONS[result.reason] ?? REASONS.error, true);
   }
 });
 
