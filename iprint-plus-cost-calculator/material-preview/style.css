@@ -684,3 +684,15 @@ html, body {
 .art-check-zoom output { min-width: 3.2em; text-align: right; font-variant-numeric: tabular-nums; }
 .art-check-reset { padding: 0; border: 0; background: none; color: #075ac8; font: inherit; font-size: 13px; text-decoration: underline; cursor: pointer; }
 .art-check-hint { margin: 6px 0 0; font-size: 12px; color: var(--muted); }
+/* paper size chosen while the picture is placed: a preset, or width x height in cm */
+.art-check-size { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr); gap: 10px; margin-top: 12px; }
+.art-check-size label { display: grid; gap: 4px; font-size: 12.5px; color: #3b3f48; }
+.art-check-size select, .art-check-size input { width: 100%; min-height: 36px; padding: 0 10px; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink); font: inherit; font-size: 14px; }
+.art-check-size[hidden] { display: none; }
+.art-check-size-note { min-height: 0; margin: 4px 0 0; font-size: 12px; color: #b42318; }
+.art-check-size-note:empty { display: none; }
+.chips .chip.is-wide { grid-column: 1 / -1; }
+@media (max-width: 560px) { .art-check-size { grid-template-columns: 1fr 1fr; } .art-check-size label:first-child { grid-column: 1 / -1; } }
+/* the second button of a side card: outlined, so the two buttons do not compete */
+.side-action.is-secondary { background: #fff; color: var(--ink); border: 1px solid var(--line); }
+.side-action[hidden] { display: none; }

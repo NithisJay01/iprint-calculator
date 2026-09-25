@@ -1,5 +1,5 @@
 // Notion record identity and shader identity are separate. Never infer a shader from a name/category.
-const KEYS = new Set(['smooth', 'coated', 'kraft', 'pet_matte_white', 'pet_translucent']);
+const KEYS = new Set(['smooth', 'uncoated', 'coated', 'kraft', 'pet_matte_white', 'pet_translucent']);
 export function resolveMaterial(record = {}) {
   const key = String(record.material3dKey || '').trim();
   const renderer = String(record.previewRenderer || '').trim().toLowerCase();

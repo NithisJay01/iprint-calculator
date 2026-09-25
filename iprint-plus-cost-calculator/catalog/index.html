@@ -32,6 +32,22 @@
       </div>
     </section>
 
+    <nav class="category-strip" aria-label="หมวดหมู่สินค้า">
+      <button hidden class="category-prev" id="categoryPrev" type="button" aria-label="ดูหมวดหมู่ก่อนหน้า"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <ul class="category-list" id="categoryList">
+        <li><a class="category-tile" href="#catalogTitle"><span class="category-thumb is-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg></span><span class="category-name">สินค้าทั้งหมด</span></a></li>
+        <li><a class="category-tile" href="../business-card/"><span class="category-thumb"><img src="assets/business-cards.png" alt=""></span><span class="category-name">นามบัตร</span></a></li>
+        <li><span class="category-tile is-soon" aria-disabled="true"><span class="category-thumb"><img src="assets/postcards.png" alt=""></span><span class="category-name">โปสการ์ด</span></span></li>
+        <li><span class="category-tile is-soon" aria-disabled="true"><span class="category-thumb"><img src="assets/stickers.png" alt=""></span><span class="category-name">สติกเกอร์</span></span></li>
+        <li><span class="category-tile is-soon" aria-disabled="true"><span class="category-thumb is-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5"/></svg></span><span class="category-name">ใบปลิว</span></span></li>
+        <li><span class="category-tile is-soon" aria-disabled="true"><span class="category-thumb is-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5l6 2 6-2 6 2v12l-6-2-6 2-6-2z"/><path d="M9 7v12M15 5v12"/></svg></span><span class="category-name">โบรชัวร์</span></span></li>
+        <li><span class="category-tile is-soon" aria-disabled="true"><span class="category-thumb is-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="13" rx="1.5"/><path d="M12 16v5M8 21h8"/></svg></span><span class="category-name">โปสเตอร์และป้าย</span></span></li>
+        <li><span class="category-tile is-soon" aria-disabled="true"><span class="category-thumb is-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 4v10l-8 4-8-4V7z"/><path d="M4 7l8 4 8-4M12 11v10"/></svg></span><span class="category-name">กล่องและบรรจุภัณฑ์</span></span></li>
+        <li><span class="category-tile is-soon" aria-disabled="true"><span class="category-thumb is-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="16" rx="1.5"/><path d="M4 10h16M9 3v4M15 3v4"/></svg></span><span class="category-name">ปฏิทิน</span></span></li>
+      </ul>
+      <button class="category-next" id="categoryNext" type="button" aria-label="ดูหมวดหมู่ถัดไป"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
+    </nav>
+
     <section class="catalog-section" aria-labelledby="catalogTitle">
       <div class="catalog-heading">
         <div>

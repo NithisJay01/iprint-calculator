@@ -1,6 +1,6 @@
 import { loadPricing, loadCatalog, API_ROOT, LOCAL } from '../shared/pricing-client.js';
 import { findProduct, resolveSets, defaultSelection, quoteSelection, quantityChoices } from '../business-card/product.js';
-import { validatePrintRequest, requestSummary, lineRequestUrl, MAX_ARTWORK_BYTES } from '../shared/print-request.js';
+import { validatePrintRequest, requestSummary, requestSummaryItems, lineRequestUrl, MAX_ARTWORK_BYTES } from '../shared/print-request.js';
 
 import { buildArtworkBundle, nameArtworkBundle } from './artwork-bundle.js';
 
@@ -43,7 +43,11 @@ export function initPrintRequest({ card, layers, panel }) {
   }
   function updatePrice() {
     if (!snapshot) return;
-    $('requestSummary').textContent = requestSummary(payload());
+    $('requestSummary').replaceChildren(...requestSummaryItems(payload()).map((text) => {
+      const item = document.createElement('li');
+      item.textContent = text;
+      return item;
+    }));
     $('requestPrice').textContent = 'รอประเมินราคา';
     $('requestPriceDetail').textContent = 'ทีมงานจะยืนยันราคาตามวัสดุ ขนาด และเทคนิคที่เลือก';
     const pack = packs.find(item => item.id === $('requestPackage').value);
@@ -74,7 +78,7 @@ export function initPrintRequest({ card, layers, panel }) {
     const files = { artwork: sources.art.file, backArtwork: sources.backArt?.file, finish: sources.mask?.file, dieline: sources.cut?.file };
     const spec = { ...sources.params, width: card.spec.bounds.w, height: card.spec.bounds.h, paper: panel.state.paper, coating: panel.state.coating, finish: panel.state.finish };
     // Keep the retry key for an unchanged design. A new design starts a new request.
-    const exportOptions = { colorMode: $('exportColor').value, cropMarks: $('exportMarks').checked, jobPage: $('exportJob').checked };
+    const exportOptions = { colorMode: $('exportColor').value, jobPage: $('exportJob').checked };
     const exportSources = { ...sources, paperId: panel.state.paper, coatingId: panel.state.coating, finishId: panel.state.finish };
     const exportSignature = JSON.stringify([exportOptions, sources.mask?.invert]);
     const same = snapshot && snapshot.exportSignature === exportSignature && JSON.stringify(snapshot.spec) === JSON.stringify(spec) && Object.keys(files).every(key => files[key] === snapshot.files[key]);

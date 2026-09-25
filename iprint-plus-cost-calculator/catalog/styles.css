@@ -195,3 +195,39 @@ footer a { margin-left: 12px; color: var(--blue-dark); font-weight: 700; }
 @media (prefers-reduced-motion: reduce) {
   * { scroll-behavior: auto !important; transition: none !important; }
 }
+
+/* Category strip: one row of tiles that scrolls sideways, with a "next" arrow */
+.category-strip { position: relative; margin-top: 20px; }
+.category-list {
+  display: flex; gap: 12px; margin: 0; padding: 0 0 4px; list-style: none;
+  overflow-x: auto; scroll-snap-type: x proximity; scroll-behavior: smooth; scrollbar-width: none;
+}
+.category-list::-webkit-scrollbar { display: none; }
+.category-list li { flex: 0 0 150px; scroll-snap-align: start; }
+.category-tile {
+  display: flex; flex-direction: column; align-items: center; gap: 12px; height: 152px; padding: 14px 8px;
+  box-sizing: border-box; border-radius: 6px; background: #f3f3f3; color: var(--ink); text-align: center; text-decoration: none;
+}
+a.category-tile:hover { background: #e8eef5; }
+a.category-tile:focus-visible, .category-next:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+.category-thumb { display: grid; place-items: center; width: 70px; height: 70px; overflow: hidden; border-radius: 6px; }
+.category-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.category-thumb.is-icon { border-radius: 50%; background: var(--white); }
+.category-thumb svg { width: 30px; height: 30px; fill: none; stroke: var(--ink); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.category-name { font-size: 13px; line-height: 1.35; }
+.category-tile.is-soon { opacity: .55; cursor: default; }
+.category-next, .category-prev {
+  position: absolute; top: 50%; right: -8px; display: grid; place-items: center; width: 40px; height: 40px;
+  padding: 0; border: 0; border-radius: 50%; background: #222; color: #fff; cursor: pointer; transform: translateY(-50%);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 25%);
+}
+.category-next svg, .category-prev svg { width: 18px; height: 18px; fill: none; stroke: #fff; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.category-prev { right: auto; left: -8px; }
+.category-next[hidden], .category-prev[hidden] { display: none; }
+@media (max-width: 760px) {
+  .category-list li { flex-basis: 120px; }
+  .category-tile { height: 136px; }
+  .category-next, .category-prev { display: none; }
+}
+.category-list { cursor: grab; }
+.category-list.is-dragging { cursor: grabbing; scroll-behavior: auto; scroll-snap-type: none; user-select: none; }

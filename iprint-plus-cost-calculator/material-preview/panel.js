@@ -202,13 +202,22 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
   const view = $('#artCheckCanvas');
   const zoomInput = $('#artCheckZoom');
   let answerCheck = null;
-  let check = null; // the open check: { side, src, aspect, spec, placement }
+  let check = null; // the open check: { side, edit, src, aspect, spec, placement, follow, underlay, size }
+  const CHECK_SLOT = { front: 'art', back: 'backArt', mask: 'mask' };
+  const SIDE_LABEL = { front: 'ด้านหน้า', back: 'ด้านหลัง', mask: 'รูปทรงเทคนิคพิเศษ' };
   const finishCheck = (use) => {
     const resolve = answerCheck;
     const placement = check?.placement ?? null;
+    // the paper size can be changed inside the pop-up: leaving without using the file puts the size back
+    const original = resolve && !use && check?.size;
     answerCheck = null;
+    clearTimeout(checkSizeTimer);
     if (artCheck.open) artCheck.close();
+    if (resolve && check) check.closed = true; // a size change still being applied must not touch the pop-up any more
     resolve?.(use ? { placement } : null);
+    if (original && (layers.state.shape.width !== original.width || layers.state.shape.height !== original.height)) {
+      act(() => layers.setShape({ width: original.width, height: original.height }));
+    }
   };
   function redrawCheck() {
     const c = check;
@@ -223,7 +232,57 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
     const zoom = Math.round((c.placement?.zoom ?? 1) * 100);
     zoomInput.value = String(zoom);
     $('#artCheckZoomOut').textContent = `${zoom}%`;
+    syncCheckSize();
   }
+
+  // Paper size, chosen right where the picture is placed: a preset, or width x height in cm (the die-cut file decides its own).
+  const cmOf = (mm) => +(mm / 10).toFixed(2);
+  $('#artCheckPreset').append(...[...SIZE_PRESETS.map((p) => new Option(p.label, p.id)), new Option('กำหนดเอง', 'x')]);
+  function syncCheckSize() {
+    const custom = layers.state.shape.kind === 'custom';
+    $('#artCheckSize').hidden = custom;
+    if (custom) return;
+    const b = check.spec.bounds;
+    setValue($('#artCheckW'), cmOf(b.w));
+    setValue($('#artCheckH'), cmOf(b.h));
+    $('#artCheckPreset').value = SIZE_PRESETS.find((p) => p.w === b.w && p.h === b.h)?.id ?? 'x';
+  }
+  let checkSizeTimer = 0;
+  function applyCheckSize(now = false) {
+    clearTimeout(checkSizeTimer);
+    const run = async () => {
+      const open = check;
+      if (!open || open.closed) return;
+      const w = parseFloat($('#artCheckW').value);
+      const h = parseFloat($('#artCheckH').value);
+      if (!(w > 0) || !(h > 0)) return; // half-typed: wait for a number
+      const token = (open.sizeToken = (open.sizeToken ?? 0) + 1);
+      $('#artCheckSizeNote').textContent = '';
+      try {
+        await layers.setShape({ width: w * 10, height: h * 10 });
+        if (check !== open || open.closed || token !== open.sizeToken) return; // closed, or a newer size took over
+        open.spec = card.spec;
+        if (open.underlay) open.underlay = await renderUnderlay(layers.state.art, open.spec); // the printed front is drawn for this size
+        if (check !== open || open.closed || token !== open.sizeToken) return;
+        redrawCheck();
+      } catch (err) {
+        console.warn(err);
+        if (check === open) $('#artCheckSizeNote').textContent = err?.message || 'เปลี่ยนขนาดไม่สำเร็จ';
+      }
+      render();
+      requestRender();
+    };
+    if (now) run();
+    else checkSizeTimer = setTimeout(run, 250); // typing "5", "5.5" must not rebuild the card twice
+  }
+  for (const sel of ['#artCheckW', '#artCheckH']) $(sel).addEventListener('input', () => applyCheckSize());
+  $('#artCheckPreset').addEventListener('change', (e) => {
+    const p = SIZE_PRESETS.find((x) => x.id === e.target.value);
+    if (!p || !check) return;
+    $('#artCheckW').value = String(cmOf(p.w));
+    $('#artCheckH').value = String(cmOf(p.h));
+    applyCheckSize(true);
+  });
   // the customer's own placement starts from what automatic shows (on the trim for a trim-sized file, else fitted)
   const manual = () =>
     (check.placement ??= check.follow ? { ...check.follow } : { base: artworkFit(check.aspect, check.spec) === 'trim' ? 'trim' : 'fit', zoom: 1, dx: 0, dy: 0 });
@@ -267,6 +326,7 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
   view.addEventListener('pointercancel', endDrag);
   $('#artCheckUse').addEventListener('click', () => finishCheck(true));
   $('#artCheckAgain').addEventListener('click', () => {
+    if (check?.edit) return; // (hidden in edit mode: the side card has its own "change picture")
     const side = check?.side;
     finishCheck(false);
     $({ back: '#backArtInput', mask: '#maskInput' }[side] ?? '#artInput').click(); // still inside the click: the picker may open
@@ -289,28 +349,50 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
   }
 
   async function checkArt(file, side) {
-    const isShape = side === 'mask';
-    const layer = await layers.inspectFile(file, isShape); // an unreadable file throws here, like before
+    const layer = await layers.inspectFile(file, side === 'mask'); // an unreadable file throws here, like before
     try {
+      return await openCheck({ side, layer, name: file.name });
+    } finally {
+      layer.dispose?.(); // read only for this pop-up
+    }
+  }
+
+  // "edit position": the same pop-up on the file that is already in use (nothing is read or uploaded again)
+  async function editPosition(side) {
+    const slot = CHECK_SLOT[side];
+    const layer = layers.state[slot];
+    if (!layer) return;
+    const ok = await openCheck({ side, layer, name: layer.name, placement: layer.placement ?? null, edit: true });
+    if (!ok) return;
+    await layers.setPlacement(slot, ok.placement);
+    if (side === 'front') mine.frontPlacement = ok.placement; // "การ์ดของคุณ" brings the file back where it was put
+    if (side === 'back') mine.backPlacement = ok.placement;
+  }
+
+  /** Open the pop-up on `layer`; resolves with { placement } when used, null when not. Does not dispose the layer. */
+  async function openCheck({ side, layer, name, placement = null, edit = false }) {
+    const isShape = side === 'mask';
+    {
       finishCheck(false); // a pop-up left open by an earlier file loses
       const spec = card.spec;
-      check = { side, src: await renderArtCheckSource(layer), aspect: layer.aspect, spec, placement: null, follow: null, underlay: null };
+      check = { side, edit, src: await renderArtCheckSource(layer), aspect: layer.aspect, spec, placement: placement ? { ...placement } : null, follow: null, underlay: null, size: { width: layers.state.shape.width, height: layers.state.shape.height }, closed: false };
       if (isShape) {
         // the shape is lined up against the printed front as it is now (the customer's artwork, or the sample card)
         const art = layers.state.art;
         check.follow = art?.placement && compareAspect(layer.aspect, art.aspect) ? art.placement : null;
         check.underlay = await renderUnderlay(art, spec);
       }
-      $('#artCheckTitle').textContent = isShape ? 'ตรวจตำแหน่งเทคนิคพิเศษ' : 'ตรวจตำแหน่งตัดก่อนใช้ภาพ';
-      $('#artCheckFile').textContent = `${{ back: 'ด้านหลัง', mask: 'รูปทรงเทคนิคพิเศษ' }[side] ?? 'ด้านหน้า'} · ${file.name}`;
+      $('#artCheckTitle').textContent = edit ? `แก้ไขตำแหน่ง${SIDE_LABEL[side]}` : isShape ? 'ตรวจตำแหน่งเทคนิคพิเศษ' : 'ตรวจตำแหน่งตัดก่อนใช้ภาพ';
+      $('#artCheckFile').textContent = `${SIDE_LABEL[side]} · ${name}`;
       $('#artCheckAsk').textContent = EXTEND_BG_ASK;
       $('#artCheckSafeLegend').hidden = check.spec.kind === 'custom';
+      $('#artCheckAgain').hidden = edit;
+      $('#artCheckUse').textContent = edit ? 'บันทึกตำแหน่ง' : 'ใช้ภาพนี้';
+      $('#artCheckSizeNote').textContent = '';
       redrawCheck();
       const answer = new Promise((resolve) => (answerCheck = resolve));
       artCheck.showModal();
       return await answer;
-    } finally {
-      layer.dispose?.();
     }
   }
 
@@ -353,6 +435,9 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
     });
   });
   $('#frontReplace').addEventListener('click', pickFront);
+  $('#frontEdit').addEventListener('click', () => act(() => editPosition('front')));
+  $('#backEdit').addEventListener('click', () => act(() => editPosition('back')));
+  $('#maskEdit').addEventListener('click', () => act(() => editPosition('mask')));
   $('#artInput').addEventListener('change', (e) => {
     const file = e.target.files?.[0];
     e.target.value = ''; // lets the same file be picked again
@@ -393,16 +478,20 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
   // so it costs the page nothing until then.
   let planner = null;
   let exportReport = [];
-  const exportOptions = () => ({ colorMode: $('#exportColor').value, cropMarks: $('#exportMarks').checked, jobPage: $('#exportJob').checked });
+  const exportOptions = () => ({ colorMode: $('#exportColor').value, jobPage: $('#exportJob').checked });
   const exportSources = () => ({ ...layers.exportSources(), paperId: state.paper, material: state.material, coatingId: state.coating, finishId: state.finish });
 
   async function runExport(kind) {
-    const { exportFile, downloadBlob } = await import('./exportFiles.js');
-    setBusy(true, kind === 'pdf' ? 'กำลังสร้างไฟล์ PDF…' : 'กำลังสร้างไฟล์ SVG…');
+    const { exportFile, exportDielineFile, downloadBlob } = await import('./exportFiles.js');
+    setBusy(true, { pdf: 'กำลังสร้างไฟล์ PDF…', svg: 'กำลังสร้างไฟล์ SVG…', dieline: 'กำลังสร้างไฟล์เส้นตัด…' }[kind]);
     try {
       const metadata = { name: $('#exportCustomer').value.trim(), jobName: $('#exportJobName').value.trim(), materialName: $('#exportMaterialName').value.trim(), quantity: Number($('#exportQuantity').value), spec: { width: card.spec.bounds.w, height: card.spec.bounds.h, paper: state.paper } };
       if (!metadata.name || !metadata.jobName || !metadata.materialName || !Number.isInteger(metadata.quantity) || metadata.quantity < 1 || metadata.quantity > 100000) throw new Error('กรุณากรอกชื่อลูกค้า ชื่องาน วัสดุ และจำนวนผลิตก่อนดาวน์โหลด');
-      const results = nameArtworkBundle(await buildArtworkBundle(exportFile, exportSources(), exportOptions(), [kind]), metadata);
+      // the cutting file is one PDF with only the die-line (no artwork needed); the others are the artwork bundle
+      const built = kind === 'dieline'
+        ? [{ ...(await exportDielineFile(exportSources(), exportOptions())), kind: 'pdf', side: 'dieline' }]
+        : await buildArtworkBundle(exportFile, exportSources(), exportOptions(), [kind]);
+      const results = nameArtworkBundle(built, metadata);
       for (const result of results) downloadBlob(result.blob, result.filename);
       const result = results[0];
       exportReport = [
@@ -417,7 +506,8 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
   }
   $('#exportPdf').addEventListener('click', () => act(() => runExport('pdf')));
   $('#exportSvg').addEventListener('click', () => act(() => runExport('svg')));
-  for (const sel of ['#exportColor', '#exportMarks', '#exportJob']) $(sel).addEventListener('change', () => render());
+  $('#exportDieline').addEventListener('click', () => act(() => runExport('dieline')));
+  for (const sel of ['#exportColor', '#exportJob']) $(sel).addEventListener('change', () => render());
   $('#stepExport').addEventListener('toggle', () => {
     if ($('#stepExport').open) render();
   });
@@ -539,6 +629,8 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
     $('#backFile').textContent = d.backArtName ? shortName(d.backArtName) : 'ว่างเปล่า';
     $('#backFile').title = d.backArtName ?? '';
     $('#backArtClear').hidden = !d.backArtName;
+    $('#frontEdit').hidden = !d.artName;
+    $('#backEdit').hidden = !d.backArtName;
     $('#flipBtn').setAttribute('aria-label', `พลิกด้าน — ตอนนี้แสดง${state.side === 'back' ? 'ด้านหลัง' : 'ด้านหน้า'}`);
     setNotes($('#artNotes'), own ? [...d.artNotes, { text: 'ด้านหลังใช้ขนาดและวัสดุเดียวกับด้านหน้า พิมพ์สีได้ ส่วนเทคนิคพิเศษใช้กับด้านหน้าเท่านั้น ไฟล์ส่งออกแยกด้านหน้า (-front) และด้านหลัง (-back)' }] : d.artNotes);
 
@@ -563,6 +655,7 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
     $('#maskUpload').classList.toggle('is-attn', wantsShape && !hasShape);
     $('#maskUpload').textContent = d.maskName ? `เปลี่ยนไฟล์รูปทรง (${d.maskName})` : 'อัปโหลดรูปทรง…';
     $('#maskClear').hidden = !d.maskName;
+    $('#maskEdit').hidden = !d.maskName;
     $('#maskInvertWrap').hidden = !(d.maskIsRaster && d.maskUsedBrightness);
     $('#maskInvert').checked = d.maskInvert;
     $('#maskDesc').textContent = !wantsShape

@@ -78,6 +78,7 @@
               <button class="side-title" id="viewFront" type="button" aria-pressed="true">ด้านหน้า</button>
               <div class="side-body">
                 <button class="side-action" id="frontReplace" type="button">เปลี่ยนภาพ</button>
+                <button class="side-action is-secondary" id="frontEdit" type="button" hidden>แก้ไขตำแหน่ง</button>
                 <span class="side-file" id="frontFile"></span>
               </div>
             </div>
@@ -85,14 +86,15 @@
               <button class="side-title" id="viewBack" type="button" aria-pressed="false">ด้านหลัง<small> (ถ้ามี)</small></button>
               <div class="side-body">
                 <button class="side-action" id="backArtUpload" type="button">อัปโหลด</button>
+                <button class="side-action is-secondary" id="backEdit" type="button" hidden>แก้ไขตำแหน่ง</button>
                 <span class="side-file" id="backFile">ว่างเปล่า</span>
                 <button class="side-remove" id="backArtClear" type="button" hidden>ลบด้านหลัง</button>
               </div>
             </div>
           </div>
-          <input id="artInput" type="file" accept=".svg,.png,.jpg,.jpeg,.webp,image/svg+xml,image/png,image/jpeg,image/webp" hidden>
-          <input id="backArtInput" type="file" accept=".svg,.png,.jpg,.jpeg,.webp,image/svg+xml,image/png,image/jpeg,image/webp" hidden>
-          <p class="desc" id="artDesc">รับ SVG, PNG, JPG, WebP — ใช้ไฟล์ขนาดเท่างานจริง<br>สีขาวจะแสดงเป็นสีกระดาษ (ไม่รองรับหมึกขาวในงานพิมพ์)</p>
+          <input id="artInput" type="file" accept=".svg,.pdf,.png,.jpg,.jpeg,.webp,image/svg+xml,application/pdf,image/png,image/jpeg,image/webp" hidden>
+          <input id="backArtInput" type="file" accept=".svg,.pdf,.png,.jpg,.jpeg,.webp,image/svg+xml,application/pdf,image/png,image/jpeg,image/webp" hidden>
+          <p class="desc" id="artDesc">รับ SVG (ไม่เกิน 5 MB), PDF, PNG, JPG, WebP (ไม่เกิน 10 MB) — ใช้ไฟล์ขนาดเท่างานจริง<br>สีขาวจะแสดงเป็นสีกระดาษ (ไม่รองรับหมึกขาวในงานพิมพ์)</p>
           <ul class="notes art-notes" id="artNotes"></ul>
           <h3 class="sub">รูปทรงและขนาดบัตร <span class="sub-sum" id="shapeSum"></span></h3>
           <div class="chips shape-chips" id="shapeChips" role="group" aria-label="รูปร่างบัตร"></div>
@@ -138,6 +140,7 @@
           <div class="chips two">
             <button class="chip" id="maskUpload" type="button">อัปโหลดรูปทรง…</button>
             <button class="chip" id="maskClear" type="button" hidden>ลบรูปทรง</button>
+            <button class="chip" id="maskEdit" type="button" hidden>แก้ไขตำแหน่ง</button>
           </div>
           <input id="maskInput" type="file" accept=".svg,.png,image/svg+xml,image/png" hidden>
           <label class="check" id="maskInvertWrap" hidden><input type="checkbox" id="maskInvert"> กลับด้าน (ส่วนสว่าง = รูปทรง)</label>
@@ -165,12 +168,13 @@
               </select>
             </label>
           </div>
-          <label class="check"><input type="checkbox" id="exportMarks"> ใส่ Crop marks (เพิ่มขอบกระดาษ 10 mm)</label>
           <label class="check"><input type="checkbox" id="exportJob" checked> เพิ่มหน้าสรุปสเปก (หน้า 2 ของ PDF)</label>
           <div class="chips two">
             <button class="chip" id="exportPdf" type="button">ดาวน์โหลด PDF</button>
             <button class="chip" id="exportSvg" type="button">ดาวน์โหลด SVG</button>
+            <button class="chip is-wide" id="exportDieline" type="button">ดาวน์โหลดเส้นตัด (PDF แยกไฟล์)</button>
           </div>
+          <p class="desc">ไฟล์เส้นตัด: PDF ที่มีเฉพาะเส้นตัด (สีพิเศษ "Dieline") หน้าเดียว ขนาดและตำแหน่งเดียวกับไฟล์ PDF งานพิมพ์ ซ้อนทับกันพอดี ใช้กับเครื่องตัดได้เลย และดาวน์โหลดได้แม้ยังไม่ได้อัปโหลดงาน</p>
           <p class="desc">ไฟล์ .ai: ไม่มีให้ดาวน์โหลดโดยตรง เพราะเป็นรูปแบบปิดของ Adobe — ให้เปิด PDF ใน Illustrator (ยังไม่ได้ทดสอบกับ Illustrator จริง) แล้วบันทึกเป็น .ai</p>
           <ul class="notes" id="exportNotes"></ul>
         </div>
@@ -194,6 +198,12 @@
     <h2 id="artCheckTitle">ตรวจตำแหน่งตัดก่อนใช้ภาพ</h2>
     <p class="art-check-file" id="artCheckFile"></p>
     <div class="art-check-stage"><canvas id="artCheckCanvas" aria-describedby="artCheckText" title="ลากเพื่อเลื่อนตำแหน่งภาพ"></canvas></div>
+    <div class="art-check-size" id="artCheckSize" role="group" aria-label="ขนาดกระดาษ">
+      <label>ขนาดกระดาษ<select id="artCheckPreset"></select></label>
+      <label>กว้าง (cm)<input id="artCheckW" type="number" inputmode="decimal" min="2" max="100" step="0.05"></label>
+      <label>สูง (cm)<input id="artCheckH" type="number" inputmode="decimal" min="2" max="100" step="0.05"></label>
+    </div>
+    <p class="art-check-size-note" id="artCheckSizeNote" role="status"></p>
     <div class="art-check-controls">
       <div class="art-check-fit" role="group" aria-label="ขนาดภาพ">
         <button class="chip" type="button" data-fit="auto" aria-pressed="true">อัตโนมัติ</button>
@@ -228,7 +238,8 @@
     <h2 id="requestTitle">สั่งพิมพ์นามบัตรของคุณ</h2>
     <form id="printRequestForm">
       <label>จำนวน (ใบ)<input id="requestQuantity" type="number" min="1" max="100000" step="1" value="100" required></label>
-      <p class="request-summary" id="requestSummary"></p>
+      <ul class="request-summary" id="requestSummary"></ul>
+      <p class="request-note request-summary-note">รอทีมงานยืนยันวัสดุ ราคา และวันผลิตก่อนเริ่มงาน</p>
       <label id="requestPackageWrap" hidden>เทียบราคางานพื้นฐานจากเซต<select id="requestPackage"></select></label>
       <p class="request-price" id="requestPrice" aria-live="polite"></p><p class="request-note" id="requestPriceDetail"></p>
       <label>ชื่อ / บริษัท<input id="requestName" autocomplete="name" maxlength="120" required></label>

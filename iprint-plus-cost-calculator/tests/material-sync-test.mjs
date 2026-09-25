@@ -15,7 +15,7 @@ const api = async (_url, options) => {
   return Response.json({success:true,materials:await repository.list('material')});
 };
 const material = new MeshPhysicalMaterial();
-for (const key of ['coated','pet_translucent','smooth','pet_matte_white','kraft']) {
+for (const key of ['coated','pet_translucent','smooth','uncoated','pet_matte_white','kraft']) {
   page.properties['3D Material Key'].select.name=key;
   const [record]=await loadMaterials('https://api.example',api);
   assert.equal(record.id,'stable-record');
@@ -27,6 +27,11 @@ for (const key of ['coated','pet_translucent','smooth','pet_matte_white','kraft'
   assert.equal(material.opacity,1);
   assert.equal(material.transparent,false);
 }
+// a look that exists only as a preview chip (Cotton) is not a catalog key: it falls back to Smooth with a notice
+assert.deepEqual(resolveMaterial({material3dKey:'cotton',previewRenderer:'webgl'}),{key:'smooth',fallback:true});
+// the key needs the WebGL renderer too: Uncoated with a CSS renderer is still a fallback
+assert.deepEqual(resolveMaterial({material3dKey:'uncoated',previewRenderer:'css'}),{key:'smooth',fallback:true});
+assert.deepEqual(resolveMaterial({material3dKey:'uncoated',previewRenderer:'webgl'}),{key:'uncoated',fallback:false});
 for (const key of ['',null,'unknown','constructor','__proto__']) {
   assert.deepEqual(resolveMaterial({material3dKey:key,previewRenderer:'webgl'}),{key:'smooth',fallback:true});
 }

@@ -55,6 +55,9 @@ h1, h2, h3 { font-family: Sora, Prompt, sans-serif; }
 .cart-button:hover { background: #fff; }
 .cart-button img { width: 23px; height: 23px; }
 .cart-button b { min-width: 21px; height: 21px; padding: 0 5px; display: inline-grid; place-items: center; position: absolute; top: -6px; right: -8px; border-radius: 999px; background: #086ad8; color: #fff; font-size: 11px; }
+a.button.is-inquiry { text-decoration: none; }
+.button.is-inquiry { background: #12a05c; }
+.button.is-inquiry:hover { background: #0e8a4e; box-shadow: 0 10px 24px rgba(18, 160, 92, .28); }
 .button.ghost { background: #fff; border: 1px solid var(--blue); color: var(--blue); box-shadow: none; }
 .button.ghost:hover { background: var(--blue-soft); }
 

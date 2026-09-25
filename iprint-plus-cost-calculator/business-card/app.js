@@ -2,6 +2,7 @@ import { loadPricing } from '../shared/pricing-client.js';
 import { cartCount, readCart } from '../shared/cart.js';
 import { defaultBusinessCardPackages } from '../shared/business-card-product.js';
 import { setImageUrl } from '../shared/set-image.js';
+import { inquiryUrl } from '../shared/inquiry.js';
 let pricingSettings = null;
 import { BUSINESS_CARD_SIZE, buildOrderPayload, calculateBusinessCardQuote, isoDate, safeFilename } from './logic.js';
 
@@ -19,6 +20,14 @@ const LOCAL_CATALOG = {
 
 const state = { step:1, packageId:'corporate', packageName:'Corporate', catalogs:null, preset:null, material:null, services:[], quantity:500, quote:null, availability:null, deliveryDate:'', boost:null, frontFile:null, backFile:null, references:[], ticketId:'', jobName:'', version:'V1', driveLink:'', note:'', customerName:'', phone:'', email:'', lineId:'', address:'', paymentMethod:'รอใบแจ้งชำระ' };
 
+// An inquiry-only set opens the shop's LINE chat with a message about the set; it never goes to the order page.
+function inquiryButton(item) {
+  const url = inquiryUrl({ name: 'นามบัตร' }, item);
+  return url
+    ? `<a class="button is-inquiry" href="${esc(url)}" target="_blank" rel="noopener">ติดต่อสอบถาม</a>`
+    : '<button class="button is-inquiry" type="button" disabled title="ร้านยังไม่ได้ตั้งค่า LINE OA ID">ติดต่อสอบถาม</button>';
+}
+
 function renderPackages() {
   const fallbackImages = ['assets/hero.png', 'assets/material-professional.png', 'assets/technique.png', 'assets/material-textured.png', 'assets/material-special.png'];
   const markup = PACKAGES.map((item, index) => {
@@ -31,7 +40,7 @@ function renderPackages() {
       <div class="catalog-card-body"><span class="catalog-kicker">BUSINESS CARD SET</span><h3>${esc(item.name)}</h3><p>${esc(item.tagline || 'เซตพร้อมสั่งที่จัด Spec ไว้แล้ว')}</p>
       <div class="catalog-facts"><span><small>จำนวนเริ่มต้น</small><b>${Number(item.quantity || 0).toLocaleString('th-TH')} ใบ</b></span><span><small>ราคาเริ่มต้น</small><b data-catalog-price="${esc(item.id)}">${priceLabel}</b></span></div>
       <ul>${specs.slice(0, 3).map(value=>`<li>${esc(value)}</li>`).join('')}</ul>
-      <button class="button" data-package="${esc(item.id)}">เลือกเซตและปรับออปชัน</button></div>
+      ${item.inquiryOnly ? inquiryButton(item) : `<button class="button" data-package="${esc(item.id)}">เลือกเซตและปรับออปชัน</button>`}</div>
     </article>`;
   }).join('');
   $('packageCards').innerHTML = markup;

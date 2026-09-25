@@ -2,7 +2,7 @@
 
 `3D Material Key` (Notion select) is read as `material3dKey` by the existing `/materials` API. The standalone `/material-preview/` fetches that API using the public runtime configuration, selects records by ID and resolves only their key. `?material=<record-id>` selects a record on entry. Reload data keeps that ID and reapplies its current key. No product name or category is used to choose a shader.
 
-Supported WebGL keys: `smooth`, `coated`, `kraft`, `pet_matte_white`, `pet_translucent`. Unknown/missing keys and non-WebGL records show Smooth with an explicit fallback notice. API failures show cached records or the existing sample presets. Existing inline CSS previews and Notion records are unchanged.
+Supported WebGL keys: `smooth`, `uncoated`, `coated`, `kraft`, `pet_matte_white`, `pet_translucent`. Unknown/missing keys and non-WebGL records show Smooth with an explicit fallback notice. API failures show cached records or the existing sample presets. Existing inline CSS previews and Notion records are unchanged.
 
 Live Notion inspection on 2026-09-25 confirmed seven stock records use these keys and `webgl`. Both white-card records remain `Material=Art Paper`; `Card Paper` is absent from the schema. No migration is needed for this resolver. Smooth/Kraft presets are unchanged. This checkout had no Coated preset, so Coated reuses Smooth's maps with a smoother white finish.
 

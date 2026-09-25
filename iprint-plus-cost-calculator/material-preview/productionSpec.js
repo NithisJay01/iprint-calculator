@@ -74,7 +74,7 @@ export function cropMarks(trim, margins) {
  *   spec        card.spec                       params  the shape params (kind, width, height, radius, bleed)
  *   cut         the loaded die-cut file or null paperId / coatingId / finishId
  *   art, mask   { name, kind: 'svg'|'raster', aspect, pixelWidth?, warnings? } or null (Layer 1 / Layer 3)
- *   options     { colorMode: 'rgb'|'cmyk', cropMarks: boolean, jobPage: boolean }
+ *   options     { colorMode: 'rgb'|'cmyk', cropMarks: boolean, jobPage: boolean, dielineOnly: boolean (the cutting file needs no artwork) }
  *   material    the catalog (Notion) record the customer picked { id, name, fallback } or null. When set it is what
  *               production orders — paperId is only the 3D look used for the preview (Smooth for a stock without one).
  */
@@ -107,7 +107,8 @@ export function buildProductionPlan({ spec, params = {}, cut = null, paperId, co
   /* ------------------------------------------------------------ checks */
   const checks = [];
   const add = (level, text) => checks.push({ level, text });
-  if (!art) add('error', 'ยังไม่ได้อัปโหลดไฟล์งาน Layer 1 — ส่งออกไม่ได้ (ตัวอย่างการ์ดไม่ใช่งานของลูกค้า)');
+  if (!art && opts.dielineOnly) add('ok', 'ไฟล์เส้นตัดอย่างเดียว — ไม่มีงานพิมพ์ในไฟล์นี้');
+  else if (!art) add('error', 'ยังไม่ได้อัปโหลดไฟล์งาน Layer 1 — ส่งออกไม่ได้ (ตัวอย่างการ์ดไม่ใช่งานของลูกค้า)');
   else add('ok', `Layer 1: ${art.name}`);
   if (art && !art.placement && artworkFit(art.aspect, spec) === 'trim') add('ok', `Layer 1 เท่าขนาดตัด — เติม Bleed ${mm(spec.bleed)} mm อัตโนมัติ (ยืดขอบภาพ ไม่ขยายงาน)`);
   if (art?.placement) {
@@ -125,7 +126,7 @@ export function buildProductionPlan({ spec, params = {}, cut = null, paperId, co
   if (spec.kind === 'custom') {
     if (cut?.kind === 'png') add('warn', 'ไดไลน์มาจากภาพ PNG (คลาดเคลื่อนประมาณ ±0.1 mm) — ใช้อ้างอิงเท่านั้น ควรใช้ SVG สำหรับผลิต');
     else add('ok', 'ไดไลน์จากไฟล์ SVG (เส้นหลายจุด คลาดเคลื่อนน้อยกว่า 0.05 mm)');
-  } else add('ok', `ไดไลน์เป็นเส้นโค้งสมบูรณ์ (${shapeLabel})`);
+  } else add('ok', `ไดไลน์เป็นเส้นสมบูรณ์ (${shapeLabel})`);
 
   if (art?.kind === 'raster' && art.pixelWidth) {
     const dpi = effectiveDpi(art.pixelWidth, frame.w);
@@ -233,5 +234,22 @@ export function assembleJob({ plan, artItems = [], artSvgInner = null, finishIte
     images,
     jobPage: plan.jobLines,
     fileBase: plan.fileBase,
+  };
+}
+
+/**
+ * The cutting file: the die-line alone, in its own spot colour and layer. It has the SAME page size and origin as the artwork
+ * file (media = the artwork frame), so the two register when a cutter or RIP lays one over the other. One page, no job sheet.
+ */
+export function assembleDielineJob({ plan }) {
+  const job = assembleJob({ plan });
+  return {
+    ...job,
+    title: job.title.replace('production file', 'die-line'),
+    layers: job.layers.filter((layer) => layer.name === EXPORT.spots.dieline.layer),
+    spots: { dieline: EXPORT.spots.dieline },
+    images: {},
+    jobPage: null,
+    fileBase: `${plan.fileBase}-dieline`,
   };
 }

@@ -16,6 +16,7 @@ import { DEFAULT_SHAPE, MIN_BLEED_MM } from './materials.js';
 import { buildSpec, registrationNotes, artworkFit, placeArtwork, compareAspect } from './shape.js';
 import { placeOnTrim } from './bleed.js';
 import { parseSvg, renderSvgLayer } from './svgArtwork.js';
+import { isPdfFile, pdfToPng } from './pdfArtwork.js';
 import { inspectRaster, decodeRaster, drawRasterLayer, drawRasterMask, isSvgFile, isRasterFile } from './rasterArtwork.js';
 import { loadShapeFile } from './shapeFile.js';
 
@@ -129,13 +130,24 @@ export function createLayers({ card, studio, onChange = () => {}, setBusy = () =
     return layer;
   }
 
+  // A PDF becomes a picture of its first page; the layer keeps the name of the PDF.
+  async function makePdfLayer(file) {
+    const page = await pdfToPng(file);
+    const layer = await makeRasterLayer(page.file, false);
+    layer.name = file.name;
+    layer.source = { kind: 'pdf', pages: page.pages, widthMm: page.widthMm, heightMm: page.heightMm };
+    if (page.pages > 1) layer.warnings = [...layer.warnings, `PDF มี ${page.pages} หน้า — ใช้เฉพาะหน้าแรก`];
+    return layer;
+  }
+
   async function makeLayer(file, asMask) {
+    if (isPdfFile(file) && !asMask) return makePdfLayer(file);
     if (isSvgFile(file)) return makeSvgLayer(file);
     if (isRasterFile(file)) {
       if (asMask && !/png/i.test(file.type) && !/\.png$/i.test(file.name || '')) throw new Error('Layer 3 รับไฟล์ SVG หรือ PNG เท่านั้น');
       return makeRasterLayer(file, asMask);
     }
-    throw new Error(asMask ? 'Layer 3 รับไฟล์ SVG หรือ PNG เท่านั้น' : 'รองรับเฉพาะไฟล์ SVG, PNG, JPG, WebP');
+    throw new Error(asMask ? 'Layer 3 รับไฟล์ SVG หรือ PNG เท่านั้น' : 'รองรับเฉพาะไฟล์ SVG, PDF, PNG, JPG, WebP');
   }
 
   // Reading a file takes a while and takes a different while for every file, so requests can finish out of order.
@@ -161,6 +173,21 @@ export function createLayers({ card, studio, onChange = () => {}, setBusy = () =
     setBackArt: (file, placement = null) => loadSlot('backArt', file, false, placement),
     /** Read an artwork file without using it (for the check pop-up). The caller disposes it. */
     inspectFile: (file, asMask = false) => makeLayer(file, asMask),
+
+    /** Move / resize a file that is already loaded (the "edit position" pop-up). slot: 'art' | 'backArt' | 'mask'; null = automatic. */
+    async setPlacement(slot, placement) {
+      const layer = state[slot];
+      if (!layer) return;
+      const prev = layer.placement ?? null;
+      layer.placement = placement ?? null;
+      try {
+        await refresh();
+      } catch (err) {
+        layer.placement = prev;
+        await refresh().catch(() => {});
+        throw err;
+      }
+    },
 
     /** Layer 3 */
     setMask: (file, placement = null) => loadSlot('mask', file, true, placement),

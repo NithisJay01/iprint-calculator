@@ -446,7 +446,7 @@ export function registrationNotes({ spec, art, mask }) {
   }
   if (art?.pixelWidth) {
     const dpi = effectiveDpi(art.pixelWidth, spec.frame.w);
-    if (dpi < 200) notes.push({ text: `Layer 1: ความละเอียดต่ำ (ประมาณ ${Math.round(dpi)} dpi ที่ขนาดจริง) ภาพอาจแตก — ควรตั้งแต่ 300 dpi`, warn: true });
+    if (dpi < 200) notes.push({ text: `Layer 1: ความละเอียดต่ำ (ประมาณ ${Math.round(dpi)} dpi ที่ขนาดจริง) ภาพอาจแตก — ควรใช้ภาพที่มีความละเอียด 300 dpi`, warn: true });
   }
   return notes;
 }

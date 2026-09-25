@@ -22,4 +22,11 @@ for (const asset of ['hero.png', 'business-cards.png', 'postcards.png', 'sticker
   assert.equal(existsSync(new URL(`../catalog/assets/${asset}`, import.meta.url)), true, `Missing ${asset}`);
 }
 
+assert.match(html, /<nav class="category-strip"[^>]*aria-label=/);
+assert.match(html, /id="categoryNext"/);
+assert.match(html, /class="category-tile" href="\.\.\/business-card\/"/);
+assert.doesNotMatch(html, /<a class="category-tile is-soon/, 'tiles that are not ready are not links');
+assert.match(css, /\.category-list \{[^}]*overflow-x: auto/);
+assert.match(app, /categoryList\.scrollBy/);
+
 console.log('Catalog page test passed');

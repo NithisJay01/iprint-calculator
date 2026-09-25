@@ -14,7 +14,7 @@
  * Nothing leaves the browser.
  */
 import { EXPORT } from './materials.js';
-import { buildProductionPlan, assembleJob } from './productionSpec.js';
+import { buildProductionPlan, assembleJob, assembleDielineJob } from './productionSpec.js';
 import { buildPdf } from './pdfBuild.js';
 import { buildSvg } from './svgBuild.js';
 import { inspectPdf, rgbToCmyk } from './pdf.js';
@@ -399,6 +399,31 @@ export async function exportFile(kind, src, options) {
   }
   const text = buildSvg(job);
   return { blob: new Blob([text], { type: 'image/svg+xml' }), filename: `${plan.fileBase}.svg`, report, bytes: text.length, plan };
+}
+
+/**
+ * The cutting file: a PDF with ONLY the die-line (one page, same size and origin as the artwork file). It needs no artwork:
+ * the cut shape is a preset or the die-cut file. @returns the same shape as exportFile('pdf', ...)
+ */
+export async function exportDielineFile(src, options = {}) {
+  const plan = buildProductionPlan({
+    spec: src.spec,
+    params: src.params,
+    cut: src.cut,
+    paperId: src.paperId,
+    material: src.material,
+    coatingId: 'none',
+    finishId: 'none',
+    art: null,
+    mask: null,
+    options: { ...options, cropMarks: false, jobPage: false, dielineOnly: true },
+  });
+  const job = assembleDielineJob({ plan });
+  const bytes = await buildPdf(job);
+  const check = await inspectPdf(bytes); // never hand out a file we cannot read back ourselves
+  if (!check.ok) throw new Error(`สร้างไฟล์ PDF ไม่สมบูรณ์: ${check.problems[0]}`);
+  const report = [`ไฟล์เส้นตัด: ไดไลน์ ${plan.dieline.exact ? 'เส้นโค้งสมบูรณ์' : 'เส้นจากไฟล์ไดคัท'} สีพิเศษ "${EXPORT.spots.dieline.name}" — หน้ากระดาษและตำแหน่งเดียวกับไฟล์งานพิมพ์`];
+  return { blob: new Blob([bytes], { type: 'application/pdf' }), filename: `${job.fileBase}.pdf`, report, bytes: bytes.length, plan, pdf: { pages: check.pages.length, layers: check.layers, spots: check.spots } };
 }
 
 export function downloadBlob(blob, filename) {

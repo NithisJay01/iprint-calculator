@@ -7,7 +7,7 @@ export function artworkFilename(value, kind, side = 'front') {
   const safe = text => String(text || '').normalize('NFC').replace(/[<>:"/\\|?*\u0000-\u001f\u007f]/g, '').trim().replace(/\s+/g, '-').replace(/[. ]+$/g, '').slice(0, 70) || 'Untitled';
   const cm = mm => Number((mm / 10).toFixed(3));
   const s = value.spec;
-  return `(${safe(value.name)})${safe(value.jobName || 'Business-Card')}-(${cm(s.width)}x${cm(s.height)}cm)${safe(value.materialName || paperMaterials[s.paper]?.label)}-(${value.quantity}piece)-${side === 'back' ? 'back' : 'front'}.${kind === 'svg' ? 'svg' : 'pdf'}`;
+  return `(${safe(value.name)})${safe(value.jobName || 'Business-Card')}-(${cm(s.width)}x${cm(s.height)}cm)${safe(value.materialName || paperMaterials[s.paper]?.label)}-(${value.quantity}piece)-${side === 'back' ? 'back' : side === 'dieline' ? 'dieline' : 'front'}.${kind === 'svg' ? 'svg' : 'pdf'}`;
 }
 export function validatePrintRequest(value) {
   const errors = [];
@@ -29,6 +29,26 @@ export function validatePrintRequest(value) {
   if (!Number.isFinite(s.bleed) || s.bleed < 0 || s.bleed > 5) errors.push('Bleed ไม่ถูกต้อง');
   if (!Number.isFinite(s.radius) || s.radius < 0 || s.radius > 75) errors.push('รัศมีมุมไม่ถูกต้อง');
   return errors;
+}
+export const REQUEST_SUMMARY_NOTE = 'รอทีมงานยืนยันวัสดุ ราคา และวันผลิตก่อนเริ่มงาน';
+// The request as separate facts, one per line ("label: value"): the bullets of the request pop-up.
+// (requestSummary below is the text the Worker writes into the Notion brief and sends to LINE: it is not changed.)
+export function requestSummaryItems(value) {
+  const s = value.spec;
+  const kind = SHAPE_KINDS.find(shape => shape.id === s.kind)?.label || s.kind;
+  return [
+    `งาน: ${value.jobName || 'นามบัตร'}`,
+    `จำนวน: ${value.quantity.toLocaleString('th-TH')} ใบ`,
+    `การพิมพ์: ${value.hasBack ? 'หน้า–หลัง' : 'ด้านหน้า'}`,
+    `ขนาด: ${s.width} × ${s.height} mm`,
+    `รูปทรง: ${kind}`,
+    ...(s.kind === 'rounded' ? [`มุมโค้ง: ${s.radius} mm`] : []),
+    `Bleed: ${s.bleed} mm`,
+    `วัสดุ: ${value.materialName || paperMaterials[s.paper]?.label}`,
+    `เคลือบ: ${coatings[s.coating]?.label}`,
+    `เทคนิคด้านหน้า: ${finishes[s.finish]?.label}`,
+    ...(value.hasBack ? ['ด้านหลัง: พิมพ์สี ไม่มีเทคนิคพิเศษ'] : [])
+  ];
 }
 export function requestSummary(value) {
   const s = value.spec;
