@@ -10,6 +10,8 @@
  */
 import { paperMaterials, coatings, finishes, FINISH_ORDER, SHAPE_KINDS, SIZE_PRESETS, BLEED_OPTIONS, DEFAULTS } from './materials.js';
 import { buildArtworkBundle, nameArtworkBundle } from './artwork-bundle.js';
+import { compareAspect } from './shape.js';
+import { drawArtCheck, artCheckMessage, EXTEND_BG_ASK } from './artCheck.js';
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -193,12 +195,56 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
   const mine = { front: null, back: null };
   const showingMine = () => Boolean(layers.state.art);
 
+  // "check the cut": before a front / back file is used, show it as it will be printed and what gets trimmed off
+  const artCheck = $('#artCheck');
+  let answerCheck = null; // resolves the open pop-up: true = use the file
+  let checkSide = 'front';
+  const finishCheck = (use) => {
+    const resolve = answerCheck;
+    answerCheck = null;
+    if (artCheck.open) artCheck.close();
+    resolve?.(use);
+  };
+  $('#artCheckUse').addEventListener('click', () => finishCheck(true));
+  $('#artCheckAgain').addEventListener('click', () => {
+    finishCheck(false);
+    $(checkSide === 'back' ? '#backArtInput' : '#artInput').click(); // still inside the click: the picker may open
+  });
+  artCheck.addEventListener('close', () => finishCheck(false)); // Esc / closed any other way = not used
+
+  async function checkArt(file, side) {
+    const layer = await layers.inspectFile(file); // an unreadable file throws here, like before
+    try {
+      const spec = card.spec; // real mm
+      const { canvas, fit } = await drawArtCheck(layer, spec, layers.state.shape);
+      const msg = artCheckMessage(fit, spec, compareAspect(layer.aspect, spec.frame.w / spec.frame.h));
+      const view = $('#artCheckCanvas');
+      view.width = canvas.width;
+      view.height = canvas.height;
+      view.getContext('2d').drawImage(canvas, 0, 0);
+      $('#artCheckFile').textContent = `${side === 'back' ? 'ด้านหลัง' : 'ด้านหน้า'} · ${file.name}`;
+      $('#artCheckAsk').textContent = EXTEND_BG_ASK;
+      $('#artCheckAsk').hidden = !msg.ask;
+      $('#artCheckText').textContent = msg.text;
+      $('#artCheckSafeLegend').hidden = spec.kind === 'custom';
+      checkSide = side;
+      finishCheck(false); // a pop-up left open by an earlier file loses
+      const answer = new Promise((resolve) => (answerCheck = resolve));
+      artCheck.showModal();
+      return await answer;
+    } finally {
+      layer.dispose?.();
+    }
+  }
+
   async function useFront(file) {
+    if (!(await checkArt(file, 'front'))) return;
     await layers.setArt(file);
     if (layers.state.art) mine.front = file; // only once it actually loaded (a bad file keeps the previous one)
     state.side = 'front';
   }
   async function useBack(file) {
+    if (!(await checkArt(file, 'back'))) return;
     if (!showingMine() && mine.front) await layers.setArt(mine.front); // a back belongs to the customer's card
     await layers.setBackArt(file);
     if (layers.state.backArt) mine.back = file;

@@ -155,6 +155,8 @@ export function createLayers({ card, studio, onChange = () => {}, setBusy = () =
     /** Layer 1 */
     setArt: (file) => loadSlot('art', file, false),
     setBackArt: (file) => loadSlot('backArt', file, false),
+    /** Read an artwork file without using it (for the check pop-up). The caller disposes it. */
+    inspectFile: (file) => makeLayer(file, false),
 
     /** Layer 3 */
     setMask: (file) => loadSlot('mask', file, true),

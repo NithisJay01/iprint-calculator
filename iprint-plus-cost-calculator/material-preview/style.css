@@ -644,3 +644,31 @@ html, body {
 .app.is-full .stage-top { top: calc(10px + env(safe-area-inset-top)); }
 .app.is-full .stage-ui { bottom: calc(10px + env(safe-area-inset-bottom)); }
 
+
+/* ---- "check the cut" pop-up before an artwork file is used ---- */
+.art-check {
+  width: min(720px, calc(100vw - 24px));
+  max-height: 92dvh;
+  overflow: auto;
+  padding: 20px;
+  border: 0;
+  border-radius: 18px;
+  background: #fbfaf8;
+  color: #1e2026;
+  box-shadow: 0 18px 50px rgba(16, 28, 48, 0.28);
+}
+.art-check::backdrop { background: rgba(16, 28, 48, 0.45); }
+.art-check h2 { margin: 0 0 2px; font-size: 18px; }
+.art-check-file { margin: 0 0 12px; font-size: 12.5px; color: var(--muted); overflow-wrap: anywhere; }
+.art-check-stage { display: grid; place-items: center; padding: 12px; border-radius: 12px; background: #e9e8e4; }
+.art-check-stage canvas { display: block; max-width: 100%; height: auto; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18); }
+.art-check-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 10px 0 0; padding: 0; list-style: none; font-size: 12px; color: #3b3f48; }
+.art-check-legend li { display: flex; align-items: center; gap: 6px; }
+.art-check-legend i { display: inline-block; width: 18px; height: 12px; }
+.lg-cut { background: rgba(20, 22, 28, 0.55); border-radius: 2px; }
+.lg-line { border-top: 2px dashed #e5322d; height: 0 !important; }
+.lg-safe { border-top: 2px dashed #1f7ae0; height: 0 !important; }
+.art-check-ask { margin: 12px 0 0; padding: 10px 12px; border-radius: 10px; background: #fff3e0; color: #8a4500; font-size: 14.5px; font-weight: 700; text-align: center; }
+.art-check-text { margin: 10px 0 0; font-size: 13px; line-height: 1.6; color: #3b3f48; }
+.art-check-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+.art-check-again { padding: 11px 18px; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink); font: inherit; font-weight: 600; cursor: pointer; }
