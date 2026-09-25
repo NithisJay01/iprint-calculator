@@ -57,6 +57,13 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
     if (document.activeElement !== field && (!typed || typed === autoMaterial)) field.value = name;
     autoMaterial = name;
   };
+  /** "ArtworkNa…png": keeps the start and the extension of a long file name. */
+  const shortName = (name = '', max = 16) => {
+    if (name.length <= max) return name;
+    const dot = name.lastIndexOf('.');
+    const ext = dot > 0 && name.length - dot <= 6 ? name.slice(dot + 1) : '';
+    return `${name.slice(0, max - ext.length - 1)}…${ext}`;
+  };
   const setNotes = (ul, notes) => {
     ul.replaceChildren(
       ...notes.map((n) => {
@@ -180,23 +187,63 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
 
   /* --------------------------------------------------------------- layers */
 
-  $('#artDemo').addEventListener('click', () => act(async () => { await layers.setArt(null); state.side = 'front'; }));
-  $('#backArtUpload').addEventListener('click', () => $('#backArtInput').click());
-  $('#backArtInput').addEventListener('change', event => act(async () => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  // "ภาพบน Preview": the iPrint sample card, or the customer's own card. The customer's files are kept while the
+  // sample is shown, so switching back to "การ์ดของคุณ" needs no new upload.
+  const mine = { front: null, back: null };
+  const showingMine = () => Boolean(layers.state.art);
+
+  async function useFront(file) {
+    await layers.setArt(file);
+    if (layers.state.art) mine.front = file; // only once it actually loaded (a bad file keeps the previous one)
+    state.side = 'front';
+  }
+  async function useBack(file) {
+    if (!showingMine() && mine.front) await layers.setArt(mine.front); // a back belongs to the customer's card
     await layers.setBackArt(file);
+    if (layers.state.backArt) mine.back = file;
     state.side = 'back';
-    event.target.value = '';
+  }
+  const pickFront = () => $('#artInput').click();
+
+  $('#artDemo').addEventListener('click', () => act(async () => {
+    await layers.setArt(null);
+    await layers.setBackArt(null);
+    state.side = 'front';
   }));
-  $('#backArtClear').addEventListener('click', () => act(async () => { await layers.setBackArt(null); state.side = 'front'; }));
-  for (const side of ['front', 'back']) $('#view' + (side === 'front' ? 'Front' : 'Back')).addEventListener('click', () => act(() => { state.side = side; }));
-  $('#artUpload').addEventListener('click', () => $('#artInput').click());
+  $('#artUpload').addEventListener('click', () => {
+    if (showingMine()) return; // already on the customer's card
+    if (!mine.front) return pickFront();
+    act(async () => {
+      await layers.setArt(mine.front);
+      if (mine.back) await layers.setBackArt(mine.back);
+      state.side = 'front';
+    });
+  });
+  $('#frontReplace').addEventListener('click', pickFront);
   $('#artInput').addEventListener('change', (e) => {
     const file = e.target.files?.[0];
-    e.target.value = '';
-    if (file) act(async () => { await layers.setArt(file); state.side = 'front'; });
+    e.target.value = ''; // lets the same file be picked again
+    if (file) act(() => useFront(file));
   });
+  $('#backArtUpload').addEventListener('click', () => $('#backArtInput').click());
+  $('#backArtInput').addEventListener('change', (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (file) act(() => useBack(file));
+  });
+  $('#backArtClear').addEventListener('click', () => act(async () => {
+    await layers.setBackArt(null);
+    mine.back = null;
+    state.side = 'front';
+  }));
+  // a side card: its title (or anywhere on the card but its buttons) shows that side
+  for (const [side, cardId, titleId] of [['front', '#sideFront', '#viewFront'], ['back', '#sideBack', '#viewBack']]) {
+    const show = () => act(() => { state.side = side; });
+    $(titleId).addEventListener('click', show);
+    $(cardId).addEventListener('click', (e) => {
+      if (!e.target.closest('button')) show();
+    });
+  }
 
   $('#maskUpload').addEventListener('click', () => $('#maskInput').click());
   $('#maskClear').addEventListener('click', () => act(() => layers.setMask(null)));
@@ -281,7 +328,7 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
     if (!hasFiles(e)) return;
     e.preventDefault();
     const target = dropTarget();
-    stage.dataset.drop = `วางไฟล์เพื่อใช้เป็น ${DROP[target]}${target === 'art' ? (state.side === 'back' ? ' ด้านหลัง' : ' ด้านหน้า') : ''}`;
+    stage.dataset.drop = `วางไฟล์เพื่อใช้เป็น ${DROP[target]}${target === 'art' ? (showingMine() && state.side === 'back' ? ' ด้านหลัง' : ' ด้านหน้า') : ''}`;
     stage.classList.add('is-drop');
   });
   stage.addEventListener('dragleave', () => stage.classList.remove('is-drop'));
@@ -293,7 +340,8 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
     if (!file) return;
     const target = dropTarget();
     // (a die-cut file is picked with its own button in step 1: a drop there is artwork, which is what people drag in)
-    if (target === 'art') act(() => state.side === 'back' ? layers.setBackArt(file) : layers.setArt(file));
+    // on the sample card a dropped file becomes the customer's front; on their own card it goes to the side shown
+    if (target === 'art') act(() => (showingMine() && state.side === 'back' ? useBack(file) : useFront(file)));
     else act(() => layers.setMask(file));
   });
 
@@ -330,18 +378,33 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
       : 'อัปโหลดไฟล์เส้นตัดไดคัท (SVG หรือ PNG พื้นโปร่งใส) ระบบใช้เฉพาะรูปทรงและรูเจาะ จะใช้ชิ้นที่ใหญ่ที่สุดในไฟล์';
     setNotes($('#shapeNotes'), d.shapeNotes);
 
-    $('#artSum').textContent = `${d.artName || 'ตัวอย่างการ์ด'}${d.backArtName ? ' + ด้านหลัง' : ''} · ${bounds}`;
-    $('#backArtUpload').textContent = d.backArtName ? `เปลี่ยนไฟล์ (${d.backArtName})` : 'อัปโหลด…';
+    const own = Boolean(d.artName);
+    $('#artSum').textContent = `${own ? 'การ์ดของคุณ' : 'การ์ด iPrint'}${d.backArtName ? ' · 2 ด้าน' : ''} · ${bounds}`;
+    // ภาพบน Preview: the chosen source is outlined; "upload" is a solid call to action until there is a file
+    $('#artDemo').setAttribute('aria-pressed', String(!own));
+    $('#artUpload').setAttribute('aria-pressed', String(own));
+    $('#artUpload').textContent = mine.front ? 'การ์ดของคุณ' : 'อัปโหลดการ์ดของคุณ';
+    $('#artUpload').classList.toggle('is-cta', !mine.front);
+    // side cards: compact side switches on the sample card; with the customer's card each one holds its file
+    $('#sideCards').classList.toggle('is-compact', !own);
+    for (const [side, cardId, titleId, label, name] of [
+      ['front', '#sideFront', '#viewFront', 'ด้านหน้า', d.artName],
+      ['back', '#sideBack', '#viewBack', 'ด้านหลัง', d.backArtName],
+    ]) {
+      const shown = state.side === side;
+      $(cardId).classList.toggle('is-shown', shown);
+      $(titleId).setAttribute('aria-pressed', String(shown));
+      const small = side === 'back' && !name ? Object.assign(document.createElement('small'), { textContent: ' (ถ้ามี)' }) : '';
+      $(titleId).replaceChildren(own && !shown && name ? `กดดู${label}` : label, small);
+    }
+    $('#frontFile').textContent = shortName(d.artName);
+    $('#frontFile').title = d.artName;
+    $('#backArtUpload').textContent = d.backArtName ? 'เปลี่ยนภาพ' : 'อัปโหลด';
+    $('#backFile').textContent = d.backArtName ? shortName(d.backArtName) : 'ว่างเปล่า';
+    $('#backFile').title = d.backArtName ?? '';
     $('#backArtClear').hidden = !d.backArtName;
-    $('#viewFront').setAttribute('aria-pressed', String(state.side === 'front'));
-    $('#viewBack').setAttribute('aria-pressed', String(state.side === 'back'));
     $('#flipBtn').setAttribute('aria-label', `พลิกด้าน — ตอนนี้แสดง${state.side === 'back' ? 'ด้านหลัง' : 'ด้านหน้า'}`);
-    $('#artDemo').setAttribute('aria-pressed', String(!d.artName));
-    $('#artUpload').setAttribute('aria-pressed', String(!!d.artName));
-    $('#artUpload').textContent = d.artName ? `เปลี่ยนไฟล์ (${d.artName})` : 'อัปโหลด…';
-    $('#artUpload').title = d.artName;
-    $('#backArtUpload').title = d.backArtName ?? '';
-    setNotes($('#artNotes'), d.artNotes);
+    setNotes($('#artNotes'), own ? [...d.artNotes, { text: 'ด้านหลังใช้ขนาดและวัสดุเดียวกับด้านหน้า พิมพ์สีได้ ส่วนเทคนิคพิเศษใช้กับด้านหน้าเท่านั้น ไฟล์ส่งออกแยกด้านหน้า (-front) และด้านหลัง (-back)' }] : d.artNotes);
 
     // step 2 — material
     pressed($('#paperChips'), state.paper);

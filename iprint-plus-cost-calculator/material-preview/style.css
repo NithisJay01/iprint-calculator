@@ -487,18 +487,60 @@ html, body {
   cursor: pointer;
 }
 
-/* the sample card, then front | back uploads between two hairlines */
-.upload-grid {
+/* ---- step 1 artwork: "ภาพบน Preview" source switch, then one card per side ---- */
+:root { --pick: #1f7ae0; --pick-bg: #eaf3fe; }
+
+.art-source { padding: 12px 12px 14px; border-radius: var(--radius); background: #ecebe8; }
+.art-source .sub { margin: 0 0 8px; }
+.src-chip[aria-pressed="true"] { background: var(--pick-bg); color: var(--ink); border: 2px solid var(--pick); }
+.src-chip.is-cta { background: var(--chip-on); color: var(--chip-on-text); border-color: transparent; }
+
+.side-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+.side-card {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-top: 10px;
-  padding: 12px 0;
-  border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
+  align-content: start;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+  border: 2px solid transparent;
+  border-radius: var(--radius);
+  background: var(--chip);
+  box-shadow: inset 0 0 0 1px var(--line);
+  cursor: pointer;
 }
-.upload-col { display: grid; gap: 6px; align-content: start; min-width: 0; }
-.upload-label { font-size: 12.5px; font-weight: 600; text-align: center; color: var(--ink); }
-.upload-label small { font-weight: 400; color: var(--muted); }
-/* a long file name is cut short (the full name is the button's tooltip) */
-.upload-col .chip { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.side-card.is-shown { border-color: var(--pick); background: var(--pick-bg); box-shadow: none; }
+.side-title {
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.side-title small { font-size: 12px; font-weight: 400; color: var(--muted); }
+.side-card.is-shown .side-title { color: var(--pick); }
+.side-body { display: grid; justify-items: center; gap: 8px; }
+.side-action {
+  width: min(100%, 150px);
+  min-height: 38px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--chip-on);
+  color: var(--chip-on-text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.side-action:active { transform: scale(0.97); }
+.side-file { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; color: var(--ink); }
+.side-remove { padding: 0; border: 0; background: none; color: var(--muted); font: inherit; font-size: 12px; text-decoration: underline; cursor: pointer; }
+/* on the sample card the side cards are just a front / back switch */
+.side-cards.is-compact .side-card { padding: 9px 12px; }
+.side-cards.is-compact .side-body { display: none; }
+.side-title:focus-visible, .side-action:focus-visible, .side-remove:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.art-notes { margin-top: 10px; }
+.art-notes li + li { margin-top: 6px; }

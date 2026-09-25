@@ -54,27 +54,34 @@
       <details class="step" id="stepArt" open>
         <summary><span class="num">1</span><h2>แบบของคุณ · Artwork</h2><span class="sum" id="artSum"></span></summary>
         <div class="step-body">
-          <h3 class="sub">ไฟล์งาน (พื้นหลัง ข้อความ รูป ในไฟล์เดียวต่อด้าน)</h3>
-          <div class="chips">
-            <button class="chip" id="artDemo" type="button" aria-pressed="true">ตัวอย่างการ์ด</button>
-          </div>
-          <div class="upload-grid">
-            <div class="upload-col">
-              <span class="upload-label" id="frontLabel">ด้านหน้า</span>
-              <button class="chip" id="artUpload" type="button" aria-pressed="false" aria-describedby="frontLabel">อัปโหลด…</button>
+          <div class="art-source">
+            <h3 class="sub">ภาพบน Preview</h3>
+            <div class="chips two" role="group" aria-label="ภาพบน Preview">
+              <button class="chip src-chip" id="artDemo" type="button" aria-pressed="true">การ์ด iPrint</button>
+              <button class="chip src-chip is-cta" id="artUpload" type="button" aria-pressed="false">อัปโหลดการ์ดของคุณ</button>
             </div>
-            <div class="upload-col">
-              <span class="upload-label" id="backLabel">ด้านหลัง <small>(ถ้ามี)</small></span>
-              <button class="chip" id="backArtUpload" type="button" aria-describedby="backLabel">อัปโหลด…</button>
-              <button class="chip" id="backArtClear" type="button" hidden>ลบด้านหลัง</button>
+          </div>
+          <div class="side-cards is-compact" id="sideCards" role="group" aria-label="ด้านที่แสดง">
+            <div class="side-card" id="sideFront">
+              <button class="side-title" id="viewFront" type="button" aria-pressed="true">ด้านหน้า</button>
+              <div class="side-body">
+                <button class="side-action" id="frontReplace" type="button">เปลี่ยนภาพ</button>
+                <span class="side-file" id="frontFile"></span>
+              </div>
+            </div>
+            <div class="side-card" id="sideBack">
+              <button class="side-title" id="viewBack" type="button" aria-pressed="false">ด้านหลัง<small> (ถ้ามี)</small></button>
+              <div class="side-body">
+                <button class="side-action" id="backArtUpload" type="button">อัปโหลด</button>
+                <span class="side-file" id="backFile">ว่างเปล่า</span>
+                <button class="side-remove" id="backArtClear" type="button" hidden>ลบด้านหลัง</button>
+              </div>
             </div>
           </div>
           <input id="artInput" type="file" accept=".svg,.png,.jpg,.jpeg,.webp,image/svg+xml,image/png,image/jpeg,image/webp" hidden>
           <input id="backArtInput" type="file" accept=".svg,.png,.jpg,.jpeg,.webp,image/svg+xml,image/png,image/jpeg,image/webp" hidden>
-          <p class="desc" id="artDesc">รับ SVG, PNG, JPG, WebP — ใช้ไฟล์ขนาดเท่างานจริง สีขาวจะแสดงเป็นสีกระดาษ (ไม่มีหมึกขาวในงานพิมพ์ออฟเซ็ต) หรือลากไฟล์มาวางบนนามบัตร</p>
-          <ul class="notes" id="artNotes"></ul>
-          <div class="chips two" role="group" aria-label="ด้านที่แสดง"><button class="chip" id="viewFront" type="button" aria-pressed="true">ดูด้านหน้า</button><button class="chip" id="viewBack" type="button" aria-pressed="false">ดูด้านหลัง</button></div>
-          <p class="desc">ด้านหลังใช้ขนาดและวัสดุเดียวกับด้านหน้า พิมพ์สีได้ ส่วนเทคนิคพิเศษใช้กับด้านหน้าเท่านั้น ไฟล์ส่งออกแยกด้านหน้า (-front) และด้านหลัง (-back)</p>
+          <p class="desc" id="artDesc">รับ SVG, PNG, JPG, WebP — ใช้ไฟล์ขนาดเท่างานจริง<br>สีขาวจะแสดงเป็นสีกระดาษ (ไม่รองรับหมึกขาวในงานพิมพ์)</p>
+          <ul class="notes art-notes" id="artNotes"></ul>
           <h3 class="sub">รูปทรงและขนาดบัตร <span class="sub-sum" id="shapeSum"></span></h3>
           <div class="chips shape-chips" id="shapeChips" role="group" aria-label="รูปร่างบัตร"></div>
           <div class="fields">
