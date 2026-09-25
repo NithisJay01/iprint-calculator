@@ -139,6 +139,7 @@ export function buildProductionPlan({ spec, params = {}, cut = null, paperId, co
   else if (finish) add('ok', `${finish.label} → เลเยอร์ "${finish.layerName}" สีพิเศษ "${finish.spot.name}" 100%`);
   else add('ok', 'ไม่มีเทคนิคพิเศษ');
   for (const w of (mask?.warnings ?? []).filter((t) => !/^ซ่อนเส้นไกด์/.test(t))) add('warn', `Layer 3: ${w}`);
+  if (finish && mask?.placement) add('ok', 'Layer 3: ลูกค้าปรับขนาด / ตำแหน่งรูปทรงเทคนิคพิเศษเอง');
 
   if (coatingId !== 'none') add('ok', `${coating} — บันทึกในหน้าสรุปสเปก (ไม่ใช่งานพิมพ์)`);
   add(opts.colorMode === 'cmyk' ? 'warn' : 'ok', opts.colorMode === 'cmyk' ? 'CMYK แบบง่าย (ไม่ใช้โปรไฟล์ ICC) — สีอาจเพี้ยนจากบนจอ' : 'สีงานพิมพ์เป็น RGB — ฝ่ายผลิตแปลงเป็น CMYK');

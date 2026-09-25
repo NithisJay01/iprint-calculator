@@ -408,6 +408,10 @@ export function registrationNotes({ spec, art, mask }) {
   const frameAspect = spec.frame.w / spec.frame.h;
   const size = `${spec.frame.w.toFixed(1)}×${spec.frame.h.toFixed(1)} mm`;
   for (const [label, layer] of [['Layer 1', art], ['Layer 3', mask]]) {
+    if (label === 'Layer 3' && layer?.placement) {
+      notes.push({ text: 'Layer 3: ปรับขนาด / ตำแหน่งรูปทรงเทคนิคพิเศษเองแล้ว' });
+      continue;
+    }
     if (label === 'Layer 3' && layer?.aspect && art?.placement && compareAspect(layer.aspect, art.aspect)) {
       notes.push({ text: 'Layer 3: ใช้ขนาดและตำแหน่งเดียวกับงานพิมพ์ที่ปรับไว้' });
       continue;

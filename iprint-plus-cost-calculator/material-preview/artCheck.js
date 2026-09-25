@@ -7,13 +7,14 @@
  *   · draws the cut line (the real outline: rounded corners, oval, die-cut and its holes) and a 3 mm safe line inside it
  * and says in words what will happen. The customer can change the size / position here (placement) before using the file.
  */
-import { artworkFit, presetOutline, placeArtwork, coversFrame } from './shape.js';
+import { artworkFit, presetOutline, placeArtwork, coversFrame, trimFraction } from './shape.js';
 import { placeOnTrim } from './bleed.js';
 
 export const SAFE_MM = 3; // keep text and logos this far inside the cut line
 export const EXTEND_BG_ASK = `กรุณาขยาย BG ของคุณออกอย่างน้อยด้านละ ${SAFE_MM} mm`;
 const MAX_W = 640;
 const MAX_H = 320; // keeps the whole pop-up on a laptop screen
+const FINISH_TINT = '#e0a800'; // how a finish shape is shown over the artwork in the pop-up
 const SOURCE_MAX = 1400; // px on the long side of the file's one-time render (sharp at up to ~200 % zoom)
 
 /** Render the file once, at its own aspect; every redraw (zoom / drag) then only scales this picture. */
@@ -34,7 +35,7 @@ export function artCheckSize(spec) {
  * Draw the check picture into `out` (a canvas, resized here). `src` from renderArtCheckSource, `shape` = shape params
  * (kind, radius), `placement` = null (automatic) or the customer's choice. Returns the placed rect (frame fractions).
  */
-export function drawArtCheck(out, src, aspect, spec, shape = {}, placement = null) {
+export function drawArtCheck(out, src, aspect, spec, shape = {}, placement = null, { underlay = null } = {}) {
   const f = spec.frame;
   const { k, W, H } = artCheckSize(spec);
   out.width = W;
@@ -43,9 +44,23 @@ export function drawArtCheck(out, src, aspect, spec, shape = {}, placement = nul
   g.fillStyle = '#ffffff'; // paper (white shows where the file leaves the sheet empty)
   g.fillRect(0, 0, W, H);
 
-  // the file, placed as it will be printed
   const { rect, extend } = placeArtwork(aspect, spec, placement);
-  g.drawImage(placeOnTrim(src, W, H, { x: rect.x * W, y: rect.y * H, w: rect.w * W, h: rect.h * H }, { extend }), 0, 0);
+  const px = { x: rect.x * W, y: rect.y * H, w: rect.w * W, h: rect.h * H };
+  if (underlay) {
+    // a finish shape: the printed artwork underneath, the shape on top in translucent gold, so the two can be lined up
+    g.drawImage(underlay, 0, 0, W, H);
+    const tint = placeOnTrim(src, W, H, px, { extend: false });
+    const t = tint.getContext('2d');
+    t.globalCompositeOperation = 'source-in';
+    t.fillStyle = FINISH_TINT;
+    t.fillRect(0, 0, W, H);
+    g.globalAlpha = 0.78;
+    g.drawImage(tint, 0, 0);
+    g.globalAlpha = 1;
+  } else {
+    // the file, placed as it will be printed
+    g.drawImage(placeOnTrim(src, W, H, px, { extend }), 0, 0);
+  }
 
   // mm (y up, card centred) → canvas px
   const left = f.cx - f.w / 2;
@@ -96,6 +111,17 @@ export function drawArtCheck(out, src, aspect, spec, shape = {}, placement = nul
   }
   g.setLineDash([]);
   return { rect, k };
+}
+
+/** A finish shape, in plain words: where the technique goes, and whether part of it runs past the cut line. */
+export function finishCheckMessage(spec, rect, label) {
+  const t = trimFraction(spec);
+  const eps = 1e-3;
+  const past = rect.x < t.x - eps || rect.y < t.y - eps || rect.x + rect.w > t.x + t.w + eps || rect.y + rect.h > t.y + t.h + eps;
+  const what = label || 'เทคนิคพิเศษ';
+  return past
+    ? { text: `สีทองคือตำแหน่ง ${what} — ไฟล์รูปทรงเกินเส้นตัด ส่วนที่เกินจะไม่ถูกทำ ปรับขนาด / เลื่อนให้ตรงกับงานพิมพ์ด้านล่างได้`, ask: false }
+    : { text: `สีทองคือตำแหน่ง ${what} — ตรวจว่าตรงกับงานพิมพ์ด้านล่าง ถ้าไม่ตรง ปรับขนาด / เลื่อนได้จากตรงนี้`, ask: false };
 }
 
 /**

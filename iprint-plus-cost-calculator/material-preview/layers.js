@@ -47,7 +47,7 @@ export function createLayers({ card, studio, onChange = () => {}, setBusy = () =
       const r = { x: rect.x * W, y: rect.y * H, w: rect.w * W, h: rect.h * H };
       return placeOnTrim(await layer.render(Math.max(1, Math.round(r.w)), Math.max(1, Math.round(r.h))), W, H, r, { extend: isPrint && extend });
     };
-    const maskPlacement = () => (state.art?.placement && compareAspect(state.mask.aspect, state.art.aspect) ? state.art.placement : null);
+    const maskPlacement = () => state.mask.placement ?? (state.art?.placement && compareAspect(state.mask.aspect, state.art.aspect) ? state.art.placement : null);
     const print = state.art ? await draw(state.art, true) : demo.print;
     const shape = state.mask ? await draw(state.mask, false, maskPlacement()) : state.art ? null : demo.shape;
     const backPrint = state.backArt ? await draw(state.backArt, true) : null;
@@ -160,10 +160,10 @@ export function createLayers({ card, studio, onChange = () => {}, setBusy = () =
     setArt: (file, placement = null) => loadSlot('art', file, false, placement),
     setBackArt: (file, placement = null) => loadSlot('backArt', file, false, placement),
     /** Read an artwork file without using it (for the check pop-up). The caller disposes it. */
-    inspectFile: (file) => makeLayer(file, false),
+    inspectFile: (file, asMask = false) => makeLayer(file, asMask),
 
     /** Layer 3 */
-    setMask: (file) => loadSlot('mask', file, true),
+    setMask: (file, placement = null) => loadSlot('mask', file, true, placement),
     async setMaskInvert(invert) {
       if (!state.mask || state.mask.kind !== 'raster') return;
       state.mask.invert = Boolean(invert);

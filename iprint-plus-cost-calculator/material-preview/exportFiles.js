@@ -340,8 +340,10 @@ export async function buildExportJob(src, options, kind) {
     const key = plan.finish.id;
     // a shape with the artwork's ratio follows the customer's placement of the artwork (they stay in register);
     // otherwise a trim-sized shape sits on the trim, anything else on the frame
-    const place =
-      art.placement && compareAspect(mask.aspect, art.aspect)
+    // (the customer's own size / position for the shape, set in the check pop-up, comes first)
+    const place = mask.placement
+      ? toPage(placeArtwork(mask.aspect, src.spec, mask.placement).rect)
+      : art.placement && compareAspect(mask.aspect, art.aspect)
         ? toPage(placeArtwork(mask.aspect, src.spec, art.placement).rect)
         : artworkFit(mask.aspect, src.spec) === 'trim'
           ? trimRect

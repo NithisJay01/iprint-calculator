@@ -10,8 +10,9 @@
  */
 import { paperMaterials, coatings, finishes, FINISH_ORDER, SHAPE_KINDS, SIZE_PRESETS, BLEED_OPTIONS, DEFAULTS } from './materials.js';
 import { buildArtworkBundle, nameArtworkBundle } from './artwork-bundle.js';
-import { artworkFit } from './shape.js';
-import { drawArtCheck, artCheckMessage, renderArtCheckSource, EXTEND_BG_ASK } from './artCheck.js';
+import { artworkFit, compareAspect, placeArtwork } from './shape.js';
+import { placeOnTrim } from './bleed.js';
+import { drawArtCheck, artCheckMessage, finishCheckMessage, artCheckSize, renderArtCheckSource, EXTEND_BG_ASK } from './artCheck.js';
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -211,8 +212,10 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
   };
   function redrawCheck() {
     const c = check;
-    const { rect } = drawArtCheck(view, c.src, c.aspect, c.spec, layers.state.shape, c.placement);
-    const msg = artCheckMessage(c.aspect, c.spec, c.placement, rect);
+    // a finish shape with no placement of its own follows the artwork's (c.follow), as it will in print
+    const placement = c.placement ?? c.follow;
+    const { rect } = drawArtCheck(view, c.src, c.aspect, c.spec, layers.state.shape, placement, { underlay: c.underlay });
+    const msg = c.underlay ? finishCheckMessage(c.spec, rect, finishes[state.finish]?.label) : artCheckMessage(c.aspect, c.spec, c.placement, rect);
     $('#artCheckAsk').hidden = !msg.ask;
     $('#artCheckText').textContent = msg.text;
     const mode = c.placement?.base === 'fill' ? 'fill' : c.placement ? 'fit' : 'auto';
@@ -222,7 +225,8 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
     $('#artCheckZoomOut').textContent = `${zoom}%`;
   }
   // the customer's own placement starts from what automatic shows (on the trim for a trim-sized file, else fitted)
-  const manual = () => (check.placement ??= { base: artworkFit(check.aspect, check.spec) === 'trim' ? 'trim' : 'fit', zoom: 1, dx: 0, dy: 0 });
+  const manual = () =>
+    (check.placement ??= check.follow ? { ...check.follow } : { base: artworkFit(check.aspect, check.spec) === 'trim' ? 'trim' : 'fit', zoom: 1, dx: 0, dy: 0 });
   for (const b of document.querySelectorAll('.art-check-fit .chip')) {
     b.addEventListener('click', () => {
       if (!check) return;
@@ -265,16 +269,40 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
   $('#artCheckAgain').addEventListener('click', () => {
     const side = check?.side;
     finishCheck(false);
-    $(side === 'back' ? '#backArtInput' : '#artInput').click(); // still inside the click: the picker may open
+    $({ back: '#backArtInput', mask: '#maskInput' }[side] ?? '#artInput').click(); // still inside the click: the picker may open
   });
   artCheck.addEventListener('close', () => finishCheck(false)); // Esc / closed any other way = not used
 
+  /** The printed front at the check-picture size: the customer's artwork where it is placed, or the sample card. */
+  async function renderUnderlay(art, spec) {
+    const { W, H } = artCheckSize(spec);
+    if (!art) {
+      const out = document.createElement('canvas');
+      out.width = W;
+      out.height = H;
+      out.getContext('2d').drawImage(card.artwork.demo().print, 0, 0, W, H);
+      return out;
+    }
+    const { rect, extend } = placeArtwork(art.aspect, spec, art.placement ?? null);
+    const px = { x: rect.x * W, y: rect.y * H, w: rect.w * W, h: rect.h * H };
+    return placeOnTrim(await art.render(Math.max(1, Math.round(px.w)), Math.max(1, Math.round(px.h))), W, H, px, { extend });
+  }
+
   async function checkArt(file, side) {
-    const layer = await layers.inspectFile(file); // an unreadable file throws here, like before
+    const isShape = side === 'mask';
+    const layer = await layers.inspectFile(file, isShape); // an unreadable file throws here, like before
     try {
       finishCheck(false); // a pop-up left open by an earlier file loses
-      check = { side, src: await renderArtCheckSource(layer), aspect: layer.aspect, spec: card.spec, placement: null };
-      $('#artCheckFile').textContent = `${side === 'back' ? 'ด้านหลัง' : 'ด้านหน้า'} · ${file.name}`;
+      const spec = card.spec;
+      check = { side, src: await renderArtCheckSource(layer), aspect: layer.aspect, spec, placement: null, follow: null, underlay: null };
+      if (isShape) {
+        // the shape is lined up against the printed front as it is now (the customer's artwork, or the sample card)
+        const art = layers.state.art;
+        check.follow = art?.placement && compareAspect(layer.aspect, art.aspect) ? art.placement : null;
+        check.underlay = await renderUnderlay(art, spec);
+      }
+      $('#artCheckTitle').textContent = isShape ? 'ตรวจตำแหน่งเทคนิคพิเศษ' : 'ตรวจตำแหน่งตัดก่อนใช้ภาพ';
+      $('#artCheckFile').textContent = `${{ back: 'ด้านหลัง', mask: 'รูปทรงเทคนิคพิเศษ' }[side] ?? 'ด้านหน้า'} · ${file.name}`;
       $('#artCheckAsk').textContent = EXTEND_BG_ASK;
       $('#artCheckSafeLegend').hidden = check.spec.kind === 'custom';
       redrawCheck();
@@ -300,6 +328,13 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
     await layers.setBackArt(file, ok.placement);
     if (layers.state.backArt) Object.assign(mine, { back: file, backPlacement: ok.placement });
     state.side = 'back';
+  }
+  /** A finish shape: lined up against the printed front in the same pop-up, then used with the chosen placement. */
+  async function useMask(file) {
+    const ok = await checkArt(file, 'mask');
+    if (!ok) return;
+    await layers.setMask(file, ok.placement);
+    state.side = 'front';
   }
   const pickFront = () => $('#artInput').click();
 
@@ -348,7 +383,7 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
   $('#maskInput').addEventListener('change', (e) => {
     const file = e.target.files?.[0];
     e.target.value = '';
-    if (file) act(async () => { await layers.setMask(file); state.side = 'front'; });
+    if (file) act(() => useMask(file));
   });
   $('#maskInvert').addEventListener('change', (e) => act(() => layers.setMaskInvert(e.target.checked)));
 
@@ -440,7 +475,7 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
     // (a die-cut file is picked with its own button in step 1: a drop there is artwork, which is what people drag in)
     // on the sample card a dropped file becomes the customer's front; on their own card it goes to the side shown
     if (target === 'art') act(() => (showingMine() && state.side === 'back' ? useBack(file) : useFront(file)));
-    else act(() => layers.setMask(file));
+    else act(() => useMask(file));
   });
 
   /* ---------------------------------------------------------------- render */
