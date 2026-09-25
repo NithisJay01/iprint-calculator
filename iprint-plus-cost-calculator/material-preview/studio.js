@@ -281,7 +281,6 @@ export function createStudio(renderer) {
     /** Shadows first, then the card + lights on top. */
     render() {
       transmissionBackdrop.visible = !!scene.getObjectByName('paper')?.material?.transmission;
-      studio.backdropOn = transmissionBackdrop.visible; // app.js lightens the stage captions over the dark backdrop
       renderer.autoClear = false;
       renderer.clear();
       renderer.render(shadowScene, camera);
