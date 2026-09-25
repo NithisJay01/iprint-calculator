@@ -144,6 +144,17 @@ export function createStudio(renderer) {
   renderer.toneMappingExposure = LIGHTING.exposure;
 
   const scene = new THREE.Scene();
+  const transmissionBackdrop = new THREE.Group();
+  const backdrop = new THREE.Mesh(new THREE.PlaneGeometry(10000, 10000), new THREE.MeshBasicMaterial({color: '#eceae6'}));
+  backdrop.position.z = -18;
+  transmissionBackdrop.add(backdrop);
+  for (const x of [-28, 0, 28]) {
+    const stripe = new THREE.Mesh(new THREE.PlaneGeometry(9, 110), new THREE.MeshBasicMaterial({color: '#899398'}));
+    stripe.position.set(x, 0, -17);
+    transmissionBackdrop.add(stripe);
+  }
+  transmissionBackdrop.visible = false;
+  scene.add(transmissionBackdrop);
   const camera = new THREE.PerspectiveCamera(LIGHTING.fov, 1, 20, 4000);
 
   // environment (PMREM)
@@ -259,6 +270,7 @@ export function createStudio(renderer) {
 
     /** Shadows first, then the card + lights on top. */
     render() {
+      transmissionBackdrop.visible = !!scene.getObjectByName('paper')?.material?.transmission;
       renderer.autoClear = false;
       renderer.clear();
       renderer.render(shadowScene, camera);

@@ -20,6 +20,7 @@ import { paperMaterials, coatings, finishes, TEXTURE_BUDGET } from './materials.
 import { generatePaperMaps, loadFileMaps, maskToArray, boxBlur, reliefNormalTexture, nextTick } from './procedural.js';
 import { createArtwork } from './artwork.js';
 import { textureSizeFor } from './shape.js';
+import { applyOpticalParams } from './material-catalog.js';
 
 const isCoarse = () => matchMedia('(pointer: coarse)').matches;
 const EMBOSS_CACHE_MAX = 4; // each entry is one full-size normal map
@@ -312,6 +313,7 @@ export function createCard({ renderer, spec: initialSpec }) {
     const cfg = paperMaterials[currentPaper];
     const co = coatings[currentCoating];
     const m = paperMat;
+    applyOpticalParams(m, cfg);
     m.color.set(cfg.color);
     m.roughness = co.roughness ?? cfg.roughness;
     m.specularIntensity = cfg.specularIntensity;
@@ -340,6 +342,7 @@ export function createCard({ renderer, spec: initialSpec }) {
   let wantedPaper = null; // what was asked for last (currentPaper is what is on screen)
 
   async function setPaper(id) {
+    if (!Object.hasOwn(paperMaterials, id)) id = 'smooth';
     const call = ++paperCall;
     wantedPaper = id;
     let pack = null;

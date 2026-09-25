@@ -179,6 +179,25 @@ export const paperMaterials = {
   },
 };
 
+// This checkout had no Coated preset. Reuse Smooth's existing maps/recipe as its base.
+paperMaterials.coated = {
+  ...paperMaterials.smooth, label: 'Coated',
+  description: 'การ์ดขาว ผิวเคลือบเรียบ สะท้อนแสงมากกว่ากระดาษด้าน',
+  color: '#fafafa', edgeColor: '#f4f4f2', roughness: 0.3, normalScale: 0.25,
+};
+paperMaterials.pet_matte_white = {
+  ...paperMaterials.smooth, label: 'PET ขาวด้าน',
+  description: 'พลาสติกขาวทึบ ผิวด้าน สะท้อนแสงนุ่มกว่าผิวเงา',
+  color: '#fafafa', edgeColor: '#f6f6f6', roughness: 0.43,
+  specularIntensity: 1, ior: 1.58, transmission: 0, normalScale: 0.12,
+  maps: { color: null, normal: null, roughness: null, bump: null, tileMm: [90, 54] },
+};
+paperMaterials.pet_translucent = {
+  ...paperMaterials.pet_matte_white, label: 'PET ขุ่นไข',
+  description: 'พลาสติกขุ่น มองทะลุด้านหลังแบบเบลอ',
+  color: '#f8faf9', roughness: 0.48, transmission: 0.92, thickness: 0.25,
+};
+
 /**
  * Layer 2 — lamination: a clear film over the whole printed face.
  *   roughness         replaces the paper's own roughness (the film is what the light meets first)
