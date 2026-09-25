@@ -206,7 +206,7 @@ export function createLayers({ card, studio, onChange = () => {}, setBusy = () =
       const own = (layer) => (layer?.warnings ?? []).map((text) => ({ text, warn: true }));
       const shapeNotes = [...(state.shape.kind === 'custom' ? (state.cut?.warnings ?? []).map((text) => ({ text, warn: true })) : [])];
       if (state.shape.kind === 'custom' && Math.abs(spec.bounds.w - state.shape.width) > 0.5) {
-        shapeNotes.push({ text: `ขนาดถูกปรับเป็น ${spec.bounds.w.toFixed(1)} × ${spec.bounds.h.toFixed(1)} mm ให้อยู่ในช่วงที่รองรับ (20–150 mm)`, warn: true });
+        shapeNotes.push({ text: `ขนาดถูกปรับเป็น ${+(spec.bounds.w / 10).toFixed(2)} × ${+(spec.bounds.h / 10).toFixed(2)} cm ให้อยู่ในช่วงที่รองรับ (2–15 cm)`, warn: true });
       }
       const artNotes = [...own(state.art), ...reg.filter((n) => n.text.startsWith('Layer 1'))];
       const maskNotes = [...own(state.mask), ...reg.filter((n) => !n.text.startsWith('Layer 1'))];

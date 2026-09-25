@@ -23,11 +23,11 @@ export const SHAPE_KINDS = [
 ];
 
 export const SIZE_PRESETS = [
-  { id: 'th', label: 'ไทย 90 × 54 mm', w: 90, h: 54 },
-  { id: 'card', label: 'ขนาดบัตรเครดิต 85 × 55 mm', w: 85, h: 55 },
-  { id: 'us', label: 'อเมริกา 89 × 51 mm', w: 89, h: 51 },
-  { id: 'jp', label: 'ญี่ปุ่น 91 × 55 mm', w: 91, h: 55 },
-  { id: 'square', label: 'จัตุรัส 55 × 55 mm', w: 55, h: 55 },
+  { id: 'th', label: 'ไทย 9 × 5.4 cm', w: 90, h: 54 }, // labels in cm for customers; w / h stay in mm
+  { id: 'card', label: 'ขนาดบัตรเครดิต 8.5 × 5.5 cm', w: 85, h: 55 },
+  { id: 'us', label: 'อเมริกา 8.9 × 5.1 cm', w: 89, h: 51 },
+  { id: 'jp', label: 'ญี่ปุ่น 9.1 × 5.5 cm', w: 91, h: 55 },
+  { id: 'square', label: 'จัตุรัส 5.5 × 5.5 cm', w: 55, h: 55 },
 ];
 
 export const BLEED_OPTIONS = [0, 1, 2, 3, 5];

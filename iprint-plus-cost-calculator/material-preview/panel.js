@@ -160,12 +160,13 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
     clearTimeout(sizeTimer);
     sizeTimer = setTimeout(() => {
       const patch = { bleed: Number($('#bleedSel').value) || 0 };
-      for (const [key, sel] of [['width', '#sizeW'], ['height', '#sizeH'], ['radius', '#sizeR']]) {
+      // width / height are typed in cm, the corner radius in mm; the card model is always mm
+      for (const [key, sel, toMm] of [['width', '#sizeW', 10], ['height', '#sizeH', 10], ['radius', '#sizeR', 1]]) {
         const v = parseFloat($(sel).value);
-        if (Number.isFinite(v)) patch[key] = v;
+        if (Number.isFinite(v)) patch[key] = v * toMm;
       }
       act(() => layers.setShape(patch));
-    }, 250); // typing "9", "90" must not rebuild the card twice
+    }, 250); // typing "5", "5.5" must not rebuild the card twice
   };
   for (const sel of ['#sizeW', '#sizeH', '#sizeR']) {
     $(sel).addEventListener('input', applySizeInputs);
@@ -355,7 +356,8 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
     const finish = finishes[state.finish];
     const kind = SHAPE_KINDS.find((k) => k.id === d.shape.kind);
     const custom = d.shape.kind === 'custom';
-    const bounds = `${+spec.bounds.w.toFixed(1)}×${+spec.bounds.h.toFixed(1)} mm`;
+    const cm = (mm) => +(mm / 10).toFixed(2); // sizes are shown to customers in cm
+    const bounds = `${cm(spec.bounds.w)}×${cm(spec.bounds.h)} cm`;
 
     // step 1 — artwork: front, back, card shape and size
     pressed($('#shapeChips'), d.shape.kind);
@@ -364,8 +366,8 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
     $('#radiusField').hidden = d.shape.kind !== 'rounded';
     $('#bleedField').hidden = custom;
     $('#cutBox').hidden = !custom;
-    setValue($('#sizeW'), +spec.bounds.w.toFixed(1));
-    setValue($('#sizeH'), +spec.bounds.h.toFixed(1));
+    setValue($('#sizeW'), cm(spec.bounds.w));
+    setValue($('#sizeH'), cm(spec.bounds.h));
     $('#sizeH').readOnly = custom; // the height follows the die-cut shape
     setValue($('#sizeR'), d.shape.radius);
     $('#bleedSel').value = String(d.shape.bleed || 0);
@@ -375,7 +377,7 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
     $('#cutUpload').textContent = d.cutName ? `เปลี่ยนไฟล์ไดคัท (${shortName(d.cutName, 24)})` : 'เลือกไฟล์ไดคัท (SVG / PNG)…';
     $('#cutUpload').title = d.cutName ?? '';
     $('#cutDesc').textContent = d.cutName
-      ? `${d.cutKind === 'svg' ? 'อ่านเส้นจากไฟล์ SVG' : 'สกัดเส้นจากภาพ PNG'} — ตั้งความกว้างของบัตรจริงเป็น mm ด้านล่าง (ความสูงคำนวณให้) กรอบงานเท่ากับกรอบของไฟล์นี้ ไฟล์แบบและรูปทรงเทคนิคพิเศษที่ใช้ Artboard เดียวกันจะตรงกันเอง`
+      ? `${d.cutKind === 'svg' ? 'อ่านเส้นจากไฟล์ SVG' : 'สกัดเส้นจากภาพ PNG'} — ตั้งความกว้างของบัตรจริงเป็น cm ด้านล่าง (ความสูงคำนวณให้) กรอบงานเท่ากับกรอบของไฟล์นี้ ไฟล์แบบและรูปทรงเทคนิคพิเศษที่ใช้ Artboard เดียวกันจะตรงกันเอง`
       : 'อัปโหลดไฟล์เส้นตัดไดคัท (SVG หรือ PNG พื้นโปร่งใส) ระบบใช้เฉพาะรูปทรงและรูเจาะ จะใช้ชิ้นที่ใหญ่ที่สุดในไฟล์';
     setNotes($('#shapeNotes'), d.shapeNotes);
 
