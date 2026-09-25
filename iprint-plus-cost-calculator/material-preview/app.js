@@ -337,6 +337,7 @@ function frame(now) {
   const l = studio.layout;
   studio.frame(l.width, l.height, cur.zoom, cur.panX, cur.panY);
   studio.render();
+  stage.classList.toggle('on-dark', !!studio.backdropOn); // light caption text over the see-through backdrop
 
   // adaptive resolution: if we cannot hold ~40 fps while animating, lower the pixel ratio a little
   if (lastRendered && dtRaw < 0.2) {

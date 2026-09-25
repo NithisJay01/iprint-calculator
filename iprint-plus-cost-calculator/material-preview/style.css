@@ -625,3 +625,6 @@ html, body {
 }
 .app.is-full .stage-top { top: calc(10px + env(safe-area-inset-top)); }
 .app.is-full .stage-ui { bottom: calc(10px + env(safe-area-inset-bottom)); }
+
+/* over the navy backdrop shown behind see-through stocks */
+.stage.on-dark .caption { color: rgba(255, 255, 255, 0.82); }

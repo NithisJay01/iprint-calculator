@@ -144,15 +144,20 @@ export function createStudio(renderer) {
   renderer.toneMappingExposure = LIGHTING.exposure;
 
   const scene = new THREE.Scene();
+  // Backdrop for see-through stocks (PET transmission): three.js transmission can only refract what is in the scene,
+  // not the CSS background, so a real backdrop is drawn — navy above, slate below, split by a diagonal rising to the
+  // right. The edge crosses behind the card, so the frosted blur and the tint of the stock are easy to read.
+  const BACKDROP = { top: '#041f3d', bottom: '#3f4764', slope: 0.32, through: [0, -4], z: -18 };
   const transmissionBackdrop = new THREE.Group();
-  const backdrop = new THREE.Mesh(new THREE.PlaneGeometry(10000, 10000), new THREE.MeshBasicMaterial({color: '#eceae6'}));
-  backdrop.position.z = -18;
-  transmissionBackdrop.add(backdrop);
-  for (const x of [-28, 0, 28]) {
-    const stripe = new THREE.Mesh(new THREE.PlaneGeometry(9, 110), new THREE.MeshBasicMaterial({color: '#899398'}));
-    stripe.position.set(x, 0, -17);
-    transmissionBackdrop.add(stripe);
-  }
+  const flat = (color) => new THREE.MeshBasicMaterial({ color, toneMapped: false }); // exact brand colours, no tone curve
+  const upper = new THREE.Mesh(new THREE.PlaneGeometry(10000, 10000), flat(BACKDROP.top));
+  upper.position.z = BACKDROP.z;
+  const lower = new THREE.Mesh(new THREE.PlaneGeometry(10000, 10000), flat(BACKDROP.bottom));
+  const tilt = Math.atan(BACKDROP.slope);
+  lower.rotation.z = tilt;
+  // put the lower plane's top edge on the diagonal: its centre sits 5000 mm "down" from a point on the line
+  lower.position.set(BACKDROP.through[0] + Math.sin(tilt) * 5000, BACKDROP.through[1] - Math.cos(tilt) * 5000, BACKDROP.z + 0.1);
+  transmissionBackdrop.add(upper, lower);
   transmissionBackdrop.visible = false;
   scene.add(transmissionBackdrop);
   const camera = new THREE.PerspectiveCamera(LIGHTING.fov, 1, 20, 4000);
@@ -273,6 +278,7 @@ export function createStudio(renderer) {
     /** Shadows first, then the card + lights on top. */
     render() {
       transmissionBackdrop.visible = !!scene.getObjectByName('paper')?.material?.transmission;
+      studio.backdropOn = transmissionBackdrop.visible; // app.js lightens the stage captions over the dark backdrop
       renderer.autoClear = false;
       renderer.clear();
       renderer.render(shadowScene, camera);
