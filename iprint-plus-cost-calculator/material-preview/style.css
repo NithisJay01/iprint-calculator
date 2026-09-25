@@ -536,7 +536,8 @@ html, body {
 }
 .side-action:active { transform: scale(0.97); }
 .side-file { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; color: var(--ink); }
-.side-remove { padding: 0; border: 0; background: none; color: var(--muted); font: inherit; font-size: 12px; text-decoration: underline; cursor: pointer; }
+.side-remove { padding: 0; border: 0; background: none; color: #d92d20; /* red: removes the file */ font: inherit; font-size: 12px; text-decoration: underline; cursor: pointer; }
+.side-remove:hover { color: #b42318; }
 /* on the sample card the side cards are just a front / back switch */
 .side-cards.is-compact .side-card { padding: 9px 12px; }
 .side-cards.is-compact .side-body { display: none; }
