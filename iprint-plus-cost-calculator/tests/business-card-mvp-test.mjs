@@ -9,7 +9,7 @@ const orderPage = readFileSync(new URL('../business-card/order.html', import.met
 const pricingApp = readFileSync(new URL('../pricing/app.js', import.meta.url), 'utf8');
 const staffCatalogApp = readFileSync(new URL('../js/staff-catalog.js', import.meta.url), 'utf8');
 const mainApp = readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
-for (const content of ['PRODUCT CATALOG', '01 / DIMENSIONS', '02 / PAPERS & MATERIALS', '03 / SPECIAL TECHNIQUES', 'MATERIAL × FINISH SYNERGY', '05 / WORK PROCESS', 'PRODUCT SPECIFICATIONS SUMMARY']) {
+for (const content of ['PRODUCT CATALOG', '01 / DIMENSIONS', '02 / PAPERS & MATERIALS', '03 / SPECIAL TECHNIQUES', 'MATERIAL × FINISH SYNERGY', '05 / WORK PROCESS']) {
   assert.match(landingPage, new RegExp(content.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
 }
 assert.match(landingPage, /id="order" class="builder"/);

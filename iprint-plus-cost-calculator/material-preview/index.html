@@ -94,7 +94,7 @@
           </div>
           <input id="artInput" type="file" accept=".svg,.pdf,.png,.jpg,.jpeg,.webp,image/svg+xml,application/pdf,image/png,image/jpeg,image/webp" hidden>
           <input id="backArtInput" type="file" accept=".svg,.pdf,.png,.jpg,.jpeg,.webp,image/svg+xml,application/pdf,image/png,image/jpeg,image/webp" hidden>
-          <p class="desc" id="artDesc">รับ SVG (ไม่เกิน 5 MB), PDF, PNG, JPG, WebP (ไม่เกิน 10 MB) — ใช้ไฟล์ขนาดเท่างานจริง<br>สีขาวจะแสดงเป็นสีกระดาษ (ไม่รองรับหมึกขาวในงานพิมพ์)</p>
+          <p class="desc" id="artDesc">รับ SVG (ไม่เกิน 5 MB), PDF, PNG, JPG, WebP (ไม่เกิน 90 MB) — ใช้ไฟล์ขนาดเท่างานจริง<br>สีขาวจะแสดงเป็นสีกระดาษ (ไม่รองรับหมึกขาวในงานพิมพ์)</p>
           <ul class="notes art-notes" id="artNotes"></ul>
           <h3 class="sub">รูปทรงและขนาดบัตร <span class="sub-sum" id="shapeSum"></span></h3>
           <div class="chips shape-chips" id="shapeChips" role="group" aria-label="รูปร่างบัตร"></div>
@@ -255,7 +255,7 @@
       <p class="request-note">ยังไม่มีการเรียกเก็บเงินหรือจองคิวผลิต ทีมงานจะยืนยันราคาและวันรับงานก่อนเริ่มผลิต</p>
     </form>
     <p class="request-error" id="requestStatus" role="status"></p>
-    <div id="requestSuccess" hidden><h3>รับคำขอแล้ว</h3><p>บรีฟภาษาไทยและ PDF / SVG Artwork ทุกด้านบันทึกส่งให้ทีมงานแล้ว เก็บรหัสนี้ไว้เพื่อติดตามงาน</p><p id="requestTicket" class="request-summary"></p><a id="requestLine" hidden target="_blank" rel="noopener">ส่งสรุปคำขอเข้า LINE ร้าน →</a><p id="requestLinePending" class="request-note">ทีมงานจะติดต่อกลับตามข้อมูลที่ให้ไว้ ช่องทาง LINE จากหน้านี้ยังไม่เปิดใช้งาน</p></div>
+    <div id="requestSuccess" hidden><h3>รับคำขอแล้ว</h3><p>บรีฟภาษาไทยและ PDF / SVG Artwork ทุกด้านบันทึกส่งให้ทีมงานแล้ว เก็บรหัสนี้ไว้เพื่อติดตามงาน</p><p id="requestTicket" class="request-summary"></p><div id="requestOriginals" hidden><p id="requestOriginalsStatus" class="request-note" role="status"></p><progress id="requestOriginalsBar" max="100" value="0" hidden></progress><button type="button" class="chip" id="requestOriginalsRetry" hidden>ลองอัปโหลดไฟล์ต้นฉบับอีกครั้ง</button></div><a id="requestLine" hidden target="_blank" rel="noopener">ส่งสรุปคำขอเข้า LINE ร้าน →</a><p id="requestLinePending" class="request-note">ทีมงานจะติดต่อกลับตามข้อมูลที่ให้ไว้ ช่องทาง LINE จากหน้านี้ยังไม่เปิดใช้งาน</p></div>
   </dialog>
   <noscript><p style="padding:24px">ต้องเปิด JavaScript เพื่อดูตัวอย่างวัสดุ 3 มิติ</p></noscript>
 </body>

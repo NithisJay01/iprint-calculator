@@ -40,3 +40,21 @@ assert.throws(()=>verifyConfiguredPrice({...configuredItem,basePrice:1},pricingS
 assert.throws(()=>verifyConfiguredPrice(configuredItem,{...pricingSettings,version:'v2'}));
 assert.throws(()=>verifyConfiguredPrice({...configuredItem,pricingSnapshot:null},pricingSettings));
 for(const bad of [null, {products:[null]}, {products:[{...newProduct(),name:123}]}, {products:[{...newProduct(),tiers:[null]}]}]) assert.equal(validateSettings(bad).success,false);
+
+// Inquiry-only packages cannot produce an order price (also used by Worker validation).
+{
+  const product = {...newProduct(),mode:'packages',packages:[{id:'custom',name:'งานพิเศษ',quantity:100,price:100,inquiryOnly:true}]};
+  const quote = {product,packageId:'custom',quantity:100,sheets:1,baseCost:1};
+  assert.throws(()=>calculateProductPrice(quote),/ติดต่อสอบถาม/);
+  product.packages[0].inquiryOnly=false;
+  assert.equal(calculateProductPrice(quote).base,100);
+  product.packages[0].inquiryOnly='true';
+  assert.equal(validateSettings({products:[product]}).success,false);
+  const {inquiryUrl,inquiryMessage}=await import('../shared/inquiry.js');
+  const pack={name:'ฟอยล์ & ปั๊มนูน',description:'พิมพ์สองด้าน',bullets:['ฟอยล์ทอง']};
+  const url=new URL(inquiryUrl({name:'นามบัตร'},pack));
+  assert.equal(decodeURIComponent(url.pathname),'/R/oaMessage/@683amlxt/');
+  assert.equal(decodeURIComponent(url.search.slice(1)),inquiryMessage({name:'นามบัตร'},pack));
+  assert.match(inquiryMessage({name:'นามบัตร'},pack),/^\(สอบถาม\)/);
+  assert.equal(inquiryUrl({}, {...pack,lineOaId:'https://wrong.example'}),'');
+}

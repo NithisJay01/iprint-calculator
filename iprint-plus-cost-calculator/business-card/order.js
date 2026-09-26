@@ -1,3 +1,4 @@
+import { inquiryUrl } from '../shared/inquiry.js';
 import { loadPricing, loadCatalog } from '../shared/pricing-client.js';
 import { includedIdsFor } from '../shared/product-pricing.js';
 import { addCartItem, updateCartItem, getCartItem, cartCount, CART_MAX_ITEMS } from '../shared/cart.js';
@@ -65,6 +66,7 @@ function updatePrices() {
 }
 
 function recalc() {
+  if (state.pack?.inquiryOnly) { state.quote = null; return; }
   try {
     state.quote = quoteSelection({
       settings: state.settings, pack: state.pack, material: state.material, services: state.services,
@@ -155,6 +157,14 @@ function renderChoices() {
   const bullets = setBullets({ product, pack, catalog: state.catalog });
   $('specBlock').hidden = !bullets.length;
   $('specList').innerHTML = bullets.map(text => `<li>${esc(text)}</li>`).join('');
+  document.body.classList.toggle('inquiry-only', Boolean(pack.inquiryOnly));
+  $('inquiryContact').hidden = !pack.inquiryOnly;
+  if (pack.inquiryOnly) {
+    const url = inquiryUrl(product, pack);
+    $('inquiryContact').innerHTML = url ? `<a class="inquiry-link" href="${esc(url)}" target="_blank" rel="noopener">ติดต่อสอบถาม</a><p>เปิด LINE พร้อมข้อความเกี่ยวกับเซตนี้ แล้วกดส่งเพื่อสอบถามทีมงาน</p>` : '<p>ร้านยังไม่ได้ตั้งค่าช่องทาง LINE</p>';
+    return;
+  }
+
   $('quantityChoices').innerHTML = quantityChoices(product, pack).map(quantity => `<button type="button" class="choice" data-quantity="${quantity}"><b>${quantity.toLocaleString('th-TH')} ใบ</b><small>${quantity === pack.quantity ? 'จำนวนในเซต' : 'เพิ่มจำนวน'}</small></button>`).join('');
   $('optionGroups').innerHTML = state.groups.map(groupHtml).join('') || '<p>เซตนี้ยังไม่มีตัวเลือกให้เลือก</p>';
 }
@@ -168,6 +178,7 @@ async function init() {
     const saved = params.get('edit') ? getCartItem(params.get('edit')) : null;
     state.editingId = saved?.id || '';
     state.pack = sets.find(set => set.id === (saved ? saved.packageId : params.get('package'))) || sets[0];
+    if (state.pack?.inquiryOnly) { renderChoices(); return; }
     state.groups = resolveOptionGroups({ product: state.product, pack: state.pack, catalog });
     const start = defaultSelection({ product: state.product, catalog, pack: state.pack });
     Object.assign(state, { quantity: start.quantity, material: start.material, services: start.services });
@@ -202,6 +213,7 @@ async function init() {
 $('driveLink')?.addEventListener('input', () => $('fileCta').classList.remove('is-invalid'));
 
 function saveToCart() {
+  if (state.pack?.inquiryOnly) return;
   if (!state.quote) return;
   const missing = missingGroups({ groups: state.groups, material: state.material, services: state.services });
   if (missing.length) {

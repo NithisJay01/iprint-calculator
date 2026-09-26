@@ -1,7 +1,11 @@
 import { paperMaterials, coatings, finishes, SHAPE_KINDS } from '../material-preview/materials.js';
 
-export const LINE_OA_ID = ''; // Set the verified LINE OA basic ID (including @) when the shop supplies it.
+export const LINE_OA_ID = '@683amlxt'; // Shop-provided LINE OA ID.
 export const MAX_ARTWORK_BYTES = 10 * 1024 * 1024;
+// Original artwork bigger than MAX_ARTWORK_BYTES is sent apart from the request (worker/routes/originals.js) and kept in R2
+// until the shop copies it to its own computer. The Worker accepts at most 100 MB in one request.
+export const MAX_ORIGINAL_BYTES = 90 * 1024 * 1024;
+export const ORIGINAL_SLOTS = ['front', 'back'];
 export const MAX_REQUEST_BYTES = 4 * MAX_ARTWORK_BYTES + 65536;
 export function artworkFilename(value, kind, side = 'front') {
   const safe = text => String(text || '').normalize('NFC').replace(/[<>:"/\\|?*\u0000-\u001f\u007f]/g, '').trim().replace(/\s+/g, '-').replace(/[. ]+$/g, '').slice(0, 70) || 'Untitled';
@@ -21,6 +25,15 @@ export function validatePrintRequest(value) {
   if (value.version === 2) {
     for (const key of ['jobName', 'materialName']) if (typeof value[key] !== 'string' || !value[key].trim() || value[key].length > 120) errors.push('กรุณากรอกชื่องานและวัสดุไม่เกิน 120 ตัวอักษร');
     if (typeof value.hasBack !== 'boolean') errors.push('ข้อมูลด้านหลังไม่ถูกต้อง');
+  }
+  if (value.originals !== undefined) {
+    const list = value.originals;
+    const slots = Array.isArray(list) ? list.map(file => file?.slot) : [];
+    const ok = Array.isArray(list) && list.length >= 1 && list.length <= 2 && new Set(slots).size === slots.length
+      && list.every(file => file && ORIGINAL_SLOTS.includes(file.slot) && (file.slot === 'front' || value.hasBack === true)
+        && typeof file.name === 'string' && file.name.length >= 1 && file.name.length <= 150
+        && Number.isInteger(file.size) && file.size > MAX_ARTWORK_BYTES && file.size <= MAX_ORIGINAL_BYTES);
+    if (!ok) errors.push('ข้อมูลไฟล์ต้นฉบับขนาดใหญ่ไม่ถูกต้อง');
   }
   const s = value.spec || {};
   if (!Object.hasOwn(paperMaterials, s.paper) || !Object.hasOwn(coatings, s.coating) || !Object.hasOwn(finishes, s.finish)) errors.push('วัสดุหรือเทคนิคไม่ถูกต้อง');

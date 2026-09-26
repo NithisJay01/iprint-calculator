@@ -14,6 +14,7 @@ import { buildPublicCapacityAvailability, checkRushRequirement, publicCapacityPo
 import { handleCreateBriefTicket, handleDraftBrief, handleLineWebhook, handleListConversations } from './routes/brief.js';
 import { handleGetMedia, handleUploadImage } from './routes/media.js';
 import { handlePrintRequest } from './routes/print-requests.js';
+import { handleUploadOriginal, handleListOriginals, handleGetOriginal, handleDeleteOriginal } from './routes/originals.js';
 
 export default {
   async fetch(request, env) {
@@ -27,7 +28,7 @@ export default {
     const corsOrigin = allowedOrigins.has(requestOrigin) ? requestOrigin : "";
     const CORS = {
       "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, X-API-Key",
+      "Access-Control-Allow-Headers": "Content-Type, X-API-Key, Authorization",
       "Access-Control-Max-Age": "86400",
       "Vary": "Origin",
       ...(corsOrigin ? { "Access-Control-Allow-Origin": corsOrigin } : {})
@@ -157,6 +158,19 @@ export default {
     };
 
     try {
+      const originalUpload = url.pathname.match(/^\/public\/print-requests\/originals\/(front|back)$/);
+      if (originalUpload && request.method === 'PUT') {
+        return await handleUploadOriginal({ request, env, json, slot: originalUpload[1], allowedOrigins: [...allowedOrigins] });
+      }
+
+      if (url.pathname === '/staff/originals' || url.pathname === '/staff/originals/file') {
+        const authError = requireAuth(request);
+        if (authError) return authError;
+        if (url.pathname === '/staff/originals' && request.method === 'GET') return await handleListOriginals({ env, json, url });
+        if (url.pathname === '/staff/originals/file' && request.method === 'GET') return await handleGetOriginal({ env, json, url });
+        if (url.pathname === '/staff/originals/file' && request.method === 'DELETE') return await handleDeleteOriginal({ env, json, url });
+      }
+
       if (url.pathname === '/public/print-requests' && request.method === 'POST') {
         return await handlePrintRequest({ request, env, json, notionHeaders });
       }

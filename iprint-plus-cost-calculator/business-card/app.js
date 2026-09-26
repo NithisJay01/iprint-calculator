@@ -38,9 +38,9 @@ function renderPackages() {
     return `<article class="package-card catalog-card ${item.recommended?'recommended':''}">
       <div class="catalog-media"><img src="${image}" alt="ตัวอย่าง${esc(item.name)}"><span class="catalog-type">เซตนามบัตร</span>${item.recommended?'<span class="tag">แนะนำ</span>':''}</div>
       <div class="catalog-card-body"><span class="catalog-kicker">BUSINESS CARD SET</span><h3>${esc(item.name)}</h3><p>${esc(item.tagline || 'เซตพร้อมสั่งที่จัด Spec ไว้แล้ว')}</p>
-      <div class="catalog-facts"><span><small>จำนวนเริ่มต้น</small><b>${Number(item.quantity || 0).toLocaleString('th-TH')} ใบ</b></span><span><small>ราคาเริ่มต้น</small><b data-catalog-price="${esc(item.id)}">${priceLabel}</b></span></div>
+      ${item.inquiryOnly ? '' : `<div class="catalog-facts"><span><small>จำนวนเริ่มต้น</small><b>${Number(item.quantity || 0).toLocaleString('th-TH')} ใบ</b></span><span><small>ราคาเริ่มต้น</small><b data-catalog-price="${esc(item.id)}">${priceLabel}</b></span></div>`}
       <ul>${specs.slice(0, 3).map(value=>`<li>${esc(value)}</li>`).join('')}</ul>
-      ${item.inquiryOnly ? inquiryButton(item) : `<button class="button" data-package="${esc(item.id)}">เลือกเซตและปรับออปชัน</button>`}</div>
+      ${item.inquiryOnly ? inquiryButton(item) : `<button class="button" data-package="${esc(item.id)}">เลือกแพ็กเกจ</button>`}</div>
     </article>`;
   }).join('');
   $('packageCards').innerHTML = markup;
@@ -97,6 +97,7 @@ async function loadCatalogs() {
 
 function renderMarketingPrices() {
   for (const item of PACKAGES) {
+    if (item.inquiryOnly) continue;
     const print = state.catalogs.services.find(entry => item.print === 'double' ? isDouble(entry) : isPrintService(entry) && !isDouble(entry));
     const laminate = item.laminate === 'none' ? null : state.catalogs.services.find(entry => new RegExp(item.laminate === 'matte' ? 'ด้าน' : 'เงา').test(entry.name));
     try { const quote = calculateBusinessCardQuote({ preset:state.preset, material:state.material, services:[print,laminate].filter(Boolean), quantity:item.quantity, pricingSettings, packageId:item.id });

@@ -135,6 +135,7 @@ export function createLayers({ card, studio, onChange = () => {}, setBusy = () =
     const page = await pdfToPng(file);
     const layer = await makeRasterLayer(page.file, false);
     layer.name = file.name;
+    layer.original = file; // the PDF itself; `file` is the picture of page 1
     layer.source = { kind: 'pdf', pages: page.pages, widthMm: page.widthMm, heightMm: page.heightMm };
     if (page.pages > 1) layer.warnings = [...layer.warnings, `PDF มี ${page.pages} หน้า — ใช้เฉพาะหน้าแรก`];
     return layer;
@@ -239,7 +240,7 @@ export function createLayers({ card, studio, onChange = () => {}, setBusy = () =
     /** What the exporter needs: the original files and the parsed SVGs, not the preview canvases. */
     exportSources() {
       const pick = (l) =>
-        l && { name: l.name, kind: l.kind, aspect: l.aspect, pixelWidth: l.pixelWidth, warnings: l.warnings, file: l.file, parsed: l.parsed, info: l.info, invert: l.invert, placement: l.placement ?? null };
+        l && { name: l.name, kind: l.kind, aspect: l.aspect, pixelWidth: l.pixelWidth, warnings: l.warnings, file: l.file, original: l.original, parsed: l.parsed, info: l.info, invert: l.invert, placement: l.placement ?? null };
       return { spec: card.spec, params: state.shape, cut: state.cut ? { kind: state.cut.kind, name: state.cut.name, file: state.cut.file } : null, art: pick(state.art), backArt: pick(state.backArt), mask: pick(state.mask) };
     },
 

@@ -1,5 +1,6 @@
 import { validatePrintRequest, requestSummary, MAX_ARTWORK_BYTES, MAX_REQUEST_BYTES, artworkFilename } from '../../shared/print-request.js';
 import { emptyBrief } from '../../shared/brief-model.js';
+import { signUploadToken, originalLabel } from './originals.js';
 import { createBriefTicket } from '../services/brief-ticket.js';
 
 export function printRequestBrief(value) {
@@ -12,6 +13,7 @@ export function printRequestBrief(value) {
   brief.fields.material = { value: requestSummary(value).split('\n')[2], status: 'need_confirmation', evidence: '', reason: 'วัสดุจากพรีวิว ต้องยืนยันชนิดกระดาษและความเป็นไปได้กับฝ่ายผลิต' };
   brief.fields.file = confirmed(value.version === 2 ? `PDF และ SVG ${value.hasBack ? 'ด้านหน้าและด้านหลัง (4 ไฟล์)' : 'ด้านหน้า (2 ไฟล์)'}` : 'PDF Artwork จากหน้า 3D');
   brief.note =  `ลูกค้า: ${value.name}\n${requestSummary(value)}\nไฟล์: ${brief.fields.file.value}\nโทร: ${value.phone}\nLINE ID: ${value.lineId || '-'}\nราคา: รอทีมงานประเมิน (ราคาอ้างอิงหน้าเว็บไม่ใช่ยอดยืนยัน)\nไฟล์นี้ยังต้องผ่าน preflight ของฝ่ายผลิต`;
+  if (value.originals?.length) brief.note += `\nไฟล์ต้นฉบับขนาดใหญ่: ${value.originals.map(file => `${file.slot === 'back' ? 'ด้านหลัง' : 'ด้านหน้า'} ${file.name} (${(file.size / 1048576).toFixed(1)} MB)`).join(', ')} — ลูกค้าอัปโหลดแยก ให้ดึงลงเครื่องด้วยสคริปต์ fetch-originals ก่อนเริ่มงาน`;
   return brief;
 }
 
@@ -90,7 +92,11 @@ export async function handlePrintRequest({ request, env, json, notionHeaders, fe
       }
       return blocks;
     } });
-    return json({ success: true, id: ticket.id, deduplicated: ticket.deduplicated });
+    // Originals over 10 MB come afterwards, one request each, with this ticket (only when R2 is set up).
+    const originals = Array.isArray(value.originals) && env.MEDIA
+      ? { uploadToken: await signUploadToken(env, { ticketId: ticket.id, label: originalLabel(value), files: value.originals.map(({ slot, name, size }) => ({ slot, name, size })) }) }
+      : {};
+    return json({ success: true, id: ticket.id, deduplicated: ticket.deduplicated, ...originals });
   } catch {
     // No upstream tokens, schema details, or private Notion links in a public response.
     return json({ error: 'บันทึกบรีฟและไฟล์ Artwork ไม่สำเร็จ กรุณาลองใหม่หรือติดต่อร้านพร้อมรหัสคำขอ' }, 502);

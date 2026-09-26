@@ -236,7 +236,7 @@ function renderCustomerPreview() {
   const items = new Map(catalogItems().map(item => [item.id, item]));
   const groups = product.optionGroups.filter(group => group.enabled).map(group => ({ ...group, choices: group.itemIds.filter(id => pack.optionIds.includes(id)).map(id => items.get(id)).filter(Boolean) })).filter(group => group.choices.length);
   if (pack.inquiryOnly) {
-    $('customerPreview').innerHTML = `<article class="customer-card"><div class="mockup${setImageUrl(pack.image) ? ' has-image' : ''}">${setImageUrl(pack.image) ? `<img src="${esc(resolveSetImage(pack.image, '../business-card/'))}" alt="">` : esc(product.name)}</div><span class="set-label">${esc(product.name)}</span><h3>${esc(pack.name)}</h3><p>${esc(pack.description || '')}</p><button type="button">ติดต่อสอบถาม</button>${pack.lineOaId ? '' : '<p>กรอก LINE OA ID เพื่อเปิดใช้งานปุ่มติดต่อ</p>'}</article>`;
+    $('customerPreview').innerHTML = `<article class="customer-card"><div class="mockup${setImageUrl(pack.image) ? ' has-image' : ''}">${setImageUrl(pack.image) ? `<img src="${esc(resolveSetImage(pack.image, '../business-card/'))}" alt="">` : esc(product.name)}</div><span class="set-label">${esc(product.name)}</span><h3>${esc(pack.name)}</h3><p>${esc(pack.description || '')}</p><button type="button">ติดต่อสอบถาม</button></article>`;
     return;
   }
   $('customerPreview').innerHTML = `<article class="customer-card"><div class="mockup${setImageUrl(pack.image) ? ' has-image' : ''}">${setImageUrl(pack.image) ? `<img src="${esc(resolveSetImage(pack.image, '../business-card/'))}" alt="" referrerpolicy="no-referrer">` : esc(product.name.trim().charAt(0) || 'P')}</div><span class="set-label">${esc(product.name)}</span><h3>${esc(pack.name)}</h3><p>${esc(pack.description || 'เซตพร้อมสั่งที่ Admin จัดไว้')}</p>${(() => { const lines = setBullets({ product, pack, catalog }); return lines.length ? `<ul class="preview-bullets">${lines.map(line => `<li>${esc(line)}</li>`).join('')}</ul>` : ''; })()}<div class="price-block"><span>เริ่มต้น ${Number(pack.quantity).toLocaleString('th-TH')} ชิ้น</span><b>฿${fmt(pack.price)}</b></div>${groups.map(group => `<div class="preview-group"><b>${esc(group.name)}</b><small class="preview-rule">${esc(groupRuleText({ mode: group.source === 'material' ? 'single' : group.selectionMode, required: group.source === 'material' || group.required }))}</small><div>${group.choices.map(item => { const inc = product.mode === 'packages' && group.source === 'service' && includedIdsOf(product, pack).includes(item.id); return `<span class="${inc ? 'inc' : ''}">${esc(item.name)}${inc ? '<small>รวมในเซต</small>' : ''}</span>`; }).join('')}</div></div>`).join('')}<button type="button">เลือกเซตนี้</button></article>`;
@@ -324,7 +324,7 @@ $('editor').addEventListener('input', event => {
   } else if (input.dataset.packageField) {
     const key = input.dataset.packageField;
     pack[key] = input.type === 'checkbox' ? input.checked : key === 'lineOaId' ? input.value.trim() : key === 'bullets' ? parseBullets(input.value) : key === 'image' ? input.value.trim() : input.type === 'number' ? Number(input.value) : input.value;
-    if (key === 'inquiryOnly') { render(); return; }
+    if (key === 'inquiryOnly') { dirty(); render(); return; }
     if (key === 'image') syncSetImage();
     renderCustomerPreview(); previewPrice();
   } else if (input.dataset.groupToggle != null) {

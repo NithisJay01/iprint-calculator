@@ -3,6 +3,7 @@ import { findProduct, resolveSets, defaultSelection, quoteSelection, quantityCho
 import { validatePrintRequest, requestSummary, requestSummaryItems, lineRequestUrl, MAX_ARTWORK_BYTES } from '../shared/print-request.js';
 
 import { buildArtworkBundle, nameArtworkBundle } from './artwork-bundle.js';
+import { largeOriginals, announceOriginals, referenceSources, uploadOriginals } from './originals.js';
 
 const $ = id => document.getElementById(id);
 let turnstileLoading;
@@ -20,7 +21,8 @@ export function initPrintRequest({ card, layers, panel }) {
   let downloadUrls = [], opening = 0;
   let snapshot, settings, catalog, product, packs = [], widget, token = '', submitting = false, saved = false;
   const form = $('printRequestForm'), dialog = $('printRequestDialog');
-  const payload = () => ({ version: 2, jobName: $('requestJobName').value.trim(), materialName: $('requestMaterialName').value.trim(), hasBack: Boolean(snapshot.files.backArtwork), key: snapshot.key, spec: snapshot.spec, quantity: Number($('requestQuantity').value), name: $('requestName').value.trim(), phone: $('requestPhone').value.trim(), lineId: $('requestLineId').value.trim() });
+  let uploading = false, originalsState = null; // originals over 10 MB are uploaded after the request is saved
+  const payload = () => ({ version: 2, jobName: $('requestJobName').value.trim(), materialName: $('requestMaterialName').value.trim(), hasBack: Boolean(snapshot.files.backArtwork), key: snapshot.key, ...(snapshot.large?.length ? { originals: announceOriginals(snapshot.large) } : {}), spec: snapshot.spec, quantity: Number($('requestQuantity').value), name: $('requestName').value.trim(), phone: $('requestPhone').value.trim(), lineId: $('requestLineId').value.trim() });
   function updateDownloads() {
     for (const url of downloadUrls) URL.revokeObjectURL(url);
     downloadUrls = [];
@@ -82,10 +84,11 @@ export function initPrintRequest({ card, layers, panel }) {
     const exportSources = { ...sources, paperId: panel.state.paper, coatingId: panel.state.coating, finishId: panel.state.finish };
     const exportSignature = JSON.stringify([exportOptions, sources.mask?.invert]);
     const same = snapshot && snapshot.exportSignature === exportSignature && JSON.stringify(snapshot.spec) === JSON.stringify(spec) && Object.keys(files).every(key => files[key] === snapshot.files[key]);
-    if (!same || saved) snapshot = { key: crypto.randomUUID(), spec, files, exportOptions, exportSources, exportSignature };
+    if (!same || saved) snapshot = { key: crypto.randomUUID(), spec, files, exportOptions, exportSources, exportSignature, large: largeOriginals(sources) };
     const current = snapshot;
     saved = false;
     form.hidden = false; $('requestSuccess').hidden = true;
+    $('requestOriginals').hidden = true; originalsState = null;
     $('requestStatus').textContent = '';
     $('requestSubmit').textContent = spec.finish === 'none' ? 'ส่งคำขอสั่งพิมพ์' : 'สอบถามราคาเทคนิคพิเศษ';
     $('requestSubmit').disabled = true;
@@ -101,7 +104,8 @@ export function initPrintRequest({ card, layers, panel }) {
     $('requestPdfStatus').textContent = 'กำลัง Export PDF และ SVG ทุกด้านจากดีไซน์นี้…';
     try {
       const { exportFile } = await import('./exportFiles.js');
-      current.exports ||= await buildArtworkBundle(exportFile, current.exportSources, current.exportOptions);
+      if (current.large.length) $('requestPdfStatus').textContent = 'ไฟล์ต้นฉบับมีขนาดใหญ่ — ระบบส่งไฟล์ตัวอย่างขนาดย่อไปกับคำขอ และอัปโหลดไฟล์ต้นฉบับแยกต่างหากหลังส่งคำขอ';
+      current.exports ||= await buildArtworkBundle(exportFile, current.large.length ? await referenceSources(current.exportSources) : current.exportSources, current.exportOptions);
       if (generation !== opening || !dialog.open) return;
       if (current.exports.some(file => file.blob.size > MAX_ARTWORK_BYTES)) throw new Error('ไฟล์แต่ละไฟล์ต้องไม่เกิน 10 MB กรุณาลดขนาดภาพต้นฉบับแล้วลองใหม่');
       updateDownloads();
@@ -124,9 +128,27 @@ export function initPrintRequest({ card, layers, panel }) {
   }
   $('requestPackage').addEventListener('change', updatePrice);
   dialog.addEventListener('close', () => { opening++; token = ''; for (const url of downloadUrls) URL.revokeObjectURL(url); downloadUrls = []; });
-  function close() { if (!submitting) dialog.close(); }
+  function close() { if (!submitting && !uploading) dialog.close(); }
+  async function sendOriginals() {
+    const state = originalsState;
+    if (!state || uploading) return;
+    const status = $('requestOriginalsStatus'), bar = $('requestOriginalsBar'), retry = $('requestOriginalsRetry');
+    $('requestOriginals').hidden = false; retry.hidden = true; bar.hidden = false; bar.value = 0;
+    status.textContent = 'กำลังอัปโหลดไฟล์ต้นฉบับ… กรุณาอย่าปิดหน้านี้';
+    uploading = true; $('requestClose').disabled = true;
+    try {
+      await uploadOriginals({ apiRoot: API_ROOT, token: state.token, items: state.items, onProgress: ({ name, loaded, total }) => {
+        bar.value = Math.round(loaded / total * 100);
+        status.textContent = `กำลังอัปโหลด ${name} ${bar.value}% — กรุณาอย่าปิดหน้านี้`;
+      } });
+      status.textContent = 'อัปโหลดไฟล์ต้นฉบับครบแล้ว'; bar.hidden = true; originalsState = null;
+    } catch (error) {
+      status.textContent = `${error.message} — คำขอถูกบันทึกแล้ว กดลองอีกครั้ง หรือส่งไฟล์ให้ร้านทาง LINE พร้อมรหัสคำขอ`; retry.hidden = false; bar.hidden = true;
+    } finally { uploading = false; $('requestClose').disabled = false; }
+  }
+  $('requestOriginalsRetry').addEventListener('click', sendOriginals);
   $('requestClose').addEventListener('click', close);
-  dialog.addEventListener('cancel', event => { if (submitting) event.preventDefault(); });
+  dialog.addEventListener('cancel', event => { if (submitting || uploading) event.preventDefault(); });
   form.addEventListener('submit', async event => {
     event.preventDefault();
     if (submitting || LOCAL || !form.reportValidity()) return;
@@ -147,6 +169,10 @@ export function initPrintRequest({ card, layers, panel }) {
       if (!response.ok || !result.id) throw new Error(result.error || 'ส่งคำขอไม่สำเร็จ กรุณาลองใหม่');
       saved = true; form.hidden = true; $('requestSuccess').hidden = false;
       $('requestTicket').textContent = result.id;
+      if (snapshot.large.length) {
+        if (result.uploadToken) { originalsState = { token: result.uploadToken, items: snapshot.large.map(item => ({ ...item })) }; sendOriginals(); }
+        else { $('requestOriginals').hidden = false; $('requestOriginalsStatus').textContent = 'ระบบรับไฟล์ต้นฉบับยังไม่พร้อม — คำขอถูกบันทึกแล้ว กรุณาส่งไฟล์ต้นฉบับให้ร้านทาง LINE พร้อมรหัสคำขอ'; }
+      }
       const url = lineRequestUrl(result.id, requestSummary(value));
       $('requestLine').hidden = !url;
       if (url) $('requestLine').href = url;

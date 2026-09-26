@@ -9,7 +9,7 @@ const money = value => Number(value || 0).toLocaleString('th-TH', {
 function startingPrice(product) {
   if (!product?.enabled) return null;
   if (product.mode === 'packages') {
-    const prices = product.packages.map(item => Number(item.price)).filter(value => Number.isFinite(value) && value >= 0);
+    const prices = product.packages.filter(item => !item.inquiryOnly).map(item => Number(item.price)).filter(value => Number.isFinite(value) && value >= 0);
     return prices.length ? Math.min(...prices) : null;
   }
   if (product.mode === 'tiers') {

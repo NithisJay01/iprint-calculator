@@ -6,8 +6,11 @@
  * frame without stretching. Fitting is always "contain", so every layer lands on the same spot.
  */
 import { readImageSize, containRect, shapeFieldFromRgba } from './shape.js';
+import { MAX_ORIGINAL_BYTES } from '../shared/print-request.js';
 
-export const RASTER_MAX_BYTES = 10 * 1024 * 1024;
+// A picture bigger than a request can carry (10 MB) is fine to look at: it is decoded at a capped size, and the original is
+// uploaded apart from the request (originals.js).
+export const RASTER_MAX_BYTES = MAX_ORIGINAL_BYTES;
 export const RASTER_MAX_PIXELS = 40e6;
 export const DECODE_MAX_SIDE = 3000;
 const SNIFF_BYTES = 256 * 1024;

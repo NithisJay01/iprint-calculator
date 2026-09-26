@@ -5,7 +5,9 @@
  * long side is at most PDF_RENDER_SIDE px, and handed on as a PNG so the picture pipeline (fit, position pop-up,
  * production PDF) treats it like any other picture. Scripts inside the PDF are never run.
  */
-export const PDF_MAX_BYTES = 10 * 1024 * 1024;
+import { MAX_ORIGINAL_BYTES } from '../shared/print-request.js';
+
+export const PDF_MAX_BYTES = MAX_ORIGINAL_BYTES;
 export const PDF_RENDER_SIDE = 3000;
 export const PDF_MAX_PIXELS = 40e6;
 

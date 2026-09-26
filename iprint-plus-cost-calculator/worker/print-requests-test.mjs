@@ -48,7 +48,8 @@ const run = (req = request(), overrides = {}) => handlePrintRequest({ request: r
 assert.deepEqual(validatePrintRequest(value), []);
 assert.ok(validatePrintRequest({ ...value, quantity: 0 }).length);
 assert.ok(validatePrintRequest({ ...value, spec: { ...value.spec, paper: '__proto__' } }).length);
-assert.equal(lineRequestUrl('ticket', 'summary'), '', 'no fake LINE recipient before configuration');
+assert.ok(lineRequestUrl('ticket', 'summary').includes('%40683amlxt'), 'configured shop receives the message');
+assert.equal(lineRequestUrl('ticket', 'summary', ''), '', 'missing recipient is disabled');
 assert.match(lineRequestUrl('ticket', 'summary', '@shop'), /^https:\/\/line.me\/R\/oaMessage\/%40shop/);
 assert.equal(printRequestBrief(value).fields.material.status, 'need_confirmation');
 

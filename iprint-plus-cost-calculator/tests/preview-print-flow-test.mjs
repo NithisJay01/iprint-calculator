@@ -24,7 +24,7 @@ const pdfStub = dataModule(`export async function exportFile(kind, sources, opti
 globalThis.exported = [];
 globalThis.exportGate = Promise.resolve();
 let source = readFileSync(new URL('../material-preview/request-print.js', import.meta.url), 'utf8');
-source = source.replace('../shared/pricing-client.js', pricingStub).replace('../business-card/product.js', new URL('../business-card/product.js', import.meta.url).href).replace('../shared/print-request.js', new URL('../shared/print-request.js', import.meta.url).href).replace('./exportFiles.js', pdfStub).replace('./artwork-bundle.js', new URL('../material-preview/artwork-bundle.js', import.meta.url).href);
+source = source.replace('../shared/pricing-client.js', pricingStub).replace('../business-card/product.js', new URL('../business-card/product.js', import.meta.url).href).replace('../shared/print-request.js', new URL('../shared/print-request.js', import.meta.url).href).replace('./exportFiles.js', pdfStub).replace('./artwork-bundle.js', new URL('../material-preview/artwork-bundle.js', import.meta.url).href).replace('./originals.js', new URL('../material-preview/originals.js', import.meta.url).href);
 const { initPrintRequest } = await import(dataModule(source));
 const sources = { params: {kind:'rect',width:90,height:54,radius:3,bleed:3}, spec: {}, art:null, mask:null };
 const card = { spec:{bounds:{w:90,h:54}} };
@@ -63,7 +63,7 @@ const firstKey=JSON.parse(sent[0].form.get('request')).key;
 verification.callback('fresh-token'); failed=false;
 await el('printRequestForm').emit('submit');
 assert.equal(JSON.parse(sent[1].form.get('request')).key,firstKey,'retry uses the same key');
-assert.equal(el('requestTicket').textContent,'ticket-123'); assert.equal(el('requestLine').hidden,true);
+assert.equal(el('requestTicket').textContent,'ticket-123'); assert.equal(el('requestLine').hidden,false);
 assert.equal(el('requestSuccess').hidden,false);
 
 await el('requestClose').emit('click');
