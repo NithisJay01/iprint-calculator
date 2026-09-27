@@ -12,7 +12,7 @@ const formatDay = iso => {
   return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('th-TH', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 };
 
-function ticketHtml({ ticket, items, testMode }) {
+function ticketHtml({ ticket, items, testMode }, id) {
   return `<span class="eyebrow">ORDER STATUS</span>
     <h1>${esc(ticket.title || 'ออร์เดอร์')}</h1>
     <div class="track-badges"><span class="badge">${esc(customerStatusLabel(ticket.customerStatus))}</span><span class="badge soft">${esc(paymentStatusLabel(ticket.paymentStatus))}</span></div>
@@ -30,7 +30,7 @@ async function showTicket(id) {
   $('status').textContent = '';
   $('trackSheet').innerHTML = '<p class="empty-cart">กำลังโหลดสถานะ…</p>';
   try {
-    $('trackSheet').innerHTML = ticketHtml(await fetchTicketStatus(id));
+    $('trackSheet').innerHTML = ticketHtml(await fetchTicketStatus(id), id);
     $('refresh').addEventListener('click', () => showTicket(id));
   } catch (error) {
     $('trackSheet').innerHTML = '';

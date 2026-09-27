@@ -15,6 +15,11 @@ assert.match(html, /data-product-id="sticker"[\s\S]*?<button[^>]+disabled/);
 assert.match(css, /grid-template-columns:\s*repeat\(3/);
 assert.match(css, /@media \(max-width:\s*760px\)/);
 assert.match(app, /loadPricing/);
+assert.match(html, /class="contact-fab"[\s\S]*?https:\/\/lin\.ee\/q39R98w/);
+assert.match(css, /\.contact-fab \{[\s\S]*?position: fixed/);
+assert.match(html, /class="track-link" href="\.\.\/cart\/track\.html"/);
+assert.match(html, /ติดตามสถานะ/);
+assert.match(css, /\.header-actions \{[^}]*display: flex/);
 assert.match(htaccess, /fonts\.googleapis\.com/);
 assert.match(htaccess, /fonts\.gstatic\.com/);
 
@@ -27,6 +32,8 @@ assert.match(html, /id="categoryNext"/);
 assert.match(html, /class="category-tile" href="\.\.\/business-card\/"/);
 assert.doesNotMatch(html, /<a class="category-tile is-soon/, 'tiles that are not ready are not links');
 assert.match(css, /\.category-list \{[^}]*overflow-x: auto/);
+assert.match(css, /\.category-strip \{[^}]*z-index: 5/);
+assert.match(css, /\.category-next, \.category-prev \{[^}]*z-index: 6/);
 assert.match(app, /categoryList\.scrollBy/);
 
 console.log('Catalog page test passed');

@@ -1,12 +1,103 @@
 import { loadPricing, loadCatalog, API_ROOT, LOCAL } from '../shared/pricing-client.js';
 import { findProduct, resolveSets, defaultSelection, quoteSelection, quantityChoices } from '../business-card/product.js';
-import { validatePrintRequest, requestSummary, requestSummaryItems, lineRequestUrl, MAX_ARTWORK_BYTES } from '../shared/print-request.js';
+import { validatePrintRequest, requestSummary, requestSummaryItems, lineRequestText, lineRequestUrl, MAX_ARTWORK_BYTES } from '../shared/print-request.js';
 
 import { buildArtworkBundle, nameArtworkBundle } from './artwork-bundle.js';
 import { largeOriginals, announceOriginals, referenceSources, uploadOriginals } from './originals.js';
 
 const $ = id => document.getElementById(id);
 let turnstileLoading;
+const isDesktop = () => window.matchMedia?.('(pointer: fine)').matches && window.innerWidth >= 768;
+async function copyText(text) {
+  if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(text);
+  const field = document.createElement('textarea');
+  field.value = text; field.setAttribute('readonly', ''); field.style.position = 'fixed'; field.style.opacity = '0';
+  document.body.appendChild(field); field.select();
+  const copied = document.execCommand('copy'); field.remove();
+  if (!copied) throw new Error('คัดลอกข้อความไม่สำเร็จ');
+}
+function renderLineQr(url) {
+  if (!isDesktop() || typeof globalThis.qrcode !== 'function') return false;
+  const qr = globalThis.qrcode(0, 'M');
+  qr.addData(url, 'Byte'); qr.make();
+  $('requestLineQrImage').src = qr.createDataURL(7, 12);
+  $('requestLineQr').hidden = false;
+  return true;
+}
+
+function roundedRect(ctx, x, y, width, height, radius) {
+  const r = Math.min(radius, width / 2, height / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + width, y, x + width, y + height, r);
+  ctx.arcTo(x + width, y + height, x, y + height, r);
+  ctx.arcTo(x, y + height, x, y, r);
+  ctx.arcTo(x, y, x + width, y, r);
+  ctx.closePath();
+}
+
+function drawWrappedText(ctx, text, x, y, maxWidth, lineHeight) {
+  const words = String(text || '').split(/\s+/).filter(Boolean);
+  let line = '', cursor = y;
+  for (const word of words) {
+    const next = line ? `${line} ${word}` : word;
+    if (line && ctx.measureText(next).width > maxWidth) {
+      ctx.fillText(line, x, cursor);
+      line = word;
+      cursor += lineHeight;
+    } else line = next;
+  }
+  if (line) ctx.fillText(line, x, cursor);
+  return cursor + lineHeight;
+}
+
+export function downloadBriefImage({ ticketId, value }, { documentValue = document } = {}) {
+  const canvas = documentValue.createElement('canvas');
+  canvas.width = 1200; canvas.height = 1500;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('อุปกรณ์นี้ยังไม่รองรับการสร้างภาพสรุปบรีฟ');
+
+  ctx.fillStyle = '#eef7ff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#0a8cff'; ctx.fillRect(0, 0, canvas.width, 220);
+  ctx.fillStyle = '#fff'; ctx.font = '700 76px system-ui, sans-serif'; ctx.fillText('iPrint', 80, 118);
+  ctx.font = '500 30px system-ui, sans-serif'; ctx.fillText('สรุปคำขอสั่งพิมพ์', 80, 170);
+
+  roundedRect(ctx, 65, 265, 1070, 1125, 34);
+  ctx.fillStyle = '#fff'; ctx.fill();
+  ctx.strokeStyle = '#cfe4f5'; ctx.lineWidth = 3; ctx.stroke();
+
+  ctx.fillStyle = '#0a8cff'; ctx.font = '700 25px system-ui, sans-serif'; ctx.fillText('PRINT REQUEST', 115, 340);
+  ctx.fillStyle = '#12385e'; ctx.font = '700 46px system-ui, sans-serif'; ctx.fillText(value.jobName || 'งานพิมพ์', 115, 410);
+  ctx.fillStyle = '#64798e'; ctx.font = '500 26px system-ui, sans-serif'; ctx.fillText('รหัสคำขอ', 115, 470);
+  ctx.fillStyle = '#0a8cff'; ctx.font = '700 35px system-ui, sans-serif'; ctx.fillText(String(ticketId), 115, 518);
+
+  ctx.strokeStyle = '#d8e8f7'; ctx.beginPath(); ctx.moveTo(115, 560); ctx.lineTo(1085, 560); ctx.stroke();
+  let y = 625;
+  const details = [`ผู้ติดต่อ: ${value.name}`, `เบอร์โทร: ${value.phone}`, ...(value.lineId ? [`LINE ID: ${value.lineId}`] : []), ...requestSummaryItems(value)];
+  for (const detail of details) {
+    ctx.fillStyle = '#12385e'; ctx.font = '600 27px system-ui, sans-serif';
+    y = drawWrappedText(ctx, detail, 115, y, 970, 42) + 14;
+  }
+  ctx.fillStyle = '#64798e'; ctx.font = '500 23px system-ui, sans-serif';
+  drawWrappedText(ctx, 'ทีมงานจะยืนยันวัสดุ ราคา และวันผลิตก่อนเริ่มงาน', 115, 1320, 970, 34);
+  ctx.textAlign = 'center'; ctx.fillText('เก็บภาพนี้ไว้ใช้อ้างอิงกับทีมงาน iPrint', canvas.width / 2, 1440);
+
+  const link = documentValue.createElement('a');
+  link.download = `iprint-brief-${String(ticketId).replace(/[^a-zA-Z0-9_-]+/g, '-')}.png`;
+  link.href = canvas.toDataURL('image/png');
+  documentValue.body.appendChild(link); link.click(); link.remove();
+}
+
+function downloadPreviewImage(dataUrl, ticketId, jobName) {
+  if (!dataUrl) return false;
+  const safeJob = String(jobName || 'business-card').replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '') || 'business-card';
+  const link = document.createElement('a');
+  link.download = `iprint-3d-preview-${safeJob}-${String(ticketId).replace(/[^a-zA-Z0-9_-]+/g, '-')}.png`;
+  link.href = dataUrl;
+  document.body.appendChild(link); link.click(); link.remove();
+  return true;
+}
+
 function loadTurnstile() {
   return turnstileLoading ||= new Promise((resolve, reject) => {
     if (window.turnstile) return resolve(window.turnstile);
@@ -17,11 +108,11 @@ function loadTurnstile() {
     document.head.append(script);
   });
 }
-export function initPrintRequest({ card, layers, panel }) {
+export function initPrintRequest({ card, layers, panel, capturePreviewSheet = async () => '' }) {
   let downloadUrls = [], opening = 0;
   let snapshot, settings, catalog, product, packs = [], widget, token = '', submitting = false, saved = false;
   const form = $('printRequestForm'), dialog = $('printRequestDialog');
-  let uploading = false, originalsState = null; // originals over 10 MB are uploaded after the request is saved
+  let uploading = false, originalsState = null, successRequest = null; // originals over 10 MB are uploaded after the request is saved
   const payload = () => ({ version: 2, jobName: $('requestJobName').value.trim(), materialName: $('requestMaterialName').value.trim(), hasBack: Boolean(snapshot.files.backArtwork), key: snapshot.key, ...(snapshot.large?.length ? { originals: announceOriginals(snapshot.large) } : {}), spec: snapshot.spec, quantity: Number($('requestQuantity').value), name: $('requestName').value.trim(), phone: $('requestPhone').value.trim(), lineId: $('requestLineId').value.trim() });
   function updateDownloads() {
     for (const url of downloadUrls) URL.revokeObjectURL(url);
@@ -147,6 +238,20 @@ export function initPrintRequest({ card, layers, panel }) {
     } finally { uploading = false; $('requestClose').disabled = false; }
   }
   $('requestOriginalsRetry').addEventListener('click', sendOriginals);
+  $('requestLine').addEventListener('click', event => {
+    if (!successRequest) return;
+    try { downloadBriefImage(successRequest); }
+    catch (error) { $('requestStatus').textContent = error.message; }
+    if (isDesktop()) {
+      event.preventDefault();
+      const text = lineRequestText(successRequest.ticketId, requestSummary(successRequest.value));
+      copyText(text).then(() => {
+        $('requestLineHint').textContent = 'คัดลอกข้อความคำขอแล้ว สแกน QR และวางข้อความพร้อมแนบภาพในแชทได้เลย';
+      }).catch(() => {
+        $('requestLineHint').textContent = 'สแกน QR เพิ่มเพื่อนร้าน แล้วส่งรหัสคำขอและภาพที่ดาวน์โหลดในแชท';
+      });
+    }
+  });
   $('requestClose').addEventListener('click', close);
   dialog.addEventListener('cancel', event => { if (submitting || uploading) event.preventDefault(); });
   form.addEventListener('submit', async event => {
@@ -160,6 +265,10 @@ export function initPrintRequest({ card, layers, panel }) {
     snapshot.submittedFingerprint = fingerprint;
     submitting = true; $('requestSubmit').disabled = true; $('requestClose').disabled = true;
     $('requestStatus').textContent = 'กำลังส่งบรีฟภาษาไทยและ PDF / SVG Artwork กรุณารอสักครู่…';
+    const previewImage = Promise.resolve(capturePreviewSheet({ includeBack: value.hasBack })).catch(error => {
+      console.error('สร้างภาพพรีวิว 3D ไม่สำเร็จ', error);
+      return '';
+    });
     try {
       const body = new FormData();
       body.append('request', JSON.stringify(value)); body.append('turnstileToken', token);
@@ -168,14 +277,25 @@ export function initPrintRequest({ card, layers, panel }) {
       const result = await response.json().catch(() => ({}));
       if (!response.ok || !result.id) throw new Error(result.error || 'ส่งคำขอไม่สำเร็จ กรุณาลองใหม่');
       saved = true; form.hidden = true; $('requestSuccess').hidden = false;
+      successRequest = { ticketId: result.id, value };
       $('requestTicket').textContent = result.id;
+      if (downloadPreviewImage(await previewImage, result.id, value.jobName)) {
+        window.alert('บันทึกภาพการ์ด 3D แล้ว\nกรุณาส่งภาพให้ทีมงานเพื่อเป็นข้อมูลประกอบการพิจารณาวิธีผลิตชิ้นงาน');
+      }
       if (snapshot.large.length) {
         if (result.uploadToken) { originalsState = { token: result.uploadToken, items: snapshot.large.map(item => ({ ...item })) }; sendOriginals(); }
         else { $('requestOriginals').hidden = false; $('requestOriginalsStatus').textContent = 'ระบบรับไฟล์ต้นฉบับยังไม่พร้อม — คำขอถูกบันทึกแล้ว กรุณาส่งไฟล์ต้นฉบับให้ร้านทาง LINE พร้อมรหัสคำขอ'; }
       }
       const url = lineRequestUrl(result.id, requestSummary(value));
       $('requestLine').hidden = !url;
-      if (url) $('requestLine').href = url;
+      if (url) {
+        $('requestLine').href = isDesktop() ? '#requestLineQr' : url;
+        if (renderLineQr(url)) $('requestLine').textContent = 'คัดลอกข้อมูลคำขอสำหรับส่งใน LINE';
+      }
+      $('requestLineHint').hidden = !url;
+      if (url) $('requestLineHint').textContent = isDesktop()
+        ? 'QR นี้มีเลขอ้างอิงและรายละเอียดงาน เมื่อสแกน LINE จะเตรียมข้อความให้ส่งทันที'
+        : 'ระบบจะบันทึกภาพสรุปบรีฟลงเครื่องก่อนเปิด LINE';
       $('requestLinePending').hidden = Boolean(url);
       $('requestStatus').textContent = '';
     } catch (error) {

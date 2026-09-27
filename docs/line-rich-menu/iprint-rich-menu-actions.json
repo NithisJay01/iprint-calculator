@@ -1,0 +1,14 @@
+{
+  "size": { "width": 2500, "height": 1686 },
+  "selected": true,
+  "name": "iPrint service menu",
+  "chatBarText": "บริการ iPrint",
+  "areas": [
+    { "bounds": { "x": 74, "y": 272, "width": 768, "height": 590 }, "action": { "type": "postback", "data": "action=quote", "displayText": "ขอใบเสนอราคา" } },
+    { "bounds": { "x": 866, "y": 272, "width": 768, "height": 590 }, "action": { "type": "postback", "data": "action=artwork", "displayText": "ส่งไฟล์งาน" } },
+    { "bounds": { "x": 1658, "y": 272, "width": 768, "height": 590 }, "action": { "type": "postback", "data": "action=design", "displayText": "ต้องการออกแบบ" } },
+    { "bounds": { "x": 74, "y": 924, "width": 768, "height": 590 }, "action": { "type": "uri", "uri": "https://iprint.tchl.online/business-card/" } },
+    { "bounds": { "x": 866, "y": 924, "width": 768, "height": 590 }, "action": { "type": "postback", "data": "action=status", "displayText": "เช็กสถานะงาน" } },
+    { "bounds": { "x": 1658, "y": 924, "width": 768, "height": 590 }, "action": { "type": "postback", "data": "action=staff", "displayText": "คุยกับทีมงาน" } }
+  ]
+}

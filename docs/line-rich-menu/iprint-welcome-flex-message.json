@@ -1,0 +1,81 @@
+{
+  "type": "flex",
+  "altText": "ยินดีต้อนรับสู่ iPrint — เลือกบริการที่ต้องการ",
+  "contents": {
+    "type": "bubble",
+    "size": "mega",
+    "header": {
+      "type": "box",
+      "layout": "vertical",
+      "paddingAll": "20px",
+      "backgroundColor": "#0A8CFF",
+      "contents": [
+        { "type": "text", "text": "iPrint", "color": "#FFFFFF", "size": "xxl", "weight": "bold" },
+        { "type": "text", "text": "พิมพ์งานแบบเห็นภาพ", "color": "#EAF5FF", "size": "sm", "margin": "sm" }
+      ]
+    },
+    "body": {
+      "type": "box",
+      "layout": "vertical",
+      "paddingAll": "20px",
+      "contents": [
+        { "type": "text", "text": "สวัสดี 👋", "size": "xl", "weight": "bold", "color": "#12385E" },
+        {
+          "type": "text",
+          "text": "บอกสิ่งที่อยากพิมพ์ ส่งไฟล์ หรือให้ทีมช่วยออกแบบได้เลย",
+          "size": "sm",
+          "color": "#52677D",
+          "margin": "md",
+          "wrap": true
+        },
+        { "type": "separator", "margin": "xl", "color": "#D8E8F7" },
+        {
+          "type": "button",
+          "margin": "lg",
+          "height": "sm",
+          "style": "primary",
+          "color": "#0A8CFF",
+          "action": { "type": "postback", "label": "ขอใบเสนอราคา", "data": "action=quote", "displayText": "ขอใบเสนอราคา" }
+        },
+        {
+          "type": "button",
+          "margin": "sm",
+          "height": "sm",
+          "style": "secondary",
+          "action": { "type": "postback", "label": "ส่งไฟล์งาน", "data": "action=artwork", "displayText": "ส่งไฟล์งาน" }
+        },
+        {
+          "type": "button",
+          "margin": "sm",
+          "height": "sm",
+          "style": "secondary",
+          "action": { "type": "postback", "label": "ต้องการออกแบบ", "data": "action=design", "displayText": "ต้องการออกแบบ" }
+        },
+        {
+          "type": "button",
+          "margin": "sm",
+          "height": "sm",
+          "style": "secondary",
+          "action": { "type": "postback", "label": "ติดตามสถานะงาน", "data": "action=status", "displayText": "ติดตามสถานะงาน" }
+        }
+      ]
+    },
+    "footer": {
+      "type": "box",
+      "layout": "vertical",
+      "paddingAll": "16px",
+      "backgroundColor": "#F4F9FE",
+      "contents": [
+        {
+          "type": "text",
+          "text": "เมนูอื่น ๆ เลือกได้จาก Rich Menu ด้านล่าง",
+          "size": "xs",
+          "color": "#5F7489",
+          "align": "center",
+          "wrap": true
+        }
+      ]
+    },
+    "styles": { "footer": { "separator": true, "separatorColor": "#D8E8F7" } }
+  }
+}

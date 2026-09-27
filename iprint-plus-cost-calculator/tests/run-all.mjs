@@ -50,6 +50,7 @@ const tests = [
   'worker/system-check-test.mjs',
   'worker/brief-domain-test.mjs',
   'worker/brief-worker-test.mjs',
+  'worker/line-bot-test.mjs',
   'worker/print-requests-test.mjs'
 ];
 

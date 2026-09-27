@@ -1,4 +1,4 @@
-import { validatePrintRequest, requestSummary, MAX_ARTWORK_BYTES, MAX_REQUEST_BYTES, artworkFilename } from '../../shared/print-request.js';
+import { validatePrintRequest, requestSummaryItems, MAX_ARTWORK_BYTES, MAX_REQUEST_BYTES, artworkFilename } from '../../shared/print-request.js';
 import { emptyBrief } from '../../shared/brief-model.js';
 import { signUploadToken, originalLabel } from './originals.js';
 import { createBriefTicket } from '../services/brief-ticket.js';
@@ -7,12 +7,20 @@ export function printRequestBrief(value) {
   const brief = emptyBrief();
   brief.customer = value.name.trim();
   const confirmed = value => ({ value, status: 'confirmed', evidence: '', reason: '' });
+  const summaryItems = requestSummaryItems(value);
   brief.fields.product = confirmed(`${value.jobName || 'นามบัตร'} — คำขอสั่งพิมพ์ / ประเมินราคา`);
   brief.fields.quantity = confirmed(String(value.quantity));
   brief.fields.size = confirmed(`${value.spec.width} × ${value.spec.height} mm`);
-  brief.fields.material = { value: requestSummary(value).split('\n')[2], status: 'need_confirmation', evidence: '', reason: 'วัสดุจากพรีวิว ต้องยืนยันชนิดกระดาษและความเป็นไปได้กับฝ่ายผลิต' };
+  brief.fields.material = { value: summaryItems.find(item => item.startsWith('วัสดุ:'))?.slice('วัสดุ:'.length).trim() || '', status: 'need_confirmation', evidence: '', reason: 'วัสดุจากพรีวิว ต้องยืนยันชนิดกระดาษและความเป็นไปได้กับฝ่ายผลิต' };
   brief.fields.file = confirmed(value.version === 2 ? `PDF และ SVG ${value.hasBack ? 'ด้านหน้าและด้านหลัง (4 ไฟล์)' : 'ด้านหน้า (2 ไฟล์)'}` : 'PDF Artwork จากหน้า 3D');
-  brief.note =  `ลูกค้า: ${value.name}\n${requestSummary(value)}\nไฟล์: ${brief.fields.file.value}\nโทร: ${value.phone}\nLINE ID: ${value.lineId || '-'}\nราคา: รอทีมงานประเมิน (ราคาอ้างอิงหน้าเว็บไม่ใช่ยอดยืนยัน)\nไฟล์นี้ยังต้องผ่าน preflight ของฝ่ายผลิต`;
+  brief.note = [
+    `ผู้ติดต่อ: ${value.name}`,
+    `เบอร์โทร: ${value.phone}`,
+    ...(value.lineId ? [`LINE ID: ${value.lineId}`] : []),
+    ...summaryItems,
+    `ไฟล์: ${brief.fields.file.value}`,
+    'สถานะ: รอทีมงานยืนยันวัสดุ ราคา วันผลิต และตรวจไฟล์ก่อนผลิต'
+  ].join('\n');
   if (value.originals?.length) brief.note += `\nไฟล์ต้นฉบับขนาดใหญ่: ${value.originals.map(file => `${file.slot === 'back' ? 'ด้านหลัง' : 'ด้านหน้า'} ${file.name} (${(file.size / 1048576).toFixed(1)} MB)`).join(', ')} — ลูกค้าอัปโหลดแยก ให้ดึงลงเครื่องด้วยสคริปต์ fetch-originals ก่อนเริ่มงาน`;
   return brief;
 }

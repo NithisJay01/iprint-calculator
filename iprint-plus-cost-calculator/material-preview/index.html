@@ -11,6 +11,8 @@
   <!-- No import map and no inline script: the site's Content-Security-Policy (script-src 'self') would block them.
        three.js is vendored in vendor/three and imported by relative path. -->
   <script src="../js/config.js"></script>
+  <script src="vendor/qrcode/qrcode.js"></script>
+  <script src="vendor/qrcode/qrcode_UTF8.js"></script>
   <script type="module" src="app.js?v=2"></script>
   <link rel="stylesheet" href="request-print.css?v=1">
 </head>
@@ -112,6 +114,17 @@
             <label class="field" id="bleedField">Bleed ของไฟล์งาน<select id="bleedSel"></select></label>
           </div>
           <ul class="notes" id="shapeNotes"></ul>
+        </div>
+      </details>
+
+      <details class="designer-ad" id="designerAd">
+        <summary>
+          <span class="designer-ad-icon" aria-hidden="true">✦</span>
+          <span class="designer-ad-copy"><strong>ยังไม่มีแบบใช่ไหม?</strong><small>ให้ทีมออกแบบช่วยเปลี่ยนไอเดียของคุณเป็นนามบัตร</small></span>
+        </summary>
+        <div class="designer-ad-body">
+          <p>เล่าแนวทาง สี โลโก้ และข้อมูลที่ต้องการ ทีมดีไซน์เนอร์จะช่วยแนะนำรูปแบบและขั้นตอนให้เหมาะกับงานของคุณ</p>
+          <a class="designer-ad-button" id="designerContact" target="_blank" rel="noopener noreferrer">ฉันต้องการดีไซน์เนอร์ →</a>
         </div>
       </details>
 
@@ -252,10 +265,11 @@
       <label class="request-consent"><input id="requestConsent" type="checkbox" required>ยืนยันให้ส่งบรีฟสรุปภาษาไทย ข้อมูลติดต่อ และ PDF / SVG Artwork ทุกด้านที่อัปโหลดให้ทีม iPrint ตรวจสเปกและราคา</label>
       <div id="requestVerification"></div>
       <button class="print-request-button" id="requestSubmit" type="submit">ส่งคำขอสั่งพิมพ์</button>
+      <p class="request-note">เมื่อส่งสำเร็จ ระบบจะบันทึกภาพพรีวิว 3D ด้านหน้าและด้านหลังลงเครื่อง เพื่อใช้ส่งให้ทีมงานเห็นภาพ</p>
       <p class="request-note">ยังไม่มีการเรียกเก็บเงินหรือจองคิวผลิต ทีมงานจะยืนยันราคาและวันรับงานก่อนเริ่มผลิต</p>
     </form>
     <p class="request-error" id="requestStatus" role="status"></p>
-    <div id="requestSuccess" hidden><h3>รับคำขอแล้ว</h3><p>บรีฟภาษาไทยและ PDF / SVG Artwork ทุกด้านบันทึกส่งให้ทีมงานแล้ว เก็บรหัสนี้ไว้เพื่อติดตามงาน</p><p id="requestTicket" class="request-summary"></p><div id="requestOriginals" hidden><p id="requestOriginalsStatus" class="request-note" role="status"></p><progress id="requestOriginalsBar" max="100" value="0" hidden></progress><button type="button" class="chip" id="requestOriginalsRetry" hidden>ลองอัปโหลดไฟล์ต้นฉบับอีกครั้ง</button></div><a id="requestLine" hidden target="_blank" rel="noopener">ส่งสรุปคำขอเข้า LINE ร้าน →</a><p id="requestLinePending" class="request-note">ทีมงานจะติดต่อกลับตามข้อมูลที่ให้ไว้ ช่องทาง LINE จากหน้านี้ยังไม่เปิดใช้งาน</p></div>
+    <div id="requestSuccess" hidden><h3>รับคำขอแล้ว</h3><p>บรีฟภาษาไทยและ PDF / SVG Artwork ทุกด้านบันทึกส่งให้ทีมงานแล้ว เก็บรหัสนี้ไว้เพื่อติดตามงาน</p><p id="requestTicket" class="request-summary"></p><div id="requestOriginals" hidden><p id="requestOriginalsStatus" class="request-note" role="status"></p><progress id="requestOriginalsBar" max="100" value="0" hidden></progress><button type="button" class="chip" id="requestOriginalsRetry" hidden>ลองอัปโหลดไฟล์ต้นฉบับอีกครั้ง</button></div><div id="requestLineQr" class="request-line-qr" hidden><strong>สแกนเพื่อเปิด LINE พร้อมข้อมูลคำขอ</strong><img id="requestLineQrImage" alt="QR ส่งข้อมูลคำขอเข้า LINE ร้าน iPrint"><p>สแกนด้วยโทรศัพท์ ข้อมูลออร์เดอร์และเลขอ้างอิงจะถูกเตรียมใน LINE ให้ส่งต่อได้ทันที</p></div><a id="requestLine" class="request-line-cta" hidden target="_blank" rel="noopener">บันทึกบรีฟและส่งเข้า LINE →</a><p id="requestLineHint" class="request-note" hidden>ระบบจะบันทึกภาพสรุปบรีฟลงเครื่องก่อนเปิด LINE</p><p id="requestLinePending" class="request-note">ทีมงานจะติดต่อกลับตามข้อมูลที่ให้ไว้ ช่องทาง LINE จากหน้านี้ยังไม่เปิดใช้งาน</p></div>
   </dialog>
   <noscript><p style="padding:24px">ต้องเปิด JavaScript เพื่อดูตัวอย่างวัสดุ 3 มิติ</p></noscript>
 </body>

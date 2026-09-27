@@ -497,6 +497,7 @@ try {
   assert.ok(!/เงินสด|value="cash"/.test(cartHtml + cartJs), 'cash payment is gone from the cart');
   assert.equal(buildOrder().order.orderItems[0].brief.includes('Thai QR / โอนผ่านธนาคาร'), true, 'the order tells the shop it is paid by transfer');
   assert.match(trackHtml, /src="track\.js"/);
+  assert.doesNotMatch(trackJs, /เปิด LINE แล้วกดส่งออร์เดอร์|Reply Message|300 ข้อความ/, 'tracking page does not show the removed LINE CTA or quota note');
   assert.match(cartJs, /track\.html\?id=/, 'the success page links to tracking');
 } finally {
   globalThis.fetch = originalFetch;

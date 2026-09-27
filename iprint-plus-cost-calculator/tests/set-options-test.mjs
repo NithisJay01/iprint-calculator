@@ -234,7 +234,7 @@ assert.ok(orderJs.includes("${line.included ? ' included' : ''}"), 'included lin
 
 // a set that is inquiry-only shows a green 'ติดต่อสอบถาม' button in the catalog
 assert.ok(landingJs.includes('item.inquiryOnly ? inquiryButton(item) :'));
-assert.match(landingJs, /href="\$\{esc\(url\)\}" target="_blank" rel="noopener">ติดต่อสอบถาม<\/a>/, 'opens the shop LINE chat, not the order page');
+assert.match(landingJs, /href="\$\{esc\(url\)\}" target="_blank" rel="noopener" data-inquiry-id=/, 'opens the shop LINE flow with package data, not the order page');
 assert.match(landingJs, /disabled title="ร้านยังไม่ได้ตั้งค่า LINE OA ID">ติดต่อสอบถาม/, 'no LINE OA ID: the button is disabled, never a dead link');
 assert.ok(!/inquiryButton[\s\S]{0,400}data-package/.test(landingJs.slice(landingJs.indexOf('function inquiryButton'), landingJs.indexOf('function renderPackages'))), 'the inquiry button never opens the order page');
 assert.ok(read('../business-card/styles.css').includes('.button.is-inquiry { background: #12a05c; }'));

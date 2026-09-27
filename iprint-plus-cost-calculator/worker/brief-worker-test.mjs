@@ -216,10 +216,10 @@ try {
   assert.equal((await call('POST', '/staff/briefs/draft', { body: {}, headers: staff })).status, 400);
   assert.equal((await call('POST', '/staff/briefs/draft', { body: { conversationId: 'nobody' }, headers: staff })).status, 404);
   response = await call('POST', '/staff/briefs/draft', { body: { conversationId: 'U1' }, headers: staff });
-  assert.equal(response.status, 503, 'no ANTHROPIC_API_KEY');
+  assert.equal(response.status, 200, 'missing AI binding returns a manual-review fallback');
   data = await response.json();
-  assert.equal(data.code, 'AI_SUMMARY_FAILED');
-  assert.match(data.error, /ANTHROPIC_API_KEY/);
+  assert.equal(data.model, 'rule-based-fallback');
+  assert.equal(data.brief.fields.product.status, 'missing');
 
   // ---------- Create Ticket ----------
   const reviewed = {

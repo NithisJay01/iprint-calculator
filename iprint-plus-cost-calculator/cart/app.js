@@ -6,6 +6,7 @@ import { money, esc } from '../shared/format.js';
 import { buildCartOrder, checkoutIdentity, clearCheckoutIdentity } from '../shared/order-payload.js';
 import { submitOrder, rememberOrder } from '../shared/orders-client.js';
 import { LOCAL } from '../shared/pricing-client.js';
+import { lineOrderUrl, supportsLineOrderLaunch } from '../shared/line-order.js';
 
 // Cart shared by every catalog product: list of items -> one delivery date for the whole order ->
 // customer, delivery and payment -> review and confirm. Products are priced by their adapters
@@ -26,6 +27,96 @@ const formatDate = iso => (iso ? new Date(`${iso}T00:00:00`).toLocaleDateString(
 const setStatus = (message = '') => { $('status').textContent = message; };
 const payment = () => document.querySelector('[name="payment"]:checked')?.value || 'transfer';
 const customer = () => ({ name: $('customerName').value, phone: $('phone').value, email: $('email').value, lineId: $('lineId').value, address: $('address').value });
+
+function roundedRect(ctx, x, y, width, height, radius) {
+  const r = Math.min(radius, width / 2, height / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + width, y, x + width, y + height, r);
+  ctx.arcTo(x + width, y + height, x, y + height, r);
+  ctx.arcTo(x, y + height, x, y, r);
+  ctx.arcTo(x, y, x + width, y, r);
+  ctx.closePath();
+}
+
+function downloadOrderImage({ result, order }) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1200;
+  canvas.height = 1200;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('อุปกรณ์นี้ยังไม่รองรับการสร้างภาพ');
+
+  ctx.fillStyle = '#edf7ff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#0a8cff';
+  ctx.fillRect(0, 0, canvas.width, 220);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '700 76px system-ui, sans-serif';
+  ctx.fillText('iPrint', 90, 125);
+  ctx.font = '500 32px system-ui, sans-serif';
+  ctx.fillText('พิมพ์งานแบบเห็นภาพ', 90, 175);
+
+  roundedRect(ctx, 70, 270, 1060, 820, 36);
+  ctx.fillStyle = '#ffffff';
+  ctx.fill();
+  ctx.strokeStyle = '#cfe4f5';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  ctx.fillStyle = '#0a8cff';
+  ctx.font = '700 25px system-ui, sans-serif';
+  ctx.fillText('ORDER RECEIVED', 120, 345);
+  ctx.fillStyle = '#12385e';
+  ctx.font = '700 54px system-ui, sans-serif';
+  ctx.fillText(result.duplicate ? 'พบออร์เดอร์ในระบบแล้ว' : 'รับออร์เดอร์เรียบร้อย', 120, 420);
+
+  ctx.fillStyle = '#64798e';
+  ctx.font = '500 28px system-ui, sans-serif';
+  ctx.fillText('เลขอ้างอิงออร์เดอร์', 120, 510);
+  ctx.fillStyle = '#0a8cff';
+  ctx.font = '700 58px system-ui, sans-serif';
+  ctx.fillText(String(order.quoteNo || result.id), 120, 585);
+
+  ctx.strokeStyle = '#d8e8f7';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(120, 635);
+  ctx.lineTo(1080, 635);
+  ctx.stroke();
+
+  const details = [
+    ['จำนวนรายการ', `${order.orderItems.length} รายการ`],
+    ['วันที่รับงาน', `${formatDate(state.date)}*`],
+    ['สถานะ', 'รับงานแล้ว — รอยืนยันยอดและการชำระเงิน'],
+    ['ยอดสุทธิ', `฿${money(order.grandTotal)}`]
+  ];
+  let y = 710;
+  details.forEach(([label, value]) => {
+    ctx.fillStyle = '#64798e';
+    ctx.font = '500 27px system-ui, sans-serif';
+    ctx.fillText(label, 120, y);
+    ctx.fillStyle = '#12385e';
+    ctx.font = '700 30px system-ui, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(value, 1080, y);
+    ctx.textAlign = 'left';
+    y += 78;
+  });
+
+  ctx.fillStyle = '#7c8fa1';
+  ctx.font = '500 23px system-ui, sans-serif';
+  ctx.fillText('*วันที่รับงานยังไม่รวมระยะเวลาจัดส่ง', 120, 1040);
+  ctx.textAlign = 'center';
+  ctx.fillText('เก็บภาพนี้ไว้ใช้อ้างอิงและติดตามสถานะงาน', canvas.width / 2, 1150);
+
+  const link = document.createElement('a');
+  const safeName = String(order.quoteNo || result.id || 'iprint-order').replace(/[^a-zA-Z0-9_-]+/g, '-');
+  link.download = `${safeName}-order.png`;
+  link.href = canvas.toDataURL('image/png');
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
 
 // The rush request of the chosen date: { days, multiplier } when the date is earlier than the normal completion date
 // and the customer asked for a rush order, otherwise null. The multiplier is the one the Worker offered for that date.
@@ -253,16 +344,27 @@ function prepareReview() {
 
 function showDone({ result, order }) {
   rememberOrder({ id: result.id, quoteNo: order.quoteNo, createdAt: new Date().toISOString(), itemCount: order.orderItems.length, total: order.grandTotal, date: state.date, testMode: result.testMode });
+  try {
+    downloadOrderImage({ result, order });
+  } catch (error) {
+    console.error('สร้างภาพสรุปออร์เดอร์ไม่สำเร็จ', error);
+  }
   clearCart();
   clearCheckoutIdentity();
   const trackUrl = `track.html?id=${encodeURIComponent(result.id)}`;
+  const lineUrl = lineOrderUrl({ quoteNo: order.quoteNo, id: result.id });
   $('doneSheet').innerHTML = `<span class="eyebrow">ORDER RECEIVED</span><h1>${result.duplicate ? 'พบออร์เดอร์นี้ในระบบแล้ว' : 'รับออร์เดอร์เรียบร้อย'}</h1>
     <p>ทีมงานจะติดต่อกลับเพื่อแจ้งวิธีชำระเงินและยืนยันยอดก่อนเริ่มผลิต</p>
     <div class="price-box"><span>เลขอ้างอิงออร์เดอร์</span><strong class="done-id">${esc(order.quoteNo)}</strong><span>${order.orderItems.length} รายการ • รับงาน ${esc(formatDate(state.date))} (ยังไม่รวมระยะเวลาจัดส่ง)</span>${order.orderItems[0]?.boost ? `<span>งานด่วน: เร็วขึ้น ${order.orderItems[0].boost.days} วัน (+${percent(order.orderItems[0].boost.multiplier)}%)</span>` : ''}<span>ยอดสุทธิ ฿${money(order.grandTotal)}${state.shipping === 'ems' ? ' (ยังไม่รวมค่าส่ง EMS ฿50)' : ''}</span></div>
     ${result.testMode ? '<p class="mock-note">โหมดทดลองบนเครื่องนี้: ออร์เดอร์ยังไม่ได้ถูกส่งเข้าระบบจริง</p>' : ''}
+    <a class="add-more line-order-link" href="${esc(lineUrl)}">เปิด LINE แล้วกดส่งออร์เดอร์</a>
+    <p class="line-order-note">ข้อความตอบรับจากบอตเป็น Reply Message จึงไม่หักโควต้า 300 ข้อความ</p>
     <a class="add-more primary-link" href="${trackUrl}">ติดตามสถานะออร์เดอร์</a>
     <a class="add-more" href="../catalog/">กลับไป Catalog</a>`;
   goto(5);
+  if (!result.testMode && supportsLineOrderLaunch()) {
+    setTimeout(() => { window.location.assign(lineUrl); }, 900);
+  }
 }
 
 // What to do after each kind of failure (see OrderError.action in shared/orders-client.js).

@@ -6,7 +6,7 @@ AI ไม่ได้คุยกับลูกค้า และไม่ม�
 
 ```
 LINE → POST /line/webhook → D1 (เก็บข้อความลูกค้า)
-เจ้าของกด "สร้างบรีฟ" → POST /staff/briefs/draft → Claude → Draft Brief
+เจ้าของกด "สร้างบรีฟ" → POST /staff/briefs/draft → Cloudflare Workers AI → Draft Brief
 เจ้าของตรวจ/แก้ไข → POST /staff/briefs/ticket → Notion Ticket
 ```
 
@@ -55,7 +55,6 @@ npx wrangler d1 migrations apply iprint-brief --remote
 ### 3. Secrets
 
 ```bash
-npx wrangler secret put ANTHROPIC_API_KEY
 npx wrangler secret put LINE_CHANNEL_SECRET
 npx wrangler secret put LINE_CHANNEL_ACCESS_TOKEN
 ```
@@ -76,11 +75,15 @@ npx wrangler deploy
 
 | ชื่อ | ชนิด | ค่าเริ่มต้น | ใช้ทำอะไร |
 | --- | --- | --- | --- |
-| `ANTHROPIC_API_KEY` | Secret | จำเป็น | เรียก Claude สรุปบรีฟ |
 | `LINE_CHANNEL_SECRET` | Secret | จำเป็น | ตรวจลายเซ็นของ Webhook |
 | `LINE_CHANNEL_ACCESS_TOKEN` | Secret | ไม่บังคับ | ดึงชื่อโปรไฟล์ลูกค้า |
+| `LINE_BOT_ENABLED` | Variable | `false` | ตั้งเป็น `true` เพื่อเปิดบอตตอบกลับอัตโนมัติ |
 | `BRIEF_DB` | D1 binding | จำเป็น | เก็บข้อความ LINE |
-| `BRIEF_AI_MODEL` | Variable | `claude-opus-5` | เปลี่ยนเป็นรุ่นที่เร็วหรือถูกกว่า เช่น `claude-haiku-4-5` |
+| `AI` | Workers AI binding | แนะนำ | สรุปบรีฟด้วย Workers AI; ไม่ต้องใช้ API key ภายนอก |
+| `OPENAI_API_KEY` | Secret | ไม่บังคับ | ใช้ GPT-5 nano หาก Workers AI ทำงานไม่สำเร็จ หรือเมื่อตั้งเป็นตัวหลัก |
+| `BRIEF_AI_MODEL` | Variable | `@cf/meta/llama-3.1-8b-instruct` | เปลี่ยนรุ่น Workers AI ที่รองรับ JSON Mode ได้ |
+| `BRIEF_AI_PROVIDER` | Variable | `workers-ai` | ตั้งเป็น `openai` เพื่อใช้ GPT-5 nano เป็นตัวหลัก |
+| `BRIEF_OPENAI_MODEL` | Variable | `gpt-5-nano` | รุ่น OpenAI สำหรับสรุปบรีฟ |
 | `LINE_RETENTION_DAYS` | Variable | `30` | จำนวนวันที่เก็บข้อความ (1-365) |
 | `NOTION_TICKETS_DATA_SOURCE_ID` | Variable | ตั้งไว้แล้ว | ฐาน `Iprint Jobs` |
 

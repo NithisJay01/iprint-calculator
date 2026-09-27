@@ -1,9 +1,9 @@
 import { FIELD_KEYS, STATUS_LIST } from '../../shared/brief-model.js';
 import { formatTranscript } from '../domain/brief.js';
 
-// AI Summarizer for Brief Button V1. Claude only reads the chat and fills the brief; it never talks to the customer.
-// Set BRIEF_AI_MODEL to use a cheaper or faster model than the default.
-export const DEFAULT_BRIEF_MODEL = 'claude-opus-5';
+// Workers AI keeps LINE brief summarisation inside the existing Cloudflare account.
+export const DEFAULT_BRIEF_MODEL = '@cf/meta/llama-3.1-8b-instruct';
+export const DEFAULT_OPENAI_MODEL = 'gpt-5-nano';
 
 const SYSTEM_PROMPT = `คุณเป็นผู้ช่วยของร้านงานพิมพ์ ทำหน้าที่สรุปข้อความแชท LINE ของลูกค้าให้เป็นใบงาน (Draft Brief) ให้เจ้าของร้านตรวจ
 คุณไม่ได้คุยกับลูกค้า ห้ามตอบลูกค้า ห้ามเสนอราคา ห้ามให้คำแนะนำงานพิมพ์
@@ -35,76 +35,74 @@ const SYSTEM_PROMPT = `คุณเป็นผู้ช่วยของร้
 7. reason อธิบายสั้น ๆ เป็นภาษาไทยเมื่อ status ไม่ใช่ confirmed
 8. value เขียนสั้นและอ่านง่าย ใช้ภาษาเดียวกับที่ลูกค้าใช้`;
 
-const fieldSchema = {
-  type: 'object',
-  properties: {
-    value: { type: 'string' },
-    status: { type: 'string', enum: [...STATUS_LIST] },
-    evidence: { type: 'string' },
-    reason: { type: 'string' }
-  },
-  required: ['value', 'status', 'evidence', 'reason'],
-  additionalProperties: false
-};
+const fieldSchema = { type: 'object', properties: { value: { type: 'string' }, status: { type: 'string', enum: [...STATUS_LIST] }, evidence: { type: 'string' }, reason: { type: 'string' } }, required: ['value', 'status', 'evidence', 'reason'], additionalProperties: false };
 
-export const BRIEF_OUTPUT_SCHEMA = {
-  type: 'object',
-  properties: {
-    fields: {
-      type: 'object',
-      properties: Object.fromEntries(FIELD_KEYS.map(key => [key, fieldSchema])),
-      required: [...FIELD_KEYS],
-      additionalProperties: false
-    },
-    note: { type: 'string' }
-  },
-  required: ['fields', 'note'],
-  additionalProperties: false
-};
+export const BRIEF_OUTPUT_SCHEMA = { type: 'object', properties: { fields: { type: 'object', properties: Object.fromEntries(FIELD_KEYS.map(key => [key, fieldSchema])), required: [...FIELD_KEYS], additionalProperties: false }, note: { type: 'string' } }, required: ['fields', 'note'], additionalProperties: false };
 
 export class BriefSummaryError extends Error {
-  constructor(message, { status = 502, detail = null } = {}) {
-    super(message);
-    this.status = status;
-    this.detail = detail;
-  }
+  constructor(message, { status = 502, detail = null } = {}) { super(message); this.status = status; this.detail = detail; }
 }
 
-// The SDK is loaded on first use, so code paths that never call the model (and the test suite) do not need it installed.
-async function createClient(env) {
-  const { default: Anthropic } = await import('@anthropic-ai/sdk');
-  return new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
+function fallbackBrief() {
+  return { fields: Object.fromEntries(FIELD_KEYS.map(key => [key, { value: '', status: 'missing', evidence: '', reason: '' }])), note: 'AI ยังสรุปไม่ได้ กรุณาตรวจข้อมูลจากแชตก่อนสร้าง Ticket' };
 }
 
-export async function summarizeConversation({ chatMessages, env, client }) {
-  if (!client && !env.ANTHROPIC_API_KEY) throw new BriefSummaryError('ANTHROPIC_API_KEY is missing', { status: 503 });
+function workersAiJson(response) {
+  const value = response?.response;
+  if (value && typeof value === 'object') return value;
+  if (typeof value === 'string') return JSON.parse(value);
+  throw new Error('Workers AI returned no JSON response');
+}
+
+async function runWorkersAi({ chatMessages, env, ai }) {
   const model = String(env.BRIEF_AI_MODEL || DEFAULT_BRIEF_MODEL).trim();
-  const anthropic = client || await createClient(env);
+  if (!ai?.run) throw new Error('Workers AI binding is unavailable');
+  const response = await ai.run(model, {
+    messages: [
+      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'user', content: `<line_chat>\n${formatTranscript(chatMessages)}\n</line_chat>\n\nสรุปเป็น Draft Brief ตามกฎที่กำหนด` }
+    ],
+    response_format: { type: 'json_schema', json_schema: BRIEF_OUTPUT_SCHEMA },
+    max_tokens: 1200,
+    temperature: 0.1
+  });
+  return { raw: workersAiJson(response), model };
+}
 
-  let response;
-  try {
-    response = await anthropic.beta.messages.create({
+async function runOpenAi({ chatMessages, env, fetchImpl }) {
+  if (!env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY is unavailable');
+  const model = String(env.BRIEF_OPENAI_MODEL || DEFAULT_OPENAI_MODEL).trim();
+  const response = await fetchImpl('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
       model,
-      max_tokens: 16000,
-      system: SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: `<line_chat>\n${formatTranscript(chatMessages)}\n</line_chat>\n\nสรุปเป็น Draft Brief ตามกฎที่กำหนด` }],
-      output_config: { effort: 'medium', format: { type: 'json_schema', schema: BRIEF_OUTPUT_SCHEMA } },
-      // A safety classifier can decline a request; let the API re-run it on Anthropic's recommended fallback model.
-      betas: ['server-side-fallback-2026-07-01'],
-      fallbacks: 'default'
-    });
-  } catch (error) {
-    throw new BriefSummaryError('AI request failed', { detail: error?.message || String(error) });
-  }
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: `<line_chat>\n${formatTranscript(chatMessages)}\n</line_chat>\n\nสรุปเป็น Draft Brief ตามกฎที่กำหนด` }
+      ],
+      response_format: { type: 'json_schema', json_schema: { name: 'print_brief', schema: BRIEF_OUTPUT_SCHEMA, strict: true } },
+      max_completion_tokens: 1200
+    })
+  });
+  const payload = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(payload?.error?.message || `OpenAI returned ${response.status}`);
+  const content = payload?.choices?.[0]?.message?.content;
+  if (typeof content !== 'string') throw new Error('OpenAI returned no JSON response');
+  return { raw: JSON.parse(content), model };
+}
 
-  if (response.stop_reason === 'refusal') throw new BriefSummaryError('AI declined to summarize this chat');
-  if (response.stop_reason === 'max_tokens') throw new BriefSummaryError('AI summary was cut off');
-  const text = (response.content || []).find(block => block.type === 'text')?.text;
-  let parsed;
+export async function summarizeConversation({ chatMessages, env, ai = env.AI, fetchImpl = fetch }) {
+  const provider = String(env.BRIEF_AI_PROVIDER || 'workers-ai').trim().toLowerCase();
   try {
-    parsed = JSON.parse(text);
-  } catch {
-    throw new BriefSummaryError('AI returned an unreadable summary');
+    if (provider === 'openai') return await runOpenAi({ chatMessages, env, fetchImpl });
+    return await runWorkersAi({ chatMessages, env, ai });
+  } catch (error) {
+    // GPT-5 nano is optional: it raises quality when a Workers AI call cannot complete.
+    if (provider !== 'openai' && env.OPENAI_API_KEY) {
+      try { return await runOpenAi({ chatMessages, env, fetchImpl }); } catch (openAiError) { return { raw: fallbackBrief(), model: 'rule-based-fallback', fallback: true, error: openAiError?.message || String(openAiError) }; }
+    }
+    // The owner can still complete the draft manually if both providers are unavailable.
+    return { raw: fallbackBrief(), model: 'rule-based-fallback', fallback: true, error: error?.message || String(error) };
   }
-  return { raw: parsed, model: response.model || model };
 }

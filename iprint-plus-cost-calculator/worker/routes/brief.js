@@ -6,6 +6,7 @@ import { createLineMessageRepository } from '../repositories/d1-line-message-rep
 import { BriefSummaryError, summarizeConversation } from '../services/brief-summarizer.js';
 import { NotionTicketError, createBriefTicket } from '../services/brief-ticket.js';
 import { MAX_WEBHOOK_BYTES, ingestLineEvents, verifyLineSignature } from '../services/line.js';
+import { replyToLineEvents } from '../services/line-bot.js';
 
 // Brief Button V1 routes: LINE webhook -> messages in D1 -> Draft Brief (Claude) -> owner review -> Notion ticket.
 // index.js owns routing and authorization; every handler here receives `json` and, where needed, `notionHeaders`.
@@ -55,7 +56,12 @@ export async function handleLineWebhook({ request, env, json, deps = {} }) {
     now: now(),
     retentionDays: clampInteger(env.LINE_RETENTION_DAYS, 30, 1, 365)
   });
-  return json({ success: true, stored });
+  const botEnabled = String(env.LINE_BOT_ENABLED || '').toLowerCase() === 'true';
+  const replied = botEnabled ? await replyToLineEvents(payload.events, {
+    accessToken: env.LINE_CHANNEL_ACCESS_TOKEN,
+    fetchImpl
+  }) : 0;
+  return json({ success: true, stored, ...(botEnabled ? { replied } : {}) });
 }
 
 // ---------- staff: conversations that can be summarised ----------

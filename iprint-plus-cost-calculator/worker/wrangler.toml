@@ -22,17 +22,21 @@ CAPACITY_ENFORCE_DEADLINE = "true"
 CORS_ALLOWED_ORIGINS = "https://iprint.tchl.online"
 PUBLIC_ORDER_ENABLED = "true"
 TURNSTILE_EXPECTED_HOSTNAME = "iprint.tchl.online"
+LINE_BOT_ENABLED = "true"
 
 # ---- Brief Button V1 (LINE -> Draft Brief -> Notion ticket) ----
-# Secrets (npx wrangler secret put ...): ANTHROPIC_API_KEY, LINE_CHANNEL_SECRET, LINE_CHANNEL_ACCESS_TOKEN (optional, for customer names)
-# Optional variables: BRIEF_AI_MODEL (default claude-opus-5), LINE_RETENTION_DAYS (default 30)
-# Create the database once, paste its id below and uncomment (steps in BRIEF_SETUP.md):
-#   npx wrangler d1 create iprint-brief
-# [[d1_databases]]
-# binding = "BRIEF_DB"
-# database_name = "iprint-brief"
-# database_id = "REPLACE_WITH_D1_DATABASE_ID"
-# migrations_dir = "migrations"
+# Secrets (npx wrangler secret put ...): LINE_CHANNEL_SECRET, LINE_CHANNEL_ACCESS_TOKEN (optional), OPENAI_API_KEY (optional GPT-5 nano fallback)
+# Optional variables: BRIEF_AI_PROVIDER (workers-ai or openai), BRIEF_AI_MODEL, BRIEF_OPENAI_MODEL (default gpt-5-nano), LINE_RETENTION_DAYS (default 30), LINE_BOT_ENABLED (default false)
+# Database created for the LINE conversation archive used by /brief/.
+[[d1_databases]]
+binding = "BRIEF_DB"
+database_name = "iprint-brief"
+database_id = "7a8083a5-72d5-4b4b-8701-4428858b8eaf"
+migrations_dir = "migrations"
+
+# Workers AI has a daily free allocation and needs no third-party API key.
+[ai]
+binding = "AI"
 
 # ---- Pictures uploaded from the set studio (gallery of a set) ----
 # Pictures are stored in this R2 bucket (created once; steps in MEDIA_SETUP.md):

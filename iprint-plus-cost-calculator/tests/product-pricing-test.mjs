@@ -52,9 +52,10 @@ for(const bad of [null, {products:[null]}, {products:[{...newProduct(),name:123}
   assert.equal(validateSettings({products:[product]}).success,false);
   const {inquiryUrl,inquiryMessage}=await import('../shared/inquiry.js');
   const pack={name:'ฟอยล์ & ปั๊มนูน',description:'พิมพ์สองด้าน',bullets:['ฟอยล์ทอง']};
-  const url=new URL(inquiryUrl({name:'นามบัตร'},pack));
+  const url=new URL(inquiryUrl({name:'นามบัตร'},pack,'Android'));
   assert.equal(decodeURIComponent(url.pathname),'/R/oaMessage/@683amlxt/');
   assert.equal(decodeURIComponent(url.search.slice(1)),inquiryMessage({name:'นามบัตร'},pack));
   assert.match(inquiryMessage({name:'นามบัตร'},pack),/^\(สอบถาม\)/);
+  assert.equal(inquiryUrl({name:'นามบัตร'},pack,'Mozilla/5.0 (Windows NT 10.0)'), 'https://lin.ee/q39R98w', 'desktop opens the shop instead of LINE generic page');
   assert.equal(inquiryUrl({}, {...pack,lineOaId:'https://wrong.example'}),'');
 }

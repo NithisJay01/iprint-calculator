@@ -49,6 +49,9 @@
 .check-row input{width:auto;margin:4px 0 0}
 .turnstile-box{margin-top:14px;min-height:20px;color:var(--muted);font-size:12px}
 .primary-link{background:var(--blue);color:#fff;border-color:var(--blue)}
+.line-order-link{background:#06c755;color:#fff;border-color:#06c755}
+.line-order-link:hover{background:#05ae4c;border-color:#05ae4c}
+.line-order-note{margin:8px 0 14px;text-align:center;color:var(--muted);font-size:12px;line-height:1.5}
 
 /* tracking */
 .track-badges{display:flex;flex-wrap:wrap;gap:8px}

@@ -116,7 +116,9 @@ export async function createBriefTicket({ env, brief, briefKey, notionHeaders, f
 
   const children = sourceKind === 'preview' ? [
     { object: 'block', type: 'heading_2', heading_2: { rich_text: richText('บรีฟนามบัตรจากหน้า 3D') } },
-    { object: 'block', type: 'paragraph', paragraph: { rich_text: richText(brief.note) } },
+    ...String(brief.note || '').split('\n').map(text => text.trim()).filter(Boolean).map(text => ({
+      object: 'block', type: 'bulleted_list_item', bulleted_list_item: { rich_text: richText(text) }
+    })),
     { object: 'block', type: 'divider', divider: {} }
   ] : buildBriefBlocks(brief);
   children.push(...await attachmentBlocks());

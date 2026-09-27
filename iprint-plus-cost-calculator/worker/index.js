@@ -1212,10 +1212,19 @@ export default {
         const staffReady = Object.values(sources).every(source => !source.required || (source.configured && source.reachable && source.schemaValid));
         const publicEnabled = String(env.PUBLIC_ORDER_ENABLED || '').toLowerCase() === 'true';
         const publicReady = staffReady && publicEnabled && Boolean(String(env.TURNSTILE_SECRET_KEY || '').trim());
+        const lineBrief = {
+          ready: Boolean(env.BRIEF_DB && String(env.LINE_CHANNEL_SECRET || '').trim() && (env.AI || String(env.OPENAI_API_KEY || '').trim())),
+          storageConfigured: Boolean(env.BRIEF_DB),
+          webhookSecretConfigured: Boolean(String(env.LINE_CHANNEL_SECRET || '').trim()),
+          profileAccessConfigured: Boolean(String(env.LINE_CHANNEL_ACCESS_TOKEN || '').trim()),
+          summarizerConfigured: Boolean(env.AI || String(env.OPENAI_API_KEY || '').trim()),
+          model: String(env.BRIEF_AI_PROVIDER || 'workers-ai') === 'openai' ? String(env.BRIEF_OPENAI_MODEL || 'gpt-5-nano') : String(env.BRIEF_AI_MODEL || '@cf/meta/llama-3.1-8b-instruct')
+        };
         return json({
           success: true,
           ready: staffReady,
           staffOrdering: { ready: staffReady },
+          lineBrief,
           publicOrdering: {
             ready: publicReady,
             enabled: publicEnabled,

@@ -2,7 +2,7 @@ import { loadPricing } from '../shared/pricing-client.js';
 import { cartCount, readCart } from '../shared/cart.js';
 import { defaultBusinessCardPackages } from '../shared/business-card-product.js';
 import { setImageUrl } from '../shared/set-image.js';
-import { inquiryUrl } from '../shared/inquiry.js';
+import { inquiryMessage, inquiryUrl } from '../shared/inquiry.js';
 let pricingSettings = null;
 import { BUSINESS_CARD_SIZE, buildOrderPayload, calculateBusinessCardQuote, isoDate, safeFilename } from './logic.js';
 
@@ -11,7 +11,9 @@ const IS_LOCAL_PREVIEW = ['127.0.0.1', 'localhost'].includes(location.hostname);
 const $ = id => document.getElementById(id);
 const money = value => Number(value || 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const esc = value => String(value ?? '').replace(/[&<>'"]/g, character => ({ '&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;' }[character]));
+const isDesktop = () => !/Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
 let PACKAGES = defaultBusinessCardPackages();
+let activeInquiryMessage = '';
 const LOCAL_CATALOG = {
   presets:{presets:[{id:'3c91a0ce-e8bd-8032-bb21-f6553f6f4ce2',name:'13×19" กระดาษมาตรฐาน (ประมาณ A3)',usableW:31.02,usableH:47.26,active:true}]},
   materials:{materials:[{id:'3c91a0ce-e8bd-807e-8583-dde326de7701',name:'Art Paper 300g',price:1.2,unit:'sheet',active:true,updatedAt:'local-preview'}]},
@@ -22,10 +24,35 @@ const state = { step:1, packageId:'corporate', packageName:'Corporate', catalogs
 
 // An inquiry-only set opens the shop's LINE chat with a message about the set; it never goes to the order page.
 function inquiryButton(item) {
-  const url = inquiryUrl({ name: 'นามบัตร' }, item);
+  const url = inquiryUrl({ name: 'นามบัตร' }, item, 'Android');
   return url
-    ? `<a class="button is-inquiry" href="${esc(url)}" target="_blank" rel="noopener">ติดต่อสอบถาม</a>`
+    ? `<a class="button is-inquiry" href="${esc(url)}" target="_blank" rel="noopener" data-inquiry-id="${esc(item.id)}">ติดต่อสอบถาม</a>`
     : '<button class="button is-inquiry" type="button" disabled title="ร้านยังไม่ได้ตั้งค่า LINE OA ID">ติดต่อสอบถาม</button>';
+}
+
+function openInquiryQr(item, url) {
+  const qr = globalThis.qrcode?.(0, 'M');
+  if (!qr) { location.href = url; return; }
+  qr.addData(url, 'Byte'); qr.make();
+  activeInquiryMessage = inquiryMessage({ name: 'นามบัตร' }, item);
+  $('inquiryQrTitle').textContent = `สอบถาม ${item.name}`;
+  $('inquiryQrImage').src = qr.createDataURL(7, 12);
+  $('inquiryCopyStatus').textContent = '';
+  $('inquiryQrDialog').showModal();
+}
+
+async function copyInquiryMessage() {
+  try {
+    if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(activeInquiryMessage);
+    else {
+      const field = document.createElement('textarea'); field.value = activeInquiryMessage;
+      field.setAttribute('readonly', ''); field.style.position = 'fixed'; field.style.opacity = '0';
+      document.body.appendChild(field); field.select();
+      if (!document.execCommand('copy')) throw new Error();
+      field.remove();
+    }
+    $('inquiryCopyStatus').textContent = 'คัดลอกข้อมูลแล้ว วางในแชท LINE ได้ทันที';
+  } catch { $('inquiryCopyStatus').textContent = 'คัดลอกไม่สำเร็จ กรุณาสแกน QR เพื่อส่งข้อมูล'; }
 }
 
 function renderPackages() {
@@ -260,10 +287,12 @@ function statusLabel(value){return({NEW:'รับออร์เดอร์แ
 function formatDate(value){if(!value)return'-';return new Date(value+'T00:00:00').toLocaleDateString('th-TH-u-ca-gregory',{day:'numeric',month:'short',year:'numeric'})}
 function setSubmitStatus(message,error=false){$('submitStatus').textContent=message;$('submitStatus').classList.toggle('error',error)}
 
-document.addEventListener('click',event=>{const start=event.target.closest('[data-start]');if(start)location.href=`order.html?package=${encodeURIComponent(state.packageId||PACKAGES[0]?.id||'')}`;const packageButton=event.target.closest('[data-package]');if(packageButton)location.href=`order.html?package=${encodeURIComponent(packageButton.dataset.package)}`;const builderPackage=event.target.closest('[data-builder-package]');if(builderPackage)applyPackage(builderPackage.dataset.builderPackage);const optionButton=event.target.closest('[data-option-id]');if(optionButton){const id=optionButton.dataset.optionId;if(optionButton.dataset.optionSource==='material'){state.material=state.catalogs.materials.find(item=>item.id===id)}else{const service=state.catalogs.services.find(item=>item.id===id);const group=activeOptionGroups().find(item=>item.id===optionButton.dataset.optionGroup);if(group?.selectionMode==='single')state.services=state.services.filter(item=>!group.itemIds.includes(item.id));if(service&&!state.services.some(item=>item.id===id))state.services.push(service);else if(group?.selectionMode==='multiple')state.services=state.services.filter(item=>item.id!==id)}state.deliveryDate='';state.boost=null;syncSelections();recalculate()}const day=event.target.closest('[data-date]');if(day)selectDate(day.dataset.date)});
+document.addEventListener('click',event=>{const inquiry=event.target.closest('[data-inquiry-id]');if(inquiry&&isDesktop()){event.preventDefault();const item=PACKAGES.find(pack=>pack.id===inquiry.dataset.inquiryId);if(item)openInquiryQr(item,inquiry.href)}const start=event.target.closest('[data-start]');if(start)location.href=`order.html?package=${encodeURIComponent(state.packageId||PACKAGES[0]?.id||'')}`;const packageButton=event.target.closest('[data-package]');if(packageButton)location.href=`order.html?package=${encodeURIComponent(packageButton.dataset.package)}`;const builderPackage=event.target.closest('[data-builder-package]');if(builderPackage)applyPackage(builderPackage.dataset.builderPackage);const optionButton=event.target.closest('[data-option-id]');if(optionButton){const id=optionButton.dataset.optionId;if(optionButton.dataset.optionSource==='material'){state.material=state.catalogs.materials.find(item=>item.id===id)}else{const service=state.catalogs.services.find(item=>item.id===id);const group=activeOptionGroups().find(item=>item.id===optionButton.dataset.optionGroup);if(group?.selectionMode==='single')state.services=state.services.filter(item=>!group.itemIds.includes(item.id));if(service&&!state.services.some(item=>item.id===id))state.services.push(service);else if(group?.selectionMode==='multiple')state.services=state.services.filter(item=>item.id!==id)}state.deliveryDate='';state.boost=null;syncSelections();recalculate()}const day=event.target.closest('[data-date]');if(day)selectDate(day.dataset.date)});
 $('quantity').addEventListener('change',event=>{state.quantity=Number(event.target.value);state.deliveryDate='';state.boost=null;recalculate()});
 $('frontFile').addEventListener('change',renderArtworkPreview);$('backFile').addEventListener('change',renderArtworkPreview);$('referenceFiles').addEventListener('change',event=>{if(event.target.files.length>3){alert('แนบภาพ Ref ได้สูงสุด 3 ภาพ');event.target.value=''}});
 $('nextStep').addEventListener('click',()=>{const error=validateStep();if(error){alert(error);return}showStep(state.step+1)});$('backStep').addEventListener('click',()=>showStep(state.step-1));$('closeBuilder').addEventListener('click',()=>{$('order').hidden=true});$('orderForm').addEventListener('submit',submitOrder);$('checkStatus').addEventListener('click',checkStatus);$('newOrder').addEventListener('click',()=>openBuilder('corporate'));
+$('inquiryQrClose').addEventListener('click', () => $('inquiryQrDialog').close());
+$('inquiryCopy').addEventListener('click', copyInquiryMessage);
 
 $('priceSummary').insertAdjacentHTML('beforebegin', '<label for="promoCode">โค้ดส่วนลด</label><input id="promoCode" type="text" maxlength="80" placeholder="กรอกโค้ด (ถ้ามี)"><small id="promoHint"></small>');
 $('promoCode').addEventListener('input',()=>{recalculate();$('promoHint').textContent=$('promoCode').value && !state.quote?.pricing?.promotion ? 'ไม่พบโปรโมชันที่เข้าเงื่อนไข' : ''});

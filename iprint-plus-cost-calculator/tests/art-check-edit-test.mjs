@@ -14,7 +14,7 @@ const request = (extra = {}, spec = {}) => ({
 let items = requestSummaryItems(request());
 assert.deepEqual(items, [
   'งาน: Business-Card', 'จำนวน: 100 ใบ', 'การพิมพ์: ด้านหน้า', 'ขนาด: 90 × 54 mm', 'รูปทรง: สี่เหลี่ยม', 'Bleed: 3 mm',
-  'วัสดุ: อาร์ตด้าน 300g', 'เคลือบ: ไม่เคลือบ', 'เทคนิคด้านหน้า: ไม่มี'
+  'วัสดุ: อาร์ตด้าน 300g', 'เคลือบ: ไม่เคลือบ', 'เทคนิคพิเศษ (ด้านหน้า): ไม่มี'
 ], 'each fact is its own line');
 assert.ok(items.every(item => !item.includes('\n') && !item.includes(' · ')), 'a line holds one fact, not several joined together');
 assert.equal(REQUEST_SUMMARY_NOTE, 'รอทีมงานยืนยันวัสดุ ราคา และวันผลิตก่อนเริ่มงาน');
@@ -29,6 +29,7 @@ assert.ok(!requestSummaryItems(request()).some(item => item.startsWith('มุ�
 const text = requestSummary(request({ hasBack: true }));
 assert.match(text, /งาน Business-Card · 100 ใบ · พิมพ์หน้า–หลัง/, 'the brief keeps its original wording');
 assert.match(text, /90 × 54 mm · สี่เหลี่ยม · Bleed 3 mm/);
+assert.match(text, /เทคนิคพิเศษ \(ด้านหน้า\) ไม่มี/);
 assert.ok(text.endsWith('รอทีมงานยืนยันวัสดุ ราคา และวันผลิตก่อนเริ่มงาน'));
 assert.equal(text.split('\n').length, 4);
 

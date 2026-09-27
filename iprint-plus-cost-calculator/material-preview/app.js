@@ -11,6 +11,7 @@ import { TiltInput } from './input.js';
 import { createLayers } from './layers.js';
 import { initPanel } from './panel.js';
 import { initMaterialCatalog } from './catalog-panel.js';
+import { initDesignerInquiry } from './designer-inquiry.js';
 
 const $ = (sel) => document.querySelector(sel);
 const stage = $('#stage');
@@ -22,6 +23,8 @@ const REDUCED_MOTION = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const COARSE = matchMedia('(pointer: coarse)').matches;
 const params = new URLSearchParams(location.search);
 const DEBUG = params.has('debug');
+
+initDesignerInquiry();
 
 // The entry buttons on the other pages pass ?from=…, so "back" returns to the page the visitor came from.
 // A Map (not an object): any other value, even "constructor", just falls back to the catalog.
@@ -53,7 +56,7 @@ function fatal(message) {
 
 let renderer;
 try {
-  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, preserveDrawingBuffer: true, powerPreference: 'high-performance' });
 } catch (err) {
   console.error(err);
   fatal('อุปกรณ์หรือเบราว์เซอร์นี้ไม่รองรับ WebGL — กรุณาลองเปิดด้วย Chrome หรือ Safari รุ่นล่าสุด');
@@ -171,7 +174,54 @@ const layers = createLayers({
   },
 });
 panel = initPanel({ card, layers, stage, setBusy, say, requestRender });
-import('./request-print.js').then(({ initPrintRequest }) => initPrintRequest({ card, layers, panel }));
+
+const loadImage = source => new Promise((resolve, reject) => {
+  const image = new Image();
+  image.onload = () => resolve(image);
+  image.onerror = () => reject(new Error('สร้างภาพพรีวิวไม่สำเร็จ'));
+  image.src = source;
+});
+
+// Capture both faces into one portable PNG. Rendering is explicit so the result
+// uses the card's real material, ink, finish, lighting and current artwork.
+async function capturePreviewSheet({ includeBack = false } = {}) {
+  const savedRotation = card.pivot.rotation.clone();
+  const savedLayout = { ...studio.layout };
+  const captureFace = yaw => {
+    card.pivot.rotation.set(THREE.MathUtils.degToRad(7), yaw, 0);
+    studio.update(0, 0.2, 0, 0, yaw);
+    studio.frame(savedLayout.width, savedLayout.height, 1, 0, 0);
+    studio.render();
+    return canvas.toDataURL('image/png');
+  };
+  try {
+    const captures = [{ label: 'ด้านหน้า', source: captureFace(0) }];
+    if (includeBack) captures.push({ label: 'ด้านหลัง', source: captureFace(Math.PI) });
+    const images = await Promise.all(captures.map(item => loadImage(item.source)));
+    const output = document.createElement('canvas');
+    output.width = 1600;
+    const imageWidth = 1440;
+    const imageHeight = Math.round(imageWidth * canvas.height / Math.max(1, canvas.width));
+    const blockHeight = imageHeight + 95;
+    output.height = 150 + blockHeight * images.length + 70;
+    const ctx = output.getContext('2d');
+    ctx.fillStyle = '#eef7ff'; ctx.fillRect(0, 0, output.width, output.height);
+    ctx.fillStyle = '#0a8cff'; ctx.fillRect(0, 0, output.width, 150);
+    ctx.fillStyle = '#fff'; ctx.font = '700 58px system-ui, sans-serif'; ctx.fillText('iPrint · ภาพพรีวิว 3D', 80, 94);
+    images.forEach((image, index) => {
+      const top = 185 + index * blockHeight;
+      ctx.fillStyle = '#12385e'; ctx.font = '700 34px system-ui, sans-serif'; ctx.fillText(captures[index].label, 80, top + 38);
+      ctx.drawImage(image, 80, top + 58, imageWidth, imageHeight);
+    });
+    return output.toDataURL('image/png');
+  } finally {
+    card.pivot.rotation.copy(savedRotation);
+    studio.frame(savedLayout.width, savedLayout.height, savedLayout.zoom, savedLayout.panX, savedLayout.panY);
+    requestRender();
+  }
+}
+
+import('./request-print.js').then(({ initPrintRequest }) => initPrintRequest({ card, layers, panel, capturePreviewSheet }));
 
 // hint text depends on the input the device actually has
 $('#hint').textContent = COARSE

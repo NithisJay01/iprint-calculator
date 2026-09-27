@@ -254,6 +254,62 @@ html, body {
 }
 .step-body { padding-top: 10px; }
 
+.designer-ad {
+  margin: 8px 0 12px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 119, 255, 0.24);
+  border-radius: 16px;
+  background: linear-gradient(135deg, #eef7ff 0%, #f8fbff 58%, #eef2ff 100%);
+  box-shadow: 0 8px 22px rgba(0, 82, 170, 0.07);
+}
+.designer-ad > summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 14px;
+  cursor: pointer;
+  list-style: none;
+}
+.designer-ad > summary::-webkit-details-marker { display: none; }
+.designer-ad > summary::after {
+  content: "▾";
+  margin-left: auto;
+  color: #0876e8;
+  font-size: 13px;
+}
+.designer-ad[open] > summary::after { content: "▴"; }
+.designer-ad-icon {
+  flex: 0 0 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: #0b84f3;
+  color: #fff;
+  font-size: 18px;
+}
+.designer-ad-copy { display: grid; gap: 2px; min-width: 0; }
+.designer-ad-copy strong { font-size: 14px; color: #102f54; }
+.designer-ad-copy small { color: #56708d; font-size: 11.5px; line-height: 1.35; }
+.designer-ad-body { padding: 0 14px 14px 58px; }
+.designer-ad-body p { margin: 0 0 10px; color: #526b84; font-size: 12.5px; line-height: 1.55; }
+.designer-ad-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 8px 14px;
+  border-radius: 12px;
+  background: #0b84f3;
+  color: #fff;
+  font-size: 13.5px;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+}
+.designer-ad-button:hover { background: #006fd5; }
+.designer-ad-button:focus-visible { outline: 2px solid #102f54; outline-offset: 2px; }
+
 .sub {
   margin: 12px 0 6px;
   font-size: 11.5px;

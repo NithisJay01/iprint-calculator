@@ -34,6 +34,14 @@ try {
   assert.equal(result.ready, true);
   assert.equal(result.staffOrdering.ready, true);
   assert.equal(result.publicOrdering.ready, false);
+  assert.deepEqual(result.lineBrief, {
+    ready: false,
+    storageConfigured: false,
+    webhookSecretConfigured: false,
+    profileAccessConfigured: false,
+    summarizerConfigured: false,
+    model: '@cf/meta/llama-3.1-8b-instruct'
+  });
   assert.equal(result.sources.queue.schemaValid, true);
   assert.equal(result.sources.capacity.schemaValid, true);
   assert.equal(result.sources.orderItems.schemaValid, true);

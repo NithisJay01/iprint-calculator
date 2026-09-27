@@ -173,48 +173,41 @@ assert.equal(clampInteger('abc', 40, 5, 100), 40);
   assert.equal(toUnsentMessageId({ type: 'message' }), null);
 }
 
-// ---------- summarizer (fake Claude client) ----------
+// ---------- summarizer (Workers AI, with GPT-5 nano fallback) ----------
 {
   const requests = [];
-  const clientReturning = response => ({ beta: { messages: { create: async params => { requests.push(params); return response; } } } });
-  const goodJson = JSON.stringify(aiOutput({ product: field('Sticker', 'confirmed', 'สติกเกอร์') }));
+  const goodOutput = aiOutput({ product: field('Sticker', 'confirmed', 'สติกเกอร์') });
   const messages = chat('สติกเกอร์');
+  const ai = { run: async (model, params) => { requests.push({ model, params }); return { response: goodOutput }; } };
 
-  const result = await summarizeConversation({
-    chatMessages: messages, env: {},
-    client: clientReturning({ stop_reason: 'end_turn', model: 'claude-opus-5', content: [{ type: 'text', text: goodJson }] })
-  });
+  const result = await summarizeConversation({ chatMessages: messages, env: {}, ai });
   assert.equal(result.raw.fields.product.value, 'Sticker');
   assert.equal(requests[0].model, DEFAULT_BRIEF_MODEL);
-  assert.equal(requests[0].model, 'claude-opus-5');
-  assert.equal(requests[0].fallbacks, 'default');
-  assert.deepEqual(requests[0].betas, ['server-side-fallback-2026-07-01']);
-  assert.equal(requests[0].output_config.format.type, 'json_schema');
-  assert.equal(requests[0].output_config.format.schema, BRIEF_OUTPUT_SCHEMA);
-  assert.match(requests[0].messages[0].content, /<line_chat>\n\[2026-09-20 14:00\] ลูกค้า: สติกเกอร์\n<\/line_chat>/);
-  assert.match(requests[0].system, /ห้ามเดาข้อมูลเอง/);
+  assert.equal(requests[0].params.response_format.type, 'json_schema');
+  assert.equal(requests[0].params.response_format.json_schema, BRIEF_OUTPUT_SCHEMA);
+  assert.match(requests[0].params.messages[1].content, /<line_chat>\n\[2026-09-20 14:00\] ลูกค้า: สติกเกอร์\n<\/line_chat>/);
+  assert.match(requests[0].params.messages[0].content, /ห้ามเดาข้อมูลเอง/);
   assert.equal(BRIEF_OUTPUT_SCHEMA.additionalProperties, false);
   assert.deepEqual(BRIEF_OUTPUT_SCHEMA.properties.fields.required, FIELD_KEYS);
 
-  await summarizeConversation({ chatMessages: messages, env: { BRIEF_AI_MODEL: 'claude-haiku-4-5' }, client: clientReturning({ stop_reason: 'end_turn', content: [{ type: 'text', text: goodJson }] }) });
-  assert.equal(requests[1].model, 'claude-haiku-4-5', 'BRIEF_AI_MODEL overrides the default model');
+  await summarizeConversation({ chatMessages: messages, env: { BRIEF_AI_MODEL: '@cf/custom/model' }, ai });
+  assert.equal(requests[1].model, '@cf/custom/model', 'BRIEF_AI_MODEL overrides the default model');
 
-  const failure = async (response, expected) => {
-    await assert.rejects(
-      () => summarizeConversation({ chatMessages: messages, env: {}, client: response instanceof Error ? { beta: { messages: { create: async () => { throw response; } } } } : clientReturning(response) }),
-      error => error instanceof BriefSummaryError && expected.test(error.message)
-    );
+  const fallback = await summarizeConversation({ chatMessages: messages, env: {}, ai: { run: async () => { throw new Error('overloaded'); } } });
+  assert.equal(fallback.model, 'rule-based-fallback');
+  assert.equal(fallback.fallback, true);
+  assert.equal(fallback.raw.fields.product.status, 'missing');
+
+  const openAiRequests = [];
+  const openAi = async (_url, options) => {
+    openAiRequests.push(options);
+    return Response.json({ choices: [{ message: { content: JSON.stringify(goodOutput) } }] });
   };
-  await failure({ stop_reason: 'refusal', content: [] }, /declined/);
-  await failure({ stop_reason: 'max_tokens', content: [{ type: 'text', text: '{' }] }, /cut off/);
-  await failure({ stop_reason: 'end_turn', content: [{ type: 'text', text: 'not json' }] }, /unreadable/);
-  await failure({ stop_reason: 'end_turn', content: [] }, /unreadable/);
-  await failure(new Error('overloaded'), /AI request failed/);
-
-  await assert.rejects(
-    () => summarizeConversation({ chatMessages: messages, env: {} }),
-    error => error instanceof BriefSummaryError && error.status === 503 && /ANTHROPIC_API_KEY/.test(error.message)
-  );
+  const openAiResult = await summarizeConversation({ chatMessages: messages, env: { BRIEF_AI_PROVIDER: 'openai', OPENAI_API_KEY: 'test-key' }, fetchImpl: openAi });
+  assert.equal(openAiResult.model, 'gpt-5-nano');
+  assert.equal(openAiResult.raw.fields.product.value, 'Sticker');
+  assert.match(openAiRequests[0].headers.Authorization, /^Bearer /);
+  assert.deepEqual(JSON.parse(openAiRequests[0].body).response_format.json_schema.schema, BRIEF_OUTPUT_SCHEMA);
 }
 
 // ---------- Notion ticket ----------

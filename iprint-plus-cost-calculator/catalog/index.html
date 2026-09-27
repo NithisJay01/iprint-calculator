@@ -15,10 +15,16 @@
       <strong>iPrint</strong>
       <span>สั่งพิมพ์ง่าย เห็นราคาก่อนยืนยัน</span>
     </a>
-    <a class="cart-link" id="cartLink" href="../cart/" aria-label="เปิดตะกร้าสินค้า" title="เปิดตะกร้าสินค้า">
-      <img src="assets/cart.svg" alt="">
-      <span class="cart-count" aria-label="สินค้าในตะกร้า 0 รายการ">0</span>
-    </a>
+    <nav class="header-actions" aria-label="คำสั่งซื้อ">
+      <a class="track-link" href="../cart/track.html" aria-label="ติดตามสถานะออร์เดอร์">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v5l3.5 2"/></svg>
+        <span>ติดตามสถานะ</span>
+      </a>
+      <a class="cart-link" id="cartLink" href="../cart/" aria-label="เปิดตะกร้าสินค้า" title="เปิดตะกร้าสินค้า">
+        <img src="assets/cart.svg" alt="">
+        <span class="cart-count" aria-label="สินค้าในตะกร้า 0 รายการ">0</span>
+      </a>
+    </nav>
   </header>
 
   <main>
@@ -115,6 +121,11 @@
     <span>งานพิมพ์ที่เลือกง่ายและตรวจสอบราคาได้ก่อนสั่ง</span>
     <a href="../">เครื่องมือคำนวณแบบ Advanced</a>
   </footer>
+
+  <a class="contact-fab" href="https://lin.ee/q39R98w" target="_blank" rel="noopener noreferrer" aria-label="ติดต่อ iPrint ผ่าน LINE">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10.4c0 4-3.6 7.2-8 7.2-.9 0-1.8-.1-2.6-.4L5 19l1.3-3.4C4.9 14.3 4 12.5 4 10.4c0-4 3.6-7.2 8-7.2s8 3.2 8 7.2Z"/><path d="M8.2 10.7h.1M12 10.7h.1M15.8 10.7h.1"/></svg>
+    <span>ติดต่อ</span>
+  </a>
 
   <script type="module" src="app.js"></script>
 </body>

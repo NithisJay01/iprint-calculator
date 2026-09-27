@@ -9,6 +9,7 @@ import {
   paperMaterials, coatings, finishes, FINISH_ORDER, SHAPE_KINDS, SIZE_PRESETS, BLEED_OPTIONS, MIN_BLEED_MM, TEXTURE_BUDGET, DEFAULT_SHAPE, DEFAULTS
 } from '../material-preview/materials.js';
 import { flickDirection } from '../material-preview/input.js';
+import { DESIGNER_INQUIRY_MESSAGE, designerInquiryUrl } from '../material-preview/designer-inquiry.js';
 
 const near = (actual, expected, tolerance, message) =>
   assert.ok(Math.abs(actual - expected) <= tolerance, `${message}: got ${actual}, expected ${expected} ± ${tolerance}`);
@@ -344,6 +345,15 @@ const makeField = (w, h, paint) => {
   }
   assert.doesNotMatch(html, /\son[a-z]+=/i, 'no inline event handlers');
   assert.match(html, /<script type="module" src="app\.js/, 'the app is one module entry');
+  assert.match(html, /<details class="designer-ad" id="designerAd">/, 'designer help is a separate collapsible ad box');
+  assert.match(html, /ยังไม่มีแบบใช่ไหม\?/, 'designer ad asks whether the customer has artwork');
+  assert.match(html, /ฉันต้องการดีไซน์เนอร์/, 'designer ad has a clear call to action');
+  assert.match(html, /บันทึกภาพพรีวิว 3D ด้านหน้าและด้านหลัง/, 'the request dialog explains that a portable 3D preview is saved');
+  assert.match(html, /id="requestLineQr"/, 'desktop success includes an order-specific LINE QR panel');
+  assert.match(html, /vendor\/qrcode\/qrcode\.js/, 'the local QR generator is loaded from the same site');
+  assert.equal(designerInquiryUrl(), 'https://lin.ee/q39R98w', 'designer CTA uses the shop add-friend URL on desktop and mobile');
+  assert.equal(designerInquiryUrl('https://evil.example'), '', 'designer CTA only accepts LINE destinations');
+  assert.match(DESIGNER_INQUIRY_MESSAGE, /ยังไม่มี Artwork/, 'designer inquiry explains that the customer has no artwork');
 
   const entries = readdirSync(dir);
   const modules = entries.filter((f) => f.endsWith('.js'));
@@ -384,6 +394,16 @@ const makeField = (w, h, paint) => {
 // ---------- the buttons on the other pages that lead here ----------
 {
   const app = readFileSync(new URL('../material-preview/app.js', import.meta.url), 'utf8');
+  const request = readFileSync(new URL('../material-preview/request-print.js', import.meta.url), 'utf8');
+  assert.match(app, /preserveDrawingBuffer:\s*true/, 'the WebGL frame remains available for a reliable screenshot');
+  assert.match(app, /capturePreviewSheet\(\{ includeBack = false \}/, 'the preview can build a portable image sheet');
+  assert.match(app, /captureFace\(Math\.PI\)/, 'the back image is rendered by turning the 3D card over');
+  assert.match(request, /capturePreviewSheet\(\{ includeBack: value\.hasBack \}\)/, 'submission captures the back only when the job has back artwork');
+  assert.match(request, /downloadPreviewImage\(await previewImage, result\.id, value\.jobName\)/, 'the 3D image downloads only after the request was accepted');
+  assert.match(request, /บันทึกภาพการ์ด 3D แล้ว\\nกรุณาส่งภาพให้ทีมงานเพื่อเป็นข้อมูลประกอบการพิจารณาวิธีผลิตชิ้นงาน/, 'the customer is told to forward the saved image to the production team');
+  assert.match(request, /renderLineQr\(url\)/, 'desktop creates a QR from the pre-filled LINE request URL');
+  assert.match(request, /qr\.addData\(url, 'Byte'\)/, 'the order URL itself is encoded in the QR');
+  assert.match(request, /copyText\(text\)/, 'desktop copies the request so the customer can paste it after scanning the QR');
   const site = new URL('../', import.meta.url);
   // every ?from= value the page understands, with the page its "back" link returns to
   const back = new Map([...app.matchAll(/\['([\w-]+)',\s*\['([^']+)',\s*'[^']+'\]\]/g)].map((m) => [m[1], m[2]]));
