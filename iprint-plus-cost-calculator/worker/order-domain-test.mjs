@@ -44,8 +44,8 @@ const valid = validateOrderFoundation({
   grandTotal: 160.5,
   createdAt: "2026-09-04T08:00:00+07:00",
   orderItems: [
-    { id: "item-1", name: "นามบัตร", quantity: 100, price: 100 },
-    { id: "item-2", name: "เคลือบ", quantity: 100, price: 50 }
+    { id: "item-1", name: "นามบัตร", quantity: 100, basePrice: 100, price: 100 },
+    { id: "item-2", name: "เคลือบ", quantity: 100, basePrice: 50, price: 50 }
   ]
 });
 
@@ -80,7 +80,7 @@ const invalidBoost = validateOrderFoundation({
   orderItems: [{ id: 'boost-item', name: 'งานเร่ง', quantity: 1, basePrice: 100, price: 120, boost: { days: 1, multiplier: 0.25 } }]
 });
 assert.equal(invalidBoost.success, false);
-assert.ok(invalidBoost.errors.includes('orderItems[0].price must include the configured boost surcharge'));
+assert.ok(invalidBoost.errors.includes('orderItems[0].price must equal basePrice plus any configured boost surcharge'));
 
 const invalid = validateOrderFoundation({
   orderKey: "order-1",
@@ -99,5 +99,22 @@ assert.ok(invalid.errors.includes("orderItems[1].id must be unique"));
 assert.ok(invalid.errors.includes("orderItems[1].quantity must be greater than 0"));
 assert.ok(invalid.errors.includes("total must equal the sum of order item prices"));
 assert.ok(invalid.errors.includes("grandTotal must equal total plus vat"));
+
+// price must equal basePrice even without a boost - without this, a verified basePrice (the value
+// verifyConfiguredPrice()/verifyPlainItemPrice() check) could sit next to an unrelated `price`
+// that is what actually gets charged, since nothing else in the order ties the two together.
+const missingBasePrice = validateOrderFoundation({
+  orderKey: 'order-2', quoteNo: 'QT-2', total: 100, vat: 7, grandTotal: 107,
+  orderItems: [{ id: 'item-1', name: 'งานทดสอบ', quantity: 1, price: 100 }]
+});
+assert.equal(missingBasePrice.success, false);
+assert.ok(missingBasePrice.errors.includes('orderItems[0].price must equal basePrice plus any configured boost surcharge'));
+
+const tamperedPrice = validateOrderFoundation({
+  orderKey: 'order-3', quoteNo: 'QT-3', total: 1, vat: 0.07, grandTotal: 1.07,
+  orderItems: [{ id: 'item-1', name: 'งานทดสอบ', quantity: 1000, basePrice: 2000, price: 1 }]
+});
+assert.equal(tamperedPrice.success, false);
+assert.ok(tamperedPrice.errors.includes('orderItems[0].price must equal basePrice plus any configured boost surcharge'));
 
 console.log("Order domain test passed");

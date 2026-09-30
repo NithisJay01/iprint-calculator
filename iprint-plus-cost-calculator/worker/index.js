@@ -1,4 +1,4 @@
-import { verifyConfiguredPrice } from './domain/product-pricing.js';
+import { verifyConfiguredPrice, verifyPlainItemPrice } from './domain/product-pricing.js';
 import { createPricingSettingsRepository } from './repositories/notion-pricing-settings-repository.js';
 import { compareCatalogSnapshot, validateCatalogMutation } from './domain/catalog.js';
 import { buildTicketJobName, validateOrderFoundation } from './domain/order.js';
@@ -1474,6 +1474,21 @@ export default {
           try {
             const pricingSettings = await createPricingSettingsRepository(env, { headers: notionHeaders }).get();
             for (const item of configuredItems) item.pricingSnapshot = verifyConfiguredPrice(item, pricingSettings);
+          } catch (error) {
+            return json({ success: false, code: 'PRICING_CHANGED', error: error.message }, error.status || 409);
+          }
+        }
+
+        // Public orders have no staff behind them, so every item without a configured product
+        // (the main calculator/quote flow) must reprice itself server-side from the already
+        // catalog-verified material/service unit prices, or a crafted request could name a
+        // basePrice/price that ignores the real cost entirely. Staff orders keep their existing
+        // trust level: a staff member with WRITE_API_KEY can already edit catalog/pricing directly.
+        if (isPublicOrder) {
+          try {
+            for (const item of orderItems) {
+              if (item.productId !== 'business-card') verifyPlainItemPrice(item);
+            }
           } catch (error) {
             return json({ success: false, code: 'PRICING_CHANGED', error: error.message }, error.status || 409);
           }

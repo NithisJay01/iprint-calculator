@@ -13,3 +13,22 @@ export function verifyConfiguredPrice(item, settings) {
   if (Math.abs(pricing.total - Number(item.basePrice)) > .01) throw new Error('ราคา/โปรโมชันเปลี่ยนแล้ว กรุณาโหลดราคาใหม่');
   return pricing;
 }
+
+// Items with no configured product (the main calculator/quote flow) price themselves as
+// (sheets*panelCost + materialCost + serviceCost) * (1 + marginPercent/100) using the same fixed
+// defaults the UI shows every customer (business-card/logic.js PRICING). Material/service unit
+// prices are already checked against the live catalog before this runs (see compareCatalogSnapshot
+// in worker/index.js), so this only has to confirm nobody tampered with the computed total itself.
+export function verifyPlainItemPrice(item) {
+  const sheets = Number(item?.sheets) || 0;
+  const quantity = Number(item?.quantity) || 0;
+  const materialCost = componentCost(item?.material, sheets, quantity);
+  const serviceCost = (Array.isArray(item?.services) ? item.services : [])
+    .reduce((sum, service) => sum + componentCost(service, sheets, quantity), 0);
+  const productionCost = sheets * PRICING.panelCost;
+  const expected = (productionCost + materialCost + serviceCost) * (1 + PRICING.marginPercent / 100);
+  if (!Number.isFinite(Number(item?.basePrice)) || Math.abs(expected - Number(item.basePrice)) > 0.01) {
+    throw Object.assign(new Error('ราคาคำนวณไม่ตรงกับต้นทุนวัสดุและค่าบริการปัจจุบัน กรุณาคำนวณใหม่'), { status: 409 });
+  }
+  return expected;
+}
