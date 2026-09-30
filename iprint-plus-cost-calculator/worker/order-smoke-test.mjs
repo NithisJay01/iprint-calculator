@@ -201,6 +201,7 @@ try {
           { kind: 'reference', side: '2', label: 'ภาพ Ref 2', filename: 'reference-2.png' },
           { kind: 'reference', side: '3', label: 'ภาพ Ref 3', filename: 'reference-3.png' }
         ],
+        basePrice: 900,
         price: 900,
         brief: 'เว้นพื้นที่โลโก้',
         briefDeadline: '2026-09-01',
@@ -220,6 +221,7 @@ try {
         yield: 20,
         material: { id: 'material-2', name: 'Art Card 300 แกรม' },
         services: [],
+        basePrice: 600,
         price: 600,
         brief: '',
         briefFileLink: 'https://drive.google.com/file/d/test'

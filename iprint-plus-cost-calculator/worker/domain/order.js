@@ -127,16 +127,23 @@ export function validateOrderFoundation(input) {
     if (!name || name.length > 300) errors.push(`${prefix}.name must contain 1-300 characters`);
     if (!Number.isFinite(quantity) || quantity <= 0) errors.push(`${prefix}.quantity must be greater than 0`);
     if (!Number.isFinite(price) || price < 0) errors.push(`${prefix}.price must be 0 or greater`);
+
+    // `price` (what is actually charged and summed into order.total) must always be basePrice
+    // plus the boost surcharge, even when there is no boost (multiplier 0). Without this, a
+    // client could keep `basePrice` correct - the value verifyConfiguredPrice()/
+    // verifyPlainItemPrice() check downstream - while setting `price` to anything, since nothing
+    // else ties the two together.
+    let multiplier = 0;
     if (item?.boost) {
       const days = Number(item.boost.days);
-      const multiplier = Number(item.boost.multiplier);
-      const basePrice = Number(item.basePrice);
+      multiplier = Number(item.boost.multiplier);
       if (!Number.isInteger(days) || days < 1 || days > RUSH_MAX_DAYS || multiplier !== rushMultiplier(days)) {
         errors.push(`${prefix}.boost must use 1-4 days and the configured multiplier`);
       }
-      if (!finiteMoney(basePrice) || !nearlyEqual(price, basePrice * (1 + multiplier))) {
-        errors.push(`${prefix}.price must include the configured boost surcharge`);
-      }
+    }
+    const basePrice = Number(item?.basePrice);
+    if (!finiteMoney(basePrice) || !nearlyEqual(price, basePrice * (1 + multiplier))) {
+      errors.push(`${prefix}.price must equal basePrice plus any configured boost surcharge`);
     }
   });
 

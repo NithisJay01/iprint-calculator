@@ -69,7 +69,7 @@ globalThis.fetch = async (url, options = {}) => {
 try {
   const order = {
     orderKey: 'order-queue-1', quoteNo: 'QT-QUEUE-1', customer: 'Queue Customer', phone: '0800000000', total: 100, vat: 7, grandTotal: 107,
-    orderItems: [{ id: 'item-1', name: 'Sticker', quantity: 500, sheets: 20, price: 100, capacityPoints: 4, material: { id: 'material-1', name: 'PP' }, services: [{ id: 'service-1', name: 'Cut' }], deliveryDeadline: '2099-12-31' }]
+    orderItems: [{ id: 'item-1', name: 'Sticker', quantity: 500, sheets: 20, basePrice: 100, price: 100, capacityPoints: 4, material: { id: 'material-1', name: 'PP' }, services: [{ id: 'service-1', name: 'Cut' }], deliveryDeadline: '2099-12-31' }]
   };
   const form = new FormData(); form.append('order', JSON.stringify(order));
   const response = await worker.fetch(new Request('https://worker.test/orders', { method: 'POST', headers: { 'X-API-Key': 'key' }, body: form }), {

@@ -29,6 +29,7 @@ const tests = [
   'worker/flow-settings-test.mjs',
   'worker/order-domain-test.mjs',
   'worker/order-smoke-test.mjs',
+  'worker/plain-item-pricing-test.mjs',
   'worker/public-order-security-test.mjs',
   'worker/customers-and-tracking-security-test.mjs',
   'worker/pricing-draft-test.mjs',
