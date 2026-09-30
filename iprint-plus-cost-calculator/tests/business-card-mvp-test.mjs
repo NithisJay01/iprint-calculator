@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { buildOrderPayload, calculateBusinessCardQuote, findBestLayout } from '../business-card/logic.js';
 import { defaultBusinessCardPackages, newBusinessCardProduct } from '../shared/business-card-product.js';
+import { fallbackSetImage } from '../shared/set-image.js';
 
 const landingPage = readFileSync(new URL('../business-card/index.html', import.meta.url), 'utf8');
 const styles = readFileSync(new URL('../business-card/styles.css', import.meta.url), 'utf8');
@@ -11,6 +12,21 @@ const staffCatalogApp = readFileSync(new URL('../js/staff-catalog.js', import.me
 const mainApp = readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
 for (const content of ['PRODUCT CATALOG', '01 / DIMENSIONS', '02 / PAPERS & MATERIALS', '03 / SPECIAL TECHNIQUES', 'MATERIAL × FINISH SYNERGY', '05 / WORK PROCESS']) {
   assert.match(landingPage, new RegExp(content.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+}
+for (const content of ['อาร์ตด้าน 300 แกรม', 'อาร์ตด้าน 250 แกรม', 'การ์ดขาว 300 แกรม', 'กระดาษคราฟท์ 300 แกรม', 'PET ขาวด้าน 275 micron', 'PET ขุ่นไข (Translucent) 250 micron']) {
+  assert.ok(landingPage.includes(content), `primary material is shown: ${content}`);
+}
+for (const content of ['Fine Linen', 'Orange Peel', 'Pine Bark', 'Canvas', 'Eggshell', 'Elegant Dot']) {
+  assert.ok(landingPage.includes(content), `secondary textured stock is listed: ${content}`);
+}
+for (const asset of [
+  'size-thailand.png', 'size-us-canada.png', 'size-japan-meishi.png', 'size-global.png', 'size-credit-card.png',
+  'material-art-matte-300.png', 'material-art-matte-250.png', 'material-white-card-300.png', 'material-kraft-300.png', 'material-pet-white-275.png', 'material-pet-translucent-250.png',
+  'technique-foil.png', 'technique-emboss.png', 'technique-deboss.png', 'technique-spot-uv.png',
+  'combo-art-foil.png', 'combo-texture-emboss.png', 'combo-texture-deboss.png', 'combo-matte-spot-uv.png', 'combo-pet-metallic.png'
+]) {
+  assert.ok(landingPage.includes(`assets/${asset}`), `landing page uses ${asset}`);
+  assert.ok(existsSync(new URL(`../business-card/assets/${asset}`, import.meta.url)), `asset exists: ${asset}`);
 }
 assert.match(landingPage, /id="order" class="builder"/);
 assert.match(landingPage, /href="\.\.\/catalog\/"/);
@@ -27,6 +43,10 @@ assert.match(readFileSync(new URL('../business-card/app.js', import.meta.url), '
 assert.match(readFileSync(new URL('../business-card/app.js', import.meta.url), 'utf8'), /p\.description \|\| p\.tagline/);
 const defaultSets = defaultBusinessCardPackages();
 assert.deepEqual(defaultSets.map(item => item.id), ['essential', 'corporate', 'signature']);
+assert.deepEqual(defaultSets.map(item => item.image), ['assets/set-100-cards.png', 'assets/set-500-cards.png', 'assets/set-1000-cards.png']);
+assert.equal(fallbackSetImage(100), 'assets/set-100-cards.png');
+assert.equal(fallbackSetImage(500), 'assets/set-500-cards.png');
+assert.equal(fallbackSetImage(1000), 'assets/set-1000-cards.png');
 const configuredBusinessCard = newBusinessCardProduct();
 assert.equal(configuredBusinessCard.mode, 'packages');
 assert.equal(configuredBusinessCard.packages.length, 3);

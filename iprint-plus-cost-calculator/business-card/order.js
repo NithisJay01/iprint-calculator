@@ -3,7 +3,7 @@ import { loadPricing, loadCatalog } from '../shared/pricing-client.js';
 import { includedIdsFor } from '../shared/product-pricing.js';
 import { addCartItem, updateCartItem, getCartItem, cartCount, CART_MAX_ITEMS } from '../shared/cart.js';
 import { money, esc } from '../shared/format.js';
-import { setImageUrl, galleryUrls } from '../shared/set-image.js';
+import { fallbackSetImage, setImageUrl, galleryUrls } from '../shared/set-image.js';
 import { optionPrice, buildPriceBreakdown, fallbackPricingModel } from './breakdown.js';
 import {
   findProduct, resolveSets, quantityChoices, defaultSelection, selectionFromItem, quoteSelection,
@@ -93,6 +93,7 @@ function recalc() {
 
 // One image-only carousel: cover followed by the set's sample images.
 const gallery = { urls: [], index: 0 };
+let galleryFallback = 'assets/set-500-cards.png';
 function syncHero(index) {
   gallery.index = Math.max(0, Math.min(index, gallery.urls.length - 1));
   $('heroDots').querySelectorAll('button').forEach((dot, i) => dot.setAttribute('aria-current', String(i === gallery.index)));
@@ -103,11 +104,12 @@ function moveHero(index) {
   const next = (index + gallery.urls.length) % gallery.urls.length;
   $('galleryStrip').scrollTo({ left: next * $('galleryStrip').clientWidth, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
 }
-function renderGallery(urls) {
-  gallery.urls = urls.length ? urls : ['assets/hero.png'];
+function renderGallery(urls, fallback = galleryFallback) {
+  galleryFallback = fallback;
+  gallery.urls = urls.length ? urls : [galleryFallback];
   $('galleryStrip').innerHTML = gallery.urls.map((url, index) => `<button type="button" class="hero-slide" data-gallery="${index}" aria-label="ขยายภาพตัวอย่าง ${index + 1}"><img src="${esc(url)}" alt="ตัวอย่างนามบัตร ${index + 1}" loading="${index ? 'lazy' : 'eager'}" referrerpolicy="no-referrer" data-url="${esc(url)}"></button>`).join('');
   $('galleryStrip').querySelectorAll('img').forEach(image => image.addEventListener('error', () => {
-    if (image.dataset.url !== 'assets/hero.png') renderGallery(gallery.urls.filter(url => url !== image.dataset.url));
+    if (image.dataset.url !== galleryFallback) renderGallery(gallery.urls.filter(url => url !== image.dataset.url));
   }, { once: true }));
   $('heroDots').innerHTML = gallery.urls.map((_, index) => `<button type="button" data-slide="${index}" aria-label="ไปภาพที่ ${index + 1}"></button>`).join('');
   $('heroDots').hidden = $('heroPrev').hidden = $('heroNext').hidden = gallery.urls.length < 2;
@@ -153,7 +155,8 @@ function renderChoices() {
   const { product, pack } = state;
   $('productName').textContent = `นามบัตร ${pack.name}`;
   $('productTagline').textContent = setDescription(pack) || 'เซตพร้อมสั่งที่ Admin จัดไว้';
-  renderGallery([...new Set([setImageUrl(pack.image), ...galleryUrls(pack.gallery)].filter(Boolean))]);
+  const fallback = fallbackSetImage(pack.quantity);
+  renderGallery([...new Set([setImageUrl(pack.image), ...galleryUrls(pack.gallery)].filter(Boolean))], fallback);
   const bullets = setBullets({ product, pack, catalog: state.catalog });
   $('specBlock').hidden = !bullets.length;
   $('specList').innerHTML = bullets.map(text => `<li>${esc(text)}</li>`).join('');

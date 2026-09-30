@@ -118,6 +118,13 @@ a.button.is-inquiry { text-decoration: none; }
 .material-grid .natural em, .material-grid .natural strong { color: var(--green); }
 .material-grid .special em, .material-grid .special strong { color: #7c59d6; }
 .material-grid strong { display: block; margin-top: 18px; padding-top: 15px; border-top: 1px solid var(--line); font-size: 12px; line-height: 1.5; }
+.primary-material-grid article { display: flex; flex-direction: column; }
+.primary-material-grid p { flex: 1; }
+.secondary-materials { max-width: 1280px; margin: 24px auto 0; padding: 18px 22px; display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(260px, .75fr); gap: 18px; align-items: center; border: 1px solid var(--line); border-radius: 15px; background: rgba(255,255,255,.72); }
+.secondary-materials > span { padding: 7px 11px; border-radius: 999px; background: var(--surface-blue); color: var(--blue); font: 800 10px Sora, sans-serif; letter-spacing: .8px; white-space: nowrap; }
+.secondary-materials h3 { margin: 0 0 3px; font: 700 16px Sora, sans-serif; }
+.secondary-materials p, .secondary-materials small { margin: 0; color: var(--muted); line-height: 1.55; }
+.secondary-materials small { font-size: 11px; }
 
 .technique-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .technique-cards article { display: flex; flex-direction: column; }
@@ -278,6 +285,7 @@ footer small { flex-basis: 100%; margin-top: 8px; padding-top: 20px; border-top:
   .section-head.split { display: block; }
   .section-head.split > p { margin-top: 15px; }
   .info-grid, .feature-grid, .package-grid, .technique-grid, .process-grid, .specs-quote, .choice-grid, .choice-grid.compact { grid-template-columns: 1fr; }
+  .secondary-materials { grid-template-columns: 1fr; gap: 10px; }
   .catalog-toolbar { align-items: flex-start; flex-direction: column; }
   .combo-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .combo-grid img { height: 165px; }

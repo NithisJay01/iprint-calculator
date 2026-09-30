@@ -4,7 +4,8 @@
 export const BUILT_IN_SET_IMAGES = Object.freeze([
   'assets/hero.png', 'assets/material-professional.png', 'assets/material-textured.png', 'assets/material-special.png',
   'assets/technique.png', 'assets/material-art.jpeg', 'assets/material-natural.png', 'assets/material-pet.png',
-  'assets/size-th.png', 'assets/size-us.png', 'assets/size-jp.png'
+  'assets/size-th.png', 'assets/size-us.png', 'assets/size-jp.png',
+  'assets/set-100-cards.png', 'assets/set-500-cards.png', 'assets/set-1000-cards.png'
 ]);
 
 const REMOTE_IMAGE = /^https:\/\/[^\s"'<>\\]{4,480}$/i;
@@ -18,6 +19,14 @@ export const isValidSetImage = value => {
 export const setImageUrl = value => {
   const image = String(value ?? '').trim();
   return image && isValidSetImage(image) ? image : '';
+};
+
+// When a set has no chosen image, match the visual stack to its starting quantity.
+export const fallbackSetImage = quantity => {
+  const count = Number(quantity) || 0;
+  if (count <= 100) return 'assets/set-100-cards.png';
+  if (count <= 500) return 'assets/set-500-cards.png';
+  return 'assets/set-1000-cards.png';
 };
 
 // Built-in pictures are relative to business-card/; `base` is the path from the current page to that folder.
