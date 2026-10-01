@@ -31,6 +31,8 @@ const tests = [
   'worker/order-smoke-test.mjs',
   'worker/plain-item-pricing-test.mjs',
   'worker/public-order-security-test.mjs',
+  'worker/rate-limit-test.mjs',
+  'worker/public-order-rate-limit-test.mjs',
   'worker/customers-and-tracking-security-test.mjs',
   'worker/pricing-draft-test.mjs',
   'worker/authorization-matrix-test.mjs',

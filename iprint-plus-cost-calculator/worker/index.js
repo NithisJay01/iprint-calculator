@@ -15,6 +15,7 @@ import { handleCreateBriefTicket, handleDraftBrief, handleLineWebhook, handleLis
 import { handleGetMedia, handleUploadImage } from './routes/media.js';
 import { handlePrintRequest } from './routes/print-requests.js';
 import { handleUploadOriginal, handleListOriginals, handleGetOriginal, handleDeleteOriginal } from './routes/originals.js';
+import { checkRateLimit, rateLimitKeyForIp } from './services/rate-limit.js';
 
 export default {
   async fetch(request, env) {
@@ -1308,6 +1309,22 @@ export default {
               code: "PUBLIC_ORDER_DISABLED",
               error: "Public ordering is not enabled"
             }, 503);
+          }
+          // Turnstile only proves a human/solver ran once; it does not cap how often. Check before
+          // reading the (potentially large, file-bearing) request body.
+          const rateLimit = await checkRateLimit({
+            kv: env.RATE_LIMIT_KV,
+            key: rateLimitKeyForIp("public-orders", request),
+            max: Number(env.PUBLIC_ORDER_RATE_LIMIT_MAX) || 5,
+            windowSeconds: Number(env.PUBLIC_ORDER_RATE_LIMIT_WINDOW_SECONDS) || 60
+          });
+          if (!rateLimit.allowed) {
+            return json({
+              success: false,
+              code: "RATE_LIMITED",
+              error: "Too many orders from this connection. Please wait a moment and try again.",
+              retryAfter: rateLimit.retryAfter
+            }, 429);
           }
         } else {
           const authError = requireAuth(request);

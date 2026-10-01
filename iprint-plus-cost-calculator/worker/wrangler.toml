@@ -44,3 +44,11 @@ binding = "AI"
 [[r2_buckets]]
 binding = "MEDIA"
 bucket_name = "iprint-media"
+
+# ---- Public order rate limiting ----
+# Fixed-window request counter per client IP for POST /public/orders, to blunt spam/bot abuse
+# (Turnstile only proves "a human/solver ran this once"; it doesn't limit how often).
+# Tunable via vars: PUBLIC_ORDER_RATE_LIMIT_MAX (default 5), PUBLIC_ORDER_RATE_LIMIT_WINDOW_SECONDS (default 60).
+[[kv_namespaces]]
+binding = "RATE_LIMIT_KV"
+id = "4eed4bbf78074d27b890f7802c953244"
