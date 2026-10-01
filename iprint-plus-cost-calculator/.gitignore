@@ -8,3 +8,8 @@ worker/.env.*
 !worker/.dev.vars.example
 
 node_modules/
+
+# wrangler's local cache/state - can hold account id/email (wrangler-account.json) and is
+# machine-specific, so it should never be committed. Matches both .wrangler/ here and
+# worker/.wrangler/.
+.wrangler/
