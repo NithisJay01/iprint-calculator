@@ -63,7 +63,7 @@ export async function handlePrintRequest({ request, env, json, notionHeaders, fe
   for (const field of form.keys()) if (!allowedFields.has(field) || form.getAll(field).length !== 1) return json({ error: 'ไฟล์แนบไม่ตรงกับด้านที่ระบุ' }, 400);
   for (const entry of descriptors) {
     const file = form.get(entry.field);
-    if (!file || typeof file.arrayBuffer !== 'function' || file.size < 8 || file.size > MAX_ARTWORK_BYTES) return json({ error: `กรุณาแนบ ${entry.kind.toUpperCase()} ${entry.side === 'back' ? 'ด้านหลัง' : 'ด้านหน้า'} ไม่เกิน 10 MB` }, 400);
+    if (!file || typeof file.arrayBuffer !== 'function' || file.size < 8 || file.size > MAX_ARTWORK_BYTES) return json({ error: `กรุณาแนบ ${entry.kind.toUpperCase()} ${entry.side === 'back' ? 'ด้านหลัง' : 'ด้านหน้า'} ไม่เกิน 4 MB` }, 400);
     if (entry.kind === 'pdf') {
       if (await file.slice(0, 5).text() !== '%PDF-') return json({ error: 'ไฟล์แนบต้องเป็น PDF' }, 415);
     } else {

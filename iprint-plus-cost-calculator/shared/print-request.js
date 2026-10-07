@@ -2,7 +2,7 @@ import { paperMaterials, coatings, finishes, SHAPE_KINDS } from '../material-pre
 
 export const LINE_OA_ID = '@683amlxt'; // Shop-provided LINE OA ID.
 export const LINE_ADD_URL = 'https://lin.ee/q39R98w'; // Shop-provided add-friend URL; works on desktop and mobile.
-export const MAX_ARTWORK_BYTES = 10 * 1024 * 1024;
+export const MAX_ARTWORK_BYTES = 4 * 1024 * 1024;
 // Original artwork bigger than MAX_ARTWORK_BYTES is sent apart from the request (worker/routes/originals.js) and kept in R2
 // until the shop copies it to its own computer. The Worker accepts at most 100 MB in one request.
 export const MAX_ORIGINAL_BYTES = 90 * 1024 * 1024;

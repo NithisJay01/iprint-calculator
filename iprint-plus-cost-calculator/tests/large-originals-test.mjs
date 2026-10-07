@@ -13,7 +13,7 @@ assert.equal(RASTER_MAX_BYTES, MAX_ORIGINAL_BYTES, 'a picture up to 90 MB can be
 // ---------- which files are "large" ----------
 const small = { kind: 'raster', file: fileOf('small.png', 2 * MB), info: { type: 'png', width: 100, height: 100 } };
 const big = { kind: 'raster', file: fileOf('big.png', 30 * MB), info: { type: 'png', width: 9000, height: 6000 } };
-const pdf = { kind: 'raster', file: fileOf('page1.png', 4 * MB), original: fileOf('poster.pdf', 50 * MB), info: { type: 'png', width: 3000, height: 2000 } };
+const pdf = { kind: 'raster', file: fileOf('page1.png', 2 * MB), original: fileOf('poster.pdf', 50 * MB), info: { type: 'png', width: 3000, height: 2000 } };
 assert.deepEqual(largeOriginals({ art: small }), [], 'a small file goes in the request as before');
 assert.deepEqual(largeOriginals({ art: big }).map(i => [i.slot, i.file.name]), [['front', 'big.png']]);
 assert.deepEqual(largeOriginals({ art: pdf }).map(i => [i.slot, i.file.name]), [['front', 'poster.pdf']], 'a PDF is judged (and sent) as the PDF, not its picture');
@@ -23,7 +23,7 @@ assert.equal(originalOf(null), null);
 assert.deepEqual(largeOriginals({ art: big, backArt: pdf }).map(i => i.slot), ['front', 'back']);
 assert.deepEqual(largeOriginals({ art: small, backArt: big }).map(i => i.slot), ['back']);
 assert.deepEqual(largeOriginals({ art: big, backArt: pdf }, false).map(i => i.slot), ['front'], 'no back side: nothing for the back');
-assert.deepEqual(largeOriginals({ art: fileOf('x', MAX_ARTWORK_BYTES) && { file: fileOf('x.png', MAX_ARTWORK_BYTES) } }), [], 'exactly 10 MB is still a normal file');
+assert.deepEqual(largeOriginals({ art: fileOf('x', MAX_ARTWORK_BYTES) && { file: fileOf('x.png', MAX_ARTWORK_BYTES) } }), [], 'exactly 4 MB is still a normal file');
 assert.equal(largeOriginals({ mask: big }).length, 0, 'the special-technique shape is never sent as an original');
 assert.deepEqual(announceOriginals(largeOriginals({ art: pdf })), [{ slot: 'front', name: 'poster.pdf', size: 50 * MB }]);
 
