@@ -5,7 +5,10 @@ export const BUILT_IN_SET_IMAGES = Object.freeze([
   'assets/hero.png', 'assets/material-professional.png', 'assets/material-textured.png', 'assets/material-special.png',
   'assets/technique.png', 'assets/material-art.jpeg', 'assets/material-natural.png', 'assets/material-pet.png',
   'assets/size-th.png', 'assets/size-us.png', 'assets/size-jp.png',
-  'assets/set-100-cards.png', 'assets/set-500-cards.png', 'assets/set-1000-cards.png'
+  'assets/set-100-cards.png', 'assets/set-500-cards.png', 'assets/set-1000-cards.png',
+  // the cards / postcards page (cards/assets), for the sets of the creator-cards product
+  'cards/assets/dream-postcards.webp', 'cards/assets/character-cards.webp', 'cards/assets/neon-cards.webp',
+  'cards/assets/botanical-cards.webp', 'cards/assets/thank-you-cards.webp', 'cards/assets/creator-hero.webp'
 ]);
 
 const REMOTE_IMAGE = /^https:\/\/[^\s"'<>\\]{4,480}$/i;
@@ -32,6 +35,7 @@ export const fallbackSetImage = quantity => {
 // Built-in pictures are relative to business-card/; `base` is the path from the current page to that folder.
 export const resolveSetImage = (value, base = '') => {
   const image = setImageUrl(value);
+  if (image.startsWith('cards/')) return `${base}../${image}`; // base is the path to business-card/; the cards page is its sibling
   return image.startsWith('assets/') ? `${base}${image}` : image;
 };
 

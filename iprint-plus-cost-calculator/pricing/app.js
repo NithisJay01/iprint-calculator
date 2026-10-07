@@ -1,6 +1,7 @@
 import { newProduct, calculateProductPrice } from '../shared/product-pricing.js';
 import { LOCAL, uploadGalleryImage, loadPricing, savePricing, loadCatalog, storedWriteKey, loadDraft, saveDraft, discardDraft, createCatalogItem, deactivateCatalogItem } from '../shared/pricing-client.js';
 import { newBusinessCardProduct } from '../shared/business-card-product.js';
+import { CREATOR_CARDS_ID, newCreatorCardsProduct } from '../shared/creator-cards-product.js';
 import { setBullets, parseBullets, groupRuleText } from '../business-card/product.js';
 import { BUILT_IN_SET_IMAGES, MAX_GALLERY_IMAGES, fallbackSetImage, isValidSetImage, setImageUrl, resolveSetImage, galleryUrls } from '../shared/set-image.js';
 import { UNIT_OPTIONS, CAPACITY_BASIS_OPTIONS, formatUnit, newCatalogItemPayload, catalogListFor, filterCatalogItems, itemUsage, describeUsage, setGroupItem, removeItemEverywhere, groupSummary, saveStateLabel, toggleOffered, setIncluded, includedIdsOf } from '../shared/set-studio.js';
@@ -58,6 +59,13 @@ function ensureKitchen(product) {
     pack.optionIds = Array.isArray(pack.optionIds) ? pack.optionIds.filter(id => available.has(id)) : [];
     if (!pack.optionIds.length) pack.optionIds = product.optionGroups.flatMap(group => group.itemIds);
   });
+}
+
+// The cards / postcards page (/cards/) takes its sets from the product "creator-cards": offer it until staff publish it.
+function offerCreatorCards() {
+  if (settings.products.some(item => item.id === CREATOR_CARDS_ID)) return false;
+  settings.products.push(newCreatorCardsProduct());
+  return true;
 }
 
 function setStatus(message = '', error = false) {
@@ -592,6 +600,7 @@ $('draftBanner').addEventListener('click', async event => {
     settings = await loadPricing();
     publishedVersion = settings.version || '';
     if (!settings.products.length) settings.products.push(newBusinessCardProduct());
+    if (offerCreatorCards()) dirty();
     draftMeta = null;
     settings.products.forEach(ensureKitchen);
     selectFirstProduct();
@@ -620,8 +629,10 @@ try {
   publishedVersion = settings.version || '';
   await restoreDraft();
   if (!settings.products.length) settings.products.push(newBusinessCardProduct());
+  const seededCards = offerCreatorCards();
   settings.products.forEach(ensureKitchen);
   selectedProductId = settings.products[0].id;
   selectedPackageId = settings.products[0].packages[0].id;
   renderSaveState(); render(); setBusy(false); $('add').disabled = false;
+  if (seededCards) dirty();
 } catch (error) { setStatus(error.message, true); }

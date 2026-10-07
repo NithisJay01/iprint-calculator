@@ -407,7 +407,7 @@ const makeField = (w, h, paint) => {
   const site = new URL('../', import.meta.url);
   // every ?from= value the page understands, with the page its "back" link returns to
   const back = new Map([...app.matchAll(/\['([\w-]+)',\s*\['([^']+)',\s*'[^']+'\]\]/g)].map((m) => [m[1], m[2]]));
-  assert.deepEqual([...back.keys()].sort(), ['business-card', 'catalog', 'home'], 'app.js knows where each entry button came from');
+  assert.deepEqual([...back.keys()].sort(), ['business-card', 'cards', 'catalog', 'home'], 'app.js knows where each entry button came from');
   for (const [key, href] of back) {
     const target = new URL(href.split('#')[0], new URL('material-preview/', site));
     assert.equal(existsSync(new URL('index.html', target)), true, `the "${key}" back link (${href}) leads to a real page`);

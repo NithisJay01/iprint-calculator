@@ -174,7 +174,7 @@ assert.match(studioJs, /data-package-field="image"/);
 assert.match(studioJs, /data-image-preset/);
 assert.match(studioJs, /data-clear-image/);
 assert.match(studioJs, /resolveSetImage\(pack\.image, '\.\.\/business-card\/'\)/, 'the studio preview shows the picture');
-for (const image of BUILT_IN_SET_IMAGES) assert.ok(readFileSync(new URL(`../business-card/${image}`, import.meta.url)).length > 0, `${image} exists in business-card/`);
+for (const image of BUILT_IN_SET_IMAGES) assert.ok(readFileSync(new URL(image.startsWith('cards/') ? `../${image}` : `../business-card/${image}`, import.meta.url)).length > 0, `${image} exists`);
 assert.ok(sharedImage.includes('BUILT_IN_SET_IMAGES'));
 
 // ---------- gallery of sample work (at most 5) ----------

@@ -3,7 +3,7 @@
  * those live in materials.js (what) / studio.js (light) / card.js (how layers combine).
  */
 import * as THREE from './vendor/three/three.module.min.js';
-import { paperMaterials, DEFAULTS, DEFAULT_SHAPE } from './materials.js';
+import { paperMaterials, DEFAULTS, DEFAULT_SHAPE, SIZE_PRESETS } from './materials.js';
 import { buildSpec } from './shape.js';
 import { createStudio, LIGHTING } from './studio.js';
 import { createCard } from './card.js';
@@ -31,6 +31,7 @@ initDesignerInquiry();
 const BACK = new Map([
   ['catalog', ['../catalog/', 'Catalog']],
   ['business-card', ['../business-card/#top', 'นามบัตร']],
+  ['cards', ['../cards/', 'การ์ดและโปสการ์ด']],
   ['home', ['../', 'หน้าแรก']],
 ]);
 {
@@ -41,6 +42,19 @@ const BACK = new Map([
     back.textContent = `‹ ${label}`;
     back.setAttribute('aria-label', `กลับไป${label}`);
   }
+}
+
+// The cards page opens the same preview for art cards / postcards: ?from=cards&size=<preset id> (a size that is not a preset is ignored).
+const FOR_CARDS = params.get('from') === 'cards';
+const START_PRESET = SIZE_PRESETS.find((p) => p.id === params.get('size'));
+if (FOR_CARDS) {
+  document.title = 'iPrint — ดูตัวอย่างการ์ดและโปสการ์ด 3 มิติ';
+  $('#stage')?.setAttribute('aria-label', 'ตัวอย่างการ์ด 3 มิติ');
+  const set = (selector, text) => { const node = $(selector); if (node) node.textContent = text; };
+  set('#requestPrint', 'สั่งพิมพ์การ์ด / โปสการ์ด →');
+  set('#requestTitle', 'สั่งพิมพ์การ์ดของคุณ');
+  const job = $('#exportJobName');
+  if (job) job.value = 'Cards';
 }
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -430,6 +444,7 @@ async function boot() {
   }
   booted = true;
   setBusy(false);
+  if (START_PRESET) layers.setShape({ width: START_PRESET.w, height: START_PRESET.h }).catch((err) => console.warn('start size failed', err));
   panel.render();
   requestRender();
   requestAnimationFrame(frame);

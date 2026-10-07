@@ -28,6 +28,10 @@ export const SIZE_PRESETS = [
   { id: 'us', label: 'อเมริกา 8.9 × 5.1 cm', w: 89, h: 51 },
   { id: 'jp', label: 'ญี่ปุ่น 9.1 × 5.5 cm', w: 91, h: 55 },
   { id: 'square', label: 'จัตุรัส 5.5 × 5.5 cm', w: 55, h: 55 },
+  // art cards and postcards (the cards page opens the preview with ?size=<id>); the biggest side stays within 150 mm
+  { id: 'trading', label: 'การ์ดสะสม 6.3 × 8.8 cm', w: 63, h: 88 },
+  { id: 'a6', label: 'โปสการ์ด A6 10.5 × 14.8 cm', w: 105, h: 148 },
+  { id: 'postcard', label: 'โปสการ์ด 10 × 15 cm', w: 100, h: 150 },
 ];
 
 /** Bleed is required: at least MIN_BLEED_MM on every side of a preset shape (a die-cut file brings its own frame). */
