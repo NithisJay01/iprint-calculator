@@ -7,6 +7,7 @@ import { paperMaterials, DEFAULTS, DEFAULT_SHAPE, SIZE_PRESETS } from './materia
 import { buildSpec } from './shape.js';
 import { createStudio, LIGHTING } from './studio.js';
 import { createCard } from './card.js';
+import { setSampleImage } from './artwork.js';
 import { TiltInput } from './input.js';
 import { createLayers } from './layers.js';
 import { initPanel } from './panel.js';
@@ -82,6 +83,26 @@ canvas.addEventListener('webglcontextlost', (e) => {
   fatal('การแสดงผล 3D หยุดชั่วคราว — กำลังโหลดใหม่…');
   setTimeout(() => location.reload(), 800);
 });
+
+let SAMPLE_FOIL = false; // the sample picture comes with a foil shape: the gold foil is switched on to show it
+if (FOR_CARDS) {
+  // the sample picture of the cards page replaces the iPrint card until the customer uploads a design
+  try {
+    const image = new Image();
+    image.src = new URL('../cards/assets/sample-art.webp', import.meta.url).href;
+    await image.decode();
+    // the gold parts of the character, as a separate picture: where the foil goes (a missing file only means no foil)
+    const shape = new Image();
+    shape.src = new URL('../cards/assets/sample-foil.png', import.meta.url).href;
+    const foil = await shape.decode().then(() => shape, () => null);
+    setSampleImage(image, foil);
+    SAMPLE_FOIL = Boolean(foil);
+    const demoChip = $('#artDemo');
+    if (demoChip) demoChip.textContent = 'ภาพตัวอย่าง';
+  } catch (err) {
+    console.warn('sample picture not loaded; the iPrint card is shown', err);
+  }
+}
 
 const spec = buildSpec(DEFAULT_SHAPE);
 const studio = createStudio(renderer);
@@ -445,6 +466,7 @@ async function boot() {
   booted = true;
   setBusy(false);
   if (START_PRESET) layers.setShape({ width: START_PRESET.w, height: START_PRESET.h }).catch((err) => console.warn('start size failed', err));
+  if (SAMPLE_FOIL) await panel.selectFinish('goldFoil').catch((err) => console.warn('sample foil failed', err));
   panel.render();
   requestRender();
   requestAnimationFrame(frame);

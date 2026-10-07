@@ -35,6 +35,16 @@ const MARK = {
   ],
 };
 
+// A picture shown instead of the iPrint card while nothing has been uploaded (the cards page opens the preview with one).
+// It is only a sample: it is never exported. `shapeImage` (optional) marks where the finish goes (only its alpha matters);
+// it has the same pixel size as the picture and is placed exactly like it.
+let sampleImage = null;
+let sampleShape = null;
+export function setSampleImage(image, shapeImage = null) {
+  sampleImage = image ?? null;
+  sampleShape = image ? shapeImage : null;
+}
+
 export function createArtwork(W, H, anisotropy = 4) {
   const cache = new Map();
 
@@ -117,6 +127,19 @@ export function createArtwork(W, H, anisotropy = 4) {
   function demoSource() {
     const print = newCanvas();
     const pg = print.getContext('2d');
+    if (sampleImage) {
+      // the picture covers the whole frame (bleed included), centred, never stretched
+      const k = Math.max(W / sampleImage.width, H / sampleImage.height);
+      pg.imageSmoothingQuality = 'high';
+      const place = [(W - sampleImage.width * k) / 2, (H - sampleImage.height * k) / 2, sampleImage.width * k, sampleImage.height * k];
+      pg.drawImage(sampleImage, ...place);
+      let shape = null;
+      if (sampleShape) {
+        shape = newCanvas();
+        shape.getContext('2d').drawImage(sampleShape, ...place);
+      }
+      return { name: 'Sample art', print, shape };
+    }
     pg.translate(ox, oy);
     drawBrand(pg, BRAND_INK, TAGLINE_INK);
     drawInfo(pg, INFO_INK);
