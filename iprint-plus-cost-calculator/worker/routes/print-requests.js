@@ -3,6 +3,14 @@ import { emptyBrief } from '../../shared/brief-model.js';
 import { signUploadToken, originalLabel } from './originals.js';
 import { createBriefTicket } from '../services/brief-ticket.js';
 
+// What Notion answered, kept for the Worker log only (never in the public response): the reason and which file.
+async function uploadError(message, response, entry) {
+  const error = new Error(message);
+  error.status = response.status;
+  error.detail = `${(await response.text().catch(() => '')).slice(0, 300)} [${entry.kind} ${entry.side}, ${entry.file.size} bytes]`;
+  return error;
+}
+
 export function printRequestBrief(value) {
   const brief = emptyBrief();
   brief.customer = value.name.trim();
@@ -31,7 +39,7 @@ export async function handlePrintRequest({ request, env, json, notionHeaders, fe
   }
   const allowed = String(env.CORS_ALLOWED_ORIGINS || 'https://iprint.tchl.online').split(',').map(value => value.trim().replace(/\/$/, ''));
   if (!allowed.includes(request.headers.get('Origin'))) return json({ error: 'Origin not allowed' }, 403);
-  if (Number(request.headers.get('Content-Length')) > MAX_REQUEST_BYTES) return json({ error: 'ไฟล์รวมต้องไม่เกิน 40 MB และไฟล์ละไม่เกิน 10 MB' }, 413);
+  if (Number(request.headers.get('Content-Length')) > MAX_REQUEST_BYTES) return json({ error: 'ไฟล์รวมต้องไม่เกิน 16 MB และไฟล์ละไม่เกิน 4 MB' }, 413);
   // Bound the body even when Content-Length is absent (chunked requests).
   const reader = request.body?.getReader();
   if (!reader) return json({ error: 'Missing request' }, 400);
@@ -40,7 +48,7 @@ export async function handlePrintRequest({ request, env, json, notionHeaders, fe
     const { done, value } = await reader.read();
     if (done) break;
     size += value.byteLength;
-    if (size > MAX_REQUEST_BYTES) { await reader.cancel(); return json({ error: 'ไฟล์รวมต้องไม่เกิน 40 MB และไฟล์ละไม่เกิน 10 MB' }, 413); }
+    if (size > MAX_REQUEST_BYTES) { await reader.cancel(); return json({ error: 'ไฟล์รวมต้องไม่เกิน 16 MB และไฟล์ละไม่เกิน 4 MB' }, 413); }
     chunks.push(value);
   }
   let form, value;
@@ -89,23 +97,24 @@ export async function handlePrintRequest({ request, env, json, notionHeaders, fe
       for (const entry of descriptors) {
         const filename = artworkFilename(value, entry.kind, entry.side);
         const created = await fetchImpl('https://api.notion.com/v1/file_uploads', { method: 'POST', headers: notionHeaders, body: JSON.stringify({ mode: 'single_part', filename, content_type: entry.kind === 'pdf' ? 'application/pdf' : 'image/svg+xml' }) });
-        if (!created.ok) throw new Error('Artwork upload unavailable');
+        if (!created.ok) throw await uploadError('Artwork upload unavailable', created, entry);
         const { id } = await created.json();
         if (!/^[0-9a-f-]{36}$/i.test(id || '')) throw new Error('Invalid upload ID');
         const upload = new FormData(); upload.append('file', entry.file, filename);
         const headers = { ...notionHeaders }; delete headers['Content-Type'];
         const sent = await fetchImpl(`https://api.notion.com/v1/file_uploads/${id}/send`, { method: 'POST', headers, body: upload });
-        if (!sent.ok) throw new Error('Artwork upload failed');
+        if (!sent.ok) throw await uploadError('Artwork upload failed', sent, entry);
         blocks.push({ object: 'block', type: 'file', file: { type: 'file_upload', file_upload: { id }, caption: [{ type: 'text', text: { content: `${entry.kind.toUpperCase()} ${entry.side === 'back' ? 'ด้านหลัง' : 'ด้านหน้า'} — ${filename}` } }] } });
       }
       return blocks;
     } });
-    // Originals over 10 MB come afterwards, one request each, with this ticket (only when R2 is set up).
+    // Originals over 4 MB come afterwards, one request each, with this ticket (only when R2 is set up).
     const originals = Array.isArray(value.originals) && env.MEDIA
       ? { uploadToken: await signUploadToken(env, { ticketId: ticket.id, label: originalLabel(value), files: value.originals.map(({ slot, name, size }) => ({ slot, name, size })) }) }
       : {};
     return json({ success: true, id: ticket.id, deduplicated: ticket.deduplicated, ...originals });
-  } catch {
+  } catch (error) {
+    console.error('print-request failed:', error?.message, error?.status ?? '', String(error?.detail ?? '').slice(0, 400)); // log only
     // No upstream tokens, schema details, or private Notion links in a public response.
     return json({ error: 'บันทึกบรีฟและไฟล์ Artwork ไม่สำเร็จ กรุณาลองใหม่หรือติดต่อร้านพร้อมรหัสคำขอ' }, 502);
   }

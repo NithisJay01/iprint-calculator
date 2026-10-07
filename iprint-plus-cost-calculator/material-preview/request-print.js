@@ -112,7 +112,7 @@ export function initPrintRequest({ card, layers, panel, capturePreviewSheet = as
   let downloadUrls = [], opening = 0;
   let snapshot, settings, catalog, product, packs = [], widget, token = '', submitting = false, saved = false;
   const form = $('printRequestForm'), dialog = $('printRequestDialog');
-  let uploading = false, originalsState = null, successRequest = null; // originals over 10 MB are uploaded after the request is saved
+  let uploading = false, originalsState = null, successRequest = null; // originals over 4 MB are uploaded after the request is saved
   const payload = () => ({ version: 2, jobName: $('requestJobName').value.trim(), materialName: $('requestMaterialName').value.trim(), hasBack: Boolean(snapshot.files.backArtwork), key: snapshot.key, ...(snapshot.large?.length ? { originals: announceOriginals(snapshot.large) } : {}), spec: snapshot.spec, quantity: Number($('requestQuantity').value), name: $('requestName').value.trim(), phone: $('requestPhone').value.trim(), lineId: $('requestLineId').value.trim() });
   function updateDownloads() {
     for (const url of downloadUrls) URL.revokeObjectURL(url);
@@ -198,7 +198,7 @@ export function initPrintRequest({ card, layers, panel, capturePreviewSheet = as
       if (current.large.length) $('requestPdfStatus').textContent = 'ไฟล์ต้นฉบับมีขนาดใหญ่ — ระบบส่งไฟล์ตัวอย่างขนาดย่อไปกับคำขอ และอัปโหลดไฟล์ต้นฉบับแยกต่างหากหลังส่งคำขอ';
       current.exports ||= await buildArtworkBundle(exportFile, current.large.length ? await referenceSources(current.exportSources) : current.exportSources, current.exportOptions);
       if (generation !== opening || !dialog.open) return;
-      if (current.exports.some(file => file.blob.size > MAX_ARTWORK_BYTES)) throw new Error('ไฟล์แต่ละไฟล์ต้องไม่เกิน 10 MB กรุณาลดขนาดภาพต้นฉบับแล้วลองใหม่');
+      if (current.exports.some(file => file.blob.size > MAX_ARTWORK_BYTES)) throw new Error('ไฟล์แต่ละไฟล์ต้องไม่เกิน 4 MB กรุณาลดขนาดภาพต้นฉบับแล้วลองใหม่');
       updateDownloads();
       $('requestPdfStatus').textContent = `เตรียม PDF และ SVG แล้ว ${current.exports.length} ไฟล์ · ${sources.backArt ? 'ด้านหน้าและด้านหลัง' : 'ด้านหน้า'}`;
       $('requestPdfWarnings').textContent = [...new Set(current.exports.flatMap(file => file.plan.checks.filter(check => check.level === 'warn' || check.level === 'note').map(check => `${file.side === 'back' ? 'ด้านหลัง' : 'ด้านหน้า'}: ${check.text}`)))].join(' • ');

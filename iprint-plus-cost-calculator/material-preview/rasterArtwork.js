@@ -8,7 +8,7 @@
 import { readImageSize, containRect, shapeFieldFromRgba } from './shape.js';
 import { MAX_ORIGINAL_BYTES } from '../shared/print-request.js';
 
-// A picture bigger than a request can carry (10 MB) is fine to look at: it is decoded at a capped size, and the original is
+// A picture bigger than a request can carry (4 MB) is fine to look at: it is decoded at a capped size, and the original is
 // uploaded apart from the request (originals.js).
 export const RASTER_MAX_BYTES = MAX_ORIGINAL_BYTES;
 export const RASTER_MAX_PIXELS = 40e6;

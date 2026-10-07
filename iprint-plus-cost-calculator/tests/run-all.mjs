@@ -13,6 +13,7 @@ const tests = [
   'tests/dieline-pdf-test.mjs',
   'tests/pdf-artwork-test.mjs',
   'tests/large-originals-test.mjs',
+  'tests/creator-cards-test.mjs',
   'tests/fetch-originals-test.mjs',
   'tests/showroom-cycle-test.mjs',
   'tests/material-sync-test.mjs',

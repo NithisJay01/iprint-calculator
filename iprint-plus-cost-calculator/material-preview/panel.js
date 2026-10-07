@@ -605,7 +605,7 @@ export function initPanel({ card, layers, stage, setBusy, say, requestRender }) 
     setNotes($('#shapeNotes'), d.shapeNotes);
 
     const own = Boolean(d.artName);
-    $('#artSum').textContent = `${own ? 'การ์ดของคุณ' : 'การ์ด iPrint'}${d.backArtName ? ' · 2 ด้าน' : ''} · ${bounds}`;
+    $('#artSum').textContent = `${own ? 'การ์ดของคุณ' : $('#artDemo').textContent.trim()}${d.backArtName ? ' · 2 ด้าน' : ''} · ${bounds}`;
     // ภาพบน Preview: the chosen source is outlined; "upload" is a solid call to action until there is a file
     $('#artDemo').setAttribute('aria-pressed', String(!own));
     $('#artUpload').setAttribute('aria-pressed', String(own));

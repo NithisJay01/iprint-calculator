@@ -215,9 +215,17 @@ try {
   assert.equal((await call('POST', '/staff/briefs/draft', { body: { conversationId: 'U1' } })).status, 401);
   assert.equal((await call('POST', '/staff/briefs/draft', { body: {}, headers: staff })).status, 400);
   assert.equal((await call('POST', '/staff/briefs/draft', { body: { conversationId: 'nobody' }, headers: staff })).status, 404);
-  response = await call('POST', '/staff/briefs/draft', { body: { conversationId: 'U1' }, headers: staff });
-  assert.equal(response.status, 200, 'missing AI binding returns a manual-review fallback');
-  data = await response.json();
+  // The Worker reads the real clock, the fixture messages are dated NOW: keep the clock there, or the messages fall out of
+  // the recent-messages window as the days pass (this call started to answer 422 once the fixture was old enough).
+  const clock = Date.now;
+  Date.now = () => NOW;
+  try {
+    response = await call('POST', '/staff/briefs/draft', { body: { conversationId: 'U1' }, headers: staff });
+    assert.equal(response.status, 200, 'missing AI binding returns a manual-review fallback');
+    data = await response.json();
+  } finally {
+    Date.now = clock;
+  }
   assert.equal(data.model, 'rule-based-fallback');
   assert.equal(data.brief.fields.product.status, 'missing');
 
