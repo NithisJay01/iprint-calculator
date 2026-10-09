@@ -19,7 +19,7 @@
 
     <section class="step" data-step="1">
       <div class="sheet">
-        <h1>ตะกร้าสินค้าของคุณ <small id="cartHeadingCount"></small></h1>
+        <h1 tabindex="-1">ตะกร้าสินค้าของคุณ <small id="cartHeadingCount"></small></h1>
         <div id="cartList" aria-live="polite"></div>
         <p id="emptyCart" class="empty-cart" hidden>ตะกร้ายังว่างอยู่ เลือกสินค้าที่ต้องการได้จาก Catalog</p>
         <a class="add-more" href="../catalog/"><span aria-hidden="true">＋</span> สั่งสินค้าเพิ่ม</a>
@@ -29,7 +29,7 @@
 
     <section class="step" data-step="2" hidden>
       <div class="sheet">
-        <h1>เลือกวันที่ต้องการรับงาน</h1>
+        <h1 tabindex="-1">เลือกวันที่ต้องการรับงาน</h1>
         <p id="capacitySummary" class="capacity-summary" role="status"></p>
         <label class="rush-toggle" for="rushToggle">
           <span class="rush-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M13.5 2 5 13.5h5.5L9.5 22 19 9.5h-5.7z"/></svg></span>
@@ -47,10 +47,10 @@
 
     <section class="step" data-step="3" hidden>
       <div class="sheet">
-        <h1>ข้อมูลผู้สั่งและการจัดส่ง</h1>
-        <div class="two"><label>ชื่อผู้รับ<input id="customerName" autocomplete="name" maxlength="120" required></label><label>เบอร์โทร<input id="phone" inputmode="tel" autocomplete="tel" maxlength="30" required></label></div>
-        <div class="two"><label>อีเมล <span class="hint">(ไม่บังคับ)</span><input id="email" type="email" autocomplete="email" maxlength="160"></label><label>LINE ID <span class="hint">(ไม่บังคับ)</span><input id="lineId" maxlength="60"></label></div>
-        <label>ที่อยู่ในการจัดส่ง <span id="addressHint" class="hint">(ไม่ต้องกรอกถ้ารับที่หน้าร้าน)</span><textarea id="address" rows="3" autocomplete="street-address" maxlength="500"></textarea></label>
+        <h1 tabindex="-1">ข้อมูลผู้สั่งและการจัดส่ง</h1>
+        <div class="two"><label>ชื่อผู้รับ<input id="customerName" autocomplete="name" maxlength="120" required><small class="field-error" id="customerNameError" hidden></small></label><label>เบอร์โทร<input id="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="30" required placeholder="081-234-5678"><small class="field-error" id="phoneError" hidden></small></label></div>
+        <div class="two"><label>อีเมล <span class="hint">(ไม่บังคับ)</span><input id="email" type="email" autocomplete="email" maxlength="160"><small class="field-error" id="emailError" hidden></small></label><label>LINE ID <span class="hint">(ไม่บังคับ)</span><input id="lineId" maxlength="60"></label></div>
+        <label>ที่อยู่ในการจัดส่ง <span id="addressHint" class="hint">(ไม่ต้องกรอกถ้ารับที่หน้าร้าน)</span><textarea id="address" rows="3" autocomplete="street-address" maxlength="500"></textarea><small class="field-error" id="addressError" hidden></small></label>
       </div>
       <div class="sheet"><h2>วิธีการจัดส่ง</h2><label class="select-row"><input type="radio" name="shipping" value="pickup" checked><span><b>รับสินค้าที่หน้าร้าน</b><small>ไม่มีค่าจัดส่ง</small></span><strong>ฟรี</strong></label><label class="select-row"><input type="radio" name="shipping" value="ems"><span><b>ส่ง EMS ไปรษณีย์</b><small>จัดส่งหลังผลิตเสร็จ ค่าส่งชำระแยกกับทีมงาน</small></span><strong>฿50</strong></label></div>
       <div class="sheet"><h2>วิธีการชำระเงิน</h2><label class="select-row"><input type="radio" name="payment" value="transfer" checked><span><b>Thai QR Payment / โอนผ่านธนาคาร</b><small>ทีมงานจะส่งข้อมูลการโอนให้หลังยืนยันออร์เดอร์</small></span></label></div>
@@ -58,13 +58,14 @@
 
     <section class="step" data-step="4" hidden>
       <div class="sheet">
-        <h1>ตรวจสอบและยืนยันออร์เดอร์</h1>
+        <h1 tabindex="-1">ตรวจสอบและยืนยันออร์เดอร์</h1>
         <div id="reviewList"></div>
         <dl id="reviewInfo" class="review-info"></dl>
       </div>
       <div class="sheet cart-totals" id="reviewTotals"></div>
       <div class="sheet">
-        <label class="check-row"><input id="consent" type="checkbox"><span>ยืนยันว่าข้อมูลและรายการสินค้าถูกต้อง ราคานี้ยังไม่รวมค่าจัดส่ง (ถ้ามี) และทีมงานจะยืนยันยอดก่อนเริ่มผลิต</span></label>
+        <label class="check-row"><input id="consent" type="checkbox" aria-describedby="consentError"><span>ยืนยันว่าข้อมูลและรายการสินค้าถูกต้อง ราคานี้ยังไม่รวมค่าจัดส่ง (ถ้ามี) และทีมงานจะยืนยันยอดก่อนเริ่มผลิต</span></label>
+        <small class="field-error" id="consentError" hidden></small>
         <div id="turnstileBox" class="turnstile-box"></div>
       </div>
       <p class="final-note">การกดยืนยันจะสร้างออร์เดอร์และจองคิวผลิตให้ทันที ทีมงานจะติดต่อกลับเพื่อแจ้งวิธีชำระเงิน</p>

@@ -7,6 +7,8 @@ import { buildCartOrder, checkoutIdentity, clearCheckoutIdentity } from '../shar
 import { submitOrder, rememberOrder } from '../shared/orders-client.js';
 import { LOCAL } from '../shared/pricing-client.js';
 import { lineOrderUrl, supportsLineOrderLaunch } from '../shared/line-order.js';
+import { isThaiPhone, PHONE_HINT } from '../shared/phone.js';
+import { friendlyError } from '../shared/errors.js';
 
 // Cart shared by every catalog product: list of items -> one delivery date for the whole order ->
 // customer, delivery and payment -> review and confirm. Products are priced by their adapters
@@ -187,8 +189,9 @@ function renderFooter() {
   $('checkoutBar').hidden = state.step === 5;
 }
 
-function goto(step) {
+function goto(step, { focusHeading = true } = {}) {
   state.step = step;
+  clearFieldErrors();
   document.querySelectorAll('.step').forEach(section => { section.hidden = Number(section.dataset.step) !== step; });
   $('progress').innerHTML = Array.from({ length: STEPS }, (unused, index) => `<span class="${index + 1 <= step ? 'active' : ''}"></span>`).join('');
   $('stepLabel').textContent = step <= STEPS ? `${step} / ${STEPS}` : '';
@@ -198,7 +201,63 @@ function goto(step) {
   renderFooter();
   setStatus('');
   scrollTo({ top: 0, behavior: 'smooth' });
+  // Keyboard and screen-reader users land on the new step's heading instead of staying on the button.
+  if (focusHeading) document.querySelector(`.step[data-step="${step}"] h1`)?.focus({ preventScroll: true });
 }
+
+// ---------- inline field errors ----------
+const FIELD_IDS = ['customerName', 'phone', 'email', 'address', 'consent'];
+
+// Problems the customer can fix in one field, in the order the fields appear on screen.
+function fieldProblems() {
+  const problems = [];
+  if (state.step === 3) {
+    if (!$('customerName').value.trim()) problems.push({ id: 'customerName', message: 'กรุณากรอกชื่อผู้รับ' });
+    const phone = $('phone').value.trim();
+    if (!phone) problems.push({ id: 'phone', message: 'กรุณากรอกเบอร์โทร' });
+    else if (!isThaiPhone(phone)) problems.push({ id: 'phone', message: `เบอร์โทรไม่ถูกต้อง — ${PHONE_HINT}` });
+    const email = $('email').value.trim();
+    if (email && !EMAIL_PATTERN.test(email)) problems.push({ id: 'email', message: 'รูปแบบอีเมลไม่ถูกต้อง เช่น name@example.com' });
+    if (state.shipping === 'ems' && !$('address').value.trim()) problems.push({ id: 'address', message: 'กรุณากรอกที่อยู่จัดส่งสำหรับ EMS' });
+  }
+  if (state.step === 4 && !$('consent').checked) problems.push({ id: 'consent', message: 'กรุณาติ๊กยืนยันความถูกต้องของข้อมูลก่อนสั่งซื้อ' });
+  return problems;
+}
+
+function setFieldError(id, message = '') {
+  const field = $(id);
+  const slot = $(`${id}Error`);
+  if (!field || !slot) return;
+  slot.textContent = message;
+  slot.hidden = !message;
+  if (message) {
+    field.setAttribute('aria-invalid', 'true');
+    const described = new Set((field.getAttribute('aria-describedby') || '').split(' ').filter(Boolean));
+    described.add(slot.id);
+    field.setAttribute('aria-describedby', [...described].join(' '));
+  } else {
+    field.removeAttribute('aria-invalid');
+  }
+}
+
+function clearFieldErrors() { FIELD_IDS.forEach(id => setFieldError(id)); }
+
+// Shows every problem under its field and moves focus to the first one. Returns true when something was wrong.
+function showFieldProblems() {
+  const problems = fieldProblems();
+  clearFieldErrors();
+  problems.forEach(problem => setFieldError(problem.id, problem.message));
+  if (!problems.length) return false;
+  setStatus(problems.length > 1 ? `กรุณาแก้ไข ${problems.length} ช่องที่แจ้งไว้` : problems[0].message);
+  const first = $(problems[0].id);
+  first?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  first?.focus({ preventScroll: true });
+  return true;
+}
+
+FIELD_IDS.forEach(id => $(id)?.addEventListener(id === 'consent' ? 'change' : 'input', () => {
+  if ($(id).getAttribute('aria-invalid') === 'true') setFieldError(id);
+}));
 
 function validate() {
   if (state.step === 1) {
@@ -206,14 +265,11 @@ function validate() {
     if (state.entries.some(entry => entry.problems.length)) return 'มีรายการที่ต้องแก้ไขหรือลบก่อนสั่งซื้อ';
   }
   if (state.step === 2 && !state.date) return 'กรุณาเลือกวันที่ต้องการรับงาน';
-  if (state.step === 3) {
-    if (!$('customerName').value.trim() || !$('phone').value.trim()) return 'กรุณากรอกชื่อและเบอร์โทร';
-    if (state.shipping === 'ems' && !$('address').value.trim()) return 'กรุณากรอกที่อยู่จัดส่ง';
-    const email = $('email').value.trim();
-    if (email && !EMAIL_PATTERN.test(email)) return 'รูปแบบอีเมลไม่ถูกต้อง';
+  if (state.step === 3 || state.step === 4) {
+    const problems = fieldProblems();
+    if (problems.length) return problems[0].message;
   }
   if (state.step === 4) {
-    if (!$('consent').checked) return 'กรุณาติ๊กยืนยันความถูกต้องของข้อมูลก่อนสั่งซื้อ';
     if (!LOCAL && !turnstileToken()) return 'กรุณาผ่านการตรวจสอบความปลอดภัยก่อนยืนยัน';
     if (Date.now() < state.holdUntil) return 'กรุณารอสักครู่ ระบบกำลังตรวจสอบว่าออร์เดอร์ก่อนหน้าถูกสร้างแล้วหรือยัง แล้วกดยืนยันอีกครั้ง';
   }
@@ -260,7 +316,7 @@ async function loadDates() {
     renderDateChoice();
   } catch (error) {
     summary.className = 'capacity-summary error';
-    summary.innerHTML = `${esc(error.message || 'โหลดกำลังผลิตไม่สำเร็จ')} <button type="button" id="retryDates">ลองอีกครั้ง</button>`;
+    summary.innerHTML = `${esc(friendlyError(error, 'โหลดวันรับงานไม่สำเร็จ กรุณากดลองอีกครั้ง'))} <button type="button" id="retryDates">ลองอีกครั้ง</button>`;
   }
 }
 
@@ -384,6 +440,7 @@ async function handleFailure(error) {
 
 async function confirmOrder() {
   if (state.submitting) return;
+  if (showFieldProblems()) return;
   const problem = validate();
   if (problem) { setStatus(problem); return; }
   state.submitting = true;
@@ -449,6 +506,7 @@ document.querySelectorAll('[name="shipping"]').forEach(radio => radio.addEventLi
 
 $('next').addEventListener('click', () => {
   if (state.step === STEPS) { confirmOrder(); return; }
+  if (showFieldProblems()) return;
   const problem = validate();
   if (problem) { setStatus(problem); return; }
   goto(state.step + 1);
@@ -457,4 +515,4 @@ $('back').addEventListener('click', () => { if (state.step > 1 && !state.submitt
 addEventListener('storage', event => { if (event.key === CART_KEY && state.step === 1) loadCart(); });
 
 await loadCart();
-goto(1);
+goto(1, { focusHeading: false });

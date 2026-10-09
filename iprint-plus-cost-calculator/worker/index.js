@@ -1393,7 +1393,7 @@ export default {
           return json({ success: false, error: "Invalid order JSON" }, 400);
         }
 
-        const orderValidation = validateOrderFoundation(order);
+        const orderValidation = validateOrderFoundation(order, { publicOrder: isPublicOrder });
         if (!orderValidation.success) {
           return json({
             success: false,

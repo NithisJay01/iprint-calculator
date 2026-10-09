@@ -1,4 +1,5 @@
 import { RUSH_MAX_DAYS, rushMultiplier } from "../../shared/rush.js";
+import { isThaiPhone } from "../../shared/phone.js";
 
 export const ORDER_STATUS = Object.freeze({
   NEW: "NEW",
@@ -102,7 +103,8 @@ export function buildTicketJobName({ customer, quoteNo, orderItems } = {}) {
   return `(${customerName})${jobName}-${version}(${ticketSize(primary)})${materialName}(${sheets}s)${extraItems}`;
 }
 
-export function validateOrderFoundation(input) {
+// `publicOrder`: an order from the website (POST /public/orders) must carry a Thai phone number the shop can call.
+export function validateOrderFoundation(input, { publicOrder = false } = {}) {
   const order = input && typeof input === "object" ? input : {};
   const items = Array.isArray(order.orderItems) ? order.orderItems : [];
   const errors = [];
@@ -112,6 +114,7 @@ export function validateOrderFoundation(input) {
   if (!orderKey || orderKey.length > 100) errors.push("orderKey must contain 1-100 characters");
   if (!quoteNo || quoteNo.length > 100) errors.push("quoteNo must contain 1-100 characters");
   if (!items.length || items.length > 20) errors.push("orderItems must contain 1-20 items");
+  if (publicOrder && !isThaiPhone(order.phone)) errors.push("phone must be a Thai phone number (0 followed by 8-9 digits)");
 
   const itemIds = new Set();
   items.forEach((item, index) => {

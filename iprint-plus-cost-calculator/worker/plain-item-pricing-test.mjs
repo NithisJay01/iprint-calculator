@@ -70,7 +70,7 @@ const mockNotion = () => {
 };
 
 const buildOrder = ({ basePrice, price }) => ({
-  orderKey: 'ORD-PLAIN-1', quoteNo: 'QT-PLAIN-1', customer: 'Plain Item Test',
+  orderKey: 'ORD-PLAIN-1', quoteNo: 'QT-PLAIN-1', customer: 'Plain Item Test', phone: '0812345678',
   total: price, vat: 0, grandTotal: price,
   orderItems: [{
     id: 'item-1', name: 'สติกเกอร์ทดสอบ', quantity: 1000, sheets: 50,

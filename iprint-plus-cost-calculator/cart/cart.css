@@ -87,3 +87,9 @@ button.add-more{width:100%;cursor:pointer}
 .rush-summary{margin:6px 0 0;color:#b45309;font-weight:700}
 .delivery-note{margin:8px 0 0;padding:9px 12px;border-radius:10px;background:var(--soft);color:var(--blue);font-size:13px;font-weight:700}
 .cart-totals dl>div.rush dd{color:#b45309}
+/* Inline field errors (contact step and consent) */
+.field-error{display:block;margin-top:6px;color:#b42318;font-size:13px;font-weight:700;line-height:1.4}
+.field-error[hidden]{display:none}
+[aria-invalid="true"]{border-color:#d92d20!important;box-shadow:0 0 0 3px rgba(217,45,32,.15)}
+.step h1:focus{outline:none}
+.step h1:focus-visible{outline:3px solid #0072d6;outline-offset:4px;border-radius:6px}
