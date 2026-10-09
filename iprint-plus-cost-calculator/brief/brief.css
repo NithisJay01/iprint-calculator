@@ -1,4 +1,4 @@
-:root{--page:#edf6ff;--card:#fff;--ink:#101820;--muted:#5b7085;--line:#d8e6f2;--blue:#0072d6;--blue-text:#005bb0;--blue-bright:#0a8cff;--blue-hover:#005bb0;--soft:#e5f3ff;
+:root{--page:#edf6ff;--card:#fff;--ink:var(--ip-ink);--muted:var(--ip-muted);--line:var(--ip-line);--blue:var(--ip-blue);--blue-text:var(--ip-blue-text);--blue-bright:var(--ip-blue-bright);--blue-hover:var(--ip-blue-hover);--soft:#e5f3ff;
   --ok:#0d7a57;--ok-bg:#e3f6ee;--warn:#8a5a00;--warn-bg:#fff3d6;--bad:#b3312f;--bad-bg:#fdeaea}
 *{box-sizing:border-box}
 body{margin:0;background:var(--page);color:var(--ink);font-family:Inter,"Noto Sans Thai",sans-serif;line-height:1.5}

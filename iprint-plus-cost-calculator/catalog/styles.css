@@ -1,10 +1,10 @@
 :root {
-  --blue: #0072d6;--blue-text:#005bb0;--blue-bright:#0a8cff;--blue-hover:#005bb0;
-  --blue-dark: #005bb0;
+  --blue: var(--ip-blue);--blue-text:var(--ip-blue-text);--blue-bright:var(--ip-blue-bright);--blue-hover:var(--ip-blue-hover);
+  --blue-dark: var(--ip-blue-hover);
   --surface: #eef6ff;
-  --ink: #080808;
-  --muted: #555;
-  --line: #e7edf3;
+  --ink: var(--ip-ink);
+  --muted: var(--ip-muted);
+  --line: var(--ip-line);
   --white: #fff;
   font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
   color: var(--ink);
@@ -284,3 +284,5 @@ footer { padding-bottom: calc(52px + 24px + 20px); }
   footer { padding-bottom: calc(48px + 16px + 20px); }
   .contact-fab { bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
 }
+/* On the dark hero photo the label needs a light blue to stay readable. */
+.catalog-hero-content > span { color: #7cc3ff; }

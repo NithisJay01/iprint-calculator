@@ -3,11 +3,11 @@
   --surface: #fff;
   --surface-soft: #f7fbff;
   --surface-blue: #e8f4ff;
-  --ink: #101820;
-  --muted: #5d6f80;
-  --line: #d9e6f2;
-  --blue: #0072d6;--blue-text:#005bb0;--blue-bright:#0a8cff;--blue-hover:#005bb0;
-  --blue-dark: #005bb0;
+  --ink: var(--ip-ink);
+  --muted: var(--ip-muted);
+  --line: var(--ip-line);
+  --blue: var(--ip-blue);--blue-text:var(--ip-blue-text);--blue-bright:var(--ip-blue-bright);--blue-hover:var(--ip-blue-hover);
+  --blue-dark: var(--ip-blue-hover);
   --blue-soft: #dff0ff;
   --green: #12a879;
   --danger: #d64545;

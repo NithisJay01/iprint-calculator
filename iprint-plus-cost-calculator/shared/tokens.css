@@ -1,0 +1,51 @@
+/* iPrint design tokens — the one place for brand colours, radii, spacing and the type scale.
+   Every page loads this file first; each page stylesheet points its own --blue / --ink / --muted / --line
+   variables at these tokens. See DESIGN.md for when to use which. */
+:root {
+  /* Brand blue */
+  --ip-blue: #0072d6;          /* buttons, links, focus rings — 4.9:1 on white */
+  --ip-blue-hover: #005bb0;    /* hover / pressed */
+  --ip-blue-text: #005bb0;     /* blue text on light-blue panels — keeps AA (4.5:1) on tints */
+  --ip-blue-bright: #0a8cff;   /* decoration only: illustrations, glows, large shapes — never body text */
+  --ip-blue-soft: #e6f2ff;     /* tinted panels, selected states */
+
+  /* Neutrals */
+  --ip-ink: #101820;           /* headings and body text */
+  --ip-muted: #5d6f80;         /* secondary text — 5.1:1 on white */
+  --ip-line: #d9e6f2;          /* borders and dividers */
+  --ip-page: #eef6ff;          /* page background */
+  --ip-surface: #ffffff;       /* cards and sheets */
+
+  /* Status */
+  --ip-danger: #b42318;        /* error text */
+  --ip-danger-line: #d92d20;   /* error borders */
+  --ip-danger-soft: #fff4f4;   /* error panels */
+  --ip-success: #12a879;       /* success accents (pair with text, not as text on white) */
+  --ip-line-green: #06c755;    /* LINE brand button */
+
+  /* Radius */
+  --ip-radius-sm: 8px;         /* inputs, chips */
+  --ip-radius-md: 12px;        /* buttons, small cards */
+  --ip-radius-lg: 18px;        /* cards, sheets */
+  --ip-radius-pill: 999px;
+
+  /* Spacing (4px grid) */
+  --ip-space-1: 4px;
+  --ip-space-2: 8px;
+  --ip-space-3: 12px;
+  --ip-space-4: 16px;
+  --ip-space-5: 24px;
+  --ip-space-6: 32px;
+  --ip-space-7: 48px;
+
+  /* Type scale — nothing below 12px */
+  --ip-text-xs: 12px;          /* labels, captions, eyebrows */
+  --ip-text-sm: 13px;          /* secondary text */
+  --ip-text-md: 15px;          /* body */
+  --ip-text-lg: 18px;          /* lead text, card titles */
+  --ip-text-xl: 24px;          /* section headings */
+  --ip-text-2xl: 32px;         /* page headings */
+
+  /* Touch */
+  --ip-tap: 44px;              /* minimum touch target */
+}

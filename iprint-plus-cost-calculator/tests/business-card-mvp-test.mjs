@@ -32,9 +32,12 @@ assert.match(landingPage, /id="order" class="builder"/);
 assert.match(landingPage, /href="\.\.\/catalog\/"/);
 assert.match(landingPage, /class="hero-back"[^>]+href="\.\.\/catalog\/"/);
 assert.match(styles, /--page:\s*#eef6ff/);
-// Text and button blue meets WCAG AA on white (#0072d6); the brighter #0a8cff stays for decoration only.
-assert.match(styles, /--blue:\s*#0072d6/);
-assert.match(styles, /--blue-bright:\s*#0a8cff/);
+// The brand blue comes from shared/tokens.css: #0072d6 meets WCAG AA on white; #0a8cff stays for decoration only.
+assert.match(styles, /--blue:\s*var\(--ip-blue\)/);
+assert.match(styles, /--blue-bright:\s*var\(--ip-blue-bright\)/);
+const tokens = readFileSync(new URL('../shared/tokens.css', import.meta.url), 'utf8');
+assert.match(tokens, /--ip-blue:\s*#0072d6/);
+assert.match(tokens, /--ip-blue-bright:\s*#0a8cff/);
 assert.match(styles, /color-scheme:\s*light/);
 assert.match(styles, /@media \(max-width:\s*760px\)/);
 assert.match(styles, /\.catalog-grid/);

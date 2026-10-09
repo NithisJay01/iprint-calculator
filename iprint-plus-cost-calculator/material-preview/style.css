@@ -3,8 +3,8 @@
 :root {
   --bg: #ecebe7;
   --panel: #fbfaf8;
-  --ink: #1e2026;
-  --muted: #6d707a;
+  --ink: var(--ip-ink);
+  --muted: var(--ip-muted);
   --line: rgba(20, 22, 28, 0.1);
   --chip: #ffffff;
   --chip-on: #1e2026;

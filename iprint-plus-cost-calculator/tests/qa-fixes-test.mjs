@@ -110,7 +110,7 @@ assert.ok(homeApp.includes('sheet.inert=true') && homeApp.includes('sheet.inert=
 // Group 7: readable blue, 12px minimum text and 44px touch targets, mobile section nav, no stale Quick Brief errors.
 const css = name => readFileSync(new URL(`../${name}`, import.meta.url), 'utf8');
 for (const name of ['css/app.css', 'catalog/styles.css', 'business-card/styles.css', 'business-card/order.css', 'pricing/styles.css', 'cards/styles.css', 'brief/brief.css']) {
-  assert.match(css(name), /--blue:\s*#0072d6/i, `${name}: text/button blue is #0072d6`);
+  assert.match(css(name), /--blue:\s*var\(--ip-blue\)/, `${name}: text/button blue comes from the tokens`);
   assert.ok(!/(^|[;{\s])color:\s*#0a8cff/im.test(css(name)), `${name}: no text in the bright decorative blue`);
 }
 for (const name of ['material-preview/style.css', 'cards/styles.css']) {
@@ -121,5 +121,20 @@ for (const name of ['material-preview/style.css', 'cards/styles.css']) {
 assert.match(css('business-card/styles.css'), /\.nav nav \{ display: flex; order: 3;[^}]*overflow-x: auto/, 'business-card section links scroll on phones');
 assert.match(css('catalog/styles.css'), /footer \{ padding-bottom: calc\(/, 'the LINE button does not cover the catalog footer');
 assert.ok(readFileSync(new URL('../js/flow.js', import.meta.url), 'utf8').includes('clearQuickBriefError'), 'Quick Brief errors clear on input');
+
+// Group 8: shared design tokens, loaded first on every page, and the page variables point at them.
+const tokensCss = css('shared/tokens.css');
+for (const [token, value] of [['--ip-blue', '#0072d6'], ['--ip-blue-hover', '#005bb0'], ['--ip-blue-text', '#005bb0'], ['--ip-blue-bright', '#0a8cff'], ['--ip-ink', '#101820'], ['--ip-muted', '#5d6f80'], ['--ip-line', '#d9e6f2'], ['--ip-text-xs', '12px'], ['--ip-tap', '44px'], ['--ip-radius-md', '12px'], ['--ip-space-4', '16px']]) {
+  assert.match(tokensCss, new RegExp(`${token}:\\s*${value};`), `${token} is ${value}`);
+}
+for (const name of [...publicPages, 'brief/index.html', 'pricing/index.html']) {
+  const html = pageHtml(name);
+  const links = [...html.matchAll(/<link rel="stylesheet" href="([^"]+)">/g)].map(match => match[1]);
+  assert.ok(links.length && /shared\/tokens\.css/.test(links[0]), `${name} loads tokens.css first`);
+}
+for (const name of ['css/app.css', 'catalog/styles.css', 'business-card/styles.css', 'business-card/order.css', 'pricing/styles.css', 'cards/styles.css', 'brief/brief.css']) {
+  for (const variable of ['ink', 'line']) assert.match(css(name), new RegExp(`--${variable}:\\s*var\\(--ip-${variable}\\)`), `${name}: --${variable} uses the token`);
+}
+assert.ok(existsSync(new URL('../DESIGN.md', import.meta.url)), 'DESIGN.md documents the tokens');
 
 console.log('QA fixes test passed');
