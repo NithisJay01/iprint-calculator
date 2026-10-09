@@ -3,6 +3,7 @@ import { loadPricing, loadCatalog } from '../shared/pricing-client.js';
 import { includedIdsFor } from '../shared/product-pricing.js';
 import { addCartItem, updateCartItem, getCartItem, cartCount, CART_MAX_ITEMS } from '../shared/cart.js';
 import { money, esc } from '../shared/format.js';
+import { friendlyError } from '../shared/errors.js';
 import { fallbackSetImage, setImageUrl, galleryUrls } from '../shared/set-image.js';
 import { optionPrice, buildPriceBreakdown, fallbackPricingModel } from './breakdown.js';
 import {
@@ -87,8 +88,23 @@ function recalc() {
   } catch (error) {
     state.quote = null;
     $('next').disabled = true;
-    setStatus(error.message);
+    setStatus(friendlyError(error, 'คำนวณราคาไม่สำเร็จ กรุณาเลือกตัวเลือกใหม่อีกครั้ง'));
   }
+}
+
+// Loading: the add-to-cart button stays disabled until the set and its price are known.
+function setLoading(loading) {
+  document.body.classList.toggle('is-loading', loading);
+  document.body.setAttribute('aria-busy', String(loading));
+  if (loading) $('next').disabled = true;
+}
+
+function showLoadError(error) {
+  $('loadErrorText').textContent = friendlyError(error, 'โหลดข้อมูลเซตไม่สำเร็จ กรุณากด “ลองใหม่” หากยังไม่ได้ให้ติดต่อทีมงาน');
+  $('loadError').hidden = false;
+  $('productName').textContent = 'โหลดข้อมูลเซตไม่สำเร็จ';
+  $('specBlock').hidden = true;
+  $('next').disabled = true;
 }
 
 // One image-only carousel: cover followed by the set's sample images.
@@ -173,6 +189,9 @@ function renderChoices() {
 }
 
 async function init() {
+  setLoading(true);
+  $('loadError').hidden = true;
+  setStatus('');
   try {
     const [settings, catalog] = await Promise.all([loadPricing(), loadCatalog()]);
     Object.assign(state, { settings, catalog, product: findProduct(settings) });
@@ -209,9 +228,16 @@ async function init() {
     recalc();
     if (notice) setStatus(notice);
   } catch (error) {
-    setStatus(error.message);
+    showLoadError(error);
+  } finally {
+    setLoading(false);
   }
 }
+
+$('retryLoad').addEventListener('click', () => {
+  $('productName').innerHTML = '<span class="skeleton-line" aria-hidden="true"></span><span class="sr-only">กำลังโหลดข้อมูลเซต</span>';
+  init();
+});
 
 $('driveLink')?.addEventListener('input', () => $('fileCta').classList.remove('is-invalid'));
 

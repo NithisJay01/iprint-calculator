@@ -6,7 +6,7 @@
   <link rel="stylesheet" href="order.css">
   <link rel="stylesheet" href="../shared/typography.css?v=1">
 </head>
-<body>
+<body class="is-loading" aria-busy="true">
   <header class="order-nav">
     <a href="./#packages" aria-label="กลับไป Catalog">‹</a>
     <b id="pageTitle">สร้างออร์เดอร์นามบัตร</b>
@@ -14,6 +14,10 @@
   </header>
   <main class="order-shell">
     <p id="status" class="status" role="status"></p>
+    <div id="loadError" class="load-error" role="alert" hidden>
+      <p id="loadErrorText"></p>
+      <button type="button" id="retryLoad">ลองใหม่</button>
+    </div>
 
     <section class="step">
       <div class="product-hero" id="gallery" role="region" aria-roledescription="carousel" aria-label="ภาพตัวอย่างนามบัตร">
@@ -23,7 +27,7 @@
         <div class="hero-dots" id="heroDots" hidden></div>
         <span class="sr-only" id="heroCount" aria-live="polite"></span>
       </div>
-      <div class="sheet"><span class="eyebrow">BUSINESS CARD SET</span><h1 id="productName">กำลังโหลดเซต…</h1><p id="productTagline"></p><strong class="start-price" id="startPrice"></strong>
+      <div class="sheet"><span class="eyebrow">BUSINESS CARD SET</span><h1 id="productName"><span class="skeleton-line" aria-hidden="true"></span><span class="sr-only">กำลังโหลดข้อมูลเซต</span></h1><p id="productTagline"></p><strong class="start-price" id="startPrice"></strong>
         <div id="specBlock"><h2>สเปกในเซต</h2><ul class="spec-list" id="specList"></ul></div>
         <div id="inquiryContact" hidden></div>
         <div class="file-cta" id="fileCta">
@@ -50,7 +54,7 @@
   </main>
   <footer class="checkout-bar">
     <div><small id="totalLabel">ราคารายการนี้</small><strong id="grandTotal">฿0.00</strong></div>
-    <button type="button" id="next">เพิ่มสินค้าลงตะกร้า</button>
+    <button type="button" id="next" disabled>เพิ่มสินค้าลงตะกร้า</button>
   </footer>
   <dialog id="galleryDialog" class="gallery-dialog" aria-label="ตัวอย่างงาน">
     <figure><img id="galleryBig" alt=""><figcaption id="galleryCaption"></figcaption></figure>
@@ -58,6 +62,6 @@
     <button type="button" class="gallery-nav gallery-next" id="galleryNext" aria-label="ภาพถัดไป">›</button>
     <button type="button" class="gallery-close" id="galleryClose" aria-label="ปิด">✕</button>
   </dialog>
-  <script type="module" src="order.js?v=2"></script>
+  <script type="module" src="order.js?v=3"></script>
 </body>
 </html>

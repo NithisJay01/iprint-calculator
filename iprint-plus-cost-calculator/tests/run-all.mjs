@@ -26,6 +26,7 @@ const tests = [
   'tests/staff-catalog-filter-test.mjs',
   'tests/set-options-test.mjs',
   'tests/ui-logic-node-test.mjs',
+  'tests/qa-fixes-test.mjs',
   'worker/catalog-contract-test.mjs',
   'worker/flow-settings-test.mjs',
   'worker/order-domain-test.mjs',

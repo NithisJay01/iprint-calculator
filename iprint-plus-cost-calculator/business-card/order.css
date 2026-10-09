@@ -86,3 +86,14 @@
 .hero-slide:focus-visible,.hero-arrow:focus-visible,.hero-dots button:focus-visible{outline:3px solid var(--blue);outline-offset:-3px}
 
 .inquiry-only #startPrice,.inquiry-only #fileCta,.inquiry-only #quantityHeading,.inquiry-only #quantityChoices,.inquiry-only #optionGroups,.inquiry-only .price-box,.inquiry-only .checkout-bar{display:none!important}.inquiry-link{display:block;background:#06a849;color:#fff;text-align:center;text-decoration:none;padding:14px;border-radius:12px;font-weight:700;margin-top:20px}#inquiryContact p{font-size:13px;color:var(--muted)}
+/* Loading and load-failure states */
+.skeleton-line{display:inline-block;width:min(260px,70%);height:1em;border-radius:8px;background:linear-gradient(90deg,#e3edf7 0%,#f3f8fd 50%,#e3edf7 100%);background-size:200% 100%;animation:skeleton 1.2s ease-in-out infinite;vertical-align:middle}
+@keyframes skeleton{from{background-position:200% 0}to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.skeleton-line{animation:none}}
+body.is-loading .file-cta,body.is-loading #quantityHeading,body.is-loading .price-box{opacity:.45;pointer-events:none}
+.checkout-bar button:disabled{opacity:.5;cursor:not-allowed}
+.load-error{margin:0 0 14px;padding:14px 16px;border:1px solid #f3c4c4;border-radius:12px;background:#fff4f4;color:#9b2c2c;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.load-error[hidden]{display:none}
+.load-error p{margin:0;font-weight:700}
+.load-error button{min-height:44px;padding:0 18px;border:0;border-radius:10px;background:#0072d6;color:#fff;font-weight:800;cursor:pointer}
+.start-price:empty{display:none}

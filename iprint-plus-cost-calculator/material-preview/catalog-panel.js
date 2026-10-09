@@ -1,4 +1,5 @@
 import { loadMaterials, resolveMaterial } from './material-catalog.js';
+import { friendlyError } from '../shared/errors.js';
 
 export async function initMaterialCatalog({ panel, say, requestedId }) {
   const chips = document.querySelector('#paperChips');
@@ -39,7 +40,7 @@ export async function initMaterialCatalog({ panel, say, requestedId }) {
     choose().catch(error => {
       console.warn(error);
       note.textContent = 'แสดงวัสดุนี้ไม่สำเร็จ — ลองเลือกใหม่อีกครั้ง';
-      say(error.message, true);
+      say(friendlyError(error, 'แสดงวัสดุนี้ไม่สำเร็จ กรุณาลองเลือกใหม่อีกครั้ง'), true);
     });
   async function reload() {
     refresh.disabled = select.disabled = true;
@@ -52,13 +53,15 @@ export async function initMaterialCatalog({ panel, say, requestedId }) {
         ? 'โหลดข้อมูลล่าสุดไม่สำเร็จ — กำลังแสดงข้อมูลที่โหลดไว้ก่อนหน้า'
         : 'เชื่อมต่อฐานข้อมูลไม่ได้ — เลือกพื้นผิวตัวอย่างด้านล่างได้';
       chips.hidden = records.length > 0;
-      say(error.message, true);
+      refresh.textContent = 'ลองใหม่';
+      say(friendlyError(error, 'โหลดรายการวัสดุไม่สำเร็จ กรุณากด “ลองใหม่”'), true);
       return;
     } finally {
       refresh.disabled = false;
       select.disabled = (next ?? records).length === 0;
     }
     records = next;
+    refresh.textContent = 'โหลดข้อมูลล่าสุด';
     say(''); // an earlier failed load must not leave its error on screen
     select.replaceChildren(...records.map(record => {
       const option = document.createElement('option');
