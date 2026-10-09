@@ -16,6 +16,17 @@
   <main class="order-shell">
     <p id="status" class="status" role="status"></p>
     <section class="sheet" id="trackSheet" aria-live="polite"></section>
+    <section class="sheet" id="lookupSheet" hidden>
+      <h1>ติดตามออร์เดอร์</h1>
+      <p class="track-intro" id="lookupIntro">กรอกเลขติดตามหรือวางลิงก์ติดตามที่ได้รับหลังสั่งซื้อ</p>
+      <form id="lookupForm" class="track-lookup" novalidate>
+        <label for="trackingInput">เลขติดตามหรือลิงก์ติดตาม</label>
+        <input id="trackingInput" autocomplete="off" spellcheck="false" placeholder="เช่น 1a2b3c4d-… หรือวางลิงก์ทั้งหมด" aria-describedby="trackingError">
+        <small class="field-error" id="trackingError" hidden></small>
+        <button type="submit">ดูสถานะ</button>
+      </form>
+      <p class="track-help">หาเลขติดตามไม่เจอ? <a id="lineHelp" href="https://lin.ee/q39R98w" target="_blank" rel="noopener">ติดต่อทีมงานทาง LINE</a></p>
+    </section>
     <section class="sheet" id="recentSheet" hidden>
       <h2>ออร์เดอร์ที่สั่งจากเครื่องนี้</h2>
       <div id="recentList"></div>

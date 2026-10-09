@@ -48,7 +48,8 @@ assert.equal(trackingIdFrom('1a2b3c4d111122223333444455556666'), '1a2b3c4d111122
 assert.equal(trackingIdFrom('order 123'), '');
 assert.equal(trackingIdFrom(''), '');
 const trackJs = readFileSync(new URL('../cart/track.js', import.meta.url), 'utf8');
-assert.ok(trackJs.includes('id="trackingInput"'), 'track page has a lookup box');
+assert.ok(readFileSync(new URL('../cart/track.html', import.meta.url), 'utf8').includes('id="trackingInput"'), 'track page has a lookup box');
+assert.ok(trackJs.includes("addEventListener('submit'"), 'lookup box is wired');
 assert.ok(!trackJs.includes('หรือเลือกจากรายการด้านล่าง</p>'), 'no reference to an empty list');
 
 console.log('QA fixes test passed');

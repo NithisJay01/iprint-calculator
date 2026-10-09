@@ -30,6 +30,7 @@ function ticketHtml({ ticket, items, testMode }, id) {
 
 async function showTicket(id) {
   $('status').textContent = '';
+  $('lookupSheet').hidden = true;
   $('trackSheet').innerHTML = '<p class="empty-cart">กำลังโหลดสถานะ…</p>';
   try {
     $('trackSheet').innerHTML = ticketHtml(await fetchTicketStatus(id), id);
@@ -43,33 +44,33 @@ async function showTicket(id) {
 
 // No order in the link: let the customer paste the order number or tracking link, and say where to get help.
 function showLookup() {
-  const hasRecent = rememberedOrders().length > 0;
-  const sheet = $('trackSheet');
-  sheet.innerHTML = `<h1>ติดตามออร์เดอร์</h1>
-    <p class="track-intro">${hasRecent ? 'กรอกเลขติดตามหรือวางลิงก์ติดตาม หรือเลือกจากออร์เดอร์ที่สั่งจากเครื่องนี้ด้านล่าง' : 'กรอกเลขติดตามหรือวางลิงก์ติดตามที่ได้รับหลังสั่งซื้อ'}</p>
-    <form id="lookupForm" class="track-lookup" novalidate>
-      <label for="trackingInput">เลขติดตามหรือลิงก์ติดตาม</label>
-      <input id="trackingInput" autocomplete="off" spellcheck="false" placeholder="เช่น 1a2b3c4d-… หรือวางลิงก์ทั้งหมด" aria-describedby="trackingError">
-      <small class="field-error" id="trackingError" hidden></small>
-      <button type="submit">ดูสถานะ</button>
-    </form>
-    <p class="track-help">หาเลขติดตามไม่เจอ? <a href="${esc(LINE_ADD_URL)}" target="_blank" rel="noopener">ติดต่อทีมงานทาง LINE</a></p>`;
-  $('lookupForm').addEventListener('submit', event => {
-    event.preventDefault();
-    const input = $('trackingInput');
-    const ticketId = trackingIdFrom(input.value);
-    if (!ticketId) {
-      $('trackingError').textContent = input.value.trim() ? 'ไม่พบเลขติดตามในข้อความนี้ กรุณาตรวจสอบแล้วลองใหม่' : 'กรุณากรอกเลขติดตามหรือวางลิงก์ติดตาม';
-      $('trackingError').hidden = false;
-      input.setAttribute('aria-invalid', 'true');
-      input.focus();
-      return;
-    }
-    history.replaceState(null, '', `track.html?id=${encodeURIComponent(ticketId)}`);
-    showTicket(ticketId);
-  });
-  $('trackingInput').addEventListener('input', () => { $('trackingError').hidden = true; $('trackingInput').removeAttribute('aria-invalid'); });
+  $('lookupIntro').textContent = rememberedOrders().length
+    ? 'กรอกเลขติดตามหรือวางลิงก์ติดตาม หรือเลือกจากออร์เดอร์ที่สั่งจากเครื่องนี้ด้านล่าง'
+    : 'กรอกเลขติดตามหรือวางลิงก์ติดตามที่ได้รับหลังสั่งซื้อ';
+  $('lineHelp').href = LINE_ADD_URL;
+  $('lookupSheet').hidden = false;
 }
+
+function setTrackingError(message = '') {
+  $('trackingError').textContent = message;
+  $('trackingError').hidden = !message;
+  if (message) $('trackingInput').setAttribute('aria-invalid', 'true');
+  else $('trackingInput').removeAttribute('aria-invalid');
+}
+
+$('lookupForm').addEventListener('submit', event => {
+  event.preventDefault();
+  const input = $('trackingInput');
+  const ticketId = trackingIdFrom(input.value);
+  if (!ticketId) {
+    setTrackingError(input.value.trim() ? 'ไม่พบเลขติดตามในข้อความนี้ กรุณาตรวจสอบแล้วลองใหม่' : 'กรุณากรอกเลขติดตามหรือวางลิงก์ติดตาม');
+    input.focus();
+    return;
+  }
+  history.replaceState(null, '', `track.html?id=${encodeURIComponent(ticketId)}`);
+  showTicket(ticketId);
+});
+$('trackingInput').addEventListener('input', () => setTrackingError());
 
 function showRecent() {
   const orders = rememberedOrders();
