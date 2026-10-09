@@ -1,5 +1,7 @@
 'use strict';
-  const IPRINT_TEST_MODE=new URLSearchParams(window.location.search).get('testMode')==='1';
+  // Test mode (mock data, no API) only on a local preview, so ?testMode=1 does nothing on the live site.
+  const IPRINT_LOCAL_HOST=['localhost','127.0.0.1','[::1]'].includes(window.location.hostname);
+  const IPRINT_TEST_MODE=IPRINT_LOCAL_HOST&&new URLSearchParams(window.location.search).get('testMode')==='1';
   const IPRINT_RESET_TEST_DATA=IPRINT_TEST_MODE&&new URLSearchParams(window.location.search).get('resetTest')==='1';
   const IPRINT_CONFIG=window.IPRINT_CONFIG||{};
   const API_ROOT=String(IPRINT_CONFIG.apiRoot||'https://iprint-flow-api.iprint-garphic1.workers.dev').replace(/\/$/,'');

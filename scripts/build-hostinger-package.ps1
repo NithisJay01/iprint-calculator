@@ -30,6 +30,20 @@ foreach ($directory in @('css', 'image', 'js', 'shared', 'pricing', 'catalog', '
   Copy-Item -LiteralPath (Join-Path $sourceRoot $directory) -Destination $resolvedOutput -Recurse
 }
 
+# Notes and dev files are not part of the site (.htaccess also refuses them, but they need not be uploaded at all).
+# (-Include is ignored together with -LiteralPath in Windows PowerShell 5.1, so filter on the extension instead.)
+Get-ChildItem -LiteralPath $resolvedOutput -Recurse -File |
+  Where-Object { @('.md', '.mjs', '.toml') -contains $_.Extension.ToLowerInvariant() } |
+  Remove-Item -Force
+
+# Card originals (.png) are not used by the pages when a .webp of the same picture exists.
+$cardAssets = Join-Path (Join-Path $resolvedOutput 'cards') 'assets'
+if (Test-Path -LiteralPath $cardAssets) {
+  Get-ChildItem -LiteralPath $cardAssets -File -Filter '*.png' |
+    Where-Object { Test-Path -LiteralPath ([System.IO.Path]::ChangeExtension($_.FullName, '.webp')) } |
+    Remove-Item -Force
+}
+
 $files = Get-ChildItem -LiteralPath $resolvedOutput -Recurse -File
 $totalBytes = ($files | Measure-Object -Property Length -Sum).Sum
 Write-Output "Hostinger package ready: $resolvedOutput"

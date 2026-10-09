@@ -23,7 +23,8 @@ const ROT_Y = THREE.MathUtils.degToRad(20); // yaw limit
 const REDUCED_MOTION = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const COARSE = matchMedia('(pointer: coarse)').matches;
 const params = new URLSearchParams(location.search);
-const DEBUG = params.has('debug');
+// The debug overlay (and window.__mp) is for local development only.
+const DEBUG = params.has('debug') && ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
 
 initDesignerInquiry();
 

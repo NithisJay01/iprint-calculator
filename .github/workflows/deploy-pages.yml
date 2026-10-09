@@ -48,10 +48,28 @@ jobs:
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
+      # Only the public site is published: tests, test artifacts, the Worker source, docs and dev tools stay out.
+      # Keep this list in step with scripts/build-hostinger-package.ps1 (tests/deployment-config-test.mjs checks both).
+      - name: Collect public site files
+        run: |
+          set -euo pipefail
+          src=iprint-plus-cost-calculator
+          rm -rf _site && mkdir -p _site
+          cp "$src/index.html" _site/
+          for dir in css image js shared pricing catalog business-card cards cart brief staff material-preview; do
+            cp -R "$src/$dir" _site/
+          done
+          find _site -name '*.md' -delete
+          # Card originals (.png) are not used by the pages when a .webp of the same picture exists.
+          for png in _site/cards/assets/*.png; do
+            if [ -e "${png%.png}.webp" ]; then rm -f "$png"; fi
+          done
+          echo "Files: $(find _site -type f | wc -l)"
+
       - name: Upload site artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./iprint-plus-cost-calculator
+          path: ./_site
 
       - name: Deploy to GitHub Pages
         id: deployment

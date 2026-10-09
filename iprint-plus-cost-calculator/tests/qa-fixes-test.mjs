@@ -52,4 +52,21 @@ assert.ok(readFileSync(new URL('../cart/track.html', import.meta.url), 'utf8').i
 assert.ok(trackJs.includes("addEventListener('submit'"), 'lookup box is wired');
 assert.ok(!trackJs.includes('หรือเลือกจากรายการด้านล่าง</p>'), 'no reference to an empty list');
 
+// Group 4: publishing only ships the public site, and test/debug switches only work on a local preview.
+const workflow = readFileSync(new URL('../../.github/workflows/deploy-pages.yml', import.meta.url), 'utf8');
+const buildScript = readFileSync(new URL('../../scripts/build-hostinger-package.ps1', import.meta.url), 'utf8');
+assert.ok(workflow.includes('path: ./_site'), 'GitHub Pages uploads the collected public files only');
+assert.ok(!workflow.includes('path: ./iprint-plus-cost-calculator'), 'GitHub Pages no longer uploads the whole folder');
+const pagesDirs = workflow.match(/for dir in ([^;]+); do/)[1].trim().split(/\s+/).sort();
+const packageDirs = [...buildScript.match(/foreach \(\$directory in @\(([^)]+)\)\)/)[1].matchAll(/'([^']+)'/g)].map(match => match[1]).sort();
+assert.deepEqual(pagesDirs, packageDirs, 'GitHub Pages and the Hostinger package publish the same folders');
+for (const hidden of ['tests', 'test-artifacts', 'worker', 'docs']) assert.ok(!pagesDirs.includes(hidden), `${hidden} is not published`);
+assert.ok(workflow.includes("find _site -name '*.md' -delete"), 'notes are not published');
+assert.ok(buildScript.includes("@('.md', '.mjs', '.toml')"), 'the package drops notes and dev files');
+assert.ok(!/-LiteralPath[^\n]*-Include/.test(buildScript), '-Include is ignored with -LiteralPath on PowerShell 5.1');
+const core = readFileSync(new URL('../js/core.js', import.meta.url), 'utf8');
+assert.ok(core.includes('IPRINT_TEST_MODE=IPRINT_LOCAL_HOST&&'), 'testMode only on localhost');
+const previewApp = readFileSync(new URL('../material-preview/app.js', import.meta.url), 'utf8');
+assert.ok(previewApp.includes("const DEBUG = params.has('debug') && ['localhost'"), 'debug overlay only on localhost');
+
 console.log('QA fixes test passed');
