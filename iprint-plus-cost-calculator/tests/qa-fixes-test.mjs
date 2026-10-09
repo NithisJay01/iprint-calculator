@@ -3,6 +3,8 @@ import { readFileSync } from 'node:fs';
 import { friendlyError, NETWORK_MESSAGE, GENERIC_MESSAGE } from '../shared/errors.js';
 import { isThaiPhone, normalizeThaiPhone } from '../shared/phone.js';
 import { validateOrderFoundation } from '../worker/domain/order.js';
+globalThis.location ??= new URL('https://iprint.tchl.online/');
+const { trackingIdFrom } = await import('../shared/orders-client.js');
 
 // Group 1: customers never see raw browser / English error text.
 assert.equal(friendlyError(new TypeError('Failed to fetch')), NETWORK_MESSAGE);
@@ -37,5 +39,16 @@ assert.equal((cartHtml.match(/<h1 tabindex="-1">/g) || []).length, 4, 'step head
 const cartJs = readFileSync(new URL('../cart/app.js', import.meta.url), 'utf8');
 assert.ok(cartJs.includes('isThaiPhone(phone)'), 'cart checks the phone format');
 assert.ok(cartJs.includes("setAttribute('aria-invalid', 'true')"), 'cart marks invalid fields');
+
+// Group 3: the tracking box takes the order number or the whole tracking link.
+const uuid = '1a2b3c4d-1111-2222-3333-444455556666';
+assert.equal(trackingIdFrom(uuid), uuid);
+assert.equal(trackingIdFrom(`  https://iprint.tchl.online/cart/track.html?id=${uuid}  `), uuid);
+assert.equal(trackingIdFrom('1a2b3c4d111122223333444455556666'), '1a2b3c4d111122223333444455556666');
+assert.equal(trackingIdFrom('order 123'), '');
+assert.equal(trackingIdFrom(''), '');
+const trackJs = readFileSync(new URL('../cart/track.js', import.meta.url), 'utf8');
+assert.ok(trackJs.includes('id="trackingInput"'), 'track page has a lookup box');
+assert.ok(!trackJs.includes('หรือเลือกจากรายการด้านล่าง</p>'), 'no reference to an empty list');
 
 console.log('QA fixes test passed');

@@ -79,6 +79,14 @@ export async function submitOrder({ order, turnstileToken = '', fetcher = fetch,
 // ---- Tracking -------------------------------------------------------------------------------------------------
 export const TICKET_ID_PATTERN = /^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/i;
 
+// What the customer pastes into the tracking box: the bare order number or the whole tracking link.
+// Returns the ticket id, or '' when the text holds none.
+export function trackingIdFrom(value) {
+  const text = String(value ?? '').trim();
+  const match = text.match(/[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}/i);
+  return match ? match[0] : '';
+}
+
 export async function fetchTicketStatus(id, { fetcher = fetch, local = LOCAL } = {}) {
   const ticketId = String(id || '').trim();
   if (!TICKET_ID_PATTERN.test(ticketId) && !local) throw new Error('เลขติดตามไม่ถูกต้อง');

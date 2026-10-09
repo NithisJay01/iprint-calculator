@@ -1,5 +1,7 @@
-import { fetchTicketStatus, rememberedOrders, customerStatusLabel, paymentStatusLabel, itemStatusLabel } from '../shared/orders-client.js';
+import { fetchTicketStatus, rememberedOrders, customerStatusLabel, paymentStatusLabel, itemStatusLabel, trackingIdFrom } from '../shared/orders-client.js';
 import { esc } from '../shared/format.js';
+import { friendlyError } from '../shared/errors.js';
+import { LINE_ADD_URL } from '../shared/print-request.js';
 
 // Customer-facing tracking page. The Worker answers with statuses only (no prices, no personal data).
 const $ = id => document.getElementById(id);
@@ -34,8 +36,39 @@ async function showTicket(id) {
     $('refresh').addEventListener('click', () => showTicket(id));
   } catch (error) {
     $('trackSheet').innerHTML = '';
-    $('status').textContent = error.message;
+    $('status').textContent = friendlyError(error, 'โหลดสถานะไม่สำเร็จ กรุณาลองใหม่ หรือติดต่อทีมงานทาง LINE');
+    showLookup();
   }
+}
+
+// No order in the link: let the customer paste the order number or tracking link, and say where to get help.
+function showLookup() {
+  const hasRecent = rememberedOrders().length > 0;
+  const sheet = $('trackSheet');
+  sheet.innerHTML = `<h1>ติดตามออร์เดอร์</h1>
+    <p class="track-intro">${hasRecent ? 'กรอกเลขติดตามหรือวางลิงก์ติดตาม หรือเลือกจากออร์เดอร์ที่สั่งจากเครื่องนี้ด้านล่าง' : 'กรอกเลขติดตามหรือวางลิงก์ติดตามที่ได้รับหลังสั่งซื้อ'}</p>
+    <form id="lookupForm" class="track-lookup" novalidate>
+      <label for="trackingInput">เลขติดตามหรือลิงก์ติดตาม</label>
+      <input id="trackingInput" autocomplete="off" spellcheck="false" placeholder="เช่น 1a2b3c4d-… หรือวางลิงก์ทั้งหมด" aria-describedby="trackingError">
+      <small class="field-error" id="trackingError" hidden></small>
+      <button type="submit">ดูสถานะ</button>
+    </form>
+    <p class="track-help">หาเลขติดตามไม่เจอ? <a href="${esc(LINE_ADD_URL)}" target="_blank" rel="noopener">ติดต่อทีมงานทาง LINE</a></p>`;
+  $('lookupForm').addEventListener('submit', event => {
+    event.preventDefault();
+    const input = $('trackingInput');
+    const ticketId = trackingIdFrom(input.value);
+    if (!ticketId) {
+      $('trackingError').textContent = input.value.trim() ? 'ไม่พบเลขติดตามในข้อความนี้ กรุณาตรวจสอบแล้วลองใหม่' : 'กรุณากรอกเลขติดตามหรือวางลิงก์ติดตาม';
+      $('trackingError').hidden = false;
+      input.setAttribute('aria-invalid', 'true');
+      input.focus();
+      return;
+    }
+    history.replaceState(null, '', `track.html?id=${encodeURIComponent(ticketId)}`);
+    showTicket(ticketId);
+  });
+  $('trackingInput').addEventListener('input', () => { $('trackingError').hidden = true; $('trackingInput').removeAttribute('aria-invalid'); });
 }
 
 function showRecent() {
@@ -47,4 +80,4 @@ function showRecent() {
 const id = new URLSearchParams(location.search).get('id');
 showRecent();
 if (id) await showTicket(id);
-else $('trackSheet').innerHTML = '<h1>ติดตามออร์เดอร์</h1><p class="empty-cart">เปิดลิงก์ติดตามที่ได้รับหลังสั่งซื้อ หรือเลือกจากรายการด้านล่าง</p>';
+else showLookup();

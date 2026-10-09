@@ -93,3 +93,12 @@ button.add-more{width:100%;cursor:pointer}
 [aria-invalid="true"]{border-color:#d92d20!important;box-shadow:0 0 0 3px rgba(217,45,32,.15)}
 .step h1:focus{outline:none}
 .step h1:focus-visible{outline:3px solid #0072d6;outline-offset:4px;border-radius:6px}
+/* Track page: look up an order by number or link */
+.track-intro{margin:6px 0 14px;color:var(--muted)}
+.track-lookup{display:grid;gap:8px}
+.track-lookup label{margin:0;font-weight:700}
+.track-lookup input{width:100%;min-height:48px;padding:0 14px;border:1px solid var(--line);border-radius:10px;font:inherit;font-size:16px}
+.track-lookup button{min-height:48px;border:0;border-radius:10px;background:#0072d6;color:#fff;font:inherit;font-weight:800;cursor:pointer}
+.track-lookup button:hover{background:#005bb0}
+.track-help{margin:14px 0 0;color:var(--muted)}
+.track-help a{color:#0072d6;font-weight:700}
