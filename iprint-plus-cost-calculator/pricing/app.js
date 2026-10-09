@@ -1,6 +1,7 @@
 import { newProduct, calculateProductPrice } from '../shared/product-pricing.js';
 import { LOCAL, uploadGalleryImage, loadPricing, savePricing, loadCatalog, storedWriteKey, loadDraft, saveDraft, discardDraft, createCatalogItem, deactivateCatalogItem } from '../shared/pricing-client.js';
 import { newBusinessCardProduct } from '../shared/business-card-product.js';
+import { staffGate } from './gate.js';
 import { CREATOR_CARDS_ID, newCreatorCardsProduct } from '../shared/creator-cards-product.js';
 import { setBullets, parseBullets, groupRuleText } from '../business-card/product.js';
 import { BUILT_IN_SET_IMAGES, MAX_GALLERY_IMAGES, fallbackSetImage, isValidSetImage, setImageUrl, resolveSetImage, galleryUrls } from '../shared/set-image.js';
@@ -142,7 +143,7 @@ function render() {
               <button type="button" class="text-button" data-clear-image>ล้างภาพ (ใช้ภาพมาตรฐาน)</button>
             </div>
           </div>
-          <div class="set-image-presets" role="group" aria-label="เลือกจากภาพในระบบ"><small>หรือเลือกจากภาพในระบบ</small><div>${BUILT_IN_SET_IMAGES.map(image => `<button type="button" class="set-image-choice" data-image-preset="${esc(image)}" aria-label="ใช้ภาพนี้" aria-pressed="false"><img src="../business-card/${esc(image)}" alt="" loading="lazy"></button>`).join('')}</div></div>
+          <div class="set-image-presets" role="group" aria-label="เลือกจากภาพในระบบ"><small>หรือเลือกจากภาพในระบบ</small><div>${BUILT_IN_SET_IMAGES.map(image => `<button type="button" class="set-image-choice" data-image-preset="${esc(image)}" aria-label="ใช้ภาพนี้" aria-pressed="false"><img src="${esc(resolveSetImage(image, '../business-card/'))}" alt="" loading="lazy"></button>`).join('')}</div></div>
         </div>
         <div class="set-image-field gallery-field">
           <div class="set-image-head"><b>แกลเลอรี่ตัวอย่างงาน</b><small id="galleryCount"></small></div>
@@ -619,10 +620,12 @@ $('key').addEventListener('change', async () => {
 $('previewPackage').addEventListener('change', event => { selectedPackageId = event.target.value; $('quantity').value = currentPackage().quantity; render(); });
 for (const id of ['quantity','sheets','cost','previewMaterial','previewServices','code','date']) $(id).addEventListener('input', previewPrice);
 
+// The live studio is staff-only: sign in first (a local preview has no server and no key).
+const signedInKey = LOCAL ? '' : await staffGate();
 $('environment').textContent = LOCAL ? 'โหมดทดลอง · บันทึกในเบราว์เซอร์นี้' : 'ระบบจริง · Staff only';
 $('keyWrap').hidden = LOCAL;
 $('date').value = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Bangkok' });
-$('key').value = storedWriteKey();
+$('key').value = signedInKey || storedWriteKey();
 setBusy(true); $('add').disabled = true;
 try {
   [settings, catalog] = await Promise.all([loadPricing(), loadCatalog()]);

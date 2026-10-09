@@ -4,6 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>จัดเซตสินค้า · iPrint</title>
+  <link rel="icon" type="image/svg+xml" href="../image/iprint-logo.svg">
+  <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="./styles.css">
   <link rel="stylesheet" href="../shared/typography.css?v=1">
 </head>
@@ -19,6 +21,19 @@
       <button class="button primary" id="save" type="button">เผยแพร่ให้ลูกค้า</button>
     </div>
   </header>
+  <section class="login-gate" id="loginGate" hidden>
+    <form id="gateForm" class="gate-card" novalidate>
+      <small>STAFF ONLY</small>
+      <h1>เข้าสู่ระบบพนักงาน</h1>
+      <p>ใส่รหัสเข้าใช้งานเพื่อเปิดหน้าจัดเซตสินค้าและโปรโมชัน</p>
+      <label for="gateKey">รหัสเข้าใช้งาน (Staff API Key)</label>
+      <input id="gateKey" type="password" autocomplete="current-password" aria-describedby="gateError">
+      <small class="gate-error" id="gateError" role="alert" hidden></small>
+      <label class="gate-remember"><input id="gateRemember" type="checkbox"> จดจำการเข้าสู่ระบบบนเครื่องนี้</label>
+      <button id="gateSubmit" type="submit">เข้าสู่ระบบ</button>
+      <a href="/">กลับหน้าแรก</a>
+    </form>
+  </section>
   <main class="workspace">
     <aside class="product-rail">
       <div class="rail-heading"><div><small>PRODUCTS</small><h1>สินค้า</h1></div><button id="add" class="icon-button" title="เพิ่มสินค้า">＋</button></div>

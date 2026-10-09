@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { friendlyError, NETWORK_MESSAGE, GENERIC_MESSAGE } from '../shared/errors.js';
 import { isThaiPhone, normalizeThaiPhone } from '../shared/phone.js';
 import { validateOrderFoundation } from '../worker/domain/order.js';
@@ -68,5 +68,33 @@ const core = readFileSync(new URL('../js/core.js', import.meta.url), 'utf8');
 assert.ok(core.includes('IPRINT_TEST_MODE=IPRINT_LOCAL_HOST&&'), 'testMode only on localhost');
 const previewApp = readFileSync(new URL('../material-preview/app.js', import.meta.url), 'utf8');
 assert.ok(previewApp.includes("const DEBUG = params.has('debug') && ['localhost'"), 'debug overlay only on localhost');
+
+// Group 5: every page has a favicon; public pages have a description and Open Graph tags; staff pages are not indexed.
+const pageHtml = name => readFileSync(new URL(`../${name}`, import.meta.url), 'utf8');
+const publicPages = ['index.html', 'catalog/index.html', 'business-card/index.html', 'business-card/order.html', 'cards/index.html', 'cart/index.html', 'cart/track.html', 'material-preview/index.html'];
+const staffPages = ['brief/index.html', 'pricing/index.html', 'staff/index.html'];
+for (const name of [...publicPages, ...staffPages]) {
+  const html = pageHtml(name);
+  const icon = html.match(/<link rel="icon" type="image\/svg\+xml" href="([^"]+)">/);
+  assert.ok(icon, `${name} has a favicon`);
+  assert.ok(existsSync(new URL(icon[1], new URL(`../${name}`, import.meta.url))), `${name} favicon file exists`);
+}
+for (const name of publicPages) {
+  const html = pageHtml(name);
+  assert.match(html, /<meta name="description" content="[^"]{20,}">/, `${name} has a description`);
+  for (const property of ['og:title', 'og:description', 'og:image', 'og:url']) assert.match(html, new RegExp(`<meta property="${property}" content="[^"]+">`), `${name} has ${property}`);
+  assert.match(html, /<meta property="og:image" content="https:\/\/iprint\.tchl\.online\/[^"]+\.png">/, `${name} og:image is an absolute png`);
+}
+for (const name of staffPages) assert.match(pageHtml(name), /<meta name="robots" content="noindex/, `${name} is not indexed`);
+const pricingHtml = pageHtml('pricing/index.html');
+assert.ok(pricingHtml.includes('id="loginGate"') && pricingHtml.includes('id="gateKey"'), 'Set Studio has a sign-in gate');
+const pricingJs = readFileSync(new URL('../pricing/app.js', import.meta.url), 'utf8');
+assert.ok(pricingJs.includes("LOCAL ? '' : await staffGate()"), 'the live Set Studio waits for sign-in');
+assert.ok(!pricingJs.includes('src="../business-card/${esc(image)}"'), 'built-in set pictures resolve through resolveSetImage');
+const { checkStaffKey, GATE_NETWORK_MESSAGE } = await import('../pricing/gate.js');
+assert.equal((await checkStaffKey('', async () => { throw new Error('not called'); })).ok, false);
+assert.equal((await checkStaffKey('good', async (url, init) => { assert.ok(String(url).endsWith('/auth/check')); assert.equal(init.headers['X-API-Key'], 'good'); return new Response('{}', { status: 200 }); })).ok, true);
+assert.equal((await checkStaffKey('bad', async () => new Response('{}', { status: 401 }))).message, 'รหัสเข้าใช้งานไม่ถูกต้อง');
+assert.equal((await checkStaffKey('x', async () => { throw new TypeError('Failed to fetch'); })).message, GATE_NETWORK_MESSAGE);
 
 console.log('QA fixes test passed');

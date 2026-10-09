@@ -122,3 +122,22 @@ label{font-weight:500}
 .gallery-link input{flex:1;min-width:0}
 
 .inquiry-toggle{display:flex;align-items:center;gap:12px;margin:18px 0 6px}.inquiry-toggle input{width:44px;height:24px;margin:0;accent-color:#0a8cff}.inquiry-help{font-size:13px;color:var(--muted)}
+
+/* Staff sign-in in front of Set Studio (live site only) */
+body.locked .workspace,body.locked .top-actions{display:none}
+.login-gate{min-height:calc(100vh - 80px);display:grid;place-items:center;padding:24px 16px}
+.login-gate[hidden]{display:none}
+.gate-card{width:min(420px,100%);display:grid;gap:10px;padding:28px;border:1px solid var(--line);border-radius:18px;background:#fff;box-shadow:var(--shadow)}
+.gate-card small{color:#0072d6;font-weight:900;letter-spacing:.08em}
+.gate-card h1{margin:0;font-size:24px}
+.gate-card p{margin:0 0 6px;color:var(--muted)}
+.gate-card input[type=password]{min-height:46px}
+.gate-card [aria-invalid]{border-color:#d92d20;box-shadow:0 0 0 3px rgba(217,45,32,.15)}
+.gate-error{color:#b42318;font-weight:700;font-size:13px}
+.gate-error[hidden]{display:none}
+.gate-remember{display:flex;align-items:center;gap:8px;font-weight:600}
+.gate-remember input{width:auto;margin:0}
+.gate-card button{min-height:46px;border:0;border-radius:10px;background:#0072d6;color:#fff;font-weight:900;cursor:pointer}
+.gate-card button:hover{background:#005bb0}
+.gate-card button:disabled{opacity:.6;cursor:progress}
+.gate-card a{justify-self:center;color:#0072d6;font-weight:700}
