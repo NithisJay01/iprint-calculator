@@ -226,8 +226,9 @@ assert.match(studioJs, /input\.id === 'galleryFile' \|\| input\.id === 'galleryL
 
 // ---------- price figures are primary blue; text such as "included in the set" is not ----------
 const orderCss = read('../business-card/order.css');
-assert.match(orderCss, /\.choice \.opt-total\{[^}]*color:var\(--blue\)/, 'the price on an option card is blue');
-assert.match(orderCss, /\.price-line b\{color:var\(--blue\)\}/, 'the amounts in the price summary are blue');
+// Blue text uses --blue-text (the darker brand blue that keeps WCAG AA contrast on the light-blue panels).
+assert.match(orderCss, /\.choice \.opt-total\{[^}]*color:var\(--blue-text\)/, 'the price on an option card is blue');
+assert.match(orderCss, /\.price-line b\{color:var\(--blue-text\)\}/, 'the amounts in the price summary are blue');
 assert.match(orderCss, /\.price-line\.included b\{color:var\(--muted\)/, '"รวมในเซต" in the summary is text, so it stays grey');
 assert.ok(!/\.price-line\.discount b\{color:var\(--green\)\}/.test(orderCss), 'no separate green for the discount amount');
 assert.ok(orderJs.includes("${line.included ? ' included' : ''}"), 'included lines are marked so they can stay grey');

@@ -1,6 +1,6 @@
 :root {
-  --blue: #0a8cff;
-  --blue-dark: #0077e6;
+  --blue: #0072d6;--blue-text:#005bb0;--blue-bright:#0a8cff;--blue-hover:#005bb0;
+  --blue-dark: #005bb0;
   --surface: #eef6ff;
   --ink: #080808;
   --muted: #555;
@@ -32,7 +32,7 @@ button { font: inherit; }
 }
 
 .catalog-brand { display: grid; gap: 1px; }
-.catalog-brand strong { color: var(--blue); font: 800 24px/1 Sora, sans-serif; }
+.catalog-brand strong { color: var(--blue-text); font: 800 24px/1 Sora, sans-serif; }
 .catalog-brand span { color: var(--muted); font-size: 11px; }
 .header-actions { display: flex; align-items: center; gap: 10px; }
 .track-link {
@@ -97,7 +97,7 @@ main { width: min(1180px, 100%); margin: auto; padding: 16px; }
 .catalog-hero-overlay { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(0, 0, 0, .78), rgba(0, 0, 0, .2)); }
 .catalog-hero-content { position: relative; z-index: 1; width: min(630px, 100%); padding: 28px 24px; color: white; }
 .catalog-hero-content > span, .catalog-heading span, .product-category {
-  color: var(--blue);
+  color: var(--blue-text);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 1.2px;
@@ -185,7 +185,7 @@ footer {
   color: var(--muted);
   font-size: 12px;
 }
-footer strong { color: var(--blue); font: 800 18px Sora, sans-serif; }
+footer strong { color: var(--blue-text); font: 800 18px Sora, sans-serif; }
 footer a { margin-left: 12px; color: var(--blue-dark); font-weight: 700; }
 
 .contact-fab {
@@ -276,3 +276,11 @@ a.category-tile:focus-visible, .category-next:focus-visible { outline: 3px solid
 }
 .category-list { cursor: grab; }
 .category-list.is-dragging { cursor: grabbing; scroll-behavior: auto; scroll-snap-type: none; user-select: none; }
+
+/* The floating LINE button must not cover the footer links or the last card's button (QA 2026-10-09). */
+footer { padding-bottom: calc(52px + 24px + 20px); }
+.contact-fab { bottom: calc(24px + env(safe-area-inset-bottom, 0px)); }
+@media (max-width: 760px) {
+  footer { padding-bottom: calc(48px + 16px + 20px); }
+  .contact-fab { bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
+}

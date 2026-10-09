@@ -5,7 +5,7 @@
 
 .cart-item{margin-top:12px;align-items:flex-start;flex-wrap:wrap}
 .cart-item>div:first-child{flex:1 1 220px;min-width:0}
-.cart-item .cart-kind{display:inline-block;margin-bottom:4px;padding:1px 8px;border-radius:99px;background:#fff;color:var(--blue);font-size:11px;font-weight:700}
+.cart-item .cart-kind{display:inline-block;margin-bottom:4px;padding:1px 8px;border-radius:99px;background:#fff;color:var(--blue-text);font-size:11px;font-weight:700}
 .cart-item .cart-title{display:block;font-size:17px}
 .cart-item .cart-price small{display:block;color:var(--muted);font-size:12px;font-weight:400;text-decoration:line-through}
 .cart-item .cart-promo{margin:4px 0 0;color:#0f7f59;font-weight:700}
@@ -13,21 +13,21 @@
 .cart-item .cart-problem{margin:6px 0 0;padding:8px 10px;border-radius:9px;background:#fff0f0;color:#a72828;font-weight:700}
 .cart-item.has-problem{outline:2px solid #f3b6b6}
 .cart-item .cart-actions{display:flex;gap:8px;align-items:center}
-.cart-item .cart-actions a,.cart-item .cart-actions button{min-height:38px;padding:0 14px;display:inline-grid;place-items:center;border:1px solid var(--blue);border-radius:9px;background:#fff;color:var(--blue);font-weight:700;font-size:14px;text-decoration:none;cursor:pointer}
+.cart-item .cart-actions a,.cart-item .cart-actions button{min-height:38px;padding:0 14px;display:inline-grid;place-items:center;border:1px solid var(--blue);border-radius:9px;background:#fff;color:var(--blue-text);font-weight:700;font-size:14px;text-decoration:none;cursor:pointer}
 .cart-item .cart-actions button{border-color:#e3a3a3;color:#b93535}
 
 .cart-totals dl{margin:0}
 .cart-totals dl>div{display:flex;justify-content:space-between;gap:16px;padding:6px 0}
 .cart-totals dt{color:var(--muted)}
 .cart-totals dd{margin:0;font-weight:700}
-.cart-totals dl>div.total{margin-top:6px;padding-top:12px;border-top:1px solid var(--line);color:var(--blue);font-size:20px;font-weight:800}
+.cart-totals dl>div.total{margin-top:6px;padding-top:12px;border-top:1px solid var(--line);color:var(--blue-text);font-size:20px;font-weight:800}
 .cart-totals dl>div.total dt{color:inherit}
 .cart-totals dl>div.discount dd{color:#0f7f59}
 .cart-totals .points{margin:8px 0 0;color:var(--muted);font-size:12px}
 
 .capacity-summary{margin:6px 0 12px;color:var(--muted)}
 .capacity-summary.error{color:#a72828}
-.capacity-summary button{margin-left:8px;padding:4px 12px;border:1px solid var(--blue);border-radius:8px;background:#fff;color:var(--blue);font-weight:700}
+.capacity-summary button{margin-left:8px;padding:4px 12px;border:1px solid var(--blue);border-radius:8px;background:#fff;color:var(--blue-text);font-weight:700}
 #calendar .month{margin-top:14px}
 #calendar .month>b{display:block;margin-bottom:8px}
 #calendar .month .calendar button{display:grid;align-content:center}
@@ -35,7 +35,7 @@
 .calendar-legend{margin:14px 0 0;color:var(--muted);font-size:12px}
 
 .hint{color:var(--muted);font-weight:400}
-.done-id{display:block;margin:6px 0;color:var(--blue);font-size:26px}
+.done-id{display:block;margin:6px 0;color:var(--blue-text);font-size:26px}
 .mock-note{margin-top:14px;padding:10px 12px;border-radius:10px;background:#fff7e0;color:#8a5a00;font-size:13px}
 
 /* review + confirm */
@@ -56,7 +56,7 @@
 /* tracking */
 .track-badges{display:flex;flex-wrap:wrap;gap:8px}
 .track-badges .badge{padding:5px 12px;border-radius:99px;background:var(--blue);color:#fff;font-size:13px;font-weight:700}
-.track-badges .badge.soft{background:var(--soft);color:var(--blue)}
+.track-badges .badge.soft{background:var(--soft);color:var(--blue-text)}
 .track-meta{margin:10px 0 0;color:var(--muted);font-size:13px}
 .track-items{margin-top:14px}
 button.add-more{width:100%;cursor:pointer}
@@ -85,7 +85,7 @@ button.add-more{width:100%;cursor:pointer}
 #calendar .month .calendar button.rush{background:#fff8e6;border-color:#f59e0b;color:#8a5a00}
 #calendar .month .calendar button.rush.selected{background:#f59e0b;color:#fff;border-color:#f59e0b}
 .rush-summary{margin:6px 0 0;color:#b45309;font-weight:700}
-.delivery-note{margin:8px 0 0;padding:9px 12px;border-radius:10px;background:var(--soft);color:var(--blue);font-size:13px;font-weight:700}
+.delivery-note{margin:8px 0 0;padding:9px 12px;border-radius:10px;background:var(--soft);color:var(--blue-text);font-size:13px;font-weight:700}
 .cart-totals dl>div.rush dd{color:#b45309}
 /* Inline field errors (contact step and consent) */
 .field-error{display:block;margin-top:6px;color:#b42318;font-size:13px;font-weight:700;line-height:1.4}

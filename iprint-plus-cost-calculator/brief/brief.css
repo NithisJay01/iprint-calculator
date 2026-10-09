@@ -1,4 +1,4 @@
-:root{--page:#edf6ff;--card:#fff;--ink:#101820;--muted:#5b7085;--line:#d8e6f2;--blue:#0a8cff;--soft:#e5f3ff;
+:root{--page:#edf6ff;--card:#fff;--ink:#101820;--muted:#5b7085;--line:#d8e6f2;--blue:#0072d6;--blue-text:#005bb0;--blue-bright:#0a8cff;--blue-hover:#005bb0;--soft:#e5f3ff;
   --ok:#0d7a57;--ok-bg:#e3f6ee;--warn:#8a5a00;--warn-bg:#fff3d6;--bad:#b3312f;--bad-bg:#fdeaea}
 *{box-sizing:border-box}
 body{margin:0;background:var(--page);color:var(--ink);font-family:Inter,"Noto Sans Thai",sans-serif;line-height:1.5}
@@ -13,14 +13,14 @@ button:disabled{opacity:.55;cursor:not-allowed}
 
 .status{margin:0 0 12px;color:var(--bad);font-weight:600}
 .status:empty{display:none}
-.status[data-kind="info"]{color:var(--blue)}
+.status[data-kind="info"]{color:var(--blue-text)}
 
 .sheet{margin-bottom:14px;padding:20px;border:1px solid var(--line);border-radius:18px;background:var(--card);box-shadow:0 8px 28px rgba(25,89,145,.06)}
 h1{margin:0 0 6px;font:800 24px Sora,"Noto Sans Thai",sans-serif}
 h2{margin:0 0 12px;font:700 16px Sora,"Noto Sans Thai",sans-serif;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 h2 small{color:var(--muted);font-weight:400;font-size:13px}
 .lead{margin:0 0 16px;color:var(--muted)}
-.eyebrow{margin:0 0 2px;color:var(--blue);font:800 10px Sora,sans-serif;letter-spacing:1px}
+.eyebrow{margin:0 0 2px;color:var(--blue-text);font:800 10px Sora,sans-serif;letter-spacing:1px}
 .hint{margin:8px 0 0;color:var(--muted);font-size:13px}
 .head-row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
 .head-row h1{margin-bottom:8px}
@@ -34,12 +34,12 @@ textarea{resize:vertical}
 
 .primary,.ghost{min-height:44px;padding:0 18px;border-radius:10px;font-weight:800;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
 .primary{border:0;background:var(--blue);color:#fff}
-.ghost{border:1px solid var(--blue);background:#fff;color:var(--blue)}
+.ghost{border:1px solid var(--blue);background:#fff;color:var(--blue-text)}
 .block{width:100%;margin-top:12px}
 :is(.primary,.ghost):focus-visible{outline:3px solid rgba(10,140,255,.25);outline-offset:2px}
 
 .owner-note{margin:0 0 14px;padding:10px 12px;border:1px dashed var(--line);border-radius:10px}
-.owner-note summary{cursor:pointer;font-weight:700;color:var(--blue)}
+.owner-note summary{cursor:pointer;font-weight:700;color:var(--blue-text)}
 .owner-note textarea{margin-top:10px}
 
 .conversations{display:grid;gap:10px}

@@ -32,7 +32,9 @@ assert.match(landingPage, /id="order" class="builder"/);
 assert.match(landingPage, /href="\.\.\/catalog\/"/);
 assert.match(landingPage, /class="hero-back"[^>]+href="\.\.\/catalog\/"/);
 assert.match(styles, /--page:\s*#eef6ff/);
-assert.match(styles, /--blue:\s*#0a8cff/);
+// Text and button blue meets WCAG AA on white (#0072d6); the brighter #0a8cff stays for decoration only.
+assert.match(styles, /--blue:\s*#0072d6/);
+assert.match(styles, /--blue-bright:\s*#0a8cff/);
 assert.match(styles, /color-scheme:\s*light/);
 assert.match(styles, /@media \(max-width:\s*760px\)/);
 assert.match(styles, /\.catalog-grid/);

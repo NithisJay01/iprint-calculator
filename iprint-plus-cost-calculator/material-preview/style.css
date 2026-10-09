@@ -58,7 +58,7 @@ html, body {
   white-space: nowrap;
 }
 .tag {
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.06em;
   color: var(--muted);
   white-space: nowrap;
@@ -290,7 +290,7 @@ html, body {
 }
 .designer-ad-copy { display: grid; gap: 2px; min-width: 0; }
 .designer-ad-copy strong { font-size: 14px; color: #102f54; }
-.designer-ad-copy small { color: #56708d; font-size: 11.5px; line-height: 1.35; }
+.designer-ad-copy small { color: #56708d; font-size: 12px; line-height: 1.35; }
 .designer-ad-body { padding: 0 14px 14px 58px; }
 .designer-ad-body p { margin: 0 0 10px; color: #526b84; font-size: 12.5px; line-height: 1.55; }
 .designer-ad-button {
@@ -312,7 +312,7 @@ html, body {
 
 .sub {
   margin: 12px 0 6px;
-  font-size: 11.5px;
+  font-size: 12px;
   letter-spacing: 0.04em;
   color: var(--muted);
 }
@@ -643,7 +643,7 @@ html, body {
   -webkit-backdrop-filter: blur(6px);
   color: var(--ink);
   font: inherit;
-  font-size: 9.5px;
+  font-size: 12px;
   cursor: pointer;
 }
 .tilt-switch:disabled { cursor: wait; opacity: 0.75; }
@@ -752,3 +752,14 @@ html, body {
 /* the second button of a side card: outlined, so the two buttons do not compete */
 .side-action.is-secondary { background: #fff; color: var(--ink); border: 1px solid var(--line); }
 .side-action[hidden] { display: none; }
+
+/* Touch targets: at least 44px on phones and touch screens (QA 2026-10-09). Inline links inside sentences are exempt. */
+@media (max-width: 767px), (pointer: coarse) {
+  .back, .tilt-switch, .side-title, .designer-ad-button { display: inline-flex; align-items: center; min-height: 44px; }
+  .pill, .chip { min-height: 44px; }
+  .pill { min-width: 44px; }
+  summary { display: flex; align-items: center; min-height: 44px; }
+  select, input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+  .field input, .field select, .material-catalog select, .art-check-size select, .art-check-size input { min-height: 44px; height: auto; }
+  input[type="checkbox"], input[type="radio"] { width: 22px; height: 22px; }
+}

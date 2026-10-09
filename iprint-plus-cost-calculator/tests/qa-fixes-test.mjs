@@ -107,4 +107,19 @@ assert.equal((home.match(/<aside class="side-sheet[^>]*aria-hidden="true" inert>
 const homeApp = readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
 assert.ok(homeApp.includes('sheet.inert=true') && homeApp.includes('sheet.inert=false'), 'opening/closing a sheet toggles inert');
 
+// Group 7: readable blue, 12px minimum text and 44px touch targets, mobile section nav, no stale Quick Brief errors.
+const css = name => readFileSync(new URL(`../${name}`, import.meta.url), 'utf8');
+for (const name of ['css/app.css', 'catalog/styles.css', 'business-card/styles.css', 'business-card/order.css', 'pricing/styles.css', 'cards/styles.css', 'brief/brief.css']) {
+  assert.match(css(name), /--blue:\s*#0072d6/i, `${name}: text/button blue is #0072d6`);
+  assert.ok(!/(^|[;{\s])color:\s*#0a8cff/im.test(css(name)), `${name}: no text in the bright decorative blue`);
+}
+for (const name of ['material-preview/style.css', 'cards/styles.css']) {
+  const tooSmall = [...css(name).matchAll(/font-size:\s?([0-9.]+)px/g)].filter(match => Number(match[1]) < 12);
+  assert.equal(tooSmall.length, 0, `${name}: no text below 12px`);
+  assert.match(css(name), /min-height:\s?44px/, `${name}: 44px touch targets`);
+}
+assert.match(css('business-card/styles.css'), /\.nav nav \{ display: flex; order: 3;[^}]*overflow-x: auto/, 'business-card section links scroll on phones');
+assert.match(css('catalog/styles.css'), /footer \{ padding-bottom: calc\(/, 'the LINE button does not cover the catalog footer');
+assert.ok(readFileSync(new URL('../js/flow.js', import.meta.url), 'utf8').includes('clearQuickBriefError'), 'Quick Brief errors clear on input');
+
 console.log('QA fixes test passed');

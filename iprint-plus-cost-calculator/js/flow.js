@@ -1277,6 +1277,17 @@ function bindFlow() {
     syncPreviewCarousel(carousel, current + (control.dataset.previewCarouselAction === 'prev' ? -1 : 1));
   });
   window.addEventListener('iprint:calculated', syncFlowSummary);
+  // A Quick Brief error disappears as soon as the customer changes the field it was about.
+  const clearQuickBriefError = event => {
+    const field = event.target.closest('input,select,textarea,button');
+    if (!field || !event.target.closest('[data-app-view="quickBrief"]')) return;
+    if (event.type === 'click' && !field.matches('[data-job-type],.choice,[role="radio"],[type="radio"],[type="checkbox"]')) return;
+    field.removeAttribute('aria-invalid');
+    if ($('quickBriefStatus')) $('quickBriefStatus').textContent = '';
+  };
+  document.addEventListener('input', clearQuickBriefError);
+  document.addEventListener('change', clearQuickBriefError);
+  document.addEventListener('click', clearQuickBriefError);
 }
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bindFlow, { once: true });
