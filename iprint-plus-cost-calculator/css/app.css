@@ -534,3 +534,21 @@ html{background:#dce9f5}body{padding:0;background:#dce9f5;color:#080808}.mobile-
 .staff-catalog-group-toggle{display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border:0;background:transparent;color:var(--flow-navy);font:inherit;text-align:left;cursor:pointer}
 .staff-catalog-group-toggle small{margin-left:auto;color:var(--flow-muted);font-size:12px;font-weight:600}
 .staff-catalog-table tbody tr[hidden]{display:none}
+
+/* QA 2026-10-09: home entry — one clear primary action, staff sign-in as a small footer link */
+.login-choice .primary-entry{min-height:76px;background:#0072d6;box-shadow:0 12px 26px rgba(0,114,214,.28)}
+.login-choice .primary-entry:hover{background:#005bb0}
+.login-choice .primary-entry strong{font-size:18px}
+.login-choice .primary-entry span{color:#e6f2ff;font-size:12px}
+.login-choice-label{margin:6px 0 0;color:#5b6b78;font-size:12px;font-weight:700}
+.login-footer{margin:14px 0 0;text-align:center}
+.login-footer .staff-entry{display:inline;min-height:0;padding:12px 6px;border:0;background:none;color:#5b6b78;font-size:12px;font-weight:700;text-decoration:underline}
+.login-footer .staff-entry:hover{background:none;color:#0072d6}
+body[data-portal="staff"] .login-footer{display:none}
+.login-copy p{font-size:14px}
+.login-help{font-size:12px}
+/* Closed side sheets: hidden from focus and with no shadow bleeding onto the page edge */
+.side-sheet{visibility:hidden;box-shadow:none;transition:transform .25s ease,visibility 0s linear .25s,box-shadow .25s ease}
+.side-sheet.open{visibility:visible;box-shadow:-16px 0 45px rgba(0,0,0,.18);transition:transform .25s ease,box-shadow .25s ease}
+.login-copy h1 .keep{display:inline-block}
+.guest-entry span{font-size:12px}

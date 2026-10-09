@@ -22,13 +22,13 @@
 <section class="login-gate" id="loginGate" aria-labelledby="loginTitle">
   <div class="login-panel">
     <div class="login-brand"><img src="image/iprint-logo.svg" alt=""><div><strong>iPrint</strong><small>FLOW</small></div></div>
-    <div class="login-copy"><span>IPRINT ORDERING</span><h1 id="loginTitle">เริ่มต้นใช้งาน iPrint</h1><p>ลูกค้าสามารถออกแบบรายการและคำนวณราคาเบื้องต้นได้โดยไม่ต้องเข้าสู่ระบบ</p></div>
+    <div class="login-copy"><span>IPRINT ORDERING</span><h1 id="loginTitle"><span class="keep">สั่งพิมพ์นามบัตร</span> <span class="keep">การ์ด สติกเกอร์</span> <span class="keep">ดูพรีวิวก่อนสั่ง</span></h1><p>เลือกสินค้า เห็นราคาและตัวอย่างงานก่อนยืนยัน เลือกวันรับงาน และติดตามสถานะได้ออนไลน์ ไม่ต้องสมัครสมาชิก</p></div>
     <div class="login-choice">
-      <a class="guest-entry product-entry" href="catalog/"><strong>เลือกสินค้าและแพ็กเกจงานพิมพ์</strong><span>ดู Catalog ราคาเริ่มต้น และเข้าสู่หน้าสั่งซื้อ</span></a>
+      <a class="guest-entry product-entry primary-entry" href="catalog/"><strong>เลือกสินค้า →</strong><span>นามบัตร การ์ด โปสการ์ด สติกเกอร์ พร้อมราคาเริ่มต้น</span></a>
+      <p class="login-choice-label">หรือเริ่มจากเครื่องมือเหล่านี้</p>
       <button class="guest-entry layout-entry" id="openLayoutCalculator" type="button"><strong>คำนวณชิ้นงาน / แผ่น</strong><span>ระบุขนาดและจำนวน ดูว่าวางได้กี่ชิ้นต่อแผ่น เข้าหน้าคำนวณได้ทันที</span></button>
       <button class="guest-entry" id="continueAsGuest" type="button"><strong>บรีฟงานแบบเฉพาะเจาะจง</strong><span>คำนวณจำนวนชิ้นงาน แนบพรีวิว และสั่งเป็นชุด (Advance Custom)</span></button>
       <a class="guest-entry material-entry" href="material-preview/?from=home"><strong>ดูตัวอย่างวัสดุ 3 มิติ</strong><span>อัปโหลดไฟล์ SVG แล้วลองสลับกระดาษ การเคลือบ และเทคนิคพิเศษ</span></a>
-      <a class="staff-entry" id="showStaffLogin" href="staff/">เข้าสู่ระบบสำหรับพนักงาน</a>
     </div>
     <form class="login-form" id="loginForm" novalidate hidden>
       <label for="loginApiKey">รหัสเข้าใช้งาน</label>
@@ -38,6 +38,7 @@
       <button class="login-submit" id="loginSubmit" type="submit">เข้าสู่ระบบ</button>
     </form>
     <p class="login-help">ลูกค้าจะยืนยันตัวตนเมื่อส่งคำสั่งซื้อ ส่วนพื้นที่พนักงานต้องใช้สิทธิ์ภายใน</p>
+    <p class="login-footer"><a class="staff-entry" id="showStaffLogin" href="staff/">สำหรับพนักงาน: เข้าสู่ระบบ</a></p>
   </div>
 </section>
 
@@ -339,7 +340,7 @@
 <div id="pieceGapKnob" hidden></div><div id="bleedKnob" hidden></div>
 
 <div class="sheet-overlay" id="sheetOverlay"></div>
-<aside class="side-sheet api-settings-sheet" id="apiSettingsSheet" aria-hidden="true">
+<aside class="side-sheet api-settings-sheet" id="apiSettingsSheet" aria-hidden="true" inert>
   <div class="sheet-head"><div><small>IPRINT FLOW</small><h2>ตั้งค่าการเชื่อมต่อ</h2></div><button class="close-sheet" id="closeApiSettings" type="button" aria-label="ปิดหน้าตั้งค่า"><img src="image/close.svg" alt=""></button></div>
   <div class="sheet-body">
     <section class="api-settings-card">
@@ -356,7 +357,7 @@
     <p class="api-security-note"><strong>ข้อควรระวัง</strong> ไม่ควรบันทึกคีย์บนเครื่องสาธารณะหรือเครื่องที่ใช้ร่วมกัน การจัดเก็บแบบนี้เหมาะกับ MVP ภายในทีมเท่านั้น</p>
   </div>
 </aside>
-<aside class="side-sheet" id="paperPreviewSheet" aria-hidden="true"><div class="sheet-head"><h2>จัดการ Preset กระดาษ</h2></div></aside><aside class="side-sheet" id="briefAssetsSheet" aria-hidden="true"><div class="sheet-head"><h2>ไฟล์บรีฟ</h2></div></aside>
+<aside class="side-sheet" id="paperPreviewSheet" aria-hidden="true" inert><div class="sheet-head"><h2>จัดการ Preset กระดาษ</h2></div></aside><aside class="side-sheet" id="briefAssetsSheet" aria-hidden="true" inert><div class="sheet-head"><h2>ไฟล์บรีฟ</h2></div></aside>
 
 <div class="modal" id="presetModal" aria-hidden="true"><div class="modal-card"><div class="modal-head"><h2>เพิ่มขนาดกระดาษ</h2><button class="close-sheet" id="cancelPreset" type="button">×</button></div><div class="modal-body"><div class="field"><label class="label" for="pName">ชื่อ</label><input id="pName"></div><div class="row2"><div class="field"><label class="label" for="pW">กว้าง</label><input id="pW" type="number"></div><div class="field"><label class="label" for="pH">สูง</label><input id="pH" type="number"></div></div><div class="field"><select id="pMode"><option value="margin">เว้นขอบมาตรฐาน</option><option value="full">ใช้เต็มแผ่น</option><option value="custom">กำหนดเอง</option></select></div><div id="customArea" class="row2" hidden><input id="pUW" type="number"><input id="pUH" type="number"></div><div id="presetError" class="status"></div><button class="primary-action" id="savePreset" type="button">เพิ่ม</button><button id="deletePreset" type="button" hidden></button><button id="addPreset" type="button" hidden></button></div></div></div>
 

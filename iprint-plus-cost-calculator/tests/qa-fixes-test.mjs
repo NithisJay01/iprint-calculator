@@ -97,4 +97,14 @@ assert.equal((await checkStaffKey('good', async (url, init) => { assert.ok(Strin
 assert.equal((await checkStaffKey('bad', async () => new Response('{}', { status: 401 }))).message, 'รหัสเข้าใช้งานไม่ถูกต้อง');
 assert.equal((await checkStaffKey('x', async () => { throw new TypeError('Failed to fetch'); })).message, GATE_NETWORK_MESSAGE);
 
+// Group 6: the home page says what the shop does, has one primary action, and closed side sheets cannot take focus.
+const home = pageHtml('index.html');
+assert.match(home, /<title>iPrint — สั่งพิมพ์นามบัตร/);
+assert.match(home, /<h1 id="loginTitle">.*ดูพรีวิวก่อนสั่ง.*<\/h1>/);
+assert.match(home, /class="guest-entry product-entry primary-entry" href="catalog\/"><strong>เลือกสินค้า/);
+assert.match(home, /<p class="login-footer"><a class="staff-entry" id="showStaffLogin" href="staff\/">/, 'staff sign-in is a small footer link');
+assert.equal((home.match(/<aside class="side-sheet[^>]*aria-hidden="true" inert>/g) || []).length, 3, 'side sheets start inert');
+const homeApp = readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
+assert.ok(homeApp.includes('sheet.inert=true') && homeApp.includes('sheet.inert=false'), 'opening/closing a sheet toggles inert');
+
 console.log('QA fixes test passed');

@@ -2,6 +2,7 @@ function closeSide() {
   document.querySelectorAll('.side-sheet.open').forEach(sheet=> {
     sheet.classList.remove('open');
     sheet.setAttribute('aria-hidden','true');
+    sheet.inert=true; // a closed sheet cannot take focus
   });
   $('sheetOverlay').classList.remove('open');
 }
@@ -12,6 +13,7 @@ function openSide(id) {
   closeSide();
   sheet.classList.add('open');
   sheet.setAttribute('aria-hidden','false');
+  sheet.inert=false;
   $('sheetOverlay').classList.add('open');
 }
 
